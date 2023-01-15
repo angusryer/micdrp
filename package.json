@@ -1,0 +1,45 @@
+{
+  "name": "micdrp",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ],
+    "nohoist": [
+      "**/react-native",
+      "**/react-native/**",
+      "**/react",
+      "**/react/**"
+    ]
+  },
+  "scripts": {
+    "lint": "yarn workspaces run lint",
+    "test": "./scripts/test.sh",
+    "build": "./scripts/build.sh",
+    "server": "./scripts/server.sh",
+    "client": "./scripts/client.sh",
+    "submit": "./scripts/submit.sh"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.12",
+    "@babel/preset-env": "^7.20.2",
+    "@babel/runtime": "^7.20.7",
+    "@react-native-community/eslint-config": "^3.2.0",
+    "@types/jest": "^29.2.5",
+    "@types/lodash": "^4.14.191",
+    "@types/node": "^18.11.18",
+    "@typescript-eslint/eslint-plugin": "^5.48.1",
+    "@typescript-eslint/parser": "^5.48.1",
+    "babel-jest": "^29.3.1",
+    "eslint": "^8.31.0",
+    "eslint-config-prettier": "^8.6.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.6.0",
+    "eslint-plugin-promise": "^6.1.1",
+    "jest": "^29.3.1",
+    "prettier": "^2.8.2",
+    "ts-jest": "^29.0.5",
+    "typescript": "^4.9.4"
+  }
+}

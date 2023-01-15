@@ -1,0 +1,15 @@
+{
+  "extends": "@tsconfig/react-native/tsconfig.json" /* Recommended React Native TSConfig base */,
+  "compilerOptions": {
+    "types": ["node", "jest"],
+    "isolatedModules": true,
+    "composite": true,
+    "allowJs": false,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "jsx": "react-native",
+    "noEmit": true
+  },
+  "exclude": [".bundle", "android", "ios", "node_modules", "vendor"]
+}

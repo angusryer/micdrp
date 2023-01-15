@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "types": ["node", "jest"],
+    "isolatedModules": true,
+    "composite": true,
+    "module": "commonjs",
+    "strict": true,
+    "allowJs": false,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "noEmit": true
+  },
+  "include": ["**/*.ts"]
+}

@@ -1,0 +1,15 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ErrorBoundary component renders children properly when no error is thrown 1`] = `
+<View
+  testID="child"
+/>
+`;
+
+exports[`ErrorBoundary component renders when an uncaught error is thrown from within a child component 1`] = `
+<View>
+  <Text>
+    An Error has occurred
+  </Text>
+</View>
+`;

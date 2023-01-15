@@ -1,0 +1,21 @@
+{
+  "root": true,
+  "include": ["packages/*"],
+  "references": [
+    {
+      "path": "packages/client"
+    },
+    {
+      "path": "packages/models"
+    },
+    {
+      "path": "packages/logic"
+    },
+    {
+      "path": "packages/server"
+    },
+    {
+      "path": "packages/shared"
+    }
+  ]
+}
