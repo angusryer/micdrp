@@ -11,6 +11,21 @@
 # run build
 # output locations
 
+
+function getAndroidVersionCode () {
+  local androidVersionCode="$(grep -oE "^.\s*versionCode [0-9]+" packages/client/android/app/build.gradle)"
+  echo $androidVersionCode;
+}
+
+function getAndroidVersionName () {
+  local androidVersionName="$(grep -oE "^.\s*versionName \"[0-9]+.+\"" packages/client/android/app/build.gradle)"
+  if [ "$?" != "0" ]
+    then
+    local androidVersionName="$(grep -oE "^.\s*versionName \"$env [0-9]+.+\"" packages/client/android/app/build.gradle)"
+  fi
+  echo $androidVersionName;
+}
+
   # a)
     #   printf "Starting Android emulator...\n"
     #   androidVersionName=$(getAndroidVersionName)
