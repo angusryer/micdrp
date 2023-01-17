@@ -1,15 +1,21 @@
 #!/bin/bash
 
-# options: -ai (android or ios)
-# start server in new terminal window
-# start metro in new terminal window
-# start android or ios in new terminal window
+###
+### https://devhints.io/bash
+###
+
+# Make sure the local development environment is configured
+export ANDROID_SDK_ROOT=$HOME/Library/Android/sdk
+export PATH=$PATH:$ANDROID_SDK_ROOT/emulator
+export PATH=$PATH:$ANDROID_SDK_ROOT/platform-tools
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home
 
 clientDir=packages/client
-env="Development"
+env="dev"
 androidVersionCode=0
 androidVersionName=""
 iosVersionNumber=0
+metroPort=9000
 
 if [ ! -d "$clientDir" ]
   then
@@ -17,19 +23,17 @@ if [ ! -d "$clientDir" ]
   exit 0;
 fi
 
-if [ ! -z ]
-  then
-    printf "You must supply at least one argument"
-    exit 1;
-fi
-
 function help () {
-  printf "Usage: ./dev.sh -ai\n"
-  printf "Example for starting an Android emulator: ./deb.sh -pa\n"
-  printf "  -[ai] (required) Start an Android or iOS virtual device\n"
-  printf "  -p|s use a Production or Staging environment\n"
-  printf "  -h  This help screen\n"
+  printf "Example for starting an Android emulator with Staging environment: ./dev.sh -s android\n"
+  printf "    ios, android, all -[required] Start an Android and/or iOS virtual device(s)\n"
+  printf "    -e [dev|staging|prod] -[optional] Use a Production, Staging or Development environment. Development is default.\n"
+  printf "    -h This help screen\n"
   exit 0;
+}
+
+function die () {
+  printf '\n%s\n\n' "$*" >&2
+  exit 1
 }
 
 function getAndroidVersionCode () {
@@ -46,66 +50,109 @@ function getAndroidVersionName () {
   echo $androidVersionName;
 }
 
-echo "";
-echo "-------------------";
+metroPid=
+function startMetro () {
+  local pid=$(lsof -ti :$metroPort)
+  [[ -n $pid ]] && kill -9 $pid
+  yarn workspace @micdrp/client start &
+  printf "\n\nMetro is running on PID $! and on port $metroPort\n\n"
+  exit 0;
+}
 
-while getopts ":psaih:" option; do
-   case $option in
-    h) # print this command's help
-      help;;
-    p)
-      if [ -z == "s" ]
-        then
-          printf "You must specify only one environment\n"
-          exit 0; 
-      fi
-      printf "[\xE2\x9C\x94] Using Production environment variables\n"
-      env="Production"
-      export ENVFILE=.prod.env;;
-    s)
-      printf "[\xE2\x9C\x94] Using Staging environment variables\n"
-      env="Production"
-      export ENVFILE=.prod.env;;
-    a)
-      printf "Building Android bundle...\n"
-      androidVersionName=$(getAndroidVersionName)
-      androidVersionCode=$(getAndroidVersionCode)
-      currentAndroidVersionCode=$(echo $androidVersionCode | tr -dc '0-9')
-      nextAndroidVersionCode=$((currentAndroidVersionCode+1))
-      printf "[ ] Attempting to change Android build.gradle version from $currentAndroidVersionCode to $nextAndroidVersionCode...\r"
-      if [ "$env" == "development" ]
-        then
-        printf "You must specify a production (-p) or staging (-s) environment\n"
-        exit 1;
-      fi
-      if [ "$androidVersionName" == "" ]
-        then
-          # couldn't find the vanilla number, assume there is an env in it...
-          grep -oE "^.\s*versionName \"[0-9]+.+\"" packages/client/android/app/build.gradle | xargs sed -i "" "s/$androidVersionName/versionName \"$env $nextAndroidVersionCode.0\"/g"
-        else 
-          grep -oE "^.\s*versionName \"$env [0-9]+.+\"" packages/client/android/app/build.gradle | xargs sed -i "" "s/$androidVersionName/versionName \"$env $nextAndroidVersionCode.0\"/g"
-      fi
+if [ $# -gt 3 ]; then
+  printf "Too many arguments specified\n"
+  exit 1;
+fi
 
-      sleep 1;
-      printf "[\xE2\x9C\x94] Attempting to change Android build.gradle version from $currentAndroidVersionCode to $nextAndroidVersionCode...\r"
-
-      # Sanity check
-      updatedAndroidVersionName=$(grep -oE "^.\s*versionName \"$env $nextAndroidVersionCode.+\"" packages/client/android/app/build.gradle)
-      if [ "$updatedAndroidVersionName" == "" ]
-        then
-          printf "Unable to change Version Name. Looking for '$env $currentAndroidVersionCode' Please double check android/app/build.gradle\n";
-          printf "Quitting without modifying the build.gradle\n"
-          exit 3;
-      fi
-
-      # Update the Version Code, if the Name was successful...
-      grep -oErl "^.\s*versionCode [0-9]+" packages/client/android/app/build.gradle | xargs sed -i "" "s/$currentAndroidVersionCode/versionCode $nextAndroidVersionCode/g"
-
-      newVersion=$nextAndroidVersionCode;;
-    \?) # Invalid option
-      printf "Error: Invalid option"
-      exit;;
-   esac
+device=
+for var in "$@"; do
+  [[ $var = 'ios' ]] && device="ios"
+  [[ $var = 'android' ]] && device="android"
+  [[ $var = 'all' ]] && device="all"
 done
 
-# ./scripts/server.sh
+if [[ -z $device ]]; then
+  die "You must specify either ios, android or all"
+fi
+
+# Colons before the first arg makes the script store the first option in the 'optionstring'
+# into OPTARG. Subsequent colons make the script anticipate there being parameter strings 
+# after the associated optionstring
+while getopts ':e:h' option; do
+  case $option in
+    e) # specify an environment; default is "development"
+
+      if [[ $OPTARG = "staging" ]] || [[ $OPTARG = "prod" ]]; then
+        env=$OPTARG
+      fi
+
+      case $env in
+        prod)
+          printf "[\xE2\x9C\x94] Using Production environment variables\n"
+          export ENVFILE=.production.env
+
+          printf "Starting Metro...\n"
+          startMetro &
+
+          if [[ $device = 'all' ]]; then
+            printf "Starting up ios and android clients..."
+            yarn workspace @micdrp/client android:prod &
+            yarn workspace @micdrp/client ios:prod &
+          else 
+            printf "Starting up an $device client..."
+            yarn workspace @micdrp/client $device:prod &
+          fi
+
+        ;;
+        staging)
+          printf "[\xE2\x9C\x94] Using Staging environment variables\n"
+          export ENVFILE=.staging.env
+
+          printf "Starting Metro...\n"
+          startMetro &
+
+          if [[ $device = 'all' ]]; then
+            printf "Starting up ios and android clients..."
+            yarn workspace @micdrp/client android:staging &
+            yarn workspace @micdrp/client ios:staging &
+          else 
+            printf "Starting up an $device client..."
+            yarn workspace @micdrp/client $device:staging &
+          fi
+        
+        ;;
+        dev)
+          if [[ $OPTARG != "dev" ]]; then
+            printf "You must specify dev, staging or prod with the -e option\n"
+            exit 1
+          fi
+
+          printf "[\xE2\x9C\x94] Using Development environment variables\n"
+          export ENVFILE=.development.env
+
+          printf "Starting up backend services..."
+          yarn workspace @micdrp/server start &
+
+          printf "Starting Metro...\n"
+          startMetro &
+
+          if [[ $device = 'all' ]]; then
+            printf "Starting up ios and android clients..."
+            yarn workspace @micdrp/client android:dev &
+            yarn workspace @micdrp/client ios:dev &
+          else 
+            printf "Starting up an $device client..."
+            yarn workspace @micdrp/client $device:dev &
+          fi
+        
+        ;;
+      esac;;
+    h) # print this command's help
+      help;;
+    
+    \?) # Invalid option
+      printf "\nError: Invalid option\n\n"
+      help
+      exit 1;;
+  esac
+done
