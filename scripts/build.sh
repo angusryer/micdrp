@@ -2,7 +2,7 @@
 
 # TODOs remaining
 # increment version numbers for iOS
-# run iOS build
+# run iOS build and output file
 
 # Make sure the local development environment is configured
 export ANDROID_SDK_ROOT=$HOME/Library/Android/sdk
