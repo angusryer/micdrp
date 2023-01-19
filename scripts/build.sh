@@ -71,6 +71,16 @@ function getAndroidVersionName () {
 }
 
 function incrementAndroidVersion () {
+
+  # https://developer.android.com/studio/publish/versioning
+  # versionCode - INTERNAL version number, positive integer only
+  # versionName - user-visible, string
+
+  # You can set default values for different build variants (staging, release)
+  # https://developer.android.com/studio/publish/versioning#versionvalues
+  # May be able to set up schemes in Android Studio, then specify them on
+  # the command line 
+  
   androidVersionName=$(getAndroidVersionName)
   androidVersionCode=$(getAndroidVersionCode)
   local currentAndroidVersionCode=$(echo $androidVersionCode | tr -dc '0-9')
@@ -118,7 +128,55 @@ function incrementAndroidVersion () {
 }
 
 function incrementIosVersion () {
-  printf "Incrementing iOS version numbers not implemented...\n"
+  # https://developer.apple.com/library/archive/qa/qa1827/_index.html
+  # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+
+  # Build number
+  # We can include a suffix (e.g. staging) -- While developing a new version of your app, you can
+  # include a suffix after the number that is being updated; for example 3.1.3a1. The character
+  # in the suffix represents the stage of development for the new version. For example, you can
+  # represent development, alpha, beta, and final candidate, by d, a, b, and fc. The final number
+  # in the suffix is the build version, which cannot be 0 and cannot exceed 255. When you release
+  # the new version of your app, remove the suffix.
+  # 
+
+  # User-visible release version number
+  # CFBundleShortVersionString is "marketing version" or "mvers" -- this is what end users see
+  # The version number, which is the number shown to your application’s users, identifies a
+  # released version of your application. It is stored in your application’s Info.plist as
+  # CFBundleShortVersionString (Bundle versions string, short).
+  # XXXX.XX.XX
+  # major.minor.maintenance
+  # eg: 1.0.0 or 12.4.33
+
+  cd packages/client/ios
+
+  local versionNameString=$(echo agvtool vers -terse | sed 's/iOS version number: //')
+
+  printf "Version: $versionNameString\n"
+
+  if [[ $env = "Staging" ]] && [[ $versionNameString = "\"Staging $currentAndroidVersionCode.0\"" ]]; then
+    printf "[\xE2\x9C\x94] Checking for correct build version... SUCCESS\n"
+    nextVersion=$currentAndroidVersionCode
+    return -1;
+  fi
+
+  if [[ $env = "Production" ]] && [[ $versionNameString = "\"Staging $currentAndroidVersionCode.0\"" ]]; then
+    printf "[\xE2\x9C\x94] Checking for correct build version... SUCCESS\n"
+    nextVersion=$currentAndroidVersionCode
+    return -1;
+  fi
+
+  if [[ $env = "Production" ]] && [[ $versionNameString = "\"Production $currentAndroidVersionCode.0\"" ]]; then
+    printf "[\xE2\x9C\x94] Checking for correct build version... SUCCESS\n"
+    nextVersion=$currentAndroidVersionCode
+    return -1;
+  fi
+
+  local lowerCaseEnv=$(echo "$env" | tr '[A-Z]' '[a-z]')
+  # agvtool bump -all
+  
+  printf "iOS version number: $fullversion\n"
 }
 
 ###
@@ -142,16 +200,16 @@ function buildAndroid () {
 
   # Remove all drawable extension folder from packages/client/android/app/src/main/res
   pushd android/app/src/main/res
-  rm -rf drawable-*
+    rm -rf drawable-*
   popd
 
   pushd android
-  ./gradlew bundleRelease
-  if [ "$?" != "0" ]
-    then
-    echo "ERROR: Build failed!"
-    exit 1;
-  fi
+    ./gradlew bundleRelease
+    if [ "$?" != "0" ]
+      then
+      echo "ERROR: Build failed!"
+      exit 1;
+    fi
   popd
 
   mv android/app/build/outputs/bundle/release/app-release.aab android/app/build/outputs/bundle/release/micdrp-$lowerCaseEnv-$nextVersion.aab
@@ -161,6 +219,47 @@ function buildAndroid () {
 }
 
 function buildIos () {
+
+  ## Here is one solution
+  ## need to create an exportOptions_debug.plist & exportOptions_release.plist apparently
+
+  # https://stackoverflow.com/questions/2664885/xcode-build-and-archive-from-command-line
+  # Clean
+  xcodebuild clean -workspace work-space-name.xcworkspace -scheme scheme-name
+  # Archive
+  xcodebuild archive -workspace work-space-name.xcworkspace -scheme "scheme-name" -configuration Release -archivePath IPA-name.xcarchive
+  # Export
+  xcodebuild -exportArchive -archivePath IPA-name.xcarchive -exportPath IPA-name.ipa -exportOptionsPlist exportOptions.plist
+
+
+ ## Another solution found:
+ ## Do this from ios dir?
+
+  appname='AppName'
+  config='Ad Hoc Distribution' # Does this need to change to accommodate submitting thru App Store Connect?
+  sdk='iphoneos3.1.3'
+  project_dir=$(pwd)
+
+  xcodebuild -activetarget -configuration "$config" -sdk $sdk build || die "build failed"
+
+  echo making ipa...
+  # packaging
+  cd build/"$config"-iphoneos || die "no such directory"
+  # remove old package?
+  rm -rf Payload
+  rm -f "$appname".*.ipa
+  # make new package
+  mkdir Payload
+  cp -Rp "$appname.app" Payload/
+  if [ -f "$project_dir"/iTunesArtwork ] ; then
+      cp -f "$project_dir"/iTunesArtwork Payload/iTunesArtwork
+  fi
+
+  # final bundle
+  ipaname="$appname.$fullversion.$(date -u +%Y%m%d%H%M%S).ipa"
+  zip -r $ipaname Payload
+
+  # output location to console
   printf "Bulding iOS bundles not implemented yet..."
   return 0;
 }
