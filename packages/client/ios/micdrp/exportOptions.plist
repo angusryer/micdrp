@@ -5,7 +5,9 @@
     <key>method</key>
     <string>app-store</string>
     <key>teamID</key>
-    <string>XXXXXXXXXX</string>
+    <string>J3RCPBZHWM</string>
+    <key>destination</key>
+    <string>upload</string>
     <key>uploadBitcode</key>
     <true/>
     <key>compileBitcode</key>

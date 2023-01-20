@@ -10,6 +10,10 @@ export PATH=$PATH:$ANDROID_SDK_ROOT/emulator
 export PATH=$PATH:$ANDROID_SDK_ROOT/platform-tools
 export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home
 
+red='\033[0;31m'
+nc='\033[0m' # No Color
+grn='\033[0;32m'
+
 clientDir=packages/client
 gradlePath=packages/client/android/app/build.gradle
 env="dev"
@@ -148,18 +152,18 @@ function bumpAndroidVersion () {
     # Ensure that the version has actually been updated
     local updatedAndroidVersionName=$(grep -oE "versionName \"$newVersionName\"" $gradlePath)
     if [ "$updatedAndroidVersionName" == "" ]; then
-        printf "[x] Moving Android version from $oldVersionName to $newVersionName... FAILED\n"
+        printf "[x] Moving Android version from $oldVersionName to $newVersionName... ${red}FAILED${nc}\n"
         printf "Error verifying $gradlePath... UNMODIFIED\n"
         exit 3;
     else
-      printf "[\xE2\x9C\x94] Bumping Android version from $oldVersionName to $newVersionName... SUCCESS\n"
+      printf "[\xE2\x9C\x94] Bumping Android version from $oldVersionName to $newVersionName... ${grn}SUCCESS${nc}\n"
     fi
   fi
 
   if [[ $versionChangeWillTakePlace -gt 0 ]]; then
     printf "[ ] Bumping Android build from $buildDigit to $nextBuildDigit\r"
     sed -i "" "s/versionCode $buildDigit/versionCode $nextBuildDigit/g" $gradlePath
-    printf "[\xE2\x9C\x94] Bumping Android build from $buildDigit to $nextBuildDigit... SUCCESS\n"
+    printf "[\xE2\x9C\x94] Bumping Android build from $buildDigit to $nextBuildDigit... ${grn}SUCCESS${nc}\n"
   fi
   
   return 0;
@@ -169,30 +173,7 @@ function bumpIosVersion () {
   # https://developer.apple.com/library/archive/qa/qa1827/_index.html
   # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 
-  # Build number CFBundleVersion - not visible to users
-  # XXXX.XX.XX
-  # major.minor.maintenance
-  # eg: 1.0.0 or 12.4.33staging
-  # We can include a suffix (e.g. staging) -- While developing a new version of your app, you can
-  # include a suffix after the number that is being updated; for example 3.1.3a1. The character
-  # in the suffix represents the stage of development for the new version. For example, you can
-  # represent development, alpha, beta, and final candidate, by d, a, b, and fc. The final number
-  # in the suffix is the build version, which cannot be 0 and cannot exceed 255. When you release
-  # the new version of your app, remove the suffix.
-  # 
-
-  # User-visible release version number - CFBundleShortVersionString
-  # is "marketing version" or "mvers" -- this is what end users see
-  # The version number, which is the number shown to your application’s users, identifies a
-  # released version of your application. It is stored in your application’s Info.plist as
-  # CFBundleShortVersionString (Bundle versions string, short).
-  # XXXX.XX.XX
-  # major.minor.maintenance
-  # eg: 1.0.0 or 12.4.33
-
-
-  # Is this installed only on mac os?
-  # /usr/libexec/PlistBuddy -h
+  # /usr/libexec/PlistBuddy -h  <-- ONLY MACOS
   # xcodebuild -target micdrp -configuration Release -showBuildSettings
 
   pushd packages/client/ios
@@ -206,7 +187,7 @@ function bumpIosVersion () {
       xcodebuild -scheme micdrp -target micdrp -configuration Release MARKETING_VERSION="$newVersionName"
       xcodebuild -scheme micdrp -target micdrpTests -configuration Release MARKETING_VERSION="$newVersionName"
       agvtool new-marketing-version "$newVersionName" &>2 /dev/null
-      printf "[\xE2\x9C\x94] Bumping iOS version from $oldVersionName to $newVersionName... SUCCESS\n"
+      printf "[\xE2\x9C\x94] Bumping iOS version from $oldVersionName to $newVersionName... ${grn}SUCCESS${nc}\n"
     fi
   
     if [[ $versionChangeWillTakePlace -gt 0 ]]; then
@@ -216,7 +197,7 @@ function bumpIosVersion () {
       xcodebuild -scheme micdrp -target micdrp -configuration Release CURRENT_PROJECT_VERSION="$nextBuildDigit$nextReleaseVariant"
       xcodebuild -scheme micdrp -target micdrpTests -configuration Release CURRENT_PROJECT_VERSION="$nextBuildDigit$nextReleaseVariant"
       agvtool new-version -all "$nextBuildDigit$nextReleaseVariant" &>2 /dev/null
-      printf "[\xE2\x9C\x94] Bumping iOS build from $buildDigit$releaseVariant to $nextBuildDigit$nextReleaseVariant... SUCCESS\n"
+      printf "[\xE2\x9C\x94] Bumping iOS build from $buildDigit$releaseVariant to $nextBuildDigit$nextReleaseVariant... ${grn}SUCCESS${nc}\n"
     fi
   popd
   
@@ -224,21 +205,21 @@ function bumpIosVersion () {
 }
 
 ###
-### We may need a keystore and to sign the bundle
+### We will need a keystore and to sign the bundle for RELEASE
 ### https://medium.com/androiddevelopers/building-your-first-app-bundle-bbcd228bf631
 ### Run ONCE for every computer that will build and upload bundles to Play Store:
 ### debug: keytool -genkey -v -keystore /Users/angusryer/dv/micdrp/packages/client/android/app/debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
 ### release: keytool -genkey -v -keystore /Users/angusryer/dv/micdrp/packages/client/android/app/micdrp.keystore -alias androidReleasekey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Release,O=Android,C=US"
 ### 
-### Run this as part of this script to sign the bundle:
+### Run this as part of this script to sign the bundle: ???????
 ### jarsigner -keystore $pathToKeystore app-release.aab $keyAlias
 
 function buildAndroid () {
-  printf "[ ] Checking for and removing conflicting bundles...\r"
+  printf "[ ] Checking for and removing conflicting Android bundles...\r"
   local lowerCaseEnv=$(echo "$env" | tr '[A-Z]' '[a-z]')
-  cd packages/client
+
   rm android/app/build/outputs/aab/micdrp-$lowerCaseEnv-$nextBuild.aab 2> /dev/null
-  printf "[\xE2\x9C\x94] Checking for and removing conflicting bundles... SUCCESS\n"
+  printf "[\xE2\x9C\x94] Checking for and removing conflicting Android bundles... ${grn}SUCCESS${nc}\n"
   # https://github.com/react-native-community/cli/blob/main/docs/commands.md#bundle
   npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res/
 
@@ -249,45 +230,47 @@ function buildAndroid () {
 
   pushd android
     ./gradlew bundleRelease
-    if [ "$?" != "0" ]
-      then
-      echo "ERROR: Build failed!"
+    if [ "$?" != "0" ]; then
+      printf "${red}ERROR: Build failed!${nc}"
       exit 1;
     fi
   popd
 
   mv android/app/build/outputs/bundle/release/app-release.aab android/app/build/outputs/bundle/release/micdrp-$lowerCaseEnv-$nextBuild.aab
-  printf "\n\n[\xE2\x9C\x94] Your new bundle is ready!\n\n"
+  printf "\n--------------------------------------------------------------\n"
+  printf "\n\n[${grn}\xE2\x9C\x94${nc}] ${grn}Your new Android bundle is ready!${nc}\n\n"
   ls -lah `pwd`/android/app/build/outputs/bundle/release/micdrp-$lowerCaseEnv-$nextBuild.aab
+  printf "\n--------------------------------------------------------------\n"
+  printf "\n\n\n"
   return 0;
 }
 
 function buildIos () {
 
-  ## Here is one solution
-  ## need to create an exportOptions_debug.plist & exportOptions_release.plist apparently
-
-  ## Upload to app store
-  ## https://help.apple.com/app-store-connect/#/devb1c185036
-  pwd
-  pushd packages/client/ios
-    # https://stackoverflow.com/questions/2664885/xcode-build-and-archive-from-command-line
+  pushd ios
+    printf "[ ] Checking for and removing conflicting iOS bundles...\r"
+    local lowerCaseEnv=$(echo "$env" | tr '[A-Z]' '[a-z]')
+    rm build/outputs/archives/micdrp-$lowerCaseEnv-$nextBuild.xcarchive 2> /dev/null
+    printf "[\xE2\x9C\x94] Checking for and removing conflicting iOS bundles... ${grn}SUCCESS${nc}\n"
     # Clean
-    xcodebuild clean -workspace micdrp.xcworkspace -scheme micdrp
+    xcodebuild -workspace micdrp.xcworkspace -scheme micdrp clean
     # Archive
     # need to make sure correct device is selected
-    xcodebuild archive -workspace micdrp.xcworkspace -scheme "micdrp" -destination 'generic/platform=iOS' -configuration Release -archivePath build/outputs/archives/micdrp.xcarchive
-    # Export
-    xcodebuild -exportArchive -archivePath build/outputs/archives/micdrp.xcarchive -exportPath build/outputs/exports/micdrp.ipa -exportOptionsPlist micdrp/exportOptions.plist
-    
-    # FOR DEPLOYMENT:
-    # Validate
-    # xcrun altool --validate-app -f file -t platform -u username [-p password] [--output-format xml]
-    # Upload archive
-    # xcrun altool --upload-package -f file -t platform -u username [-p password] [—output-format xml]
+    # xcodebuild archive -workspace micdrp.xcworkspace -scheme "micdrp" -destination 'generic/platform=iOS' -configuration Release -archivePath build/outputs/archives/micdrp.xcarchive
+    xcodebuild -workspace micdrp.xcworkspace -scheme micdrp -sdk iphoneos -configuration Release archive -archivePath build/outputs/archives/micdrp-$lowerCaseEnv-$nextBuild.xcarchive
   popd
-  # # output location to console
-  printf "Bulding iOS bundles not implemented yet..."
+
+  local archivePath="`pwd`/ios/build/outputs/archives/micdrp-$lowerCaseEnv-$nextBuild.xcarchive"
+  if [ -f "$archivePath" ]; then
+    printf "\n--------------------------------------------------------------\n"
+    printf "\n\n[${grn}\xE2\x9C\x94${nc}] ${grn}Your new iOS archive is ready!${nc}\n\n"
+    ls -lah `pwd`/ios/build/outputs/archives/micdrp-$lowerCaseEnv-$nextBuild.xcarchive
+    printf "\n--------------------------------------------------------------\n"
+    printf "\n\n\n"
+  else
+    printf "${red}ERROR: Archive failed!${nc}\n"
+    exit 1;
+  fi
   return 0;
 }
 
@@ -363,6 +346,7 @@ function buildClient () {
       bumpIosVersion
       ;;
   esac
+  cd packages/client
   if [[ $device = 'all' ]]; then
     printf "Building iOS and Android client bundles...\n"
     sleep 1
@@ -377,7 +361,6 @@ function buildClient () {
     sleep 1
     buildAndroid
   fi
-  printf "\n-----------------------------------------\n\n"
   return 0;
 }
 
