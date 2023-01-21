@@ -1,6 +1,7 @@
 # OSX
 #
 .DS_Store
+**/*.keystore
 
 # Xcode
 #
@@ -32,7 +33,7 @@ local.properties
 *.hprof
 .cxx/
 *.keystore
-!debug.keystore
+# !debug.keystore <-- this is the react-native default?
 
 # node.js
 #

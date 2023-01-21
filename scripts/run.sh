@@ -4,12 +4,6 @@
 ### https://devhints.io/bash
 ###
 
-# Make sure the local development environment is configured
-export ANDROID_SDK_ROOT=$HOME/Library/Android/sdk
-export PATH=$PATH:$ANDROID_SDK_ROOT/emulator
-export PATH=$PATH:$ANDROID_SDK_ROOT/platform-tools
-export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home
-
 clientDir=packages/client
 env="dev"
 androidVersionCode=0
