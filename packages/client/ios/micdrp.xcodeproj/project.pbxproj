@@ -200,6 +200,7 @@
 		83CBB9F71A601CBA00E9B192 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				BuildIndependentTargetsInParallel = NO;
 				LastUpgradeCheck = 1210;
 				TargetAttributes = {
 					00E356ED1AD99517003FC87E = {
@@ -497,7 +498,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = J3RCPBZHWM;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = micdrp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = micdrp;
@@ -528,7 +529,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = J3RCPBZHWM;
 				INFOPLIST_FILE = micdrp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = micdrp;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";

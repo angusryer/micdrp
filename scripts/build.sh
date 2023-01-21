@@ -39,6 +39,10 @@ nextReleaseVariant=
 buildDigit=
 nextBuildDigit=
 
+finalIosArchivePath=
+finalAndroidBuildPath=
+deploy=0
+
 # 0: no change, 1: build number only, 2: version and build numbers
 versionChangeWillTakePlace=0
 
@@ -57,7 +61,7 @@ function help () {
 }
 
 function die () {
-  printf '%s\n' "$*" >&2
+  printf '%s\n' "$*" > /dev/null
   exit 1
 }
 
@@ -176,7 +180,8 @@ function bumpIosVersion () {
   # /usr/libexec/PlistBuddy -h  <-- ONLY MACOS
   # xcodebuild -target micdrp -configuration Release -showBuildSettings
 
-  pushd packages/client/ios
+  
+  pushd packages/client/ios > /dev/null
     local oldVersionName="$majorDigit.$minorDigit.$maintenanceDigit"
     local newVersionName="$nextMajorDigit.$nextMinorDigit.$nextMaintenanceDigit"
 
@@ -186,7 +191,7 @@ function bumpIosVersion () {
       /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $newVersionName" ./micdrpTests/Info.plist
       xcodebuild -scheme micdrp -target micdrp -configuration Release MARKETING_VERSION="$newVersionName"
       xcodebuild -scheme micdrp -target micdrpTests -configuration Release MARKETING_VERSION="$newVersionName"
-      agvtool new-marketing-version "$newVersionName" &>2 /dev/null
+      agvtool new-marketing-version "$newVersionName" > /dev/null
       printf "[\xE2\x9C\x94] Bumping iOS version from $oldVersionName to $newVersionName... ${grn}SUCCESS${nc}\n"
     fi
   
@@ -196,10 +201,11 @@ function bumpIosVersion () {
       /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $nextBuildDigit$nextReleaseVariant" ./micdrpTests/Info.plist
       xcodebuild -scheme micdrp -target micdrp -configuration Release CURRENT_PROJECT_VERSION="$nextBuildDigit$nextReleaseVariant"
       xcodebuild -scheme micdrp -target micdrpTests -configuration Release CURRENT_PROJECT_VERSION="$nextBuildDigit$nextReleaseVariant"
-      agvtool new-version -all "$nextBuildDigit$nextReleaseVariant" &>2 /dev/null
+      agvtool new-version -all "$nextBuildDigit$nextReleaseVariant" > /dev/null
       printf "[\xE2\x9C\x94] Bumping iOS build from $buildDigit$releaseVariant to $nextBuildDigit$nextReleaseVariant... ${grn}SUCCESS${nc}\n"
     fi
   popd
+  
   
   return 0;
 }
@@ -215,20 +221,22 @@ function bumpIosVersion () {
 ### jarsigner -keystore $pathToKeystore app-release.aab $keyAlias
 
 function buildAndroid () {
+  
   printf "[ ] Checking for and removing conflicting Android bundles...\r"
-  local lowerCaseEnv=$(echo "$env" | tr '[A-Z]' '[a-z]')
-
-  rm android/app/build/outputs/aab/micdrp-$lowerCaseEnv-$nextBuild.aab 2> /dev/null
+  [[ "$env" == 'dev' ]] && releaseVariant='d'
+  local newVersionName="$nextMajorDigit.$nextMinorDigit.$nextMaintenanceDigit"
+  local filePath="android/app/build/outputs/bundle/release/micdrp-$releaseVariant-$newVersionName-$nextBuildDigit.aab"
+  rm $filePath > /dev/null
   printf "[\xE2\x9C\x94] Checking for and removing conflicting Android bundles... ${grn}SUCCESS${nc}\n"
   # https://github.com/react-native-community/cli/blob/main/docs/commands.md#bundle
-  npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res/
+  npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res/ > /dev/null
 
   # Remove all drawable extension folder from packages/client/android/app/src/main/res
-  pushd android/app/src/main/res
+  pushd android/app/src/main/res > /dev/null
     rm -rf drawable-*
   popd
 
-  pushd android
+  pushd android > /dev/null
     ./gradlew bundleRelease
     if [ "$?" != "0" ]; then
       printf "${red}ERROR: Build failed!${nc}"
@@ -236,35 +244,40 @@ function buildAndroid () {
     fi
   popd
 
-  mv android/app/build/outputs/bundle/release/app-release.aab android/app/build/outputs/bundle/release/micdrp-$lowerCaseEnv-$nextBuild.aab
+  mv android/app/build/outputs/bundle/release/app-release.aab $filePath
+  
   printf "\n--------------------------------------------------------------\n"
   printf "\n\n[${grn}\xE2\x9C\x94${nc}] ${grn}Your new Android bundle is ready!${nc}\n\n"
-  ls -lah `pwd`/android/app/build/outputs/bundle/release/micdrp-$lowerCaseEnv-$nextBuild.aab
+  printf "`pwd`/$filePath\n\n"
+  ls -lhu `pwd`/$filePath
+  finalAndroidBuildPath="`pwd`/$filePath"
   printf "\n--------------------------------------------------------------\n"
   printf "\n\n\n"
   return 0;
 }
 
 function buildIos () {
-
-  pushd ios
+  
+  pushd ios > /dev/null
     printf "[ ] Checking for and removing conflicting iOS bundles...\r"
-    local lowerCaseEnv=$(echo "$env" | tr '[A-Z]' '[a-z]')
-    rm build/outputs/archives/micdrp-$lowerCaseEnv-$nextBuild.xcarchive 2> /dev/null
+    local newVersionName="$nextMajorDigit.$nextMinorDigit.$nextMaintenanceDigit"
+    [[ "$env" == 'dev' ]] && releaseVariant='d'
+    local filePath="build/outputs/archives/micdrp-$releaseVariant-$newVersionName-$nextBuildDigit.xcarchive"
+    rm -rdf $filePath > /dev/null
     printf "[\xE2\x9C\x94] Checking for and removing conflicting iOS bundles... ${grn}SUCCESS${nc}\n"
     # Clean
-    xcodebuild -workspace micdrp.xcworkspace -scheme micdrp clean
-    # Archive
-    # need to make sure correct device is selected
-    # xcodebuild archive -workspace micdrp.xcworkspace -scheme "micdrp" -destination 'generic/platform=iOS' -configuration Release -archivePath build/outputs/archives/micdrp.xcarchive
-    xcodebuild -workspace micdrp.xcworkspace -scheme micdrp -sdk iphoneos -configuration Release archive -archivePath build/outputs/archives/micdrp-$lowerCaseEnv-$nextBuild.xcarchive
+    xcodebuild -workspace micdrp.xcworkspace -scheme micdrp clean > /dev/null
+    # # Archive
+    xcodebuild -workspace micdrp.xcworkspace -scheme micdrp -sdk iphoneos -configuration Release archive -archivePath $filePath > /dev/null
   popd
 
-  local archivePath="`pwd`/ios/build/outputs/archives/micdrp-$lowerCaseEnv-$nextBuild.xcarchive"
-  if [ -f "$archivePath" ]; then
+  
+  if [[ -d "`pwd`/ios/$filePath" ]]; then # the filesystem treats .xcarchive like a directory, so use -d
     printf "\n--------------------------------------------------------------\n"
     printf "\n\n[${grn}\xE2\x9C\x94${nc}] ${grn}Your new iOS archive is ready!${nc}\n\n"
-    ls -lah `pwd`/ios/build/outputs/archives/micdrp-$lowerCaseEnv-$nextBuild.xcarchive
+    printf "`pwd`/ios/$filePath\n\n"
+    ls -lhu `pwd`/ios/$filePath/..
+    finalIosArchivePath="`pwd`/ios/$filePath"
     printf "\n--------------------------------------------------------------\n"
     printf "\n\n\n"
   else
@@ -299,6 +312,7 @@ function computeVersions () {
   # in all other cases, ++build number only
 
   if ([ "$env" = 'dev' ] || [ "$keepVersion" -eq 1 ]); then
+    nextBuildDigit=$buildDigit # Don't bump the build if it's dev or -k is specified
     return $versionChangeWillTakePlace;
   fi
 
@@ -346,28 +360,38 @@ function buildClient () {
       bumpIosVersion
       ;;
   esac
-  cd packages/client
+  cd packages/client > /dev/null
   if [[ $device = 'all' ]]; then
     printf "Building iOS and Android client bundles...\n"
-    sleep 1
     buildAndroid
     buildIos
+    # if -d was passed and the version or build numbers are changed, then deploy.
+    # finalIosArchivePath and finalAndroidBuildPath
+    if [ $deploy -eq 1 ]; then
+      if [[ $env != 'dev' ]] && [[ $keepVersion -eq 0 ]]; then
+        # 
+      fi
+    fi
   elif [[ $device = 'ios' ]]; then
     printf "Building iOS client bundle...\n"
-    sleep 1
     buildIos
+    # if -d was passed and the version or build numbers are changed, then deploy.
+    # finalIosArchivePath
   else
     printf "Building Android client bundle...\n"
-    sleep 1
     buildAndroid
+    # if -d was passed and the version or build numbers are changed, then deploy.
+    # finalAndroidBuildPath
   fi
   return 0;
 }
 
-printf "\n-----------------------------------------\n\n"
-
-while getopts ':kMme:h' option; do
+while getopts ':dkMme:h' option; do
   case $option in
+    d)
+      deploy=1
+    ;;
+
     k) # don't change any version numbers, including build number
       keepVersion=1
     ;;
