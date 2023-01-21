@@ -1,7 +1,7 @@
 node_modules
 packages/*/node_modules
 **/*DS_Store*/**
-debug.keystore
+**/*.keystore
 
 # Logs
 logs
@@ -163,3 +163,4 @@ local.properties
 .DS_Store
 clients/react-native/ios/Podfile.lock
 clients/react-native/**/*.env
+packages/client/android/app/debug.keystore
