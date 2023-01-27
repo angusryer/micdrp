@@ -11,6 +11,8 @@ interface IColors {
   lighter: string;
 }
 
+// add comment to test commit linking
+
 const colors: IColors = Colors as IColors;
 
 const App = () => {
