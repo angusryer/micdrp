@@ -76,11 +76,11 @@ while getopts ':e:h' option; do
 
           if [[ $device = 'all' ]]; then
             printf "Starting up ios and android clients..."
-            yarn workspace @micdrp/client android:prod &
-            yarn workspace @micdrp/client ios:prod &
+            yarn workspace @micdrp/client android &
+            yarn workspace @micdrp/client ios &
           else 
             printf "Starting up an $device client..."
-            yarn workspace @micdrp/client $device:prod &
+            yarn workspace @micdrp/client $device &
           fi
 
         ;;
@@ -93,11 +93,11 @@ while getopts ':e:h' option; do
 
           if [[ $device = 'all' ]]; then
             printf "Starting up ios and android clients..."
-            yarn workspace @micdrp/client android:staging &
-            yarn workspace @micdrp/client ios:staging &
+            yarn workspace @micdrp/client android &
+            yarn workspace @micdrp/client ios &
           else 
             printf "Starting up an $device client..."
-            yarn workspace @micdrp/client $device:staging &
+            yarn workspace @micdrp/client $device &
           fi
         
         ;;
@@ -118,11 +118,11 @@ while getopts ':e:h' option; do
 
           if [[ $device = 'all' ]]; then
             printf "Starting up ios and android clients..."
-            yarn workspace @micdrp/client android:dev &
-            yarn workspace @micdrp/client ios:dev &
+            yarn workspace @micdrp/client android &
+            yarn workspace @micdrp/client ios &
           else 
             printf "Starting up an $device client..."
-            yarn workspace @micdrp/client $device:dev &
+            yarn workspace @micdrp/client $device &
           fi
         
         ;;

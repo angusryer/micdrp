@@ -5,10 +5,10 @@
   "scripts": {
     "android:prod": "react-native run-android --mode=release",
     "android:staging": "react-native run-android --mode=debug",
-    "android:dev": "react-native run-android",
-    "ios:prod": "react-native run-ios --scheme=micdrp_release",
-    "ios:staging": "react-native run-ios --scheme=micdrp_staging",
-    "ios:dev": "react-native run-ios",
+    "android": "react-native run-android",
+    "ios:prod": "react-native run-ios --scheme=micdrp --configuration=Release",
+    "ios:staging": "react-native run-ios --scheme=micdrp --configuration=Release",
+    "ios": "react-native run-ios",
     "start": "react-native start --port=9000",
     "test": "jest",
     "lint": "eslint . --ext .js, .jsx,.ts,.tsx"

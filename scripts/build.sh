@@ -1,8 +1,14 @@
 #!/bin/bash
 
 # TODOs remaining
-# increment version numbers for iOS
-# run iOS build and output file
+# deploy to apple store via command switch
+# deploy to google play via command switch
+
+# keep ios version numbers in sync in xcode
+# https://www.theswift.dev/posts/easily-keep-build-numbers-and-marketing-versions-in-sync
+# and then remove the edits to the plist files below
+# to avoid needing plistbuddy on macos. But then
+# you can only build on macos, so... 
 
 # Make sure the local development environment is configured
 export ANDROID_SDK_ROOT=$HOME/Library/Android/sdk
