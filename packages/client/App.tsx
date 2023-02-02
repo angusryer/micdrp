@@ -1,5 +1,6 @@
 import React from 'react';
 import { SafeAreaView, StatusBar, Text, useColorScheme } from 'react-native';
+import Config from 'react-native-config';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 
 interface IColors {
@@ -10,8 +11,6 @@ interface IColors {
   darker: string;
   lighter: string;
 }
-
-// add comment to test commit linking
 
 const colors: IColors = Colors as IColors;
 
@@ -28,7 +27,7 @@ const App = () => {
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={backgroundStyle.backgroundColor}
       />
-      <Text>Test</Text>
+      <Text>Environment: {JSON.stringify(Config)}</Text>
     </SafeAreaView>
   );
 };

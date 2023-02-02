@@ -1,12 +1,12 @@
 {
-  "name": "@micdrp/models",
+  "name": "models",
   "version": "1.0.0",
   "license": "ISC",
   "scripts": {
     "test": "jest"
   },
   "dependencies": {
-    "@micdrp/shared": "1.0.0",
+    "shared": "1.0.0",
     "cross-env": "^7.0.3"
   },
   "devDependencies": {

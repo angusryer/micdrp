@@ -34,7 +34,7 @@ metroPid=
 function startMetro () {
   local pid=$(lsof -ti :$metroPort)
   [[ -n $pid ]] && kill -9 $pid
-  yarn workspace @micdrp/client start &
+  yarn workspace client start &
   printf "\n\nMetro is running on PID $! and on port $metroPort\n\n"
   exit 0;
 }
@@ -69,35 +69,35 @@ while getopts ':e:h' option; do
       case $env in
         prod)
           printf "[\xE2\x9C\x94] Using Production environment variables\n"
-          export ENVFILE=.production.env
+          export ENVFILE=.env.production
 
           printf "Starting Metro...\n"
           startMetro &
 
           if [[ $device = 'all' ]]; then
             printf "Starting up ios and android clients..."
-            yarn workspace @micdrp/client android &
-            yarn workspace @micdrp/client ios &
+            yarn workspace client android &
+            yarn workspace client ios &
           else 
             printf "Starting up an $device client..."
-            yarn workspace @micdrp/client $device &
+            yarn workspace client $device &
           fi
 
         ;;
         staging)
           printf "[\xE2\x9C\x94] Using Staging environment variables\n"
-          export ENVFILE=.staging.env
+          export ENVFILE=.env.staging
 
           printf "Starting Metro...\n"
           startMetro &
 
           if [[ $device = 'all' ]]; then
             printf "Starting up ios and android clients..."
-            yarn workspace @micdrp/client android &
-            yarn workspace @micdrp/client ios &
+            yarn workspace client android &
+            yarn workspace client ios &
           else 
             printf "Starting up an $device client..."
-            yarn workspace @micdrp/client $device &
+            yarn workspace client $device &
           fi
         
         ;;
@@ -108,21 +108,21 @@ while getopts ':e:h' option; do
           fi
 
           printf "[\xE2\x9C\x94] Using Development environment variables\n"
-          export ENVFILE=.development.env
+          export ENVFILE=.env
 
           printf "Starting up backend services..."
-          yarn workspace @micdrp/server start &
+          yarn workspace server start &
 
           printf "Starting Metro...\n"
           startMetro &
 
           if [[ $device = 'all' ]]; then
             printf "Starting up ios and android clients..."
-            yarn workspace @micdrp/client android &
-            yarn workspace @micdrp/client ios &
+            yarn workspace client android &
+            yarn workspace client ios &
           else 
             printf "Starting up an $device client..."
-            yarn workspace @micdrp/client $device &
+            yarn workspace client $device &
           fi
         
         ;;
