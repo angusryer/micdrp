@@ -87,6 +87,7 @@ module.exports = {
     'linebreak-style': ['error', 'unix'],
     quotes: ['error', 'single'],
     semi: ['error', 'always'],
-    'no-var': ['error']
+    'no-var': ['error'],
+    'promise/catch-or-return': { allowFinally: true }
   }
 };
