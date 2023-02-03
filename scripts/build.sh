@@ -92,15 +92,22 @@ done
 if [[ -z $device ]]; then
   help
 fi
+if [[ -z $device ]]; then
+  help
+fi
 
 # This is the internal build number, integer only
+# This is the internal build number, integer only
 function getAndroidVersionCode () {
+  local androidVersionCode="$(grep -oE '^.?\s*versionCode [0-9]+' $gradlePath)"
   local androidVersionCode="$(grep -oE '^.?\s*versionCode [0-9]+' $gradlePath)"
   echo $androidVersionCode;
 }
 
 # This is the user-visible version string '^.\s*versionName \"[0-9]\.[0-9]?.?[0-9]?.\"'
+# This is the user-visible version string '^.\s*versionName \"[0-9]\.[0-9]?.?[0-9]?.\"'
 function getAndroidVersionName () {
+  local androidVersionName="$(grep -oE '^.?\s*versionName \"[0-9]\.[0-9]?.?[0-9]?.\"' $gradlePath)"
   local androidVersionName="$(grep -oE '^.?\s*versionName \"[0-9]\.[0-9]?.?[0-9]?.\"' $gradlePath)"
   echo $androidVersionName;
 }
