@@ -23,6 +23,7 @@ grn='\033[0;32m'
 clientDir=packages/client
 gradlePath=packages/client/android/app/build.gradle
 env="dev"
+deploy=0
 androidVersionCode=0
 androidVersionName=""
 nextBuild=0
@@ -227,7 +228,6 @@ function bumpIosVersion () {
 ### jarsigner -keystore $pathToKeystore app-release.aab $keyAlias
 
 function buildAndroid () {
-  
   printf "[ ] Checking for and removing conflicting Android bundles...\r"
   [[ "$env" == 'dev' ]] && releaseVariant='d'
   local newVersionName="$nextMajorDigit.$nextMinorDigit.$nextMaintenanceDigit"
@@ -259,11 +259,21 @@ function buildAndroid () {
   finalAndroidBuildPath="`pwd`/$filePath"
   printf "\n--------------------------------------------------------------\n"
   printf "\n\n\n"
+
+  if [ "$deploy" -gt 0 ] then;
+    deployAndroid
+  fi
+
   return 0;
 }
 
+function deployAndroid () {
+  # https://medium.com/android-news/google-playstore-and-automated-deployment-beeef278d345
+  # https://medium.com/swlh/google-playstore-and-automated-deployment-with-aab-a35eddabf128
+  printf "Deploying Android to Google Play\n"
+}
+
 function buildIos () {
-  
   pushd ios > /dev/null
     printf "[ ] Checking for and removing conflicting iOS bundles...\r"
     local newVersionName="$nextMajorDigit.$nextMinorDigit.$nextMaintenanceDigit"
@@ -276,7 +286,6 @@ function buildIos () {
     # # Archive
     xcodebuild -workspace micdrp.xcworkspace -scheme micdrp -sdk iphoneos -configuration Release archive -archivePath $filePath > /dev/null
   popd
-
   
   if [[ -d "`pwd`/ios/$filePath" ]]; then # the filesystem treats .xcarchive like a directory, so use -d
     printf "\n--------------------------------------------------------------\n"
@@ -290,6 +299,32 @@ function buildIos () {
     printf "${red}ERROR: Archive failed!${nc}\n"
     exit 1;
   fi
+
+  if [ "$deploy" -gt 0 ]; then
+    deployIos
+  fi
+
+  return 0;
+}
+
+function deployIos () {
+  printf "Deploying iOS to App Store Connect\n"
+   # Upload to app store
+  # https://help.apple.com/app-store-connect/#/devb1c185036
+  # https://stackoverflow.com/questions/2664885/xcode-build-and-archive-from-command-line
+
+  # Check for an archive that matches the latest version
+
+  pushd packages/client/ios
+    # Export
+    # xcodebuild -exportArchive -archivePath build/outputs/archives/micdrp.xcarchive -exportPath build/outputs/exports/micdrp.ipa -exportOptionsPlist micdrp/exportOptions.plist
+    
+    # WE MAY NEED THIS FOR DEPLOYMENT:
+    # Validate
+    # xcrun altool --validate-app -f file -t platform -u username [-p password] [--output-format xml]
+    # Upload archive
+    # xcrun altool --upload-package -f file -t platform -u username [-p password] [—output-format xml]
+  popd
   return 0;
 }
 
