@@ -1,5 +1,5 @@
 {
-  "name": "@micdrp/server",
+  "name": "server",
   "version": "1.0.0",
   "license": "ISC",
   "scripts": {
@@ -7,8 +7,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@micdrp/logic": "1.0.0",
-    "@micdrp/shared": "1.0.0",
+    "logic": "1.0.0",
+    "shared": "1.0.0",
     "cross-env": "^7.0.3"
   },
   "devDependencies": {

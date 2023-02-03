@@ -1,13 +1,13 @@
 {
-  "name": "@micdrp/logic",
+  "name": "logic",
   "version": "1.0.0",
   "license": "ISC",
   "scripts": {
     "test": "jest"
   },
   "dependencies": {
-    "@micdrp/models": "1.0.0",
-    "@micdrp/shared": "1.0.0",
+    "models": "1.0.0",
+    "shared": "1.0.0",
     "cross-env": "^7.0.3"
   },
   "devDependencies": {

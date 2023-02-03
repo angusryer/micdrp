@@ -4,20 +4,14 @@
   "workspaces": {
     "packages": [
       "packages/*"
-    ],
-    "nohoist": [
-      "**/react-native",
-      "**/react-native/**",
-      "**/react",
-      "**/react/**"
     ]
   },
   "scripts": {
-    "lint": "yarn workspaces run lint",
+    "lint": "npm run lint --workspaces",
     "test": "./scripts/test.sh",
     "build": "./scripts/build.sh",
     "server": "./scripts/server.sh",
-    "client": "./scripts/client.sh",
+    "client": "./scripts/run.sh",
     "submit": "./scripts/submit.sh"
   },
   "devDependencies": {

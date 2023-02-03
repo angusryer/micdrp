@@ -1,25 +1,31 @@
 {
-  "name": "@micdrp/client",
+  "name": "client",
   "version": "1.0.0",
   "private": true,
+  "workspaces": {
+    "nohoist": [
+      "**"
+    ]
+  },
   "scripts": {
     "android:prod": "react-native run-android --mode=release",
     "android:staging": "react-native run-android --mode=debug",
-    "android:dev": "react-native run-android",
-    "ios:prod": "react-native run-ios --scheme=micdrp_release",
-    "ios:staging": "react-native run-ios --scheme=micdrp_staging",
-    "ios:dev": "react-native run-ios",
+    "android": "react-native run-android",
+    "ios:prod": "react-native run-ios --scheme=micdrp --configuration=Release",
+    "ios:staging": "react-native run-ios --scheme=micdrp --configuration=Release",
+    "ios": "react-native run-ios",
     "start": "react-native start --port=9000",
     "test": "jest",
     "lint": "eslint . --ext .js, .jsx,.ts,.tsx"
   },
   "dependencies": {
-    "@micdrp/shared": "1.0.0",
+    "shared": "1.0.0",
     "axios": "^1.2.2",
     "cross-env": "^7.0.3",
     "lodash": "^4.17.21",
     "react": "18.1.0",
-    "react-native": "0.70.6"
+    "react-native": "0.70.6",
+    "react-native-config": "^1.5.0"
   },
   "devDependencies": {
     "@babel/preset-react": "^7.18.6",
@@ -29,6 +35,7 @@
     "@types/react-native": "^0.70.6",
     "@types/react-test-renderer": "^18.0.0",
     "metro-react-native-babel-preset": "0.72.3",
+    "react-native-codegen": "^0.71.3",
     "react-test-renderer": "18.1.0"
   }
 }
