@@ -161,6 +161,7 @@ local.properties
 
 # Local files
 .DS_Store
-clients/react-native/ios/Podfile.lock
 clients/react-native/**/*.env
 packages/client/android/app/debug.keystore
+.gitsecret/keys/random_seed
+!*.secret

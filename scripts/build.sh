@@ -1,227 +1,257 @@
 #!/bin/bash
 
-# TODOs remaining
-# deploy to apple store via command switch
-# deploy to google play via command switch
+# IOS
+# https://developer.apple.com/library/archive/qa/qa1827/_index.html
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# /usr/libexec/PlistBuddy -h  <-- ONLY MACOS
+# xcodebuild -target micdrp -configuration Release -showBuildSettings
 
-# keep ios version numbers in sync in xcode
-# https://www.theswift.dev/posts/easily-keep-build-numbers-and-marketing-versions-in-sync
-# and then remove the edits to the plist files below
-# to avoid needing plistbuddy on macos. But then
-# you can only build on macos, so... 
+# Android
+# https://developer.android.com/studio/publish/versioning
+# versionCode - INTERNAL version number, positive integer only (keep it to the maintenance version number)
+# versionName - user-visible, string (keep it like iOS, i.e.: 1.0.1s or 1.0.1)
+# You can set default values for different build variants (staging, release)
+# https://developer.android.com/studio/publish/versioning#versionvalues
+# May be able to set up schemes in Android Studio, then specify them on
+# the command line
+### We will need a keystore and to sign the bundle for RELEASE
+### https://medium.com/androiddevelopers/building-your-first-app-bundle-bbcd228bf631
+### Run ONCE for every computer that will build and upload bundles to Play Store:
+### debug: keytool -genkey -v -keystore /Users/angusryer/dv/micdrp/packages/client/android/app/debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+### release: keytool -genkey -v -keystore /Users/angusryer/dv/micdrp/packages/client/android/app/micdrp.keystore -alias androidReleasekey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Release,O=Android,C=US"
+### 
+### Run this as part of this script to sign the bundle: ???????
+### jarsigner -keystore $pathToKeystore app-release.aab $keyAlias
 
-# Make sure the local development environment is configured
+#########################################
+#                                       #
+#   Function and variable definitions   #
+#                                       #
+#########################################
+
 export ANDROID_SDK_ROOT=$HOME/Library/Android/sdk
 export PATH=$PATH:$ANDROID_SDK_ROOT/emulator
 export PATH=$PATH:$ANDROID_SDK_ROOT/platform-tools
 export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home
 
 red='\033[0;31m'
-nc='\033[0m' # No Color
 grn='\033[0;32m'
+yel='\033[0;93m'
+blu='\033[0;94m'
+nc='\033[0m' # No Color
 
-clientDir=packages/client
-gradlePath=packages/client/android/app/build.gradle
-env="dev"
-deploy=0
-androidVersionCode=0
-androidVersionName=""
-nextBuild=0
-iosVersionNumber=0
-metroPort=9000
+# 0: no change, 1: build number only, 2: version and build numbers
+shouldUploadBinaries=0
+
+clientDir="packages/client"
+env='development';
+
+isStaging=0
+isProduction=0
+buildAndroid=0
+buildIos=0
+checkOnly=0
+
+androidRelease=0
+iOSRelease=0
 
 keepVersion=0
-bumpMinor=0
-bumpMajor=0
-bumpMaintenance=0
+shouldBumpMinor=0
+shouldBumpMajor=0
+shouldBumpPatch=0
 
 majorDigit=
 nextMajorDigit=
+
 minorDigit=
 nextMinorDigit=
-maintenanceDigit=
-nextMaintenanceDigit=
-releaseVariant=
+
+patchDigit=
+nextPatchDigit=
+
+lastReleaseVariant=
 nextReleaseVariant=
-buildDigit=
-nextBuildDigit=
 
-finalIosArchivePath=
-finalAndroidBuildPath=
-deploy=0
+buildNumber=
+nextBuildNumber=
 
-# 0: no change, 1: build number only, 2: version and build numbers
-versionChangeWillTakePlace=0
-
-if [ ! -d "$clientDir" ]; then
-  printf "Please run from the root 'micdrp' folder...\n"
-  exit 0;
-fi
+releasesCsv="./releases.csv"
+iosArchivePath=
+androidFilePath=
 
 function help () {
-  printf "\n build.sh -e <OPTION> <DEVICE>\n\n"
-  printf "Example for building an Android bundle with Production environment values:"
-  printf "\n\n./build.sh -e prod android\n\n"
-  printf "    OPTION: -e [dev|staging|prod]\n"
-  printf "    DEVICE: [ios|android|all]\n"
+  printf "\n"
+  printf "** If you do not specify an environment (ie. you are using the dev environment) or you provide the -k option,\n"
+  printf "** no version or build numbers will be changed. If you specify staging while the previous variant is also staging,\n"
+  printf "** only the build number will be incremented. In all other cases, the build number and the patch number will be incremented.\n"
+  printf "** If you provide one of the M or m flags (M will take priority), then the Major or minor numbers will be bumped,\n"
+  printf "** which will reset the lesser digits to zero.\n"
+  printf "\n\n"
+  printf "Usage: ./build.sh -ps -ai [-kMm] -c\n"
+  printf "Example: create an upload-ready production Android build, bumping the minor version number: ./build.sh -apm\n"
+  printf "  -a  Create an upload-ready Android AAB\n"
+  printf "  -i  Create an upload-ready iOS archive\n"
+  printf "  -p  Point to production (use .env.production)\n"
+  printf "  -s  Point to staging (use .env.staging)\n"
+  printf "  -c  Print the current version and resultant version given arguments given\n"
+  printf "  -k  Keep/don't modify the version\n"
+  printf "  -M  Bump the Major version number digit\n"
+  printf "  -m  Bump the minor version number digit\n"
+  printf "  -h  This help screen\n"
+  printf "\n\n"
+  printf "Example to check the next version number given that the latest version is production 1.0.0 (1), and you\n"
+  printf "want to build a staging binary. Note that you must _end_ the command flags with 'c' for this to work.\n"
+  printf "\n\n"
+  printf "./build.sh -sc\n"
+  printf "\n\n"
+  printf "Output:\n"
+  printf "  > Latest version: 1.0.0 (1), production, Date: 2022-01-10 @10:43:23\n"
+  printf "  > Next version: 1.0.0 (2), staging\n\n"
   exit 0;
 }
 
 function die () {
-  printf '%s\n' "$*" > /dev/null
-  exit 1
-}
-
-if [ $# -gt 3 ]; then
-  help
+  printf "\n${red}ERROR:${nc} %s\n\n" "$*"
   exit 1;
-fi
-
-if [ $# -le 2 ]; then
-  help
-  exit 1;
-fi
-
-device=
-for var in "$@"; do
-  [[ $var = 'ios' ]] && device="ios"
-  [[ $var = 'android' ]] && device="android"
-  [[ $var = 'all' ]] && device="all"
-done
-
-if [[ -z $device ]]; then
-  help
-fi
-if [[ -z $device ]]; then
-  help
-fi
-
-# This is the internal build number, integer only
-# This is the internal build number, integer only
-function getAndroidVersionCode () {
-  local androidVersionCode="$(grep -oE '^.?\s*versionCode [0-9]+' $gradlePath)"
-  local androidVersionCode="$(grep -oE '^.?\s*versionCode [0-9]+' $gradlePath)"
-  echo $androidVersionCode;
 }
 
-# This is the user-visible version string '^.\s*versionName \"[0-9]\.[0-9]?.?[0-9]?.\"'
-# This is the user-visible version string '^.\s*versionName \"[0-9]\.[0-9]?.?[0-9]?.\"'
-function getAndroidVersionName () {
-  local androidVersionName="$(grep -oE '^.?\s*versionName \"[0-9]\.[0-9]?.?[0-9]?.\"' $gradlePath)"
-  local androidVersionName="$(grep -oE '^.?\s*versionName \"[0-9]\.[0-9]?.?[0-9]?.\"' $gradlePath)"
-  echo $androidVersionName;
+function checkEnvironment() {
+  if [ "$isProduction" -eq 1 ] && [ "$isStaging" -eq 1 ]; then die "Cannot specify both -p and -s"; fi
+  if [ "$isProduction" -eq 0 ] && [ "$isStaging" -eq 0 ]; then die "Must specify one of -p or -s"; fi
+  if [ "$runAndroid" -eq 0 ] && [ "$runIos" -eq 0 ]; then die "Must specify one or both of -a or -i"; fi
 }
 
-function getMajorVersion () {
-  local androidVersionName=$(getAndroidVersionName)
-  local trailingChars=$(echo $androidVersionName | sed -E 's/^.?\s*versionName \"//')
-  local majorDigit=$(echo $trailingChars | cut -c-1)
-  echo $majorDigit;
+function loadVersionFromCsv() {
+  if [ ! -f "$releasesCsv" ]; then
+    # The file does not exist, so create it with headers
+    echo "Version,Build,Variant,AndroidRelease,iOSRelease,OtaAndroid,OtaIos,Date,Time" > "$releasesCsv"
+  fi
+  local latestRow=$(awk -F ',' -v env="$env" '$3 == env {latest=$0}END{print latest}' "$releasesCsv")
+  oldVersion=$(echo "$latestRow" | awk -F',' '{print $1}')
+  IFS='.' read -r majorDigit minorDigit patchDigit <<< "$oldVersion"
+  buildNumber=$(echo "$latestRow" | awk -F',' '{print $2}')
+  lastReleaseVariant=$(echo "$latestRow" | awk -F',' '{print $3}')
+  androidRelease=$(echo "$latestRow" | awk -F',' '{print $4}')
+  iOSRelease=$(echo "$latestRow" | awk -F',' '{print $5}')
+  dateStamp=$(echo "$latestRow" | awk -F',' '{print $8}')
+  timeStamp=$(echo "$latestRow" | awk -F',' '{print $9}')
 }
 
-function getMinorVersion () {
-  local androidVersionName=$(getAndroidVersionName)
-  local trailingChars=$(echo $androidVersionName | sed -E 's/^.?\s*versionName \"[0-9]\.//')
-  local minorDigit=$(echo $trailingChars | cut -c-1)
-  echo $minorDigit;
-}
+function bumpVersionNumbers() {
+  # Bump the patch number by default
+  nextPatchDigit=$((patchDigit+1))
 
-function getMaintenanceVersion () {
-  local androidVersionName=$(getAndroidVersionName)
-  local trailingChars=$(echo $androidVersionName | sed -E 's/^.?\s*versionName \"[0-9]\.[0-9]\.//')
-  local maintenanceDigit=$(echo $trailingChars | cut -c-1)
-  echo $maintenanceDigit;
-}
+  # Bump minor or major numbers if m or M flags are passed, M being considered priority
+  if [ $shouldBumpMinor -eq 1 ]; then
+    nextMinorDigit=$((minorDigit+1))
+    nextPatchDigit=0
+  fi
 
-function getCurrentBuildVersion () {\
-  local androidVersionCode=$(getAndroidVersionCode)
-  echo $androidVersionCode | tr -dc '0-9'
-}
-
-function getReleaseVariant () {
-  local androidVersionName=$(getAndroidVersionName)
-  local isStaging=$(echo "${androidVersionName: -2:1}" | tr -cd [a-z])
-  if [[ $isStaging = 's' ]]; then
-    echo 's'
-  else
-    echo ''
+  if [ $shouldBumpMajor -eq 1 ]; then
+    nextMajorDigit=$((majorDigit+1))
+    nextMinorDigit=0
+    nextPatchDigit=0
   fi
 }
 
-function bumpAndroidVersion () {
+function computeNextVersion () {
+  ## Only allow Major, minor and patch version number changes
+  ## when moving from production to the next staging build.
+  ## In all cases (except for when we are building a 'dev' binary
+  ## or the -k flag is passed) we will increment the build number.
+  
+  # Set up a default starting point for each number
+  nextBuildNumber=$((buildNumber+1))
+  nextMajorDigit=$majorDigit
+  nextMinorDigit=$minorDigit
+  nextPatchDigit=$patchDigit
 
-  # https://developer.android.com/studio/publish/versioning
-  # versionCode - INTERNAL version number, positive integer only (keep it to the maintenance version number)
-  # versionName - user-visible, string (keep it like iOS, i.e.: 1.0.1s or 1.0.1)
+  [[ "$env" = 'development' ]] && nextReleaseVariant='development';
+  [[ "$env" = 'staging' ]] && nextReleaseVariant='staging';
+  [[ "$env" = 'production' ]] && nextReleaseVariant='production';
 
-  # You can set default values for different build variants (staging, release)
-  # https://developer.android.com/studio/publish/versioning#versionvalues
-  # May be able to set up schemes in Android Studio, then specify them on
-  # the command line
+  if ([[ "$env" = 'dev' ]] || [ "$keepVersion" -eq 1 ]); then
+    nextBuildNumber=$buildNumber # Don't bump the build if it's dev or -k is specified
+    return 0;
+  fi
 
-  if [[ $versionChangeWillTakePlace -gt 1 ]]; then
-    local oldVersionName="$majorDigit.$minorDigit.$maintenanceDigit$releaseVariant"
-    local newVersionName="$nextMajorDigit.$nextMinorDigit.$nextMaintenanceDigit$nextReleaseVariant"
+  # If we're moving from production to production, we must warn the user since this is not usually intended.
+  if [[ "$lastReleaseVariant" = 'production' ]] && [[ "$nextReleaseVariant" = 'production' ]]; then
 
-    printf "[ ] Bumping Android version from $oldVersionName to $newVersionName\r"
-    androidVersionName=$(getAndroidVersionName)
-    sed -i "" "s/$androidVersionName/versionName \"$newVersionName\"/g" $gradlePath
+    printf "\nYou have not produced any staging binaries since the last production binary.\n"
 
-    # Ensure that the version has actually been updated
-    local updatedAndroidVersionName=$(grep -oE "versionName \"$newVersionName\"" $gradlePath)
-    if [ "$updatedAndroidVersionName" == "" ]; then
-        printf "[x] Moving Android version from $oldVersionName to $newVersionName... ${red}FAILED${nc}\n"
-        printf "Error verifying $gradlePath... UNMODIFIED\n"
-        exit 3;
+    if [ "$checkOnly" -ne 1 ]; then
+      printf "Are you sure you want to increment the patch version and produce two production binaries in a row?\n\n"
+      read -rsn1 -p 'Continue? (y/n) (default is no): ' shouldContinue
+      case $shouldContinue in
+        y|Y)
+          printf "\nContinuing...\n"
+          bumpVersionNumbers
+          ;;
+        n|N|"") printf "${yel}Aborting${nc}\n"; exit 0;;
+      esac
     else
-      printf "[\xE2\x9C\x94] Bumping Android version from $oldVersionName to $newVersionName... ${grn}SUCCESS${nc}\n"
+      bumpVersionNumbers
     fi
   fi
 
-  if [[ $versionChangeWillTakePlace -gt 0 ]]; then
-    printf "[ ] Bumping Android build from $buildDigit to $nextBuildDigit\r"
-    sed -i "" "s/versionCode $buildDigit/versionCode $nextBuildDigit/g" $gradlePath
-    printf "[\xE2\x9C\x94] Bumping Android build from $buildDigit to $nextBuildDigit... ${grn}SUCCESS${nc}\n"
+  # Going from production to staging OR production to production
+  if ([[ "$lastReleaseVariant" = 'production' ]] && [[ "$nextReleaseVariant" = 'staging' ]]); then
+    bumpVersionNumbers
   fi
-  
+
   return 0;
 }
 
-function bumpIosVersion () {
-  # https://developer.apple.com/library/archive/qa/qa1827/_index.html
-  # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+function getNextVersionString() {
+  echo "$nextMajorDigit.$nextMinorDigit.$nextPatchDigit"
+}
 
-  # /usr/libexec/PlistBuddy -h  <-- ONLY MACOS
-  # xcodebuild -target micdrp -configuration Release -showBuildSettings
+function getCurrentVersionString() {
+  echo "$majorDigit.$minorDigit.$patchDigit"
+}
 
-  
-  pushd packages/client/ios > /dev/null
-    local oldVersionName="$majorDigit.$minorDigit.$maintenanceDigit"
-    local newVersionName="$nextMajorDigit.$nextMinorDigit.$nextMaintenanceDigit"
+# Stores the version, build and variant information to our CSV file
+function saveVersionToFile() {
+  assembledVersionNumber=$(getNextVersionString)
+  echo "$assembledVersionNumber,$nextBuildNumber,$nextReleaseVariant,$androidRelease,$iOSRelease,,,$(date +%Y-%m-%d),$(date +%H:%M:%S)" >> "$releasesCsv"
+}
 
-    if [[ $versionChangeWillTakePlace -gt 1 ]]; then
-      printf "[ ] Bumping iOS version from $oldVersionName to $newVersionName...\r"
-      /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $newVersionName" ./micdrp/Info.plist
-      /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $newVersionName" ./micdrpTests/Info.plist
-      xcodebuild -scheme micdrp -target micdrp -configuration Release MARKETING_VERSION="$newVersionName"
-      xcodebuild -scheme micdrp -target micdrpTests -configuration Release MARKETING_VERSION="$newVersionName"
-      agvtool new-marketing-version "$newVersionName" > /dev/null
-      printf "[\xE2\x9C\x94] Bumping iOS version from $oldVersionName to $newVersionName... ${grn}SUCCESS${nc}\n"
-    fi
-  
-    if [[ $versionChangeWillTakePlace -gt 0 ]]; then
-      printf "[ ] Bumping iOS build from $buildDigit$releaseVariant to $nextBuildDigit$nextReleaseVariant...\r"
-      /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $nextBuildDigit$nextReleaseVariant" ./micdrp/Info.plist
-      /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $nextBuildDigit$nextReleaseVariant" ./micdrpTests/Info.plist
-      xcodebuild -scheme micdrp -target micdrp -configuration Release CURRENT_PROJECT_VERSION="$nextBuildDigit$nextReleaseVariant"
-      xcodebuild -scheme micdrp -target micdrpTests -configuration Release CURRENT_PROJECT_VERSION="$nextBuildDigit$nextReleaseVariant"
-      agvtool new-version -all "$nextBuildDigit$nextReleaseVariant" > /dev/null
-      printf "[\xE2\x9C\x94] Bumping iOS build from $buildDigit$releaseVariant to $nextBuildDigit$nextReleaseVariant... ${grn}SUCCESS${nc}\n"
-    fi
-  popd
-  
-  
+# Keeps all the .env files aligned with the same version and build numbers
+function updateEnvFiles() {
+  local nextVersionNumber=$(getNextVersionString)
+
+  local vLineNum="$(grep -m 1 -n "VERSION_NUMBER" .env.development | cut -d: -f1)"
+  sed -i '' "${vLineNum}s/VERSION_NUMBER=.*/VERSION_NUMBER=${nextVersionNumber}/g" .env.development
+  local bLineNum="$(grep -m 1 -n "BUILD_NUMBER" .env.development | cut -d: -f1)"
+  sed -i '' "${bLineNum}s/BUILD_NUMBER=.*/BUILD_NUMBER=${nextBuildNumber}/g" .env.development
+
+  local vLineNum="$(grep -m 1 -n "VERSION_NUMBER" .env.staging | cut -d: -f1)"
+  sed -i '' "${vLineNum}s/VERSION_NUMBER=.*/VERSION_NUMBER=${nextVersionNumber}/g" .env.staging
+  local bLineNum="$(grep -m 1 -n "BUILD_NUMBER" .env.staging | cut -d: -f1)"
+  sed -i '' "${bLineNum}s/BUILD_NUMBER=.*/BUILD_NUMBER=${nextBuildNumber}/g" .env.staging
+
+  local vLineNum="$(grep -m 1 -n "VERSION_NUMBER" .env.production | cut -d: -f1)"
+  sed -i '' "${vLineNum}s/VERSION_NUMBER=.*/VERSION_NUMBER=${nextVersionNumber}/g" .env.production
+  local bLineNum="$(grep -m 1 -n "BUILD_NUMBER" .env.production | cut -d: -f1)"
+  sed -i '' "${bLineNum}s/BUILD_NUMBER=.*/BUILD_NUMBER=${nextBuildNumber}/g" .env.production
+
+  [ "$?" -ne 0 ] && return 1;
   return 0;
+}
+
+function displayCurrentVersion() {
+  local vers=$(getCurrentVersionString)
+  printf "Latest version: $vers ($buildNumber), $lastReleaseVariant, Date: $dateStamp @$timeStamp\n"
+}
+
+function displayNextVersion() {
+  local vers=$(getNextVersionString)
+  if [ "$1" = "true" ]; then
+    printf "$vers ($nextBuildNumber), $nextReleaseVariant\n"
+  else
+    printf "Next version: $vers ($nextBuildNumber), $nextReleaseVariant\n"
+  fi
 }
 
 ###
@@ -233,265 +263,171 @@ function bumpIosVersion () {
 ### 
 ### Run this as part of this script to sign the bundle: ???????
 ### jarsigner -keystore $pathToKeystore app-release.aab $keyAlias
+function buildAndroidBinary() {
+  printf "Building Android AAB...\n"
+  eval "$cleanCommand,android"
+  androidFilePath="app/build/outputs/bundle/release/$finalFileName.aab"
+  rm android/$androidFilePath > /dev/null
 
-function buildAndroid () {
-  printf "[ ] Checking for and removing conflicting Android bundles...\r"
-  [[ "$env" == 'dev' ]] && releaseVariant='d'
-  local newVersionName="$nextMajorDigit.$nextMinorDigit.$nextMaintenanceDigit"
-  local filePath="android/app/build/outputs/bundle/release/micdrp-$releaseVariant-$newVersionName-$nextBuildDigit.aab"
-  rm $filePath > /dev/null
-  printf "[\xE2\x9C\x94] Checking for and removing conflicting Android bundles... ${grn}SUCCESS${nc}\n"
-  # https://github.com/react-native-community/cli/blob/main/docs/commands.md#bundle
-  npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res/ > /dev/null
+  if [[ "$env" = 'development' ]]; then
+    npx react-native bundle --platform android --dev true --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res
+  else 
+    npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res
+  fi
 
-  # Remove all drawable extension folder from packages/client/android/app/src/main/res
+  [ $? -ne 0 ] && return 1;
+  
   pushd android/app/src/main/res > /dev/null
     rm -rf drawable-*
-  popd
+  popd > /dev/null
 
   pushd android > /dev/null
     ./gradlew bundleRelease
-    if [ "$?" != "0" ]; then
-      printf "${red}ERROR: Build failed!${nc}"
-      exit 1;
-    fi
-  popd
+    [ $? -ne 0 ] && return 1;
+  popd > /dev/null
 
-  mv android/app/build/outputs/bundle/release/app-release.aab $filePath
-  
-  printf "\n--------------------------------------------------------------\n"
-  printf "\n\n[${grn}\xE2\x9C\x94${nc}] ${grn}Your new Android bundle is ready!${nc}\n\n"
-  printf "`pwd`/$filePath\n\n"
-  ls -lhu `pwd`/$filePath
-  finalAndroidBuildPath="`pwd`/$filePath"
-  printf "\n--------------------------------------------------------------\n"
-  printf "\n\n\n"
-
-  if [ "$deploy" -gt 0 ] then;
-    deployAndroid
-  fi
-
-  return 0;
+  mv android/app/build/outputs/bundle/release/app-release.aab android/$androidFilePath
 }
 
-function deployAndroid () {
-  # https://medium.com/android-news/google-playstore-and-automated-deployment-beeef278d345
-  # https://medium.com/swlh/google-playstore-and-automated-deployment-with-aab-a35eddabf128
-  printf "Deploying Android to Google Play\n"
-}
+function buildIosBinary() {
+  printf "Building iOS archive...\n"
+  eval "$cleanCommand"
+  iosArchivePath="build/outputs/archives/$finalFileName.xcarchive"
 
-function buildIos () {
+
   pushd ios > /dev/null
-    printf "[ ] Checking for and removing conflicting iOS bundles...\r"
-    local newVersionName="$nextMajorDigit.$nextMinorDigit.$nextMaintenanceDigit"
-    [[ "$env" == 'dev' ]] && releaseVariant='d'
-    local filePath="build/outputs/archives/micdrp-$releaseVariant-$newVersionName-$nextBuildDigit.xcarchive"
-    rm -rdf $filePath > /dev/null
-    printf "[\xE2\x9C\x94] Checking for and removing conflicting iOS bundles... ${grn}SUCCESS${nc}\n"
-    # Clean
-    xcodebuild -workspace micdrp.xcworkspace -scheme micdrp clean > /dev/null
-    # # Archive
-    xcodebuild -workspace micdrp.xcworkspace -scheme micdrp -sdk iphoneos -configuration Release archive -archivePath $filePath > /dev/null
-  popd
-  
-  if [[ -d "`pwd`/ios/$filePath" ]]; then # the filesystem treats .xcarchive like a directory, so use -d
-    printf "\n--------------------------------------------------------------\n"
-    printf "\n\n[${grn}\xE2\x9C\x94${nc}] ${grn}Your new iOS archive is ready!${nc}\n\n"
-    printf "`pwd`/ios/$filePath\n\n"
-    ls -lhu `pwd`/ios/$filePath/..
-    finalIosArchivePath="`pwd`/ios/$filePath"
-    printf "\n--------------------------------------------------------------\n"
-    printf "\n\n\n"
-  else
-    printf "${red}ERROR: Archive failed!${nc}\n"
-    exit 1;
-  fi
-
-  if [ "$deploy" -gt 0 ]; then
-    deployIos
-  fi
-
-  return 0;
-}
-
-function deployIos () {
-  printf "Deploying iOS to App Store Connect\n"
-   # Upload to app store
-  # https://help.apple.com/app-store-connect/#/devb1c185036
-  # https://stackoverflow.com/questions/2664885/xcode-build-and-archive-from-command-line
-
-  # Check for an archive that matches the latest version
-
-  pushd packages/client/ios
-    # Export
-    # xcodebuild -exportArchive -archivePath build/outputs/archives/micdrp.xcarchive -exportPath build/outputs/exports/micdrp.ipa -exportOptionsPlist micdrp/exportOptions.plist
-    
-    # WE MAY NEED THIS FOR DEPLOYMENT:
-    # Validate
-    # xcrun altool --validate-app -f file -t platform -u username [-p password] [--output-format xml]
-    # Upload archive
-    # xcrun altool --upload-package -f file -t platform -u username [-p password] [—output-format xml]
-  popd
-  return 0;
-}
-
-function computeVersions () {
-  releaseVariant=$(getReleaseVariant)
-  
-  # Always bump the build number when building for staging or production
-  buildDigit=$(getCurrentBuildVersion)
-  nextBuildDigit=$((buildDigit+1))
-
-  majorDigit=$(getMajorVersion)
-  nextMajorDigit=$majorDigit
-  minorDigit=$(getMinorVersion)
-  nextMinorDigit=$minorDigit
-  maintenanceDigit=$(getMaintenanceVersion)
-  nextMaintenanceDigit=$maintenanceDigit
-
-  ##
-  ## WE ONLY ALLOW MAJOR, MINOR OR MAINTENANCE VERSION CHANGES
-  ## WHEN MOVING FROM A GRADLE PRODUCTION TO THE NEXT STAGING BUILD
-  ##
-
-  # if we're building for staging and existing
-  # build.gradle is prod, ++build number and allow the -Mm flags,
-  # defaulting to bumping maintenance
-  # in all other cases, ++build number only
-
-  if ([ "$env" = 'dev' ] || [ "$keepVersion" -eq 1 ]); then
-    nextBuildDigit=$buildDigit # Don't bump the build if it's dev or -k is specified
-    return $versionChangeWillTakePlace;
-  fi
-
-  # Make sure we notify the next function that we'll be bumping the build number 
-  versionChangeWillTakePlace=1
-
-  # Set the new releaseVariant
-  [[ "$env" = "Staging" ]] && nextReleaseVariant='s';
-  [[ "$env" = "Production" ]] && nextReleaseVariant='';
-
-  # Notify the next function that we'll be changing the build variant
-  [[ $releaseVariant != $nextReleaseVariant ]] && versionChangeWillTakePlace=2;
-
-  # Going from staging to production 
-  if [[ "$env" = "Staging" ]] && [[ -z "$releaseVariant" ]]; then
-    # Bump the maintenance number
-    nextMaintenanceDigit=$((maintenanceDigit+1))
-  
-    if [ $bumpMinor -eq 1 ]; then
-      nextMinorDigit=$((minorDigit+1))
-      nextMaintenanceDigit=0
+    local infoPlistPath="$(pwd)/micdrp/Info.plist"
+    if [[ ! "$env" = 'production' ]]; then
+      xcodebuild -workspace micdrp.xcworkspace -scheme micdrp-$nextReleaseVariant -configuration Release clean archive -archivePath $iosArchivePath
+    else
+      # remove localhost from NSExceptionDomains in Info.plist before building
+      /usr/libexec/PlistBuddy -c "Delete NSAppTransportSecurity:NSExceptionDomains:localhost" "$infoPlistPath"
+      [ $? -ne 0 ] && return 1;
+      xcodebuild -workspace micdrp.xcworkspace -scheme micdrp -configuration Release clean archive -archivePath $iosArchivePath
+      [ $? -ne 0 ] && return 1;
+      /usr/libexec/PlistBuddy -c "Add NSAppTransportSecurity:NSExceptionDomains:localhost dict" "$infoPlistPath"
+      /usr/libexec/PlistBuddy -c "Add NSAppTransportSecurity:NSExceptionDomains:localhost:NSExceptionAllowsInsecureHTTPLoads bool true" "$infoPlistPath"
     fi
+      [ $? -ne 0 ] && return 1;
 
-    if [ $bumpMajor -eq 1 ]; then
-      nextMajorDigit=$((majorDigit+1))
-      nextMinorDigit=0
-      nextMaintenanceDigit=0
-    fi
+    xcodebuild -exportArchive -archivePath $iosArchivePath -exportPath build/outputs/ipa/$finalFileName.ipa -exportOptionsPlist micdrp/ExportOptions.plist
+    [ $? -ne 0 ] && return 1;
+  popd > /dev/null
 
-    # Notify the next function that we'll be modifying the version numbers
-    versionChangeWillTakePlace=3
+  # Look for a folder in the iOS archives area that has today's date. If not, create it and move the archive there.
+  local date=$(date +%Y-%m-%d)
+  if [ ! -d ~/Library/Developer/Xcode/Archives/$date ]; then
+    mkdir -p ~/Library/Developer/Xcode/Archives/$date
   fi
 
-  return $versionChangeWillTakePlace;
+  cp -r "./ios/$iosArchivePath" ~/Library/Developer/Xcode/Archives/$date/$finalFileName.xcarchive
 }
 
-function buildClient () {
-  computeVersions
-  case $? in
-    0)
-      printf "[\xE2\x9C\x94] No version changes necessary\n"
-      ;;
-    1|2|3)
-      bumpAndroidVersion
-      bumpIosVersion
-      ;;
-  esac
-  cd packages/client > /dev/null
-  if [[ $device = 'all' ]]; then
-    printf "Building iOS and Android client bundles...\n"
-    buildAndroid
-    buildIos
-    # if -d was passed and the version or build numbers are changed, then deploy.
-    # finalIosArchivePath and finalAndroidBuildPath
-    if [ $deploy -eq 1 ]; then
-      if [[ $env != 'dev' ]] && [[ $keepVersion -eq 0 ]]; then
-        # 
-      fi
-    fi
-  elif [[ $device = 'ios' ]]; then
-    printf "Building iOS client bundle...\n"
-    buildIos
-    # if -d was passed and the version or build numbers are changed, then deploy.
-    # finalIosArchivePath
-  else
-    printf "Building Android client bundle...\n"
-    buildAndroid
-    # if -d was passed and the version or build numbers are changed, then deploy.
-    # finalAndroidBuildPath
-  fi
-  return 0;
+function showBinaryLocations() {
+  [ "$buildIos" -eq 1 ] && printf "${blu}iOS archive is located at: ./$clientDir/ios/$iosArchivePath${nc}\n"
+  [ "$buildAndroid" -eq 1 ] && printf "${blu}Android AAB file is located at: ./$clientDir/android/$androidFilePath${nc}\n"
 }
 
-while getopts ':dkMme:h' option; do
-  case $option in
-    d)
-      deploy=1
-    ;;
+function uploadBinaries() {
+  [ "$buildIos" -eq 1 ] && "./uploadBinaries.sh $(pwd)/ios/$iosArchivePath"
+  [ "$buildAndroid" -eq 1 ] && "./uploadBinaries.sh $(pwd)/android/$androidFilePath"
+}
 
-    k) # don't change any version numbers, including build number
-      keepVersion=1
-    ;;
-    
-    m) # bump minor version
-      bumpMinor=1
-    ;;
 
-    M) # bump major version
-      bumpMajor=1
-    ;;
 
-    e)
-      if [[ $OPTARG = "staging" ]] || [[ $OPTARG = "prod" ]]; then
-        env=$OPTARG
-      fi
-      case "$env" in
-        prod)
-          printf "[\xE2\x9C\x94] Using Production environment variables\n"
-          export ENVFILE=.production.env
-          env="Production"
-          buildClient
+
+
+
+#################################
+#                               #
+#    Bundle build procedure     #
+#                               #
+#################################
+
+if [ ! -d "$clientDir" ]
+  then
+  echo "Please run from the root 'micdrp' folder..."
+  exit 0;
+fi
+
+cd "$clientDir"
+
+while getopts ":cpsaimMkuh" option; do
+   case $option in
+      p)
+        isProduction=1
+        env='production'
         ;;
-
-        staging)
-          printf "[\xE2\x9C\x94] Using Staging environment variables\n"
-          export ENVFILE=.staging.env
-          env="Staging"
-          buildClient
+      s)
+        isStaging=1
+        env='staging'
         ;;
-
-        dev)
-          if [[ $OPTARG != "dev" ]]; then
-            printf "You must specify dev, staging or prod with the -e option\n"
-            exit 1
-          fi
-
-          printf "[\xE2\x9C\x94] Using Development environment variables\n"
-          export ENVFILE=.development.env
-          buildClient
-        ;;
-
-      esac
-    ;;
-
-    h) help;;
-    *) help;;
-    \?) # Invalid option
-      printf "Error: Invalid option\n"
-      help
-      exit 1
-    ;;
-
-  esac
+      c) # Show the user the current version and what the next version would look like given the args passed
+        checkOnly=1
+        checkEnvironment
+        loadVersionFromCsv # load version numbers from releases.csv file
+        computeNextVersion
+        displayCurrentVersion
+        displayNextVersion
+        exit 0;;
+      a) buildAndroid=1;;
+      i) buildIos=1;;
+      m) shouldBumpMinor=1;;
+      M) shouldBumpMajor=1;;
+      k) keepVersion=1;;
+      u) shouldUploadBinaries=1;;
+      h) help;;
+     \?) die "Error: Invalid option"; help;;
+   esac
 done
+
+checkEnvironment
+loadVersionFromCsv
+computeNextVersion
+
+if [ $? -eq 0 ]; then
+  if [ "$buildAndroid" -eq 0 ] && [ "$buildIos" -eq 0 ]; then
+    printf "${red}ERROR: ${nc}You must specify the -i (iOS) or -a (Android) command switches\n"
+    exit 0;
+  fi
+
+  if [[ ! "$env" = 'development' ]]; then
+    displayNextVersion true
+    printf "[ ] Updating environment with new version numbers...\r"
+    updateEnvFiles
+    printf "[\xE2\x9C\x94] Updating environment with new version numbers...\n"
+  fi
+
+  assembledVersionNumber=$(getNextVersionString)
+  finalFileName="micdrp-$env-$assembledVersionNumber-$nextBuildNumber"
+
+  export ENVFILE=".env.$env" # export the env file so that react-native-config can use it internally
+  source "$ENVFILE" # source the env file so its values can be used directly within this script
+  cleanCommand="npx react-native clean --include metro,yarn,watchman"
+
+  if [ "$buildAndroid" -eq 1 ]; then
+    buildAndroidBinary
+    [ $? -ne 0 ] && die "Android build failed. Check the output above."
+  fi
+
+  if [ "$buildIos" -eq 1 ]; then
+    buildIosBinary
+    [ $? -ne 0 ] && die "iOS build failed. Check the output above."
+  fi
+fi
+
+if [[ ! "$env" = 'development' ]]; then
+  [ "$buildAndroid" -eq 1 ] && androidRelease=1
+  [ "$buildIos" -eq 1 ] && iOSRelease=1
+  saveVersionToFile
+fi
+
+printf "\n---------------------------"
+printf "\n\t${grn}SUCCESS!${nc}"
+printf "\n---------------------------\n"
+showBinaryLocations
+
+if [ "$shouldUploadBinaries" -eq 1 ]; then
+  printf "\nUploading binaries to stores...\n"
+  uploadBinaries 
+fi

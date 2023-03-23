@@ -1,5 +1,15 @@
 apply plugin: "com.android.application"
 
+// Callable using the --variant command switch when running react-native run-android
+// Example: react-native run-android --variant staging or --variant debug
+project.ext.envConfigFiles = [
+  debug: ".env.development", // This will become the original "Debug" mode
+  staging: ".env.staging", // We are replacing the default functionality for the Debug variant here
+  release: ".env.production",
+]
+
+apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
+
 import com.android.build.OutputFile
 // import org.apache.tools.ant.taskdefs.condition.Os
 
@@ -79,7 +89,21 @@ import com.android.build.OutputFile
  */
 
 project.ext.react = [
-    enableHermes: true,  // clean and rebuild if changing
+  bundleInDebug: false,
+  bundleInStaging: true,
+  bundleInRelease: true,
+  jsBundleDirDebug: "$buildDir/intermediates/assets/debug",
+  resourcesDirDebug: "$buildDir/intermediates/res/merged/debug",
+  jsBundleDirStaging: "$buildDir/intermediates/assets/staging",
+  resourcesDirStaging: "$buildDir/intermediates/res/merged/staging",
+  jsBundleDirRelease: "$buildDir/intermediates/assets/release",
+  resourcesDirRelease: "$buildDir/intermediates/res/merged/release",
+  devDisabledInDebug: false,
+  devDisabledInStaging: true,
+  devDisabledInRelease: true,
+  debuggableVariants: ["debug", "staging"],
+  inputExcludes: ["ios/**", "__tests__/**", "ota/**"],
+  enableHermes: false,  // clean and rebuild if changing
 ]
 
 apply from: "../../node_modules/react-native/react.gradle"
@@ -138,8 +162,9 @@ android {
         applicationId "com.micdrp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 7
-        versionName "1.0.0s"
+        versionCode project.env.get("BUILD_NUMBER").toInteger()
+        versionName project.env.get("VERSION_NUMBER")
+//        resValue "string", "build_config_package", "${applicationId}"
         buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
 
         if (isNewArchitectureEnabled()) {
@@ -211,6 +236,12 @@ android {
         }
     }
     signingConfigs {
+        release {
+            storeFile file('release-key.keystore')
+            storePassword 'r%Tg6Y3wS'
+            keyAlias 'key-alias'
+            keyPassword 'r%Tg6Y3wS'
+        }
         debug {
             storeFile file('debug.keystore')
             storePassword 'android'
@@ -220,12 +251,22 @@ android {
     }
     buildTypes {
         debug {
+            debuggable true
             signingConfig signingConfigs.debug
+//            applicationIdSuffix ".development"
+        }
+        staging {
+            debuggable true
+            matchingFallbacks = ['release']
+            signingConfig signingConfigs.release
+//            applicationIdSuffix ".staging"
+            minifyEnabled enableProguardInReleaseBuilds
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
