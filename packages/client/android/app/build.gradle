@@ -164,7 +164,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode project.env.get("BUILD_NUMBER").toInteger()
         versionName project.env.get("VERSION_NUMBER")
-//        resValue "string", "build_config_package", "${applicationId}"
+        resValue "string", "build_config_package", "${applicationId}"
         buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
 
         if (isNewArchitectureEnabled()) {

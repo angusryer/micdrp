@@ -97,7 +97,6 @@ done
 #################################
 
 if [ "$shouldClean" -eq 1 ]; then
-  adb uninstall com.micdrp
   pushd packages/client > /dev/null
     eval "$cleanCommand,android"
   popd > /dev/null
@@ -124,5 +123,6 @@ fi
 
 if [ "$runAndroid" -eq 1 ]; then
   printf "Starting up Android client...\n"
+  adb uninstall com.micdrp
   yarn workspace client android:$env &
 fi
