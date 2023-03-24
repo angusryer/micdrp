@@ -1,6 +1,0 @@
-ENV=staging
-API_URL=https:/$()/staging.micdrp.com
-OTA_DEPLOY_KEY_ANDROID=\"
-OTA_DEPLOY_KEY_IOS=\"
-BUILD_NUMBER=1
-VERSION_NUMBER=..

@@ -120,7 +120,9 @@ function die () {
 function checkEnvironment() {
   if [ "$isProduction" -eq 1 ] && [ "$isStaging" -eq 1 ]; then die "Cannot specify both -p and -s"; fi
   if [ "$isProduction" -eq 0 ] && [ "$isStaging" -eq 0 ]; then die "Must specify one of -p or -s"; fi
-  if [ "$runAndroid" -eq 0 ] && [ "$runIos" -eq 0 ]; then die "Must specify one or both of -a or -i"; fi
+  if [ "$checkOnly" -eq 0 ]; then
+    if [ "$buildAndroid" -eq 0 ] && [ "$buildIos" -eq 0 ]; then die "Must specify one or both of -a or -i"; fi
+  fi
 }
 
 function loadVersionFromCsv() {
@@ -161,7 +163,7 @@ function computeNextVersion () {
   ## when moving from production to the next staging build.
   ## In all cases (except for when we are building a 'dev' binary
   ## or the -k flag is passed) we will increment the build number.
-  
+
   # Set up a default starting point for each number
   nextBuildNumber=$((buildNumber+1))
   nextMajorDigit=$majorDigit
@@ -176,6 +178,7 @@ function computeNextVersion () {
     nextBuildNumber=$buildNumber # Don't bump the build if it's dev or -k is specified
     return 0;
   fi
+
 
   # If we're moving from production to production, we must warn the user since this is not usually intended.
   if [[ "$lastReleaseVariant" = 'production' ]] && [[ "$nextReleaseVariant" = 'production' ]]; then
@@ -342,7 +345,7 @@ fi
 
 cd "$clientDir"
 
-while getopts ":cpsaimMkuhC" option; do
+while getopts ":psaimMkcCuh" option; do
    case $option in
       p)
         isProduction=1
@@ -352,6 +355,11 @@ while getopts ":cpsaimMkuhC" option; do
         isStaging=1
         env='staging'
         ;;
+      a) buildAndroid=1;;
+      i) buildIos=1;;
+      m) shouldBumpMinor=1;;
+      M) shouldBumpMajor=1;;
+      k) keepVersion=1;;
       c) # Show the user the current version and what the next version would look like given the args passed
         checkOnly=1
         checkEnvironment
@@ -360,14 +368,9 @@ while getopts ":cpsaimMkuhC" option; do
         displayCurrentVersion
         displayNextVersion
         exit 0;;
-      a) buildAndroid=1;;
-      i) buildIos=1;;
-      m) shouldBumpMinor=1;;
-      M) shouldBumpMajor=1;;
-      k) keepVersion=1;;
+      C) shouldClean=1;;
       u) shouldUploadBinaries=1;;
       h) help;;
-      C) shouldClean=1;;
      \?) die "Error: Invalid option"; help;;
    esac
 done

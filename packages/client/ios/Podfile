@@ -1,6 +1,6 @@
 require_relative '../node_modules/react-native/scripts/react_native_pods'
 require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
-pod 'react-native-config', :path => '../node_modules/react-native-config/react-native-config.podspec'
+# pod 'react-native-config', :path => '../node_modules/react-native-config/react-native-config.podspec' <-- causes duplicate reactcore/accessibilty package error
 
 platform :ios, '12.4'
 install! 'cocoapods', :deterministic_uuids => false
