@@ -165,3 +165,4 @@ clients/react-native/**/*.env
 packages/client/android/app/debug.keystore
 .gitsecret/keys/random_seed
 !*.secret
+SETUP.md

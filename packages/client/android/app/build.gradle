@@ -236,17 +236,17 @@ android {
         }
     }
     signingConfigs {
-        release {
-            storeFile file('release-key.keystore')
-            storePassword 'r%Tg6Y3wS'
-            keyAlias 'key-alias'
-            keyPassword 'r%Tg6Y3wS'
-        }
         debug {
-            storeFile file('debug.keystore')
-            storePassword 'android'
-            keyAlias 'androiddebugkey'
-            keyPassword 'android'
+            storeFile file('micdrp_debug.keystore')
+            storePassword 'micdroid'
+            keyAlias 'micdrpAndroidDebugKey'
+            keyPassword 'micdroid'
+        }
+        release {
+            storeFile file('micdrp.keystore')
+            storePassword 'ertDFG345'
+            keyAlias 'micdrpAndroidReleaseKey'
+            keyPassword 'ertDFG345'
         }
     }
     buildTypes {

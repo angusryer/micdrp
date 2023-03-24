@@ -28,6 +28,7 @@ isProduction=0
 isStaging=0
 runAndroid=0
 runIos=0
+shouldClean=0
 metroPort=9000
 
 if [ ! -d "$clientDir" ]
@@ -42,6 +43,7 @@ function help () {
   printf "    -a run an Android emulator\n"
   printf "    -s Run using staging environment settings\n"
   printf "    -p Run using production environment settings\n"
+  printf "    -c Clean all caches before run\n"
   printf "    -h This help screen\n\n"
   exit 0;
 }
@@ -67,7 +69,7 @@ function startMetro () {
 # Colons before the first arg makes the script store the first option in the 'optionstring'
 # into OPTARG. Subsequent colons make the script anticipate there being parameter strings 
 # after the associated optionstring
-while getopts ':psai' option; do
+while getopts ':psaic' option; do
   case $option in
     p) isProduction=1
       env="production"
@@ -77,6 +79,7 @@ while getopts ':psai' option; do
       ;;
     a) runAndroid=1;;
     i) runIos=1;;
+    c) shouldClean=1;;
     h) help;;
     \?) die "Invalid option";;
   esac
@@ -93,9 +96,18 @@ done
 #                               #
 #################################
 
+if [ "$shouldClean" -eq 1 ]; then
+  adb uninstall com.micdrp
+  pushd packages/client > /dev/null
+    eval "$cleanCommand,android"
+  popd > /dev/null
+fi
+
 checkEnvironment
 export ENVFILE=".env.$env"
 source "$clientDir/.env.$env"
+
+cleanCommand="npx react-native clean --include metro,yarn,watchman"
 startMetro
 
 printf "\n[\xE2\x9C\x94] Using $env environment...\n\n"
@@ -107,11 +119,10 @@ fi
 
 if [ "$runIos" -eq 1 ]; then
   printf "Starting up iOS client...\n"
-  ENVFILE=".env.$env" yarn workspace client ios:$env &
+  yarn workspace client ios:$env &
 fi
 
 if [ "$runAndroid" -eq 1 ]; then
   printf "Starting up Android client...\n"
-  adb uninstall com.micdrp
-  ENVFILE=".env.$env" yarn workspace client android:$env &
+  yarn workspace client android:$env &
 fi

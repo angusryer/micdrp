@@ -8,7 +8,7 @@
     ]
   },
   "scripts": {
-    "start": "react-native start --port=9000",
+    "start": "react-native start --reset-cache --port=9000",
     "android:production": "react-native run-android --variant release",
     "android:staging": "react-native run-android --variant staging",
     "android:development": "react-native run-android --variant debug",

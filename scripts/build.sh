@@ -51,6 +51,7 @@ isProduction=0
 buildAndroid=0
 buildIos=0
 checkOnly=0
+shouldClean=0
 
 androidRelease=0
 iOSRelease=0
@@ -87,7 +88,7 @@ function help () {
   printf "** If you provide one of the M or m flags (M will take priority), then the Major or minor numbers will be bumped,\n"
   printf "** which will reset the lesser digits to zero.\n"
   printf "\n\n"
-  printf "Usage: ./build.sh -ps -ai [-kMm] -c\n"
+  printf "Usage: ./build.sh -ps -ai [-kMm] -c -C\n"
   printf "Example: create an upload-ready production Android build, bumping the minor version number: ./build.sh -apm\n"
   printf "  -a  Create an upload-ready Android AAB\n"
   printf "  -i  Create an upload-ready iOS archive\n"
@@ -97,6 +98,7 @@ function help () {
   printf "  -k  Keep/don't modify the version\n"
   printf "  -M  Bump the Major version number digit\n"
   printf "  -m  Bump the minor version number digit\n"
+  printf "  -C  Clean all caches before building\n"
   printf "  -h  This help screen\n"
   printf "\n\n"
   printf "Example to check the next version number given that the latest version is production 1.0.0 (1), and you\n"
@@ -170,7 +172,7 @@ function computeNextVersion () {
   [[ "$env" = 'staging' ]] && nextReleaseVariant='staging';
   [[ "$env" = 'production' ]] && nextReleaseVariant='production';
 
-  if ([[ "$env" = 'dev' ]] || [ "$keepVersion" -eq 1 ]); then
+  if ([[ "$env" = 'development' ]] || [ "$keepVersion" -eq 1 ]); then
     nextBuildNumber=$buildNumber # Don't bump the build if it's dev or -k is specified
     return 0;
   fi
@@ -254,18 +256,8 @@ function displayNextVersion() {
   fi
 }
 
-###
-### We will need a keystore and to sign the bundle for RELEASE
-### https://medium.com/androiddevelopers/building-your-first-app-bundle-bbcd228bf631
-### Run ONCE for every computer that will build and upload bundles to Play Store:
-### debug: keytool -genkey -v -keystore /Users/angusryer/dv/micdrp/packages/client/android/app/debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-### release: keytool -genkey -v -keystore /Users/angusryer/dv/micdrp/packages/client/android/app/micdrp.keystore -alias androidReleasekey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Release,O=Android,C=US"
-### 
-### Run this as part of this script to sign the bundle: ???????
-### jarsigner -keystore $pathToKeystore app-release.aab $keyAlias
 function buildAndroidBinary() {
   printf "Building Android AAB...\n"
-  eval "$cleanCommand,android"
   androidFilePath="app/build/outputs/bundle/release/$finalFileName.aab"
   rm android/$androidFilePath > /dev/null
 
@@ -291,7 +283,6 @@ function buildAndroidBinary() {
 
 function buildIosBinary() {
   printf "Building iOS archive...\n"
-  eval "$cleanCommand"
   iosArchivePath="build/outputs/archives/$finalFileName.xcarchive"
 
 
@@ -344,15 +335,14 @@ function uploadBinaries() {
 #                               #
 #################################
 
-if [ ! -d "$clientDir" ]
-  then
-  echo "Please run from the root 'micdrp' folder..."
+if [ ! -d "$clientDir" ]; then
+  printf "Please run from the root 'micdrp' folder...\n"
   exit 0;
 fi
 
 cd "$clientDir"
 
-while getopts ":cpsaimMkuh" option; do
+while getopts ":cpsaimMkuhC" option; do
    case $option in
       p)
         isProduction=1
@@ -377,6 +367,7 @@ while getopts ":cpsaimMkuh" option; do
       k) keepVersion=1;;
       u) shouldUploadBinaries=1;;
       h) help;;
+      C) shouldClean=1;;
      \?) die "Error: Invalid option"; help;;
    esac
 done
@@ -384,6 +375,10 @@ done
 checkEnvironment
 loadVersionFromCsv
 computeNextVersion
+
+if [ "$shouldClean" -eq 1 ]; then
+  npx react-native clean --include metro,yarn,watchman,android
+fi
 
 if [ $? -eq 0 ]; then
   if [ "$buildAndroid" -eq 0 ] && [ "$buildIos" -eq 0 ]; then
@@ -403,7 +398,6 @@ if [ $? -eq 0 ]; then
 
   export ENVFILE=".env.$env" # export the env file so that react-native-config can use it internally
   source "$ENVFILE" # source the env file so its values can be used directly within this script
-  cleanCommand="npx react-native clean --include metro,yarn,watchman"
 
   if [ "$buildAndroid" -eq 1 ]; then
     buildAndroidBinary
