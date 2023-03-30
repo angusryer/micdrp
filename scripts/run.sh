@@ -98,7 +98,7 @@ done
 
 if [ "$shouldClean" -eq 1 ]; then
   pushd packages/client > /dev/null
-    eval "$cleanCommand,android"
+    npx react-native clean --include metro,yarn,watchman,android
   popd > /dev/null
 fi
 
@@ -106,7 +106,6 @@ checkEnvironment
 export ENVFILE=".env.$env"
 source "$clientDir/.env.$env"
 
-cleanCommand="npx react-native clean --include metro,yarn,watchman"
 startMetro
 
 printf "\n[\xE2\x9C\x94] Using $env environment...\n\n"
