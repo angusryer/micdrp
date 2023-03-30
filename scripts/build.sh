@@ -130,7 +130,8 @@ function loadVersionFromCsv() {
     # The file does not exist, so create it with headers
     echo "Version,Build,Variant,AndroidRelease,iOSRelease,OtaAndroid,OtaIos,Date,Time" > "$releasesCsv"
   fi
-  local latestRow=$(awk -F ',' -v env="$env" '$3 == env {latest=$0}END{print latest}' "$releasesCsv")
+  local latestEnvRow=$(awk -F ',' -v env="$env" '$3 == env {latest=$0}END{print latest}' "$releasesCsv")
+  local latestRow=$(awk -F ',' '{latest=$0}END{print latest}' "$releasesCsv")
   oldVersion=$(echo "$latestRow" | awk -F',' '{print $1}')
   IFS='.' read -r majorDigit minorDigit patchDigit <<< "$oldVersion"
   buildNumber=$(echo "$latestRow" | awk -F',' '{print $2}')
