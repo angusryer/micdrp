@@ -32,7 +32,7 @@ const App = () => {
   };
 
   const runTest = async () => {
-    const test = await AudioControlModule.testLog('Testing this out.');
+    const test = await AudioControlModule.testLog('Testing this out');
     setTest(test);
   };
 
