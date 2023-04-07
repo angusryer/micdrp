@@ -6,22 +6,14 @@
     <string>app-store</string>
     <key>teamID</key>
     <string>J3RCPBZHWM</string>
-    <key>destination</key>
-    <string>upload</string>
-    <key>uploadBitcode</key>
-    <true/>
-    <key>compileBitcode</key>
-    <true/>
     <key>uploadSymbols</key>
     <true/>
-    <key>signingStyle</key>
-    <string>manual</string>
-    <key>signingCertificate</key>
-    <string>iOS Distribution: POSSIBLE Mobile</string>
+    <key>uploadBitcode</key>
+    <false/>
     <key>provisioningProfiles</key>
     <dict>
-      <key>com.client.appname</key>
-      <string>Client App Release</string>
+      <key>io.ryer.micdrp</key>
+      <string>micdrp-provisioning</string>
     </dict>
   </dict>
 </plist>

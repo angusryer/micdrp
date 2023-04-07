@@ -30,11 +30,16 @@ Other notable things:
 }
 ```
 
+## Technologies used
+- react native for the client
+- node and express for the server
+- git-secret for environment variable storage and sharing
+
 ### Each of the below commands should be run from the root directory unless otherwise specified
 
 ## Setting up the development environment
-- Generate a local GPG key public/private pair
 - Ask to be added to the `git-secret` allowed list so you can access environment variables
+-- You'll be given a public key from an admin
 - Install the `rvest.vs-code-prettier-eslint` VS Code extension and set it up as per its own directions
 - Clone this repository and change to the cloned directory
 - Run `yarn`

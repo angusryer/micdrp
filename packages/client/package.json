@@ -8,13 +8,13 @@
     ]
   },
   "scripts": {
-    "android:prod": "react-native run-android --mode=release",
-    "android:staging": "react-native run-android --mode=debug",
-    "android": "react-native run-android",
-    "ios:prod": "react-native run-ios --scheme=micdrp --configuration=Release",
-    "ios:staging": "react-native run-ios --scheme=micdrp --configuration=Release",
-    "ios": "react-native run-ios",
-    "start": "react-native start --port=9000",
+    "start": "react-native start --reset-cache --port=9000",
+    "android:production": "react-native run-android --variant release",
+    "android:staging": "react-native run-android --variant staging",
+    "android:development": "react-native run-android --variant debug",
+    "ios:production": "react-native run-ios --scheme micdrp",
+    "ios:staging": "react-native run-ios --scheme micdrp-staging",
+    "ios:development": "react-native run-ios --scheme micdrp-development",
     "test": "jest",
     "lint": "eslint . --ext .js, .jsx,.ts,.tsx"
   },

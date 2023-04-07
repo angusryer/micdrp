@@ -1,6 +1,10 @@
 require_relative '../node_modules/react-native/scripts/react_native_pods'
 require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
-pod 'react-native-config', :path => '../node_modules/react-native-config/react-native-config.podspec'
+# pod 'react-native-config', :path => '../node_modules/react-native-config/react-native-config.podspec' <-- causes duplicate reactcore/accessibilty package error
+
+# May need this to read env and generate proper build locations before
+# `react_native_post_install` sets up the RN-specific build tasks
+# require_relative '../node_modules/react-native-config/ios/ReactNativeConfig/ReadDotEnv';
 
 platform :ios, '12.4'
 install! 'cocoapods', :deterministic_uuids => false
@@ -40,5 +44,28 @@ target 'micdrp' do
       :mac_catalyst_enabled => false
     )
     __apply_Xcode_12_5_M1_post_install_workaround(installer)
+    
+    
+    # Set up references to the ENV file we use globally
+    debug_path = "Pods/Target Support Files/Pods-micdrp/Pods-micdrp.debug.xcconfig"
+    release_path = "Pods/Target Support Files/Pods-micdrp/Pods-micdrp.release.xcconfig"
+    debug_tests_path = "Pods/Target Support Files/Pods-micdrp-micdrpTests/Pods-micdrp-micdrpTests.debug.xcconfig"
+    release_tests_path = "Pods/Target Support Files/Pods-micdrp-micdrpTests/Pods-micdrp-micdrpTests.release.xcconfig"
+    
+    File.open(debug_path, 'a') do |file|
+      file.puts "\n#include? \"../../../env.xcconfig\""
+    end
+
+    File.open(release_path, 'a') do |file|
+      file.puts "\n#include? \"../../../env.xcconfig\""
+    end
+
+    File.open(debug_tests_path, 'a') do |file|
+      file.puts "\n#include? \"../../../env.xcconfig\""
+    end
+
+    File.open(release_tests_path, 'a') do |file|
+      file.puts "\n#include? \"../../../env.xcconfig\""
+    end
   end
 end
