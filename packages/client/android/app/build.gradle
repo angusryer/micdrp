@@ -1,7 +1,7 @@
 apply plugin: "com.android.application"
 
-// Callable using the --variant command switch when running react-native run-android
-// Example: react-native run-android --variant staging or --variant debug
+// Callable using the --mode command switch when running react-native run-android
+// Example: react-native run-android --mode staging or --mode debug
 project.ext.envConfigFiles = [
   debug: ".env.development", // This will become the original "Debug" mode
   staging: ".env.staging", // We are replacing the default functionality for the Debug variant here
@@ -106,7 +106,7 @@ project.ext.react = [
   enableHermes: false,  // clean and rebuild if changing
 ]
 
-apply from: "../../node_modules/react-native/react.gradle"
+// apply from: "../../../../node_modules/react-native/react.gradle"
 
 /**
  * Set this to true to create two separate APKs instead of one:
@@ -343,7 +343,7 @@ task copyDownloadableDepsToLibs(type: Copy) {
     into 'libs'
 }
 
-apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
+apply from: file("../../../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
 
 def isNewArchitectureEnabled() {
     // To opt-in for the New Architecture, you can either:

@@ -36,6 +36,7 @@ module.exports = {
     'node_modules',
     '.eslintrc.js',
     '*.config.js',
+    'commitlint.config.ts',
     '**/*dist*',
     '**/*logs*',
     '**/*cache*',
@@ -88,6 +89,6 @@ module.exports = {
     quotes: ['error', 'single'],
     semi: ['error', 'always'],
     'no-var': ['error'],
-    'promise/catch-or-return': { allowFinally: true }
+    'promise/catch-or-return': ['error', { allowFinally: true }]
   }
 };

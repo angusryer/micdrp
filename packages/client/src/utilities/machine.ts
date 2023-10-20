@@ -1,4 +1,4 @@
 import { useMachine } from '@xstate/react';
-import { createMachine, Machine } from 'xstate';
+import { createMachine } from 'xstate';
 
-export { Machine, createMachine, useMachine };
+export { createMachine, useMachine };

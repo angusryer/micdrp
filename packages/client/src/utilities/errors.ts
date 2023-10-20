@@ -11,8 +11,6 @@ export enum Errors {
   UnknownError = 'UNKNOWN_ERROR'
 }
 
-type StandardizedResponse = GenericResponse;
-
 type GenericResponse = {
   status: string;
   statusText: string;
@@ -28,7 +26,7 @@ export interface ErrorData {
   code?: string;
   name?: string;
   stack?: string;
-  response?: StandardizedResponse;
+  response?: GenericResponse;
 }
 
 export type FormattedError<ErrorType = unknown> = Readonly<ErrorData> & {
@@ -72,7 +70,7 @@ export default class AppError<ErrorType = unknown> extends Error {
   public readonly name: string;
   public readonly message: string;
   public readonly stack: string;
-  public readonly response: StandardizedResponse;
+  public readonly response: GenericResponse;
 
   private readonly formatted: string;
 
