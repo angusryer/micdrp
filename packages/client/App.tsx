@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Button,
-  NativeModules,
+  // NativeModules,
   SafeAreaView,
   StatusBar,
   Text,
@@ -10,7 +10,7 @@ import {
 import Config from 'react-native-config';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 
-const { AudioControlModule } = NativeModules;
+// Impl this:  const { AudioControlModule } = NativeModules;
 
 interface IColors {
   white: string;
@@ -32,8 +32,10 @@ const App = () => {
   };
 
   const runTest = async () => {
-    const test = await AudioControlModule.testLog('Testing this out');
-    setTest(test);
+    // Implement this: const test = await AudioControlModule.getDeviceList();
+    // And this: setTest(test);
+    const test = await Promise.resolve('TEST');
+    console.log(test);
   };
 
   const reset = () => {
@@ -46,8 +48,9 @@ const App = () => {
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={backgroundStyle.backgroundColor}
       />
+      
       <Text>Environment: {JSON.stringify(Config)}</Text>
-      <Button onPress={runTest} title='Run log' />
+      <Button onPress={() => void runTest()} title='Run log' />
       <Button onPress={reset} title='Reset' />
       <Text>{String(test)}</Text>
     </SafeAreaView>

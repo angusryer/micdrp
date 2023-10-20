@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import AppError from '../utilities/errors';
 import { createDefinedContext } from '../utilities/hooks';
 import { createMachine } from '../utilities/machine';
@@ -37,6 +37,8 @@ const accountMachine =
     }
   });
 
+console.log('Account machine', accountMachine);
+
 interface IAccountContext extends IAccount {
   isLoading: boolean;
   login: () => Promise<IAccount>;
@@ -52,6 +54,7 @@ const [useAccount, AccountContext] = createDefinedContext<IAccountContext>();
 export default function UserProvider({ children }: IAccountProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [account, setAccount] = useState<IAccount>();
+  const acc = useAccount();
 
   useEffect(() => {
     login()
@@ -61,7 +64,7 @@ export default function UserProvider({ children }: IAccountProviderProps) {
   }, []);
 
   const login = async (): Promise<IAccount> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       setTimeout(() => resolve(mockUser), 2000);
     });
   };
@@ -71,8 +74,13 @@ export default function UserProvider({ children }: IAccountProviderProps) {
     return Promise.resolve();
   };
 
+  const context = useMemo(
+    () => ({ ...acc, isLoading, login, logout }),
+    [account, isLoading]
+  );
+
   return !account ? null : (
-    <AccountContext.Provider value={{ ...account, isLoading, login, logout }}>
+    <AccountContext.Provider value={context}>
       {children}
     </AccountContext.Provider>
   );

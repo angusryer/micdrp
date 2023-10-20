@@ -3,6 +3,8 @@ packages/*/node_modules
 **/*DS_Store*/**
 **/*.keystore
 
+cache
+
 # Logs
 logs
 *.log
@@ -162,7 +164,7 @@ local.properties
 # Local files
 .DS_Store
 clients/react-native/**/*.env
-packages/client/android/app/debug.keystore
 .gitsecret/keys/random_seed
+**/*.keystore
 !*.secret
 SETUP.md

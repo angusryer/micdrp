@@ -24,6 +24,5 @@
   "prettier.enable": true,
   "prettier.documentSelectors": ["**/*.{ts,tsx,js,jsx,json}"],
   "prettier.requireConfig": true,
-  "prettier.configPath": "./.prettierrc",
-  "prettier.prettierPath": "./node_modules/prettier"
+  "prettier.configPath": "./.prettierrc"
 }

@@ -10,6 +10,7 @@ import AppError from './errors';
  */
 export function createDefinedContext<ContextType>() {
   const context = createContext<ContextType | undefined>(undefined);
+  
   const useDefinedContext = () => {
     const definedContext = useContext(context);
     if (!definedContext) {
