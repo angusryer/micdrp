@@ -89,6 +89,7 @@ module.exports = {
     quotes: ['error', 'single'],
     semi: ['error', 'always'],
     'no-var': ['error'],
-    'promise/catch-or-return': ['error', { allowFinally: true }]
+    'promise/catch-or-return': ['error', { allowFinally: true }],
+    '@typescript-eslint/no-unsafe-call': 'warn'
   }
 };

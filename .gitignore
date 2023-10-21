@@ -165,6 +165,10 @@ local.properties
 .DS_Store
 clients/react-native/**/*.env
 .gitsecret/keys/random_seed
-**/*.keystore
-!*.secret
+!**/*.secret
 SETUP.md
+
+.flaskenv*
+!.env.project
+!.env.vault
+packages/client/android/app/micdrp_debug.keystore

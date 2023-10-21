@@ -10,7 +10,7 @@ export default class Server {
     this.start();
   }
 
-  public async start(): Promise<void> {
+  public start(): void {
     this.statusRoutes.routes(this.server);
   }
 }

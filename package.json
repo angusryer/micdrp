@@ -1,6 +1,7 @@
 {
   "name": "micdrp",
   "private": true,
+  "types": "./node_modules/@types",
   "workspaces": {
     "packages": [
       "packages/*"
@@ -13,7 +14,9 @@
     "server": "./scripts/server.sh",
     "client": "./scripts/run.sh",
     "submit": "./scripts/submit.sh",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "env": "npx dotenv-vault@latest pull",
+    "env-push": "npx dotenv-vault@latest push"
   },
   "devDependencies": {
     "@babel/core": "^7.20.12",
@@ -27,6 +30,7 @@
     "@release-it/conventional-changelog": "^5.0.0",
     "@testing-library/react-native": "^12.1.2",
     "@tsconfig/react-native": "^2.0.2",
+    "@types/dotenv": "^8.2.0",
     "@types/express": "^4.17.17",
     "@types/jest": "^29.2.5",
     "@types/lodash": "^4.14.191",

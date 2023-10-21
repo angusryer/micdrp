@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
     "types": ["node", "jest"],
+    "baseUrl": ".",
+    "outDir": "dist",
     "isolatedModules": true,
     "composite": true,
     "module": "commonjs",
