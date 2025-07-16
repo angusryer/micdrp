@@ -6,12 +6,16 @@
   "editor.tabSize": 2,
   "editor.formatOnSaveMode": "file",
   "editor.codeActionsOnSave": {
-    "source.organizeImports": true,
-    "source.sortMembers": true,
-    "source.fixAll": true
+    "source.organizeImports": "explicit",
+    "source.sortMembers": "explicit",
+    "source.fixAll": "explicit"
   },
   "files.autoSave": "onFocusChange",
-  "eslint.validate": ["javascript", "typescript", "typescriptreact"],
+  "eslint.validate": [
+    "javascript",
+    "typescript",
+    "typescriptreact"
+  ],
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
@@ -22,7 +26,9 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "prettier.enable": true,
-  "prettier.documentSelectors": ["**/*.{ts,tsx,js,jsx,json}"],
+  "prettier.documentSelectors": [
+    "**/*.{ts,tsx,js,jsx,json}"
+  ],
   "prettier.requireConfig": true,
   "prettier.configPath": "./.prettierrc"
 }
