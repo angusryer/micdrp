@@ -1,7 +1,10 @@
-import { test } from '../index';
+import * as logic from '../index';
 
-describe('test', () => {
-  it('works', () => {
-    expect(test).toEqual('test');
+describe('logic public API', () => {
+  it('exposes pitch detection and note helpers', () => {
+    expect(typeof logic.detectPitch).toBe('function');
+    expect(typeof logic.frequencyToNote).toBe('function');
+    expect(typeof logic.frequencyToMidi).toBe('function');
+    expect(typeof logic.midiToFrequency).toBe('function');
   });
 });
