@@ -11,7 +11,7 @@
     "ios:staging": "react-native run-ios --scheme micdrp-staging",
     "ios:development": "react-native run-ios --scheme micdrp-development",
     "test": "jest",
-    "lint": "eslint . --ext .js, .jsx,.ts,.tsx",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -21,7 +21,6 @@
     "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-native": "^0.72.4",
-    "react-native-audio-cortex": "workspace:*",
     "react-native-config": "^1.5.0",
     "shared": "workspace:*",
     "xstate": "^4.35.4"

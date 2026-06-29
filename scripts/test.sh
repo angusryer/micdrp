@@ -1,4 +1,12 @@
 #!/bin/bash
+set -e
 
-# watchman watch-del '/Users/angusryer/dv/micdrp' ; watchman watch-project '/Users/angusryer/dv/micdrp'
-yarn workspaces run test
+# Run the `test` script (jest) in every workspace.
+#
+# `yarn workspace <name> test` is a built-in Yarn 3 command (no plugin
+# needed), unlike the old Yarn 1 `yarn workspaces run test`.
+# `--passWithNoTests` keeps packages that have no tests yet from failing the
+# run, and any extra args (e.g. `--coverage` from CI) are forwarded to jest.
+for pkg in logic models shared server client; do
+  yarn workspace "$pkg" test --passWithNoTests "$@"
+done

@@ -4838,7 +4838,6 @@ __metadata:
     lodash: ^4.17.21
     react: ^18.2.0
     react-native: ^0.72.4
-    react-native-audio-cortex: "workspace:*"
     react-native-config: ^1.5.0
     shared: "workspace:*"
     xstate: ^4.35.4
@@ -12233,15 +12232,6 @@ __metadata:
   checksum: 9d6d111d8990dc98bc5402c1266a808b0459b5d54830bbea24c12d908b536df7883f268a7868cfaedde3dd9d4e0d574db456f84d2e6df9c4526f99bb4b5344d8
   languageName: node
   linkType: hard
-
-"react-native-audio-cortex@workspace:*, react-native-audio-cortex@workspace:packages/react-native-audio-cortex":
-  version: 0.0.0-use.local
-  resolution: "react-native-audio-cortex@workspace:packages/react-native-audio-cortex"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-  languageName: unknown
-  linkType: soft
 
 "react-native-builder-bob@npm:^0.20.4":
   version: 0.20.4

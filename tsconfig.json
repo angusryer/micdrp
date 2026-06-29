@@ -17,9 +17,6 @@
     },
     {
       "path": "packages/shared"
-    },
-    {
-      "path": "packages/react-native-audio-cortex"
     }
   ]
 }

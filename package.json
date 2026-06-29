@@ -8,7 +8,7 @@
     ]
   },
   "scripts": {
-    "lint": "npm run lint --workspaces",
+    "lint": "eslint packages --ext .js,.jsx,.ts,.tsx",
     "test": "./scripts/test.sh",
     "build": "./scripts/build.sh",
     "server": "./scripts/server.sh",
