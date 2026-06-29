@@ -1,1 +1,2 @@
-export const test = 'test';
+export * from './mpm';
+export * from './notes';
