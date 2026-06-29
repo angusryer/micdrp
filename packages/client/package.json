@@ -21,7 +21,6 @@
     "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-native": "^0.72.4",
-    "react-native-audio-cortex": "workspace:*",
     "react-native-config": "^1.5.0",
     "shared": "workspace:*",
     "xstate": "^4.35.4"
