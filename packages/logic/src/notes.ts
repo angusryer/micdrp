@@ -6,10 +6,26 @@
  * to stay portable across the monorepo's tsconfig targets.
  */
 
-// The chromatic note table and its name type are the domain source of truth in
-// `models`; logic re-exports them so existing `from 'logic'` imports (key.ts,
-// NoteRibbon, NoteList) keep working without duplicating the literal.
-export { NOTE_NAMES, type NoteName } from 'models';
+// The chromatic note table. Intentionally declared locally (not imported from
+// `models`) to keep this module dependency-free so the exact same code runs in
+// Jest, in a Reanimated/audio worklet, and on the server without dragging in the
+// `models` package's resolution graph. `models` carries an identical domain copy.
+export const NOTE_NAMES = [
+  'C',
+  'C#',
+  'D',
+  'D#',
+  'E',
+  'F',
+  'F#',
+  'G',
+  'G#',
+  'A',
+  'A#',
+  'B'
+] as const;
+
+export type NoteName = (typeof NOTE_NAMES)[number];
 
 export const A4_HZ = 440;
 export const A4_MIDI = 69;

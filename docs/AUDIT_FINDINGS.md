@@ -12,8 +12,11 @@ verify, and are recorded so they aren't lost.
   `AudioEngineModule`/`AudioEnginePackage`).
 - **Data layer consolidated:** the superseded `recordings.ts` helpers pruned to
   just the cache index that `sync.ts`/`useLibrary` use — one store, no dual path.
-- **Dedup:** `logic/notes.ts` no longer re-declares `NOTE_NAMES`/`NoteName`; it
-  imports them from `models` (the domain source of truth).
+- **Dedup (reverted):** an attempt to make `logic/notes.ts` import
+  `NOTE_NAMES`/`NoteName` from `models` broke it (`export … from` creates no
+  local binding, and it violated the module's deliberate dependency-free design
+  for worklet/server portability). `notes.ts` keeps its local copy by design;
+  `models` carries an identical domain copy. See "deferred" item 2.
 - **Lint:** all error-level eslint issues fixed across `client` + `logic`; the
   jest run fixed (`babel.config.js` no longer loads the reanimated worklets
   plugin under test, where reanimated is fully mocked).
