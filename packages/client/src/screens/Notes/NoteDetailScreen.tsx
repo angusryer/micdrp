@@ -8,7 +8,14 @@
  * on-the-fly from the stored melody so export works without a server round-trip.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View
+} from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { notesToMidi, type NoteEvent } from 'logic';
@@ -19,9 +26,15 @@ import { useTranslation } from '../../i18n';
 import { createReferenceTonePlayer } from '../../audio/referenceTone';
 import { cachedNotes } from '../../data/notesSync';
 import { writeMidi } from '../../data/files';
+import { MelodyView } from '../../components/MelodyView';
 import { ExportSheet } from '../Results/ExportSheet';
 import { NoteList, midiToLabel } from '../Results/NoteList';
 import { PlaybackBar } from './PlaybackBar';
+
+/** Side padding of the detail scroll content (keep in sync with styles.content). */
+const CONTENT_PADDING = 20;
+/** Height of the piano-roll melody view. */
+const MELODY_VIEW_HEIGHT = 150;
 
 /** How long a tapped reference note sounds, in ms. */
 const TAP_NOTE_MS = 700;
@@ -39,6 +52,7 @@ function formatDuration(ms: number): string {
 export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const { width } = useWindowDimensions();
   const { id } = route.params;
 
   const note = useMemo(() => cachedNotes().find((n) => n.id === id), [id]);
@@ -119,6 +133,29 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
           />
         ) : null}
 
+        {melody.length > 0 ? (
+          <>
+            <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
+              {t('notes.shape')}
+            </Text>
+            <View
+              style={[
+                styles.melodyCard,
+                {
+                  backgroundColor: colors.neutral50,
+                  borderColor: colors.neutral500
+                }
+              ]}
+            >
+              <MelodyView
+                notes={melody}
+                width={width - 2 * CONTENT_PADDING - 2}
+                height={MELODY_VIEW_HEIGHT}
+              />
+            </View>
+          </>
+        ) : null}
+
         <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
           {t('notes.analysis')}
         </Text>
@@ -163,6 +200,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5
+  },
+  melodyCard: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    padding: 8
   },
   statGrid: {
     flexDirection: 'row',

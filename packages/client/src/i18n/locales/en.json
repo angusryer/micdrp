@@ -69,6 +69,7 @@
     "openNote": "Open {{title}}",
     "openAnalysis": "Open analysis",
     "analysis": "Analysis",
+    "shape": "Shape",
     "playNote": "Play note",
     "closePlayer": "Close player",
     "deleteNote": "Delete note",
