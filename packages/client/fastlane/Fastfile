@@ -1,0 +1,174 @@
+# Fastfile — micdrp iOS and Android release lanes.
+#
+# ALL signing material, API keys, and credentials are read exclusively from
+# environment variables injected by the CI system (GitHub Actions secrets).
+# No secrets, keystore passwords, API keys, or hostnames are ever written here.
+#
+# Required environment variables are documented in fastlane/README.md.
+
+default_platform(:ios)
+
+# ---------------------------------------------------------------------------
+# Shared helpers
+# ---------------------------------------------------------------------------
+
+# Resolve the absolute path to packages/client from the fastlane directory
+# (fastlane is invoked from packages/client, so __dir__ points one level in).
+CLIENT_DIR = File.expand_path("..", __dir__).freeze
+REPO_ROOT   = File.expand_path("../..", CLIENT_DIR).freeze
+
+# Read VERSION_NUMBER and BUILD_NUMBER from the currently active .env file.
+# The CI workflow sets ENVFILE before invoking fastlane.
+def read_env_version
+  env_file = ENV.fetch("ENVFILE", File.join(CLIENT_DIR, ".env.production"))
+  versions = {}
+  File.readlines(env_file).each do |line|
+    line = line.strip
+    next if line.start_with?("#") || !line.include?("=")
+    key, value = line.split("=", 2)
+    versions[key.strip] = value.strip
+  end
+  versions
+end
+
+# ---------------------------------------------------------------------------
+# iOS platform
+# ---------------------------------------------------------------------------
+
+platform :ios do
+  # -- shared pre-actions --------------------------------------------------
+  before_all do
+    # Ensure all tools agree on the Ruby bundle
+    # (Gemfile lives at packages/client/Gemfile)
+  end
+
+  # -------------------------------------------------------------------------
+  # ios_beta — build, sign, upload to TestFlight (beta / internal)
+  # -------------------------------------------------------------------------
+  desc "Build, sign, and upload an iOS beta build to TestFlight"
+  lane :ios_beta do
+    env_vars = read_env_version
+    version  = ENV.fetch("VERSION_NUMBER", env_vars["VERSION_NUMBER"] || "1.0.0")
+    build    = ENV.fetch("BUILD_NUMBER",   env_vars["BUILD_NUMBER"]   || "1")
+
+    # Sync certificates and provisioning profiles via match (appstore type
+    # covers both TestFlight and App Store uploads).
+    match(
+      type:         "appstore",
+      readonly:     true,    # CI should never regenerate; regenerate locally then push
+      git_url:      ENV.fetch("MATCH_GIT_URL"),
+      app_identifier: ENV.fetch("IOS_BUNDLE_ID", "io.ryer.micdrp"),
+      team_id:      ENV.fetch("APPLE_TEAM_ID"),
+      username:     ENV.fetch("APPLE_ID"),
+      keychain_password: ENV.fetch("MATCH_KEYCHAIN_PASSWORD"),
+    )
+
+    # Build the iOS archive using the production scheme (micdrp).
+    gym(
+      workspace:            "ios/micdrp.xcworkspace",
+      scheme:               "micdrp",
+      configuration:        "Release",
+      export_method:        "app-store",
+      export_options:       "ios/micdrp/exportOptions.plist",
+      output_directory:     "build/ios",
+      output_name:          "micdrp-beta-#{version}-#{build}.ipa",
+      clean:                true,
+      include_symbols:      true,
+      include_bitcode:      false,
+    )
+
+    # Upload to TestFlight (internal testers only by default).
+    pilot(
+      api_key_path:         ENV.fetch("ASC_API_KEY_PATH"),  # path to App Store Connect API key JSON
+      app_identifier:       ENV.fetch("IOS_BUNDLE_ID", "io.ryer.micdrp"),
+      distribute_external:  false,
+      notify_external_testers: false,
+      skip_waiting_for_build_processing: true,
+      changelog:            ENV.fetch("RELEASE_NOTES", "Internal beta build #{build}"),
+    )
+  end
+
+  # -------------------------------------------------------------------------
+  # ios_release — promote a TestFlight build to App Store production
+  # -------------------------------------------------------------------------
+  desc "Submit an approved TestFlight build to App Store production review"
+  lane :ios_release do
+    env_vars = read_env_version
+    version  = ENV.fetch("VERSION_NUMBER", env_vars["VERSION_NUMBER"] || "1.0.0")
+    build    = ENV.fetch("BUILD_NUMBER",   env_vars["BUILD_NUMBER"]   || "1")
+
+    deliver(
+      api_key_path:          ENV.fetch("ASC_API_KEY_PATH"),
+      app_identifier:        ENV.fetch("IOS_BUNDLE_ID", "io.ryer.micdrp"),
+      submit_for_review:     true,
+      automatic_release:     false,
+      force:                 true,           # skip HTML report
+      skip_binary_upload:    true,           # binary already on TestFlight
+      build_number:          build,
+      app_version:           version,
+      submission_information: {
+        add_id_info_uses_idfa: false,
+      },
+    )
+  end
+end
+
+# ---------------------------------------------------------------------------
+# Android platform
+# ---------------------------------------------------------------------------
+
+platform :android do
+  # -------------------------------------------------------------------------
+  # android_beta — assemble release AAB and upload to Play internal track
+  # -------------------------------------------------------------------------
+  desc "Build a release AAB and upload to Google Play internal test track"
+  lane :android_beta do
+    env_vars = read_env_version
+    version  = ENV.fetch("VERSION_NUMBER", env_vars["VERSION_NUMBER"] || "1.0.0")
+    build    = ENV.fetch("BUILD_NUMBER",   env_vars["BUILD_NUMBER"]   || "1")
+
+    # gradle tasks run from packages/client/android/
+    gradle(
+      project_dir:   "android",
+      task:          "bundle",
+      build_type:    "Release",
+      # Signing material is read from environment variables inside build.gradle
+      # via react-native-config / .env.production.  The keystore file must be
+      # present at packages/client/android/app/micdrp.keystore (restored by CI
+      # from the ANDROID_KEYSTORE_BASE64 secret — see release-android.sh).
+      properties: {
+        "android.injected.signing.store.file"     => ENV.fetch("ANDROID_KEYSTORE_PATH"),
+        "android.injected.signing.store.password" => ENV.fetch("ANDROID_KEYSTORE_PASSWORD"),
+        "android.injected.signing.key.alias"      => ENV.fetch("ANDROID_KEY_ALIAS"),
+        "android.injected.signing.key.password"   => ENV.fetch("ANDROID_KEY_PASSWORD"),
+        "VERSION_NUMBER"                          => version,
+        "BUILD_NUMBER"                            => build,
+      },
+    )
+
+    # Upload the AAB to the Play Store internal track.
+    supply(
+      package_name:       ENV.fetch("ANDROID_PACKAGE_NAME", "com.micdrp"),
+      json_key_data:      ENV.fetch("SUPPLY_JSON_KEY_DATA"),  # service-account JSON from CI secret
+      track:              "internal",
+      aab:                "android/app/build/outputs/bundle/release/app-release.aab",
+      skip_upload_apk:    true,
+      release_status:     "draft",
+    )
+  end
+
+  # -------------------------------------------------------------------------
+  # android_release — promote the internal track build to production
+  # -------------------------------------------------------------------------
+  desc "Promote the latest internal track build to Google Play production"
+  lane :android_release do
+    supply(
+      package_name:   ENV.fetch("ANDROID_PACKAGE_NAME", "com.micdrp"),
+      json_key_data:  ENV.fetch("SUPPLY_JSON_KEY_DATA"),
+      track:          "internal",
+      track_promote_to: "production",
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+    )
+  end
+end

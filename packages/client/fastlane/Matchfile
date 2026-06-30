@@ -1,0 +1,20 @@
+# Matchfile — git-based code signing storage.
+# The certificates/profiles repo URL must be supplied via the MATCH_GIT_URL
+# environment variable (CI secret). Never commit the URL or any credential here.
+
+git_url(ENV["MATCH_GIT_URL"])
+
+# Encrypted with MATCH_PASSWORD (CI secret).
+storage_mode("git")
+
+# Apple Developer team is re-used from Appfile / ENV.
+team_id(ENV["APPLE_TEAM_ID"])
+
+# App identifiers managed by match.
+app_identifier([
+  ENV["IOS_BUNDLE_ID"] || "io.ryer.micdrp",
+])
+
+# match will be called with :type => "appstore" or "adhoc" by the Fastfile lanes.
+# Username / Apple ID flows via MATCH_USERNAME (same as APPLE_ID).
+username(ENV["APPLE_ID"])

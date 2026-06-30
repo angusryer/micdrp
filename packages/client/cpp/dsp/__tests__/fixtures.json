@@ -1,0 +1,17 @@
+{
+  "_comment": "Golden reference values emitted by the TS oracle (packages/logic/src/mpm.ts + notes.ts). Regenerate with the script documented in cpp/dsp/README.md. The parity test (parity_test.cpp) embeds these same numbers; this file is the human-auditable record of where they come from. Tolerances: 1e-4 Hz on frequency, 1 cent on note math.",
+  "sampleRate": 44100,
+  "frameSize": 2048,
+  "mpm": [
+    { "inputFreq": 110, "frequency": 109.99989220957838, "clarity": 0.99999997243407,   "midi": 45, "cents": 0 },
+    { "inputFreq": 220, "frequency": 219.99998798925762, "clarity": 0.9999999645328327, "midi": 57, "cents": 0 },
+    { "inputFreq": 440, "frequency": 439.9987154938306,  "clarity": 1.0,                "midi": 69, "cents": 0 },
+    { "inputFreq": 660, "frequency": 659.9970537314432,  "clarity": 0.9999993639554986, "midi": 76, "cents": 2 }
+  ],
+  "notes": [
+    { "f": 440.0,     "midi": 69, "cents": 0 },
+    { "f": 261.6256,  "midi": 60, "cents": 0 },
+    { "f": 443.0,     "midi": 69, "cents": 12 },
+    { "f": 437.0,     "midi": 69, "cents": -12 }
+  ]
+}

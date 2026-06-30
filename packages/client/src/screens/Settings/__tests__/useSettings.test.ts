@@ -1,0 +1,234 @@
+/**
+ * Unit tests for useSettings (WP-SETTINGS-UI).
+ *
+ * Exercises the full round-trip through the mocked MMKV store wired by
+ * jest.setup.js.  The real `data/store` module is used (it already talks to
+ * the in-memory mock MMKV), so these tests validate:
+ *   - Initial state equals DEFAULT_ENGINE_CONFIG + ETheme.Blue.
+ *   - Partial overrides are merged and persisted.
+ *   - A second call to setEngineConfig accumulates on the previous override.
+ *   - resetEngineConfig() returns all values to defaults and clears the store key.
+ *   - setThemePalette() persists and returns the new palette.
+ *   - Loading a fresh hook instance picks up previously persisted overrides
+ *     (simulating an app restart).
+ */
+import React from 'react';
+import TestRenderer, { act } from 'react-test-renderer';
+
+import { DEFAULT_ENGINE_CONFIG } from '../../../audio/contract';
+import { ETheme } from '../../../configs/theme';
+import store from '../../../data/store';
+import { useSettings, type UseSettingsValue } from '../useSettings';
+
+// ---------------------------------------------------------------------------
+// Store isolation
+// ---------------------------------------------------------------------------
+
+// Clear the store before every test so tests don't bleed into each other.
+beforeEach(() => {
+  store.clearAll();
+});
+
+// ---------------------------------------------------------------------------
+// Harness
+// ---------------------------------------------------------------------------
+
+function Harness({ onReady }: { onReady: (v: UseSettingsValue) => void }): null {
+  onReady(useSettings());
+  return null;
+}
+
+interface Mounted {
+  api: () => UseSettingsValue;
+  unmount: () => void;
+}
+
+function mount(): Mounted {
+  let latest: UseSettingsValue | null = null;
+  let tree!: TestRenderer.ReactTestRenderer;
+  act(() => {
+    tree = TestRenderer.create(
+      React.createElement(Harness, {
+        onReady: (v: UseSettingsValue) => {
+          latest = v;
+        }
+      })
+    );
+  });
+  return {
+    api: () => latest as UseSettingsValue,
+    unmount: () => tree.unmount()
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+describe('useSettings', () => {
+  describe('initial state', () => {
+    it('returns DEFAULT_ENGINE_CONFIG when nothing is persisted', () => {
+      const { api } = mount();
+      expect(api().engineConfig).toEqual(DEFAULT_ENGINE_CONFIG);
+    });
+
+    it('returns ETheme.Blue as the default theme palette', () => {
+      const { api } = mount();
+      expect(api().themePalette).toBe(ETheme.Blue);
+    });
+  });
+
+  describe('setEngineConfig', () => {
+    it('applies a partial override and merges with defaults', () => {
+      const { api } = mount();
+
+      act(() => {
+        api().setEngineConfig({ frameSize: 4096 });
+      });
+
+      expect(api().engineConfig).toEqual({
+        ...DEFAULT_ENGINE_CONFIG,
+        frameSize: 4096
+      });
+    });
+
+    it('accumulates successive partial overrides', () => {
+      const { api } = mount();
+
+      act(() => {
+        api().setEngineConfig({ frameSize: 4096 });
+      });
+      act(() => {
+        api().setEngineConfig({ hopSize: 512 });
+      });
+
+      expect(api().engineConfig).toEqual({
+        ...DEFAULT_ENGINE_CONFIG,
+        frameSize: 4096,
+        hopSize: 512
+      });
+    });
+
+    it('overwrites the same field on repeated calls', () => {
+      const { api } = mount();
+
+      act(() => {
+        api().setEngineConfig({ clarityThreshold: 0.7 });
+      });
+      act(() => {
+        api().setEngineConfig({ clarityThreshold: 0.5 });
+      });
+
+      expect(api().engineConfig.clarityThreshold).toBeCloseTo(0.5);
+    });
+
+    it('persists the override so a fresh hook instance reads it back', () => {
+      const { unmount, api } = mount();
+      act(() => {
+        api().setEngineConfig({ emitRateHz: 30, minFrequencyHz: 80 });
+      });
+      unmount();
+
+      // Simulate app restart: create a new hook instance backed by the same store.
+      const { api: api2 } = mount();
+      expect(api2().engineConfig.emitRateHz).toBe(30);
+      expect(api2().engineConfig.minFrequencyHz).toBe(80);
+      // Un-touched fields remain at their defaults.
+      expect(api2().engineConfig.sampleRateHz).toBe(DEFAULT_ENGINE_CONFIG.sampleRateHz);
+    });
+  });
+
+  describe('resetEngineConfig', () => {
+    it('resets all fields to DEFAULT_ENGINE_CONFIG', () => {
+      const { api } = mount();
+
+      act(() => {
+        api().setEngineConfig({ frameSize: 4096, hopSize: 512 });
+      });
+      act(() => {
+        api().resetEngineConfig();
+      });
+
+      expect(api().engineConfig).toEqual(DEFAULT_ENGINE_CONFIG);
+    });
+
+    it('clears the persisted key so the next mount also sees defaults', () => {
+      const { unmount, api } = mount();
+      act(() => {
+        api().setEngineConfig({ frameSize: 4096 });
+      });
+      act(() => {
+        api().resetEngineConfig();
+      });
+      unmount();
+
+      const { api: api2 } = mount();
+      expect(api2().engineConfig).toEqual(DEFAULT_ENGINE_CONFIG);
+    });
+  });
+
+  describe('setThemePalette', () => {
+    it('updates the in-memory palette immediately', () => {
+      const { api } = mount();
+
+      act(() => {
+        api().setThemePalette(ETheme.Red);
+      });
+
+      expect(api().themePalette).toBe(ETheme.Red);
+    });
+
+    it('persists the palette so a fresh hook instance reads it back', () => {
+      const { unmount, api } = mount();
+      act(() => {
+        api().setThemePalette(ETheme.Green);
+      });
+      unmount();
+
+      const { api: api2 } = mount();
+      expect(api2().themePalette).toBe(ETheme.Green);
+    });
+
+    it('can switch back to Blue after choosing another palette', () => {
+      const { api } = mount();
+
+      act(() => {
+        api().setThemePalette(ETheme.Red);
+      });
+      act(() => {
+        api().setThemePalette(ETheme.Blue);
+      });
+
+      expect(api().themePalette).toBe(ETheme.Blue);
+    });
+  });
+
+  describe('loading persisted state on mount', () => {
+    it('reads all supported palette values correctly', () => {
+      const palettes: ETheme[] = [ETheme.Blue, ETheme.Red, ETheme.Green];
+      for (const palette of palettes) {
+        store.clearAll();
+        // Write directly to the store to simulate data from a previous session.
+        store.setString('settings:themePalette', palette);
+
+        const { api } = mount();
+        expect(api().themePalette).toBe(palette);
+      }
+    });
+
+    it('falls back to Blue for an unrecognised persisted palette value', () => {
+      store.setString('settings:themePalette', 'Purple');
+
+      const { api } = mount();
+      expect(api().themePalette).toBe(ETheme.Blue);
+    });
+
+    it('falls back to defaults for a corrupt JSON engine config', () => {
+      // Write invalid JSON directly to the store key.
+      store.setString('settings:engineConfig', '{not valid json}');
+
+      const { api } = mount();
+      expect(api().engineConfig).toEqual(DEFAULT_ENGINE_CONFIG);
+    });
+  });
+});
