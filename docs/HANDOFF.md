@@ -27,7 +27,7 @@ merged to `main` unless marked **Phase V** (needs a real dev machine) or
 | **Auth + backend** | Supabase: `src/lib/supabase.ts` + Keychain session adapter (`src/lib/secureSession.ts`); `src/auth/` (AuthContext/useAuth/LoginScreen); `supabase/` (schema, RLS, `takes` storage bucket, `delete_account` RPC). |
 | **Data + sync** | `src/data/recordingsRepo.ts` (cloud CRUD) + `src/data/profilesRepo.ts` (profile + account deletion) + `src/data/currentUser.ts` (shared auth guard) + `src/data/sync.ts` (local-first MMKV cache reconcile); one store. |
 | **Profile** | `src/screens/Profile/` (display-name edit, sign out, delete account) on its own tab; `useProfile` hook. |
-| **Practice (engine)** | `logic/melodies.ts` (target exercise catalogue → `TargetNote[]`) + `audio/referenceTone.ts` (play targets as reference tones). Scoring path (`scorePitch`) already supports external targets. Screen wiring is parked — see `docs/OPEN_QUESTIONS.md`. |
+| **Practice (full)** | Practice tab → pick exercise (`screens/Practice/PracticeScreen`) → `PracticeSession` records against the melody with target+live pitch scrolling in sync (`PracticePitchView`, Skia) and adaptive reference audio (play-along on headphones / count-in otherwise, `usePracticeSession` + `audio/outputRoute`) → Results scores against the chosen melody. Engine: `logic/melodies.ts` + `audio/referenceTone.ts`. Remaining gaps in `docs/OPEN_QUESTIONS.md`. |
 | **On-device feedback** | `src/analysis/feedback.ts` → `FeedbackDto` from `logic`, surfaced in Results. |
 | **i18n** | `src/i18n/` (i18next + device locale); Record/Library/Settings keyed. |
 | **CI** | `lint` + `typecheck` + pure-TS `test` all green. Gated to `workflow_dispatch` (manual). |
@@ -117,11 +117,13 @@ Still deferred (small, non-blocking):
 ### Product features
 - **Profile / account management — BUILT** (display-name edit, sign out, delete
   account incl. the `delete_account` RPC). Its own tab.
-- **Practice / target-melody — engine BUILT, UX parked.** `logic/melodies.ts`
-  (catalogue) + `audio/referenceTone.ts` (reference playback) + the existing
-  `scorePitch` target path are done and tested. The screen wiring (how the user
-  picks an exercise, the live target line, reference-playback timing) has genuine
-  UX ambiguity and is documented in `docs/OPEN_QUESTIONS.md`.
+- **Practice / target-melody — BUILT.** Full flow: Practice tab → exercise
+  picker → recorded session with target+live pitch scrolling in sync and adaptive
+  reference audio → Results scored against the chosen melody. Remaining gaps
+  (native headphone-route probe, remote/imported catalogue, rubato scoring) are in
+  `docs/OPEN_QUESTIONS.md`.
+- **Results "tap a note to hear it"** and **password reset** (Login "Forgot
+  password?") also shipped.
 - **Sharing/social** — still future scope (see `docs/OPEN_QUESTIONS.md`).
 
 ---

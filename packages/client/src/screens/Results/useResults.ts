@@ -26,7 +26,8 @@ import {
   notesToMidi,
   segmentNotes,
   smoothPitch,
-  type NoteEvent
+  type NoteEvent,
+  type TargetNote
 } from 'logic';
 import type { FeedbackDto, RecordingDto } from 'shared';
 
@@ -66,14 +67,22 @@ export interface UseResultsOptions {
   createdAtMs?: number;
   /** When false, skip cloud persistence / MIDI-write entirely (analysis still runs). */
   persist?: boolean;
+  /**
+   * Reference melody this take was sung against (practice mode). When present,
+   * scoring + per-note feedback target this melody instead of the take itself.
+   */
+  targets?: readonly TargetNote[];
 }
 
 /** Pure: run the offline pipeline + feedback synthesis over a handle's samples. */
-export function analyzeHandle(handle: RecordingHandle): ResultsAnalysis {
+export function analyzeHandle(
+  handle: RecordingHandle,
+  targets?: readonly TargetNote[]
+): ResultsAnalysis {
   const smoothed = smoothPitch(handle.samples);
   const notes = segmentNotes(smoothed);
   const midi = notesToMidi(notes);
-  const feedback = computeFeedback(handle);
+  const feedback = computeFeedback(handle, targets);
   return { notes, midi, feedback };
 }
 
@@ -90,11 +99,12 @@ export function useResults(
   handle: RecordingHandle,
   options: UseResultsOptions = {}
 ): UseResultsValue {
-  const { title, createdAtMs, persist = true } = options;
+  const { title, createdAtMs, persist = true, targets } = options;
 
   const analysis = useMemo(
-    () => analyzeHandle(handle),
-    // Analysis is a pure function of the handle's frames.
+    () => analyzeHandle(handle, targets),
+    // Analysis is a pure function of the handle's frames + the chosen melody;
+    // a take's id is unique per capture, so it keys both safely.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [handle.id]
   );

@@ -112,3 +112,38 @@ describe('computeFeedback', () => {
     expect(fb.suggestions.length).toBeGreaterThan(0);
   });
 });
+
+describe('computeFeedback against an external practice melody', () => {
+  // The fixture sings A3, C4, E4, A4, each held for 500ms.
+  const matchingTargets = [
+    { midi: 57, startMs: 0, endMs: 500 },
+    { midi: 60, startMs: 500, endMs: 1000 },
+    { midi: 64, startMs: 1000, endMs: 1500 },
+    { midi: 69, startMs: 1500, endMs: 2000 }
+  ];
+
+  it('scores a take that matches the target melody highly, one perNote per target', () => {
+    const fb = computeFeedback(makeHandle(melodyFixture([0, 0, 0, 0])), matchingTargets);
+
+    expect(fb.overallScore).toBeGreaterThan(90);
+    expect(fb.perNote).toHaveLength(matchingTargets.length);
+    expect(fb.perNote.map((n) => n.midi)).toEqual([57, 60, 64, 69]);
+    expect(fb.perNote.every((n) => n.inTune)).toBe(true);
+  });
+
+  it('punishes a take sung a tone away from the target', () => {
+    // Target a whole tone above what was actually sung → every note is ~200 cents off.
+    const shifted = matchingTargets.map((t) => ({ ...t, midi: t.midi + 2 }));
+    const fb = computeFeedback(makeHandle(melodyFixture([0, 0, 0, 0])), shifted);
+
+    expect(fb.overallScore).toBeLessThan(50);
+    expect(fb.perNote.every((n) => !n.inTune)).toBe(true);
+  });
+
+  it('falls back to self-scoring when given an empty target list', () => {
+    const fb = computeFeedback(makeHandle(melodyFixture([0, 0, 0, 0])), []);
+    // Same as the no-argument self-referential behaviour.
+    expect(fb.perNote.map((n) => n.midi)).toEqual([57, 60, 64, 69]);
+    expect(fb.overallScore).toBeGreaterThan(90);
+  });
+});

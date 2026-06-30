@@ -36,6 +36,8 @@ export interface AuthContextValue {
   signIn(email: string, password: string): Promise<void>;
   signUp(email: string, password: string): Promise<void>;
   signOut(): Promise<void>;
+  /** Email the user a password-reset link. */
+  resetPassword(email: string): Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -106,6 +108,13 @@ export function AuthProvider({
     }
   }, []);
 
+  const resetPassword = useCallback(async (email: string): Promise<void> => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) {
+      throw toAppError(error, 'Could not send a reset email.');
+    }
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       session,
@@ -113,9 +122,10 @@ export function AuthProvider({
       loading,
       signIn,
       signUp,
-      signOut
+      signOut,
+      resetPassword
     }),
-    [session, loading, signIn, signUp, signOut]
+    [session, loading, signIn, signUp, signOut, resetPassword]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

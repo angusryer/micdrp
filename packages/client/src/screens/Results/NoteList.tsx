@@ -7,13 +7,22 @@
  * here. A `FlatList` keeps long takes cheap to scroll.
  */
 import React, { useCallback } from 'react';
-import { FlatList, StyleSheet, Text, View, type ListRenderItemInfo } from 'react-native';
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  type ListRenderItemInfo
+} from 'react-native';
 import { NOTE_NAMES, type NoteEvent } from 'logic';
 
 import { useTheme } from '../../theme';
 
 export interface NoteListProps {
   notes: NoteEvent[];
+  /** When provided, each row is tappable and calls this with the note's MIDI. */
+  onPressNote?: (midi: number) => void;
 }
 
 /** Scientific-pitch label for a MIDI note number, e.g. 69 → "A4". */
@@ -27,21 +36,19 @@ function formatTime(ms: number): string {
   return `${(ms / 1000).toFixed(2)}s`;
 }
 
-export function NoteList({ notes }: NoteListProps) {
+export function NoteList({ notes, onPressNote }: NoteListProps) {
   const { colors } = useTheme();
 
   const renderItem = useCallback(
     ({ item, index }: ListRenderItemInfo<NoteEvent>) => {
       const cents = Math.round(item.cents);
       const centsLabel = cents === 0 ? '±0' : cents > 0 ? `+${cents}` : `${cents}`;
-      return (
-        <View
-          style={[styles.row, { borderBottomColor: colors.neutral500 }]}
-          accessibilityRole="text"
-          accessibilityLabel={`Note ${index + 1}: ${midiToLabel(item.midi)}, ${Math.round(
-            item.durationMs
-          )} milliseconds, ${centsLabel} cents`}
-        >
+      const tappable = onPressNote != null;
+      const label = `Note ${index + 1}: ${midiToLabel(item.midi)}, ${Math.round(
+        item.durationMs
+      )} milliseconds, ${centsLabel} cents${tappable ? ', tap to hear' : ''}`;
+      const cells = (
+        <>
           <Text style={[styles.name, { color: colors.typography }]}>
             {midiToLabel(item.midi)}
           </Text>
@@ -52,10 +59,32 @@ export function NoteList({ notes }: NoteListProps) {
             {Math.round(item.durationMs)} ms
           </Text>
           <Text style={[styles.cents, { color: colors.gray300 }]}>{centsLabel}¢</Text>
+        </>
+      );
+
+      if (tappable) {
+        return (
+          <TouchableOpacity
+            style={[styles.row, { borderBottomColor: colors.neutral500 }]}
+            onPress={() => onPressNote(item.midi)}
+            accessibilityRole="button"
+            accessibilityLabel={label}
+          >
+            {cells}
+          </TouchableOpacity>
+        );
+      }
+      return (
+        <View
+          style={[styles.row, { borderBottomColor: colors.neutral500 }]}
+          accessibilityRole="text"
+          accessibilityLabel={label}
+        >
+          {cells}
         </View>
       );
     },
-    [colors]
+    [colors, onPressNote]
   );
 
   if (notes.length === 0) {

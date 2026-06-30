@@ -9,28 +9,57 @@
  *
  * See docs/NATIVE_BUILD_PLAN.md §3 (WP-RESULTS-UI).
  */
-import React from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import type { PitchScore } from 'logic';
+import { findMelody, type PitchScore, type TargetNote } from 'logic';
 
 import type { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme';
+import { createReferenceTonePlayer } from '../../audio/referenceTone';
 import { ExportSheet } from './ExportSheet';
 import { FeedbackCard } from './FeedbackCard';
 import { NoteList } from './NoteList';
 import { ScoreCard } from './ScoreCard';
 import { useResults } from './useResults';
 
+/** How long a tapped reference note sounds, in ms. */
+const TAP_NOTE_MS = 700;
+
 type Props = NativeStackScreenProps<RootStackParamList, 'Results'>;
 
 export default function ResultsScreen({ route }: Props) {
   const { colors } = useTheme();
-  const { handle } = route.params;
+  const { handle, practice } = route.params;
 
-  const { notes, feedback, midiUri, recording } = useResults(handle);
+  // For a practice take, rebuild the reference melody so scoring + per-note
+  // feedback target it (rather than the take itself).
+  const targets = useMemo<TargetNote[] | undefined>(() => {
+    if (!practice) {
+      return undefined;
+    }
+    const melody = findMelody(practice.melodyId);
+    return melody
+      ? melody.build({
+          rootMidi: practice.rootMidi,
+          noteDurationMs: practice.noteDurationMs
+        })
+      : undefined;
+  }, [practice]);
+
+  const { notes, feedback, midiUri, recording } = useResults(handle, { targets });
   const title = recording?.title ?? 'Take';
+
+  // Tap a note to hear its true pitch (reuses the practice reference-tone player).
+  const tonePlayer = useMemo(() => createReferenceTonePlayer(), []);
+  useEffect(() => () => tonePlayer.stop(), [tonePlayer]);
+  const playNote = useCallback(
+    (midi: number) => {
+      tonePlayer.play([{ midi, startMs: 0, endMs: TAP_NOTE_MS }]);
+    },
+    [tonePlayer]
+  );
 
   // ScoreCard renders the same frame-level pitch numbers `computeFeedback`
   // already derived — adapt the FeedbackDto to the `PitchScore` shape it expects
@@ -56,8 +85,10 @@ export default function ResultsScreen({ route }: Props) {
         <FeedbackCard feedback={feedback} />
 
         <View style={styles.listWrap}>
-          <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>Notes</Text>
-          <NoteList notes={notes} />
+          <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
+            Notes (tap to hear)
+          </Text>
+          <NoteList notes={notes} onPressNote={playNote} />
         </View>
 
         <ExportSheet midiUri={midiUri} title={title} />

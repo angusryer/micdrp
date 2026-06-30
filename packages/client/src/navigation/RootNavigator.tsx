@@ -5,6 +5,8 @@ import React from 'react';
 import { useAuth } from '../auth';
 import LibraryScreen from '../screens/Library/LibraryScreen';
 import LoginScreen from '../screens/Login/LoginScreen';
+import PracticeScreen from '../screens/Practice/PracticeScreen';
+import PracticeSessionScreen from '../screens/Practice/PracticeSessionScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
 import RecordScreen from '../screens/Record/RecordScreen';
 import ResultsScreen from '../screens/Results/ResultsScreen';
@@ -23,6 +25,7 @@ function MainTabs() {
   return (
     <Tab.Navigator screenOptions={{ headerShown: false }}>
       <Tab.Screen name='Record' component={RecordScreen} />
+      <Tab.Screen name='Practice' component={PracticeScreen} />
       <Tab.Screen name='Library' component={LibraryScreen} />
       <Tab.Screen name='Profile' component={ProfileScreen} />
       <Tab.Screen name='Settings' component={SettingsScreen} />
@@ -42,6 +45,10 @@ export default function RootNavigator() {
       {session ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name='Main' component={MainTabs} />
+          <Stack.Screen
+            name='PracticeSession'
+            component={PracticeSessionScreen}
+          />
           <Stack.Screen
             name='Results'
             component={ResultsScreen}

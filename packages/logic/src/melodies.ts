@@ -104,3 +104,11 @@ export const PRACTICE_MELODIES: readonly PracticeMelody[] = [
 export function findMelody(id: string): PracticeMelody | undefined {
   return PRACTICE_MELODIES.find((m) => m.id === id);
 }
+
+/**
+ * Total length of a built melody in ms (the end of its last note), or 0 for an
+ * empty target list. Drives the practice transport (how long to record).
+ */
+export function melodyDurationMs(targets: readonly TargetNote[]): number {
+  return targets.length === 0 ? 0 : targets[targets.length - 1].endMs;
+}

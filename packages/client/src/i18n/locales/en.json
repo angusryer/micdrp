@@ -70,6 +70,32 @@
     "note_other": "{{count}} notes",
     "refreshing": "Refreshing…"
   },
+  "practice": {
+    "title": "Practice",
+    "subtitle": "Sing against a target melody.",
+    "key": "Key",
+    "keyUp": "Raise key",
+    "keyDown": "Lower key",
+    "pace": "Pace",
+    "paces": {
+      "slow": "Slow",
+      "medium": "Medium",
+      "fast": "Fast"
+    },
+    "start": "Start",
+    "startLabel": "Practise {{name}}",
+    "session": {
+      "getReady": "Get ready",
+      "listen": "Listen…",
+      "sing": "Sing!",
+      "analyzing": "Analyzing…",
+      "start": "Start",
+      "stop": "Stop",
+      "back": "Back",
+      "micDenied": "Microphone permission is needed to practise.",
+      "failed": "Something went wrong with this take."
+    }
+  },
   "profile": {
     "title": "Profile",
     "sections": {
