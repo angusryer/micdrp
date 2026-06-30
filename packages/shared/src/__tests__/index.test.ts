@@ -1,7 +1,14 @@
-import { test } from '../index';
+import { appError, AppErrorCode, STORAGE_BUCKET, TABLES } from '../index';
 
-describe('test', () => {
-  it('works', () => {
-    expect(test).toEqual('test');
+describe('shared contract', () => {
+  it('builds a typed AppError', () => {
+    const e = appError(AppErrorCode.NotFound, 'missing');
+    expect(e.code).toBe('NOT_FOUND');
+    expect(e.message).toBe('missing');
+  });
+
+  it('exposes backend constants', () => {
+    expect(STORAGE_BUCKET).toBe('takes');
+    expect(TABLES.recordings).toBe('recordings');
   });
 });

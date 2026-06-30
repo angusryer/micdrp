@@ -13,9 +13,6 @@
       "path": "packages/logic"
     },
     {
-      "path": "packages/server"
-    },
-    {
       "path": "packages/shared"
     }
   ]

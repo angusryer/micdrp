@@ -11,7 +11,6 @@
     "lint": "eslint packages --ext .js,.jsx,.ts,.tsx",
     "test": "./scripts/test.sh",
     "build": "./scripts/build.sh",
-    "server": "./scripts/server.sh",
     "client": "./scripts/run.sh",
     "submit": "./scripts/submit.sh",
     "typecheck": "tsc --noEmit",
