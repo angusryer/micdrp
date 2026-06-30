@@ -92,3 +92,40 @@ jest.mock(
   () => ({ default: { open: jest.fn(() => Promise.resolve()) } }),
   { virtual: true }
 );
+
+// Hardware-backed token store (Supabase session adapter).
+jest.mock(
+  'react-native-keychain',
+  () => {
+    const store = new Map();
+    return {
+      setGenericPassword: jest.fn((u, p, opts) => {
+        store.set((opts && opts.service) || 'default', p);
+        return Promise.resolve(true);
+      }),
+      getGenericPassword: jest.fn((opts) => {
+        const v = store.get((opts && opts.service) || 'default');
+        return Promise.resolve(v ? { username: 'micdrp', password: v } : false);
+      }),
+      resetGenericPassword: jest.fn((opts) => {
+        store.delete((opts && opts.service) || 'default');
+        return Promise.resolve(true);
+      }),
+      ACCESSIBLE: { WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'whenUnlocked' }
+    };
+  },
+  { virtual: true }
+);
+
+jest.mock(
+  'react-native-localize',
+  () => ({
+    getLocales: () => [
+      { languageCode: 'en', countryCode: 'US', languageTag: 'en-US', isRTL: false }
+    ],
+    findBestLanguageTag: () => ({ languageTag: 'en', isRTL: false })
+  }),
+  { virtual: true }
+);
+
+jest.mock('react-native-url-polyfill/auto', () => ({}), { virtual: true });
