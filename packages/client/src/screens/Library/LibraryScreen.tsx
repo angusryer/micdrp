@@ -21,6 +21,7 @@ import {
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 
 import { useTheme } from '../../theme';
+import { useTranslation } from '../../i18n';
 import type { MainTabParamList } from '../../navigation/types';
 import type { RecordingMeta } from '../../data/recordings';
 import { RecordingCard } from './RecordingCard';
@@ -30,16 +31,17 @@ export type LibraryScreenProps = BottomTabScreenProps<MainTabParamList, 'Library
 
 function EmptyState() {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   return (
     <View style={styles.emptyWrap}>
       <Text style={[styles.emptyIcon, { color: colors.neutral500 }]}>
         {'🎤'}
       </Text>
       <Text style={[styles.emptyTitle, { color: colors.typography }]}>
-        No recordings yet
+        {t('library.emptyTitle')}
       </Text>
       <Text style={[styles.emptySubtitle, { color: colors.gray300 }]}>
-        Head to the Record tab to capture your first take.
+        {t('library.emptySubtitle')}
       </Text>
     </View>
   );
@@ -52,6 +54,7 @@ function Separator() {
 
 export function LibraryScreen(_props: LibraryScreenProps): React.JSX.Element {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { recordings, loading, refresh, remove, shareMidi } = useLibrary();
 
   const renderItem = useCallback(
@@ -76,7 +79,7 @@ export function LibraryScreen(_props: LibraryScreenProps): React.JSX.Element {
     >
       <View style={styles.header}>
         <Text style={[styles.heading, { color: colors.typography }]}>
-          Library
+          {t('library.title')}
         </Text>
       </View>
 

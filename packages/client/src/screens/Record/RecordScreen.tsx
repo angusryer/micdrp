@@ -28,6 +28,7 @@ import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { useTheme } from '../../theme';
+import { useTranslation } from '../../i18n';
 import type { MainTabParamList, RootStackParamList } from '../../navigation/types';
 import { useRecordController } from './useRecordController';
 import { PitchLine } from './PitchLine';
@@ -47,6 +48,7 @@ const PITCH_LINE_MARGIN = 16;
 
 export function RecordScreen(): React.JSX.Element {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const navigation = useNavigation<RecordNavigation>();
 
@@ -78,7 +80,7 @@ export function RecordScreen(): React.JSX.Element {
     >
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.typography }]}>
-          {isRecording ? 'Listening…' : 'Sing'}
+          {isRecording ? t('record.titleListening') : t('record.title')}
         </Text>
       </View>
 

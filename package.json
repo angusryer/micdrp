@@ -11,12 +11,13 @@
     "lint": "eslint packages --ext .js,.jsx,.ts,.tsx",
     "test": "./scripts/test.sh",
     "build": "./scripts/build.sh",
-    "server": "./scripts/server.sh",
     "client": "./scripts/run.sh",
     "submit": "./scripts/submit.sh",
     "typecheck": "tsc --noEmit",
     "env": "npx dotenv-vault@latest pull",
-    "env-push": "npx dotenv-vault@latest push"
+    "env-push": "npx dotenv-vault@latest push",
+    "license": "license-checker --production --summary",
+    "owasp": "dependency-check --project micdrp --scan . --failOnCVSS 7 --suppression ./owasp.suppression.xml || true"
   },
   "devDependencies": {
     "@babel/core": "^7.20.12",

@@ -51,7 +51,8 @@ interface AudioBufferSourceNodeLike {
   onended: (() => void) | null;
 }
 
-interface AudioDestinationNodeLike {}
+// Opaque marker — we never read members off the destination node.
+type AudioDestinationNodeLike = object;
 
 interface AudioContextLike {
   destination: AudioDestinationNodeLike;

@@ -93,7 +93,7 @@ function HookHarness({ onReady }: { onReady: (api: UseAudioEngine) => void }): n
 describe('useAudioEngine hook', () => {
   it('exposes the engine API and tracks coarse state', () => {
     let api: UseAudioEngine | null = null;
-    act(() => {
+    void act(() => {
       TestRenderer.create(
         React.createElement(HookHarness, { onReady: (a) => (api = a) })
       );
@@ -111,14 +111,14 @@ describe('useAudioEngine hook', () => {
   it('subscribes to pitch and auto-cleans up on unmount without throwing', () => {
     let api: UseAudioEngine | null = null;
     let tree: TestRenderer.ReactTestRenderer | null = null;
-    act(() => {
+    void act(() => {
       tree = TestRenderer.create(
         React.createElement(HookHarness, { onReady: (a) => (api = a) })
       );
     });
 
     const received: PitchSample[] = [];
-    act(() => {
+    void act(() => {
       (api as unknown as UseAudioEngine).onPitch((s) => received.push(s));
     });
 
@@ -127,13 +127,13 @@ describe('useAudioEngine hook', () => {
 
   it('returns an idempotent unsubscribe from onPitch', () => {
     let api: UseAudioEngine | null = null;
-    act(() => {
+    void act(() => {
       TestRenderer.create(
         React.createElement(HookHarness, { onReady: (a) => (api = a) })
       );
     });
     let off: () => void = () => undefined;
-    act(() => {
+    void act(() => {
       off = (api as unknown as UseAudioEngine).onPitch(() => undefined);
     });
     expect(() => {

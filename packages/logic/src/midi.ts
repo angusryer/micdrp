@@ -34,8 +34,7 @@ export function notesToMidi(
   const ticksPerMs = ticksPerQuarter / (microsPerQuarter / 1000);
 
   const events: MidiEvent[] = [];
-  for (let i = 0; i < notes.length; i++) {
-    const note = notes[i];
+  for (const note of notes) {
     const onTick = Math.max(0, Math.round(note.startMs * ticksPerMs));
     let offTick = Math.round(note.endMs * ticksPerMs);
     if (offTick <= onTick) {
@@ -66,8 +65,7 @@ export function notesToMidi(
   );
 
   let prevTick = 0;
-  for (let i = 0; i < events.length; i++) {
-    const ev = events[i];
+  for (const ev of events) {
     pushVarLen(track, ev.tick - prevTick);
     prevTick = ev.tick;
     if (ev.kind === 1) {
@@ -91,8 +89,8 @@ export function notesToMidi(
   // Track chunk.
   out.push(0x4d, 0x54, 0x72, 0x6b);
   pushUint32(out, track.length);
-  for (let i = 0; i < track.length; i++) {
-    out.push(track[i]);
+  for (const byte of track) {
+    out.push(byte);
   }
 
   return Uint8Array.from(out);

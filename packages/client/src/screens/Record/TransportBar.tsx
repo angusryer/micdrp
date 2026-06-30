@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 
 import { useTheme } from '../../theme';
+import { useTranslation } from '../../i18n';
 import type { RecordingStateValue } from '../../state/recordingMachine';
 
 export interface TransportBarProps {
@@ -32,6 +33,7 @@ export function TransportBar({
   onStop
 }: TransportBarProps): React.JSX.Element {
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   const isRecording = state === 'recording';
   const isBusy = state === 'analyzing' || state === 'requestingPermission';
@@ -49,8 +51,10 @@ export function TransportBar({
     [isRecording, isBusy, colors.error, colors.primary500]
   );
 
-  const label = isRecording ? 'Stop' : 'Record';
-  const accessibilityLabel = isRecording ? 'Stop recording' : 'Start recording';
+  const label = isRecording ? t('record.stop') : t('record.record');
+  const accessibilityLabel = isRecording
+    ? t('record.stopRecording')
+    : t('record.startRecording');
 
   return (
     <View style={styles.container}>

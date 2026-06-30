@@ -4,9 +4,38 @@
 
 require('react-native-gesture-handler/jestSetup');
 
-jest.mock('react-native-reanimated', () =>
-  require('react-native-reanimated/mock')
-);
+// Inline reanimated mock. (react-native-reanimated v3 no longer ships the
+// `/mock` subpath, so we provide the small surface our UI actually uses.)
+jest.mock('react-native-reanimated', () => {
+  const RN = require('react-native');
+  const shared = (init) => ({ value: init });
+  return {
+    __esModule: true,
+    default: {
+      View: RN.View,
+      Text: RN.Text,
+      Image: RN.Image,
+      ScrollView: RN.ScrollView,
+      createAnimatedComponent: (c) => c
+    },
+    useSharedValue: (v) => shared(v),
+    useDerivedValue: (fn) => shared(typeof fn === 'function' ? fn() : undefined),
+    useAnimatedStyle: (fn) => (typeof fn === 'function' ? fn() : {}),
+    useAnimatedProps: (fn) => (typeof fn === 'function' ? fn() : {}),
+    useAnimatedReaction: () => {},
+    withTiming: (v) => v,
+    withSpring: (v) => v,
+    withDelay: (_d, v) => v,
+    withRepeat: (v) => v,
+    cancelAnimation: () => {},
+    runOnJS: (fn) => fn,
+    runOnUI: (fn) => fn,
+    interpolate: () => 0,
+    Extrapolate: { CLAMP: 'clamp', EXTEND: 'extend', IDENTITY: 'identity' },
+    Extrapolation: { CLAMP: 'clamp', EXTEND: 'extend', IDENTITY: 'identity' },
+    Easing: new Proxy({}, { get: () => () => 0 })
+  };
+}, { virtual: true });
 
 // react-native-mmkv: in-memory backing store.
 jest.mock('react-native-mmkv', () => {
@@ -46,7 +75,7 @@ jest.mock('react-native-mmkv', () => {
     }
   }
   return { MMKV };
-});
+}, { virtual: true });
 
 // @shopify/react-native-skia: render children, stub drawing primitives.
 jest.mock('@shopify/react-native-skia', () => {
@@ -67,7 +96,7 @@ jest.mock('@shopify/react-native-skia', () => {
     useFont: () => null,
     vec: (x, y) => ({ x, y })
   };
-});
+}, { virtual: true });
 
 // Native audio engine + fs + share: virtual mocks (may be absent in some setups).
 jest.mock(
@@ -92,3 +121,40 @@ jest.mock(
   () => ({ default: { open: jest.fn(() => Promise.resolve()) } }),
   { virtual: true }
 );
+
+// Hardware-backed token store (Supabase session adapter).
+jest.mock(
+  'react-native-keychain',
+  () => {
+    const store = new Map();
+    return {
+      setGenericPassword: jest.fn((u, p, opts) => {
+        store.set((opts && opts.service) || 'default', p);
+        return Promise.resolve(true);
+      }),
+      getGenericPassword: jest.fn((opts) => {
+        const v = store.get((opts && opts.service) || 'default');
+        return Promise.resolve(v ? { username: 'micdrp', password: v } : false);
+      }),
+      resetGenericPassword: jest.fn((opts) => {
+        store.delete((opts && opts.service) || 'default');
+        return Promise.resolve(true);
+      }),
+      ACCESSIBLE: { WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'whenUnlocked' }
+    };
+  },
+  { virtual: true }
+);
+
+jest.mock(
+  'react-native-localize',
+  () => ({
+    getLocales: () => [
+      { languageCode: 'en', countryCode: 'US', languageTag: 'en-US', isRTL: false }
+    ],
+    findBestLanguageTag: () => ({ languageTag: 'en', isRTL: false })
+  }),
+  { virtual: true }
+);
+
+jest.mock('react-native-url-polyfill/auto', () => ({}), { virtual: true });

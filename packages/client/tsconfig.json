@@ -15,7 +15,9 @@
       "logic": ["../logic/src/index.ts"],
       "logic/*": ["../logic/src/*"],
       "models": ["../models/src/index.ts"],
-      "models/*": ["../models/src/*"]
+      "models/*": ["../models/src/*"],
+      "shared": ["../shared/src/index.ts"],
+      "shared/*": ["../shared/src/*"]
     }
   },
   "exclude": [".bundle", "android", "ios", "node_modules", "vendor"]

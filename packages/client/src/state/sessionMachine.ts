@@ -16,7 +16,7 @@
  *   ready ─RELOAD─► booting
  *   failed ─RELOAD─► booting
  *
- * XState v4 syntax (matches src/utilities/machine.ts).
+ * XState v4 syntax (imports `createMachine`/`assign` straight from `xstate`).
  */
 
 import { createMachine, assign } from 'xstate';

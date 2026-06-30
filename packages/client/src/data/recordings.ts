@@ -1,5 +1,5 @@
 /**
- * CRUD over the persisted recordings index.
+ * Read access over the persisted recordings index (the offline cache).
  *
  * The index is a single MMKV JSON record: a map of `id -> RecordingMeta`. A
  * {@link RecordingMeta} is the *on-disk index record* — small, denormalised, and
@@ -10,12 +10,16 @@
  * `models.Recording` (`id`, `createdAtMs`, `durationMs`, `sampleRateHz`) plus the
  * file URIs and derived summary stats the Library/Results screens render.
  *
+ * This module is the single READ path for that cache. The cache is *written*
+ * exclusively by `sync.ts` (server-authoritative, one whole-index write under
+ * {@link RECORDINGS_INDEX_KEY}); there is no second local store and no
+ * per-record mutation API here.
+ *
  * See docs/NATIVE_BUILD_PLAN.md §3 (WP-PERSIST).
  */
 import type { Recording } from 'models';
 
-import { deleteRecordingFiles } from './files';
-import { getJSON, setJSON } from './store';
+import { getJSON } from './store';
 
 /** MMKV key under which the whole `id -> RecordingMeta` index is stored. */
 export const RECORDINGS_INDEX_KEY = 'recordings.index';
@@ -65,39 +69,10 @@ function readIndex(): RecordingIndex {
   return getJSON<RecordingIndex>(RECORDINGS_INDEX_KEY) ?? {};
 }
 
-function writeIndex(index: RecordingIndex): void {
-  setJSON(RECORDINGS_INDEX_KEY, index);
-}
-
 /**
- * All recordings, newest first (descending `createdAtMs`). Returns an empty array
- * when nothing has been saved.
+ * All cached recordings, newest first (descending `createdAtMs`). Returns an
+ * empty array when the cache is empty or its payload is corrupt.
  */
 export function listRecordings(): RecordingMeta[] {
   return Object.values(readIndex()).sort((a, b) => b.createdAtMs - a.createdAtMs);
-}
-
-/** A single recording by id, or `null` if not found. */
-export function getRecording(id: string): RecordingMeta | null {
-  return readIndex()[id] ?? null;
-}
-
-/** Insert or replace a recording's index record (keyed by `meta.id`). */
-export function saveRecording(meta: RecordingMeta): void {
-  const index = readIndex();
-  index[meta.id] = meta;
-  writeIndex(index);
-}
-
-/**
- * Remove a recording from the index and delete its on-disk audio/midi files.
- * No-op (still cleans files) if the id is unknown.
- */
-export async function deleteRecording(id: string): Promise<void> {
-  const index = readIndex();
-  if (id in index) {
-    delete index[id];
-    writeIndex(index);
-  }
-  await deleteRecordingFiles(id);
 }

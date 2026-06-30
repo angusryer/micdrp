@@ -21,7 +21,7 @@
  * last error message. The per-audio-frame `PitchSample` stream NEVER flows
  * through here — it stays on the UI thread (Reanimated shared values).
  *
- * XState v4 syntax (matches src/utilities/machine.ts + src/context/UserContext.tsx).
+ * XState v4 syntax (imports `createMachine`/`assign` straight from `xstate`).
  */
 
 import { createMachine, assign } from 'xstate';

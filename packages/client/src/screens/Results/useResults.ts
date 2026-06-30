@@ -1,35 +1,41 @@
 /**
- * Offline analysis hook for the Results screen (WP-RESULTS-UI).
+ * Offline analysis + cloud-persistence hook for the Results screen
+ * (WP-CLIENT-ANALYSIS owns the Results wiring).
  *
  * Runs the canonical `logic` pipeline over the full-resolution
  * `RecordingHandle.samples` exactly once per handle, OFF the live audio path:
  *
- *   smoothPitch → segmentNotes → notesToMidi  (and optional scorePitch)
+ *   smoothPitch → segmentNotes → notesToMidi   (notes + exportable MIDI)
+ *   computeFeedback(handle)                     (on-device FeedbackDto)
  *
- * The result is a small, render-ready view model plus a persisted
- * {@link RecordingMeta} and an on-disk `.mid`. The heavy work happens in a
- * `useMemo` keyed on the handle id, and persistence is a one-shot effect so a
- * re-render never re-writes files. `PitchSample` is structurally a logic
- * `PitchFrame`, so `handle.samples` feeds the pipeline directly with no copy.
+ * The take is then persisted to the cloud via {@link recordingsRepo.create}: the
+ * Supabase data layer uploads the audio + exported MIDI blobs to Storage and
+ * inserts the row (key / tempo / score included), returning the canonical
+ * {@link RecordingDto}. There is no local-only store here — the repo is the
+ * single source of truth (see WP-CLIENT-DATA `sync.ts` for offline reconcile).
  *
- * See docs/NATIVE_BUILD_PLAN.md §2 (contract) and §3 (WP-RESULTS-UI).
+ * Heavy work happens in a `useMemo` keyed on the handle id; persistence is a
+ * one-shot effect guarded so React re-renders never re-upload. `PitchSample` is
+ * structurally a logic `PitchFrame`, so `handle.samples` feeds the pipeline
+ * directly with no copy.
+ *
+ * See docs/PROJECT_COMPLETION_PLAN.md §3 (WP-CLIENT-ANALYSIS).
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   notesToMidi,
-  scorePitch,
   segmentNotes,
   smoothPitch,
-  type NoteEvent,
-  type PitchScore,
-  type TargetNote
+  type NoteEvent
 } from 'logic';
+import type { FeedbackDto, RecordingDto } from 'shared';
 
+import { computeFeedback } from '../../analysis/feedback';
+import { recordingsRepo } from '../../data/recordingsRepo';
 import { writeMidi } from '../../data/files';
-import { saveRecording, type RecordingMeta } from '../../data/recordings';
 import type { RecordingHandle } from '../../audio/contract';
 
-/** Persistence status for the one-shot save + MIDI write. */
+/** Persistence status for the one-shot cloud save + MIDI write. */
 export type PersistStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 /** Render-ready analysis derived purely from a {@link RecordingHandle}. */
@@ -38,43 +44,37 @@ export interface ResultsAnalysis {
   notes: NoteEvent[];
   /** Standard MIDI File bytes for {@link notes}. */
   midi: Uint8Array;
-  /** Pitch score vs. the supplied target melody, or null when no target given. */
-  score: PitchScore | null;
+  /** On-device coaching feedback (score, key, tempo, narrative, perNote). */
+  feedback: FeedbackDto;
 }
 
 export interface UseResultsValue extends ResultsAnalysis {
   /** Echoes the source handle for child components (id / duration / uri). */
   handle: RecordingHandle;
-  /** `file://` URI of the written `.mid`, once persisted. */
+  /** `file://` URI of the written `.mid`, once persisted (drives export/share). */
   midiUri: string | null;
-  /** One-shot persistence status (index record + `.mid` blob). */
+  /** One-shot persistence status (cloud row + uploaded blobs). */
   status: PersistStatus;
-  /** The persisted index record, once saved. */
-  meta: RecordingMeta | null;
+  /** The persisted cloud record, once saved. */
+  recording: RecordingDto | null;
 }
 
 export interface UseResultsOptions {
-  /** Reference melody to score against. When omitted, no score is computed. */
-  target?: TargetNote[];
   /** User-facing title; defaults to a timestamped label. */
   title?: string;
   /** Wall-clock creation time; defaults to `Date.now()` (injectable for tests). */
   createdAtMs?: number;
-  /** When false, skip persistence/MIDI-write entirely (analysis still runs). */
+  /** When false, skip cloud persistence / MIDI-write entirely (analysis still runs). */
   persist?: boolean;
 }
 
-/** Pure: run the full offline pipeline over a handle's samples. */
-export function analyzeHandle(
-  handle: RecordingHandle,
-  target?: TargetNote[]
-): ResultsAnalysis {
+/** Pure: run the offline pipeline + feedback synthesis over a handle's samples. */
+export function analyzeHandle(handle: RecordingHandle): ResultsAnalysis {
   const smoothed = smoothPitch(handle.samples);
   const notes = segmentNotes(smoothed);
   const midi = notesToMidi(notes);
-  const score =
-    target != null && target.length > 0 ? scorePitch(smoothed, target) : null;
-  return { notes, midi, score };
+  const feedback = computeFeedback(handle);
+  return { notes, midi, feedback };
 }
 
 function defaultTitle(createdAtMs: number): string {
@@ -82,27 +82,27 @@ function defaultTitle(createdAtMs: number): string {
 }
 
 /**
- * Analyse a finished capture and persist it. Analysis is memoised on the handle
- * id; persistence (index save + `.mid` write) runs once per id via an effect and
- * is guarded so React re-renders never duplicate the disk writes.
+ * Analyse a finished capture and persist it to the cloud. Analysis is memoised
+ * on the handle id; persistence (MIDI write + `recordingsRepo.create`) runs once
+ * per id via an effect, guarded so React re-renders never duplicate the upload.
  */
 export function useResults(
   handle: RecordingHandle,
   options: UseResultsOptions = {}
 ): UseResultsValue {
-  const { target, title, createdAtMs, persist = true } = options;
+  const { title, createdAtMs, persist = true } = options;
 
   const analysis = useMemo(
-    () => analyzeHandle(handle, target),
-    // Analysis is a pure function of the handle's frames + the target melody.
+    () => analyzeHandle(handle),
+    // Analysis is a pure function of the handle's frames.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [handle.id, target]
+    [handle.id]
   );
 
   const [status, setStatus] = useState<PersistStatus>('idle');
   const [midiUri, setMidiUri] = useState<string | null>(null);
-  const [meta, setMeta] = useState<RecordingMeta | null>(null);
-  /** Ids already persisted this mount, so re-renders never re-write files. */
+  const [recording, setRecording] = useState<RecordingDto | null>(null);
+  /** Ids already persisted this mount, so re-renders never re-upload. */
   const persistedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -115,29 +115,37 @@ export function useResults(
     setStatus('saving');
 
     const created = createdAtMs ?? Date.now();
+    const { feedback, notes, midi } = analysis;
+
     void (async () => {
       try {
-        const uri = await writeMidi(handle.id, analysis.midi);
-        const record: RecordingMeta = {
-          id: handle.id,
-          title: title ?? defaultTitle(created),
-          createdAtMs: created,
-          durationMs: handle.durationMs,
-          sampleRateHz: handle.sampleRateHz,
-          audioUri: handle.uri,
-          midiUri: uri,
-          noteCount: analysis.notes.length,
-          ...(analysis.score != null ? { score: analysis.score.score } : {})
-        };
-        saveRecording(record);
+        // Keep the local `.mid` export/share path: write the file first so the
+        // export sheet has a `file://` URI even before the upload resolves.
+        const uri = await writeMidi(handle.id, midi);
         if (!cancelled) {
           setMidiUri(uri);
-          setMeta(record);
+        }
+
+        const saved = await recordingsRepo.create(
+          {
+            title: title ?? defaultTitle(created),
+            durationMs: handle.durationMs,
+            sampleRateHz: handle.sampleRateHz,
+            noteCount: notes.length,
+            score: feedback.overallScore,
+            key: feedback.key,
+            tempoBpm: feedback.tempoBpm
+          },
+          { audioUri: handle.uri, midiBytes: midi }
+        );
+
+        if (!cancelled) {
+          setRecording(saved);
           setStatus('saved');
         }
       } catch {
         if (!cancelled) {
-          // Allow a later mount to retry the write for this id.
+          // Allow a later mount to retry the upload for this id.
           persistedRef.current.delete(handle.id);
           setStatus('error');
         }
@@ -154,9 +162,9 @@ export function useResults(
     handle,
     notes: analysis.notes,
     midi: analysis.midi,
-    score: analysis.score,
+    feedback: analysis.feedback,
     midiUri,
     status,
-    meta
+    recording
   };
 }

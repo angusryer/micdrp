@@ -12,9 +12,8 @@ import java.util.List;
 /**
  * WP-AUDIO-BRIDGE — registers the Tier-1 native {@link AudioEngineModule}.
  *
- * <p>Add this package to the host application's {@code getPackages()} list
- * (alongside the existing {@code AudioPackages}). Kept separate so the legacy
- * {@code AudioControlModule} registration stays untouched.
+ * <p>This is the only audio React package; it is added to the host
+ * application's {@code getPackages()} list in {@code MainApplication}.
  */
 public class AudioEnginePackage implements ReactPackage {
 

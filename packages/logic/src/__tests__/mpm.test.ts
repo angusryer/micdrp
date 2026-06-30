@@ -15,7 +15,7 @@ describe('detectPitch (MPM)', () => {
     it(`detects a ${freq}Hz sine within 1%`, () => {
       const { frequency, clarity } = detectPitch(sine(freq, 2048), SAMPLE_RATE);
       expect(frequency).not.toBeNull();
-      expect(Math.abs((frequency as number) - freq) / freq).toBeLessThan(0.01);
+      expect(Math.abs(frequency! - freq) / freq).toBeLessThan(0.01);
       expect(clarity).toBeGreaterThan(0.85);
     });
   });

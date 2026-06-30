@@ -6,6 +6,10 @@
  * to stay portable across the monorepo's tsconfig targets.
  */
 
+// The chromatic note table. Intentionally declared locally (not imported from
+// `models`) to keep this module dependency-free so the exact same code runs in
+// Jest, in a Reanimated/audio worklet, and on the server without dragging in the
+// `models` package's resolution graph. `models` carries an identical domain copy.
 export const NOTE_NAMES = [
   'C',
   'C#',

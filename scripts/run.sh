@@ -211,11 +211,7 @@ fi
 
 start "Using $env environment"; stop 0;
 
-if [[ "$env" = 'development' ]]; then
-  start "Starting backend services"
-    osascript -e "tell application \"Terminal\" to do script \"cd $(pwd) && yarn workspace server start\"" > /dev/null # long-running process
-  stop 0
-fi
+# Backend is Supabase (managed) — no local server process to start.
 
 if [ "$runAndroid" -eq 1 ]; then
   if [ "$switchingEnvs" -eq 1 ]; then

@@ -1,0 +1,22 @@
+-- micdrp — optional seed data
+-- This file is intentionally minimal. It does NOT create auth users
+-- (those are created through the auth flow) and contains NO secrets.
+--
+-- To load: supabase db reset   (drops + migrates + seeds, local only)
+-- Or:      psql <connection-string> -f supabase/seed.sql
+
+-- Nothing to seed for production. Test fixtures are colocated with
+-- their Jest tests in packages/client/src/**/__tests__/.
+
+-- Uncomment to insert a demo recording row once you have a real user id:
+-- insert into public.recordings
+--   (id, user_id, title, duration_ms, sample_rate_hz, note_count)
+-- values
+--   (
+--     '00000000-0000-0000-0000-000000000001',
+--     '<replace-with-your-auth-user-id>',
+--     'Demo take',
+--     4000,
+--     44100,
+--     12
+--   );

@@ -68,9 +68,7 @@ export function segmentNotes(
     count = 0;
   }
 
-  for (let i = 0; i < frames.length; i++) {
-    const f = frames[i];
-
+  for (const f of frames) {
     if (f.midi == null) {
       // Unvoiced frame: end the current note only if the gap is too long.
       if (curMidi != null && f.timestampMs - lastVoicedMs > maxGap) {
