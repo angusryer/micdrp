@@ -49,12 +49,10 @@ function isNoteEvent(item: PitchFrame | NoteEvent): item is NoteEvent {
  * Accumulate a duration/count-weighted pitch-class histogram over the input.
  * Notes contribute their duration; frames contribute one unit each.
  */
-function buildHistogram(frames: ReadonlyArray<PitchFrame | NoteEvent>): number[] {
+function buildHistogram(frames: readonly (PitchFrame | NoteEvent)[]): number[] {
   const histogram = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
-  for (let i = 0; i < frames.length; i++) {
-    const item = frames[i];
-
+  for (const item of frames) {
     let midi: number | null;
     let weight: number;
 
@@ -79,8 +77,8 @@ function buildHistogram(frames: ReadonlyArray<PitchFrame | NoteEvent>): number[]
 
 function mean(values: number[]): number {
   let sum = 0;
-  for (let i = 0; i < values.length; i++) {
-    sum += values[i];
+  for (const v of values) {
+    sum += v;
   }
   return sum / values.length;
 }
@@ -122,13 +120,13 @@ function correlate(
  * Empty/silent input resolves to C major with zero confidence.
  */
 export function detectKey(
-  frames: ReadonlyArray<PitchFrame | NoteEvent>
+  frames: readonly (PitchFrame | NoteEvent)[]
 ): KeyEstimate {
   const histogram = buildHistogram(frames);
 
   let total = 0;
-  for (let i = 0; i < 12; i++) {
-    total += histogram[i];
+  for (const bin of histogram) {
+    total += bin;
   }
   if (total === 0) {
     return { tonic: 0, tonicName: NOTE_NAMES[0], mode: 'major', confidence: 0 };

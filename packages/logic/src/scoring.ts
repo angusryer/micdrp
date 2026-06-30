@@ -50,8 +50,7 @@ export function scorePitch(
   let sumAbsError = 0;
   let sumFrameScore = 0;
 
-  for (let i = 0; i < frames.length; i++) {
-    const f = frames[i];
+  for (const f of frames) {
     if (f.midi == null) {
       continue;
     }
@@ -87,8 +86,7 @@ export function scorePitch(
 }
 
 function findTarget(targets: TargetNote[], timeMs: number): TargetNote | null {
-  for (let i = 0; i < targets.length; i++) {
-    const t = targets[i];
+  for (const t of targets) {
     if (timeMs >= t.startMs && timeMs < t.endMs) {
       return t;
     }

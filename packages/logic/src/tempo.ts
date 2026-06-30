@@ -56,8 +56,8 @@ function scorePeriod(onsets: number[], periodMs: number): number {
   }
 
   let rewardSum = 0;
-  for (let i = 0; i < onsets.length; i++) {
-    const phase = onsets[i] / periodMs;
+  for (const onset of onsets) {
+    const phase = onset / periodMs;
     const frac = phase - Math.floor(phase);
     // Distance to the nearest grid line, in [0, 0.5].
     const dist = frac > 0.5 ? 1 - frac : frac;
@@ -74,11 +74,11 @@ function scorePeriod(onsets: number[], periodMs: number): number {
  * Fewer than two onsets carries no rhythmic information, so we return a neutral
  * 0 bpm with zero confidence.
  */
-export function estimateTempo(notes: ReadonlyArray<NoteEvent>): TempoEstimate {
+export function estimateTempo(notes: readonly NoteEvent[]): TempoEstimate {
   // Collect and sort onsets.
   const onsets: number[] = [];
-  for (let i = 0; i < notes.length; i++) {
-    onsets.push(notes[i].startMs);
+  for (const n of notes) {
+    onsets.push(n.startMs);
   }
   onsets.sort(function (a, b) {
     return a - b;
@@ -97,9 +97,8 @@ export function estimateTempo(notes: ReadonlyArray<NoteEvent>): TempoEstimate {
       continue;
     }
     // Fold the IOI and its sub-/super-divisions into the valid period band.
-    const divisors = [1, 2, 3, 4];
-    for (let d = 0; d < divisors.length; d++) {
-      const period = ioi / divisors[d];
+    for (const divisor of [1, 2, 3, 4]) {
+      const period = ioi / divisor;
       if (period >= MIN_PERIOD_MS && period <= MAX_PERIOD_MS) {
         candidates.push(period);
       }
@@ -116,8 +115,7 @@ export function estimateTempo(notes: ReadonlyArray<NoteEvent>): TempoEstimate {
   let bestScore = -Infinity;
   let bestPeriod = candidates[0];
 
-  for (let i = 0; i < candidates.length; i++) {
-    const period = candidates[i];
+  for (const period of candidates) {
     const score = scorePeriod(onsets, period);
     if (
       score > bestScore ||

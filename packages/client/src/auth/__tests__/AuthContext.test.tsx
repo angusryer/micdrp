@@ -60,7 +60,7 @@ describe('AuthProvider / useAuth', () => {
     expect(result.current.session).toBeNull();
     expect(result.current.user).toBeNull();
 
-    act(() => emit('INITIAL_SESSION', null));
+    void act(() => emit('INITIAL_SESSION', null));
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.session).toBeNull();
@@ -72,7 +72,7 @@ describe('AuthProvider / useAuth', () => {
     const session = { access_token: 'tok', user: { id: 'u1', email: 'a@b.c' } };
     const { result } = renderHook(() => useAuth(), { wrapper });
 
-    act(() => emit('SIGNED_IN', session));
+    void act(() => emit('SIGNED_IN', session));
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.session).toBe(session);

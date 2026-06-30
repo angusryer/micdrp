@@ -10,8 +10,8 @@
  *     that. Errors surface as `AppError` (the shared contract) so screens render
  *     a stable shape.
  *
- * There is no mock user and no local auth store; this replaces the old
- * `context/UserContext`.
+ * There is no mock user and no local auth store; this is the only auth context
+ * in the app.
  */
 import type { AuthError, Session, User } from '@supabase/supabase-js';
 import React, {

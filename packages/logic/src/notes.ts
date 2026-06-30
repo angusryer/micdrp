@@ -6,22 +6,10 @@
  * to stay portable across the monorepo's tsconfig targets.
  */
 
-export const NOTE_NAMES = [
-  'C',
-  'C#',
-  'D',
-  'D#',
-  'E',
-  'F',
-  'F#',
-  'G',
-  'G#',
-  'A',
-  'A#',
-  'B'
-] as const;
-
-export type NoteName = (typeof NOTE_NAMES)[number];
+// The chromatic note table and its name type are the domain source of truth in
+// `models`; logic re-exports them so existing `from 'logic'` imports (key.ts,
+// NoteRibbon, NoteList) keep working without duplicating the literal.
+export { NOTE_NAMES, type NoteName } from 'models';
 
 export const A4_HZ = 440;
 export const A4_MIDI = 69;

@@ -38,6 +38,7 @@ import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import type { MainTabParamList } from '../../navigation/types';
 import { useSettings } from './useSettings';
+import { version as PACKAGE_VERSION } from '../../../package.json';
 
 export type SettingsScreenProps = BottomTabScreenProps<MainTabParamList, 'Settings'>;
 
@@ -230,10 +231,14 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
     useSettings();
 
   const makeStepHandler = useCallback(
-    (field: FieldSpec, direction: StepDirection) => () => {
-      const current = engineConfig[field.key];
+    (field: FieldSpec, direction: StepDirection) => (): void => {
+      const current: number = engineConfig[field.key];
       const next = clampedStep(current, direction, field.step, field.min, field.max);
-      setEngineConfig({ [field.key]: next } as Partial<EngineConfig>);
+      // Every EngineConfig field is a number, so writing a single key into a
+      // typed partial is fully type-safe (no `any`, no assertion).
+      const override: Partial<EngineConfig> = {};
+      override[field.key] = next;
+      setEngineConfig(override);
     },
     [engineConfig, setEngineConfig]
   );
@@ -346,18 +351,11 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
 }
 
 // ---------------------------------------------------------------------------
-// App version — read from package metadata without network calls or secrets.
+// App version — statically imported from package metadata (no `require`, no
+// network calls, no secrets). `resolveJsonModule` types the import.
 // ---------------------------------------------------------------------------
 
-const APP_VERSION: string = (() => {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const pkg = require('../../../package.json') as { version?: string };
-    return pkg.version ?? '1.0.0';
-  } catch {
-    return '1.0.0';
-  }
-})();
+const APP_VERSION: string = PACKAGE_VERSION;
 
 // ---------------------------------------------------------------------------
 // Styles

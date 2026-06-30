@@ -92,8 +92,8 @@ export function detectPitch(
 
   // Highest peak sets the acceptance cutoff.
   let highest = 0;
-  for (let k = 0; k < maxPositions.length; k++) {
-    const v = nsdf[maxPositions[k]];
+  for (const pos of maxPositions) {
+    const v = nsdf[pos];
     if (v > highest) {
       highest = v;
     }
@@ -105,8 +105,7 @@ export function detectPitch(
   const cutoff = threshold * highest;
 
   // First key maximum at or above the cutoff wins.
-  for (let k = 0; k < maxPositions.length; k++) {
-    const p = maxPositions[k];
+  for (const p of maxPositions) {
     if (nsdf[p] < cutoff) {
       continue;
     }

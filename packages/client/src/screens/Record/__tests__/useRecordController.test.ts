@@ -84,7 +84,7 @@ interface Mounted {
 function mount(): Mounted {
   let latest: RecordController | null = null;
   let tree!: TestRenderer.ReactTestRenderer;
-  act(() => {
+  void act(() => {
     tree = TestRenderer.create(
       React.createElement(Harness, { onReady: (a) => (latest = a) })
     );
@@ -138,7 +138,7 @@ describe('useRecordController', () => {
       await api().start();
     });
 
-    act(() => {
+    void act(() => {
       engineMock.__emit(
         sample({ frequencyHz: 220, clarity: 0.8, midi: 57, cents: 12 })
       );
@@ -156,7 +156,7 @@ describe('useRecordController', () => {
     await act(async () => {
       await api().start();
     });
-    act(() => {
+    void act(() => {
       engineMock.__emit(sample({ frequencyHz: 0, midi: null, cents: null }));
     });
     expect(api().sharedMidi.value).toBe(UNVOICED_MIDI);
@@ -189,7 +189,7 @@ describe('useRecordController', () => {
       await api().stop();
     });
     const before = api().sharedFrame.value;
-    act(() => {
+    void act(() => {
       engineMock.__emit(sample({ frequencyHz: 999 }));
     });
     expect(api().sharedFrame.value).toBe(before);
@@ -213,7 +213,7 @@ describe('useRecordController', () => {
     await act(async () => {
       await api().start();
     });
-    act(() => {
+    void act(() => {
       tree.unmount();
     });
     expect(unsubscribe).toHaveBeenCalled();

@@ -61,7 +61,7 @@ function renderCard(
   } = {}
 ): TestRenderer.ReactTestRenderer {
   let tree!: TestRenderer.ReactTestRenderer;
-  act(() => {
+  void act(() => {
     tree = TestRenderer.create(
       React.createElement(
         ThemeProvider,
@@ -150,7 +150,7 @@ describe('RecordingCard', () => {
     const pressable = instance.findAll(
       (node) => node.props?.accessibilityLabel === 'Play recording'
     );
-    act(() => {
+    void act(() => {
       pressable[0]?.props?.onPress?.();
     });
 
@@ -172,7 +172,7 @@ describe('RecordingCard', () => {
     const deleteButton = instance.findAll(
       (node) => node.props?.accessibilityLabel === 'Delete recording'
     );
-    act(() => {
+    void act(() => {
       deleteButton[0]?.props?.onPress?.();
     });
     expect(onDelete).toHaveBeenCalledTimes(1);
@@ -206,7 +206,7 @@ describe('RecordingCard', () => {
     const exportButton = instance.findAll(
       (node) => node.props?.accessibilityLabel === 'Export MIDI'
     );
-    act(() => {
+    void act(() => {
       exportButton[0]?.props?.onPress?.();
     });
     expect(onShareMidi).toHaveBeenCalledTimes(1);

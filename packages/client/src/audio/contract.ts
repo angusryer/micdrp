@@ -9,7 +9,14 @@
  * See docs/NATIVE_BUILD_PLAN.md §0 (tier model) and §2 (contract).
  */
 
-/** One analysed frame emitted by the native engine (all tiers). Mirrors models.PitchSample. */
+/**
+ * One analysed frame emitted by the native engine (all tiers). This is the
+ * native-boundary pitch frame: `frequencyHz` is 0 (never null) when unvoiced,
+ * matching the C++/wire representation. It is structurally compatible with
+ * `logic`'s `PitchFrame`, so the offline pipeline consumes a `PitchSample[]`
+ * directly. (Distinct on purpose from the `models` domain types, which use
+ * `null` for unvoiced and are not on the native boundary.)
+ */
 export interface PitchSample {
   /** Milliseconds from capture start. */
   timestampMs: number;

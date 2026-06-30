@@ -55,18 +55,18 @@ const MIN_TEMPO_CONFIDENCE = 0.4;
  * for its own time span. Scoring against this grid measures how cleanly each
  * sustained pitch was held, with no external reference melody required.
  */
-function selfTargets(notes: ReadonlyArray<NoteEvent>): TargetNote[] {
+function selfTargets(notes: readonly NoteEvent[]): TargetNote[] {
   const targets: TargetNote[] = [];
-  for (let i = 0; i < notes.length; i++) {
-    const n = notes[i];
+  for (const n of notes) {
     targets.push({ midi: n.midi, startMs: n.startMs, endMs: n.endMs });
   }
   return targets;
 }
 
 /** Per-note feedback from the segmentation (mean cents deviation per note). */
-function perNoteFeedback(notes: ReadonlyArray<NoteEvent>): NoteFeedback[] {
+function perNoteFeedback(notes: readonly NoteEvent[]): NoteFeedback[] {
   const out: NoteFeedback[] = [];
+  // Index is part of each NoteFeedback, so this loop keeps the counter.
   for (let i = 0; i < notes.length; i++) {
     const n = notes[i];
     out.push({

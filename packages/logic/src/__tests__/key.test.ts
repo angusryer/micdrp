@@ -24,8 +24,8 @@ describe('detectKey', () => {
     const frames: PitchFrame[] = [];
     let t = 0;
     for (let pass = 0; pass < 4; pass++) {
-      for (let i = 0; i < scale.length; i++) {
-        frames.push(frame(t, scale[i]));
+      for (const midi of scale) {
+        frames.push(frame(t, midi));
         t += 100;
       }
     }
@@ -46,8 +46,8 @@ describe('detectKey', () => {
     // A natural-minor scale (A B C D E F G), tonic-weighted.
     const scale = [69, 71, 72, 74, 76, 77, 79];
     const notes: NoteEvent[] = [];
-    for (let i = 0; i < scale.length; i++) {
-      notes.push(note(scale[i], 300));
+    for (const midi of scale) {
+      notes.push(note(midi, 300));
     }
     // Extra weight on the A-minor tonic triad (A, C, E).
     notes.push(note(69, 900));

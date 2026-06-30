@@ -46,7 +46,7 @@ interface Mounted {
 function mount(): Mounted {
   let latest: UseSettingsValue | null = null;
   let tree!: TestRenderer.ReactTestRenderer;
-  act(() => {
+  void act(() => {
     tree = TestRenderer.create(
       React.createElement(Harness, {
         onReady: (v: UseSettingsValue) => {
@@ -56,7 +56,12 @@ function mount(): Mounted {
     );
   });
   return {
-    api: () => latest as UseSettingsValue,
+    api: () => {
+      if (latest === null) {
+        throw new Error('Harness did not render before api() was called');
+      }
+      return latest;
+    },
     unmount: () => tree.unmount()
   };
 }
@@ -82,7 +87,7 @@ describe('useSettings', () => {
     it('applies a partial override and merges with defaults', () => {
       const { api } = mount();
 
-      act(() => {
+      void act(() => {
         api().setEngineConfig({ frameSize: 4096 });
       });
 
@@ -95,10 +100,10 @@ describe('useSettings', () => {
     it('accumulates successive partial overrides', () => {
       const { api } = mount();
 
-      act(() => {
+      void act(() => {
         api().setEngineConfig({ frameSize: 4096 });
       });
-      act(() => {
+      void act(() => {
         api().setEngineConfig({ hopSize: 512 });
       });
 
@@ -112,10 +117,10 @@ describe('useSettings', () => {
     it('overwrites the same field on repeated calls', () => {
       const { api } = mount();
 
-      act(() => {
+      void act(() => {
         api().setEngineConfig({ clarityThreshold: 0.7 });
       });
-      act(() => {
+      void act(() => {
         api().setEngineConfig({ clarityThreshold: 0.5 });
       });
 
@@ -124,7 +129,7 @@ describe('useSettings', () => {
 
     it('persists the override so a fresh hook instance reads it back', () => {
       const { unmount, api } = mount();
-      act(() => {
+      void act(() => {
         api().setEngineConfig({ emitRateHz: 30, minFrequencyHz: 80 });
       });
       unmount();
@@ -142,10 +147,10 @@ describe('useSettings', () => {
     it('resets all fields to DEFAULT_ENGINE_CONFIG', () => {
       const { api } = mount();
 
-      act(() => {
+      void act(() => {
         api().setEngineConfig({ frameSize: 4096, hopSize: 512 });
       });
-      act(() => {
+      void act(() => {
         api().resetEngineConfig();
       });
 
@@ -154,10 +159,10 @@ describe('useSettings', () => {
 
     it('clears the persisted key so the next mount also sees defaults', () => {
       const { unmount, api } = mount();
-      act(() => {
+      void act(() => {
         api().setEngineConfig({ frameSize: 4096 });
       });
-      act(() => {
+      void act(() => {
         api().resetEngineConfig();
       });
       unmount();
@@ -171,7 +176,7 @@ describe('useSettings', () => {
     it('updates the in-memory palette immediately', () => {
       const { api } = mount();
 
-      act(() => {
+      void act(() => {
         api().setThemePalette(ETheme.Red);
       });
 
@@ -180,7 +185,7 @@ describe('useSettings', () => {
 
     it('persists the palette so a fresh hook instance reads it back', () => {
       const { unmount, api } = mount();
-      act(() => {
+      void act(() => {
         api().setThemePalette(ETheme.Green);
       });
       unmount();
@@ -192,10 +197,10 @@ describe('useSettings', () => {
     it('can switch back to Blue after choosing another palette', () => {
       const { api } = mount();
 
-      act(() => {
+      void act(() => {
         api().setThemePalette(ETheme.Red);
       });
-      act(() => {
+      void act(() => {
         api().setThemePalette(ETheme.Blue);
       });
 
