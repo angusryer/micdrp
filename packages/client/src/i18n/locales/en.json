@@ -1,0 +1,107 @@
+{
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "export": "Export",
+    "play": "Play",
+    "save": "Save",
+    "back": "Back",
+    "retry": "Retry",
+    "loading": "Loading…",
+    "error": "Something went wrong.",
+    "version": "App version",
+    "platform": "Platform"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "signOut": "Sign Out",
+    "email": "Email",
+    "password": "Password",
+    "emailPlaceholder": "you@example.com",
+    "passwordPlaceholder": "••••••••",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "forgotPassword": "Forgot password?",
+    "signingIn": "Signing in…",
+    "signingUp": "Signing up…",
+    "errors": {
+      "invalidCredentials": "Invalid email or password.",
+      "emailTaken": "An account with that email already exists.",
+      "weakPassword": "Password must be at least 8 characters.",
+      "networkError": "Network error. Please try again."
+    }
+  },
+  "record": {
+    "title": "Sing",
+    "titleListening": "Listening…",
+    "startRecording": "Start recording",
+    "stopRecording": "Stop recording",
+    "record": "Record",
+    "stop": "Stop",
+    "requestingPermission": "Requesting permission…",
+    "permissionDenied": "Microphone permission denied.",
+    "analyzing": "Analyzing…",
+    "pitchLineLabel": "Live pitch trace"
+  },
+  "results": {
+    "title": "Results",
+    "notes": "Notes",
+    "noReferenceMelody": "No reference melody",
+    "inTune": "In tune",
+    "length": "Length",
+    "noNotes": "No notes detected in this take.",
+    "exportMidi": "Export MIDI",
+    "preparingMidi": "Preparing MIDI…",
+    "shareError": "Couldn't share the file. Try again.",
+    "outOf100": "/ 100"
+  },
+  "library": {
+    "title": "Library",
+    "emptyTitle": "No recordings yet",
+    "emptySubtitle": "Head to the Record tab to capture your first take.",
+    "closePlayer": "Close player",
+    "playRecording": "Play recording",
+    "exportMidi": "Export MIDI",
+    "deleteRecording": "Delete recording",
+    "note_one": "{{count}} note",
+    "note_other": "{{count}} notes",
+    "refreshing": "Refreshing…"
+  },
+  "settings": {
+    "title": "Settings",
+    "sections": {
+      "engine": "Engine",
+      "appearance": "Appearance",
+      "about": "About"
+    },
+    "engine": {
+      "frameSize": "Frame Size",
+      "hopSize": "Hop Size",
+      "minFrequency": "Min Frequency",
+      "maxFrequency": "Max Frequency",
+      "clarityThreshold": "Clarity Threshold",
+      "emitRate": "Emit Rate",
+      "resetToDefaults": "Reset to defaults",
+      "resetAccessibility": "Reset engine settings to defaults",
+      "decrease": "Decrease {{label}}",
+      "increase": "Increase {{label}}"
+    },
+    "appearance": {
+      "themeHint": "Theme takes effect on next app launch.",
+      "themeLabel": "{{label}} theme",
+      "palettes": {
+        "blue": "Blue",
+        "red": "Red",
+        "green": "Green"
+      }
+    },
+    "about": {
+      "appVersion": "App version",
+      "platform": "Platform",
+      "defaultSampleRate": "Default sample rate"
+    }
+  }
+}

@@ -1,40 +1,65 @@
 /**
- * Unit tests for the Results offline pipeline hook (WP-RESULTS-UI).
+ * Unit tests for the Results offline pipeline + cloud-persistence hook
+ * (WP-CLIENT-ANALYSIS owns the Results wiring).
  *
  * These exercise the REAL `logic` pipeline (smoothPitch → segmentNotes →
- * notesToMidi / scorePitch) over a synthetic `PitchSample[]` fixture. Only the
- * side-effecting seams are mocked: `data/files.writeMidi` (fs) and
- * `react-native-share`. Persistence is asserted by spying on
- * `data/recordings.saveRecording` and reading the record it was given.
+ * notesToMidi) and the REAL on-device `computeFeedback` over a synthetic
+ * `PitchSample[]` fixture. Only the side-effecting seams are mocked:
+ * `data/files.writeMidi` (fs) and `data/recordingsRepo` (Supabase). Persistence
+ * is asserted by reading the `CreateRecordingInput` + blobs the repo was given.
  *
  * The hook is driven through a tiny harness rendered with `react-test-renderer`
  * (a declared devDependency), matching the existing hook tests. No device needed.
  */
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { notesToMidi, segmentNotes, smoothPitch, type TargetNote } from 'logic';
+import { notesToMidi, segmentNotes, smoothPitch } from 'logic';
+import type { RecordingDto } from 'shared';
 
 import type { PitchSample, RecordingHandle } from '../../../audio/contract';
-import * as recordings from '../../../data/recordings';
 import { analyzeHandle, useResults, type UseResultsValue } from '../useResults';
 
 // fs seam: writeMidi resolves a deterministic file:// URI without touching disk.
 jest.mock('../../../data/files', () => ({
   writeMidi: jest.fn((id: string) => Promise.resolve(`file:///mock/${id}.mid`))
 }));
-// share seam (unused by the hook, mocked for import safety / parity with screen).
-jest.mock(
-  'react-native-share',
-  () => ({ default: { open: jest.fn(() => Promise.resolve()) } }),
-  { virtual: true }
-);
+
+// Supabase seam: recordingsRepo.create echoes a canonical RecordingDto.
+jest.mock('../../../data/recordingsRepo', () => ({
+  recordingsRepo: {
+    create: jest.fn()
+  }
+}));
 
 import { writeMidi } from '../../../data/files';
+import { recordingsRepo } from '../../../data/recordingsRepo';
+
+const createMock = recordingsRepo.create as jest.MockedFunction<
+  typeof recordingsRepo.create
+>;
+
+function dtoFor(over: Partial<RecordingDto> = {}): RecordingDto {
+  return {
+    id: 'rec-test',
+    userId: 'user-1',
+    title: 'My Take',
+    createdAtMs: 1_000,
+    durationMs: 360,
+    sampleRateHz: 44100,
+    noteCount: 3,
+    score: 100,
+    key: 'C major',
+    tempoBpm: null,
+    audioPath: 'user-1/rec-test.m4a',
+    midiPath: 'user-1/rec-test.mid',
+    ...over
+  };
+}
 
 /**
  * Build a synthetic frame stream: hold each MIDI note for `framesPerNote` frames
- * at 10ms spacing, with a couple of single-frame outliers the median filter must
- * absorb so segmentation yields exactly the input melody.
+ * at 10ms spacing, with a single-frame outlier the median filter must absorb so
+ * segmentation yields exactly the input melody.
  */
 function fixtureSamples(): PitchSample[] {
   const melody = [60, 62, 64]; // C4, D4, E4
@@ -44,7 +69,6 @@ function fixtureSamples(): PitchSample[] {
   for (let n = 0; n < melody.length; n++) {
     const midi = melody[n];
     for (let i = 0; i < framesPerNote; i++) {
-      // Inject a one-frame octave-jump outlier mid-note; smoothing removes it.
       const isOutlier = i === 5;
       const m = isOutlier ? midi + 12 : midi;
       samples.push({
@@ -89,6 +113,7 @@ async function renderUseResults(
   await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    await Promise.resolve();
   });
   return {
     value: () => latest as UseResultsValue,
@@ -98,12 +123,12 @@ async function renderUseResults(
 
 beforeEach(() => {
   jest.clearAllMocks();
+  createMock.mockResolvedValue(dtoFor());
 });
 
 describe('analyzeHandle (pure pipeline)', () => {
   it('segments the fixture into the three sung notes, absorbing outliers', () => {
-    const handle = makeHandle();
-    const { notes } = analyzeHandle(handle);
+    const { notes } = analyzeHandle(makeHandle());
     expect(notes.map((n) => n.midi)).toEqual([60, 62, 64]);
   });
 
@@ -120,74 +145,72 @@ describe('analyzeHandle (pure pipeline)', () => {
     expect(noteOns).toBeGreaterThanOrEqual(notes.length);
   });
 
-  it('returns a null score when no target melody is supplied', () => {
-    expect(analyzeHandle(makeHandle()).score).toBeNull();
-  });
-
-  it('scores against a target melody when provided', () => {
-    const target: TargetNote[] = [
-      { midi: 60, startMs: 0, endMs: 120 },
-      { midi: 62, startMs: 120, endMs: 240 },
-      { midi: 64, startMs: 240, endMs: 360 }
-    ];
-    const score = analyzeHandle(makeHandle(), target).score;
-    expect(score).not.toBeNull();
-    expect(score?.score).toBeGreaterThan(80);
-    expect(score?.inTuneRatio).toBeGreaterThan(0.8);
-    expect(score?.evaluatedFrames).toBeGreaterThan(0);
+  it('synthesizes on-device feedback alongside the notes', () => {
+    const { feedback } = analyzeHandle(makeHandle());
+    expect(feedback.perNote).toHaveLength(3);
+    expect(feedback.overallScore).toBeGreaterThan(0);
+    expect(feedback.strengths.length).toBeGreaterThan(0);
   });
 });
 
-describe('useResults (persistence)', () => {
-  it('writes the .mid and persists a RecordingMeta exactly once', async () => {
-    const saveSpy = jest.spyOn(recordings, 'saveRecording');
+describe('useResults (cloud persistence)', () => {
+  it('writes the .mid and creates a cloud recording exactly once', async () => {
     const handle = makeHandle();
 
-    const { value } = await renderUseResults(handle, { createdAtMs: 1_000, title: 'My Take' });
+    const { value } = await renderUseResults(handle, {
+      createdAtMs: 1_000,
+      title: 'My Take'
+    });
 
     expect(writeMidi).toHaveBeenCalledTimes(1);
     expect(writeMidi).toHaveBeenCalledWith('rec-test', expect.any(Uint8Array));
 
-    expect(saveSpy).toHaveBeenCalledTimes(1);
-    const saved = saveSpy.mock.calls[0][0];
-    expect(saved.id).toBe('rec-test');
-    expect(saved.title).toBe('My Take');
-    expect(saved.createdAtMs).toBe(1_000);
-    expect(saved.durationMs).toBe(360);
-    expect(saved.sampleRateHz).toBe(44100);
-    expect(saved.audioUri).toBe('file:///mock/rec-test.wav');
-    expect(saved.midiUri).toBe('file:///mock/rec-test.mid');
-    expect(saved.noteCount).toBe(3);
+    expect(createMock).toHaveBeenCalledTimes(1);
+    const [input, blobs] = createMock.mock.calls[0];
+    expect(input.title).toBe('My Take');
+    expect(input.durationMs).toBe(360);
+    expect(input.sampleRateHz).toBe(44100);
+    expect(input.noteCount).toBe(3);
+    expect(typeof input.score).toBe('number');
+    expect(blobs?.audioUri).toBe('file:///mock/rec-test.wav');
+    expect(blobs?.midiBytes).toBeInstanceOf(Uint8Array);
 
     const v = value();
     expect(v.status).toBe('saved');
     expect(v.midiUri).toBe('file:///mock/rec-test.mid');
+    expect(v.recording?.id).toBe('rec-test');
     expect(v.notes.map((n) => n.midi)).toEqual([60, 62, 64]);
   });
 
-  it('records the pitch score on the persisted meta when a target is given', async () => {
-    const saveSpy = jest.spyOn(recordings, 'saveRecording');
-    const target: TargetNote[] = [{ midi: 60, startMs: 0, endMs: 360 }];
+  it('forwards the on-device key/tempo/score onto the create input', async () => {
+    await renderUseResults(makeHandle(), { createdAtMs: 1 });
 
-    await renderUseResults(makeHandle(), { createdAtMs: 1, target });
-
-    const saved = saveSpy.mock.calls[0][0];
-    expect(typeof saved.score).toBe('number');
+    const [input] = createMock.mock.calls[0];
+    expect(input).toHaveProperty('key');
+    expect(input).toHaveProperty('tempoBpm');
+    expect(input).toHaveProperty('score');
   });
 
   it('does not persist when persist:false (analysis still available)', async () => {
-    const saveSpy = jest.spyOn(recordings, 'saveRecording');
-
     const { value } = await renderUseResults(makeHandle(), { persist: false });
 
     expect(writeMidi).not.toHaveBeenCalled();
-    expect(saveSpy).not.toHaveBeenCalled();
+    expect(createMock).not.toHaveBeenCalled();
     expect(value().notes.map((n) => n.midi)).toEqual([60, 62, 64]);
+    expect(value().feedback.perNote).toHaveLength(3);
     expect(value().status).toBe('idle');
   });
 
+  it('surfaces an error status when the cloud create fails', async () => {
+    createMock.mockRejectedValueOnce(new Error('network'));
+
+    const { value } = await renderUseResults(makeHandle(), { createdAtMs: 1 });
+
+    expect(value().status).toBe('error');
+    expect(value().recording).toBeNull();
+  });
+
   it('persists only once across re-renders for the same handle', async () => {
-    const saveSpy = jest.spyOn(recordings, 'saveRecording');
     const handle = makeHandle();
 
     let renderApi: UseResultsValue | null = null;
@@ -215,6 +238,6 @@ describe('useResults (persistence)', () => {
 
     expect(renderApi).not.toBeNull();
     expect(writeMidi).toHaveBeenCalledTimes(1);
-    expect(saveSpy).toHaveBeenCalledTimes(1);
+    expect(createMock).toHaveBeenCalledTimes(1);
   });
 });

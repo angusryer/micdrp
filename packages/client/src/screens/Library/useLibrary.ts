@@ -1,36 +1,36 @@
 /**
- * useLibrary — data hook for the Library screen (WP-LIBRARY-UI).
+ * useLibrary — data hook for the Library screen.
  *
- * Loads the persisted recordings index via `data/recordings`, exposes delete,
- * and re-exports a recording's `.mid` via react-native-share when available.
+ * Sources recordings from the cloud (Supabase) with a local MMKV cache in front:
+ * on mount it paints the cached list instantly, then calls `syncRecordings()` to
+ * pull the authoritative list from `recordingsRepo` and overwrite the cache
+ * (server wins). Deletion goes cloud-first through `recordingsRepo.remove`, then
+ * re-syncs. Sharing re-exports a take's `.mid` via react-native-share.
  *
- * State is minimal React state: the list and a loading flag. Deletion and
- * share are async actions triggered by user interaction; they never touch
- * the per-frame audio path.
+ * State is minimal React state: the list and a loading flag. All async actions
+ * are user-triggered and never touch the per-frame audio path.
  *
- * See docs/NATIVE_BUILD_PLAN.md §3 (WP-LIBRARY-UI).
+ * See docs/PROJECT_COMPLETION_PLAN.md §3 (WP-CLIENT-DATA) — cloud repo + cache.
  */
 import { useCallback, useEffect, useState } from 'react';
 import Share from 'react-native-share';
 
-import {
-  deleteRecording,
-  listRecordings,
-  type RecordingMeta
-} from '../../data/recordings';
+import { recordingsRepo } from '../../data/recordingsRepo';
+import { cachedRecordings, syncRecordings } from '../../data/sync';
+import type { RecordingMeta } from '../../data/recordings';
 
 export type ShareStatus = 'idle' | 'sharing' | 'error';
 
 export interface UseLibraryValue {
-  /** All recordings, newest first. Empty while loading. */
+  /** All recordings, newest first. Seeded from cache, then cloud-synced. */
   recordings: RecordingMeta[];
-  /** True on the initial load and after a pull-to-refresh trigger. */
+  /** True while a cloud sync is in flight. */
   loading: boolean;
-  /** Reload the list from the index (used for pull-to-refresh). */
-  refresh(): void;
+  /** Re-pull the authoritative list from the cloud (pull-to-refresh). */
+  refresh(): Promise<void>;
   /**
-   * Delete a recording by id. Removes it from the index and deletes the
-   * on-disk audio/midi files. Refreshes the list on completion.
+   * Delete a recording by id: removes the cloud row + Storage blobs, then
+   * re-syncs the local cache to match.
    */
   remove(id: string): Promise<void>;
   /**
@@ -42,34 +42,43 @@ export interface UseLibraryValue {
 }
 
 export function useLibrary(): UseLibraryValue {
-  const [recordings, setRecordings] = useState<RecordingMeta[]>([]);
+  // Paint the cache synchronously on first render so the list is never blank.
+  const [recordings, setRecordings] = useState<RecordingMeta[]>(() => {
+    try {
+      return cachedRecordings();
+    } catch {
+      return [];
+    }
+  });
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback((): void => {
+  const load = useCallback(async (): Promise<void> => {
     setLoading(true);
-    // listRecordings is synchronous (MMKV); wrap in try/catch for safety.
     try {
-      setRecordings(listRecordings());
+      setRecordings(await syncRecordings());
     } catch {
-      setRecordings([]);
+      // Offline / transient: keep whatever the cache already shows.
+      try {
+        setRecordings(cachedRecordings());
+      } catch {
+        setRecordings([]);
+      }
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Load on mount.
+  // Sync on mount.
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
-  const refresh = useCallback((): void => {
-    load();
-  }, [load]);
+  const refresh = useCallback((): Promise<void> => load(), [load]);
 
   const remove = useCallback(
     async (id: string): Promise<void> => {
-      await deleteRecording(id);
-      load();
+      await recordingsRepo.remove(id);
+      await load();
     },
     [load]
   );

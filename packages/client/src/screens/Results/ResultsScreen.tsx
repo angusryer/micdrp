@@ -13,9 +13,12 @@ import React from 'react';
 import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import type { PitchScore } from 'logic';
+
 import type { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme';
 import { ExportSheet } from './ExportSheet';
+import { FeedbackCard } from './FeedbackCard';
 import { NoteList } from './NoteList';
 import { ScoreCard } from './ScoreCard';
 import { useResults } from './useResults';
@@ -26,8 +29,18 @@ export default function ResultsScreen({ route }: Props) {
   const { colors } = useTheme();
   const { handle } = route.params;
 
-  const { notes, score, midiUri, meta } = useResults(handle);
-  const title = meta?.title ?? 'Take';
+  const { notes, feedback, midiUri, recording } = useResults(handle);
+  const title = recording?.title ?? 'Take';
+
+  // ScoreCard renders the same frame-level pitch numbers `computeFeedback`
+  // already derived — adapt the FeedbackDto to the `PitchScore` shape it expects
+  // rather than re-running the pipeline.
+  const score: PitchScore = {
+    score: feedback.overallScore,
+    inTuneRatio: feedback.inTuneRatio,
+    meanCentsError: feedback.meanCentsError,
+    evaluatedFrames: feedback.perNote.length
+  };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.neutral300 }]}>
@@ -39,6 +52,8 @@ export default function ResultsScreen({ route }: Props) {
           durationMs={handle.durationMs}
           score={score}
         />
+
+        <FeedbackCard feedback={feedback} />
 
         <View style={styles.listWrap}>
           <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>Notes</Text>

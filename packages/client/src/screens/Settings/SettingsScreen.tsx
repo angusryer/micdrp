@@ -35,6 +35,7 @@ import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { DEFAULT_ENGINE_CONFIG, type EngineConfig } from '../../audio/contract';
 import { ETheme } from '../../configs/theme';
 import { useTheme } from '../../theme';
+import { useTranslation } from '../../i18n';
 import type { MainTabParamList } from '../../navigation/types';
 import { useSettings } from './useSettings';
 
@@ -45,6 +46,7 @@ export type SettingsScreenProps = BottomTabScreenProps<MainTabParamList, 'Settin
 // ---------------------------------------------------------------------------
 
 interface SectionProps {
+  /** Already-translated section title string. */
   title: string;
   children: React.ReactNode;
 }
@@ -141,13 +143,24 @@ interface FieldSpec {
   unit?: string;
 }
 
+/** Translation keys for each engine field label, in ENGINE_FIELDS order. */
+const ENGINE_FIELD_LABEL_KEYS: Record<keyof EngineConfig, string> = {
+  sampleRateHz: 'settings.engine.frameSize', // not editable but mapped for completeness
+  frameSize: 'settings.engine.frameSize',
+  hopSize: 'settings.engine.hopSize',
+  minFrequencyHz: 'settings.engine.minFrequency',
+  maxFrequencyHz: 'settings.engine.maxFrequency',
+  clarityThreshold: 'settings.engine.clarityThreshold',
+  emitRateHz: 'settings.engine.emitRate'
+};
+
 const ENGINE_FIELDS: FieldSpec[] = [
-  { key: 'frameSize',        label: 'Frame Size',        step: 512,  min: 512,  max: 8192, unit: 'samples' },
-  { key: 'hopSize',          label: 'Hop Size',          step: 256,  min: 256,  max: 4096, unit: 'samples' },
-  { key: 'minFrequencyHz',   label: 'Min Frequency',     step: 10,   min: 20,   max: 500,  unit: 'Hz' },
-  { key: 'maxFrequencyHz',   label: 'Max Frequency',     step: 50,   min: 200,  max: 4000, unit: 'Hz' },
-  { key: 'clarityThreshold', label: 'Clarity Threshold', step: 0.05, min: 0,    max: 1,    decimals: 2 },
-  { key: 'emitRateHz',       label: 'Emit Rate',         step: 10,   min: 10,   max: 120,  unit: 'Hz' }
+  { key: 'frameSize',        label: ENGINE_FIELD_LABEL_KEYS.frameSize,        step: 512,  min: 512,  max: 8192, unit: 'samples' },
+  { key: 'hopSize',          label: ENGINE_FIELD_LABEL_KEYS.hopSize,          step: 256,  min: 256,  max: 4096, unit: 'samples' },
+  { key: 'minFrequencyHz',   label: ENGINE_FIELD_LABEL_KEYS.minFrequencyHz,   step: 10,   min: 20,   max: 500,  unit: 'Hz' },
+  { key: 'maxFrequencyHz',   label: ENGINE_FIELD_LABEL_KEYS.maxFrequencyHz,   step: 50,   min: 200,  max: 4000, unit: 'Hz' },
+  { key: 'clarityThreshold', label: ENGINE_FIELD_LABEL_KEYS.clarityThreshold, step: 0.05, min: 0,    max: 1,    decimals: 2 },
+  { key: 'emitRateHz',       label: ENGINE_FIELD_LABEL_KEYS.emitRateHz,       step: 10,   min: 10,   max: 120,  unit: 'Hz' }
 ];
 
 function clampedStep(
@@ -212,6 +225,7 @@ function PaletteSwatch({
 
 export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { engineConfig, setEngineConfig, resetEngineConfig, themePalette, setThemePalette } =
     useSettings();
 
@@ -227,7 +241,9 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.neutral300 }]}>
       <View style={styles.header}>
-        <Text style={[styles.heading, { color: colors.typography }]}>Settings</Text>
+        <Text style={[styles.heading, { color: colors.typography }]}>
+          {t('settings.title')}
+        </Text>
       </View>
 
       <ScrollView
@@ -236,14 +252,15 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
         showsVerticalScrollIndicator={false}
       >
         {/* ---- Engine section ---- */}
-        <Section title="ENGINE">
+        <Section title={t('settings.sections.engine').toUpperCase()}>
           {ENGINE_FIELDS.map((field, idx) => {
             const value = engineConfig[field.key];
             const isLast = idx === ENGINE_FIELDS.length - 1;
+            const translatedLabel = t(field.label);
             return (
               <View key={field.key} style={isLast && styles.lastRow}>
                 <StepperRow
-                  label={field.label}
+                  label={translatedLabel}
                   value={value}
                   step={field.step}
                   min={field.min}
@@ -261,45 +278,52 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
           <View style={styles.resetRow}>
             <TouchableOpacity
               onPress={resetEngineConfig}
-              accessibilityLabel="Reset engine settings to defaults"
+              accessibilityLabel={t('settings.engine.resetAccessibility')}
               accessibilityRole="button"
             >
               <Text style={[styles.resetText, { color: colors.error }]}>
-                Reset to defaults
+                {t('settings.engine.resetToDefaults')}
               </Text>
             </TouchableOpacity>
           </View>
         </Section>
 
         {/* ---- Appearance section ---- */}
-        <Section title="APPEARANCE">
+        <Section title={t('settings.sections.appearance').toUpperCase()}>
           <View style={styles.paletteRow}>
-            {PALETTE_DISPLAY.map(({ palette, label, swatch }) => (
-              <PaletteSwatch
-                key={palette}
-                palette={palette}
-                label={label}
-                swatch={swatch}
-                selected={themePalette === palette}
-                onPress={() => setThemePalette(palette)}
-              />
-            ))}
+            {PALETTE_DISPLAY.map(({ palette, label, swatch }) => {
+              const translatedLabel = t(`settings.appearance.palettes.${label.toLowerCase()}`);
+              return (
+                <PaletteSwatch
+                  key={palette}
+                  palette={palette}
+                  label={translatedLabel}
+                  swatch={swatch}
+                  selected={themePalette === palette}
+                  onPress={() => setThemePalette(palette)}
+                />
+              );
+            })}
           </View>
           <Text style={[styles.paletteHint, { color: colors.gray300 }]}>
-            Theme takes effect on next app launch.
+            {t('settings.appearance.themeHint')}
           </Text>
         </Section>
 
         {/* ---- About section ---- */}
-        <Section title="ABOUT">
+        <Section title={t('settings.sections.about').toUpperCase()}>
           <View style={[styles.row, styles.lastRow, { borderBottomColor: 'transparent' }]}>
-            <Text style={[styles.rowLabel, { color: colors.typography }]}>App version</Text>
+            <Text style={[styles.rowLabel, { color: colors.typography }]}>
+              {t('settings.about.appVersion')}
+            </Text>
             <Text style={[styles.rowValue, { color: colors.gray300 }]}>
               {APP_VERSION}
             </Text>
           </View>
           <View style={[styles.row, styles.lastRow, { borderBottomColor: 'transparent' }]}>
-            <Text style={[styles.rowLabel, { color: colors.typography }]}>Platform</Text>
+            <Text style={[styles.rowLabel, { color: colors.typography }]}>
+              {t('settings.about.platform')}
+            </Text>
             <Text style={[styles.rowValue, { color: colors.gray300 }]}>
               {Platform.OS === 'ios' ? 'iOS' : 'Android'}{' '}
               {typeof Platform.Version === 'number'
@@ -308,7 +332,9 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
             </Text>
           </View>
           <View style={[styles.row, styles.lastRow, { borderBottomColor: 'transparent' }]}>
-            <Text style={[styles.rowLabel, { color: colors.typography }]}>Default sample rate</Text>
+            <Text style={[styles.rowLabel, { color: colors.typography }]}>
+              {t('settings.about.defaultSampleRate')}
+            </Text>
             <Text style={[styles.rowValue, { color: colors.gray300 }]}>
               {DEFAULT_ENGINE_CONFIG.sampleRateHz.toLocaleString()} Hz
             </Text>

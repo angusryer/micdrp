@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 
 import { useTheme } from '../../theme';
+import { useTranslation } from '../../i18n';
 import type { RecordingMeta } from '../../data/recordings';
 import { PlaybackBar } from './PlaybackBar';
 
@@ -53,6 +54,7 @@ export function RecordingCard({
   onShareMidi
 }: RecordingCardProps) {
   const { colors, dimensions } = useTheme();
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
   const handleTogglePlay = useCallback((): void => {
@@ -118,7 +120,7 @@ export function RecordingCard({
           <>
             <Text style={[styles.metaDot, { color: colors.gray100 }]}>{' · '}</Text>
             <Text style={[styles.metaText, { color: colors.gray300 }]}>
-              {meta.noteCount} {meta.noteCount === 1 ? 'note' : 'notes'}
+              {t('library.note', { count: meta.noteCount })}
             </Text>
           </>
         ) : null}
@@ -138,7 +140,7 @@ export function RecordingCard({
       <View style={styles.actions}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={expanded ? 'Close player' : 'Play recording'}
+          accessibilityLabel={expanded ? t('library.closePlayer') : t('library.playRecording')}
           onPress={handleTogglePlay}
           style={[
             styles.actionButton,
@@ -153,14 +155,14 @@ export function RecordingCard({
               { color: expanded ? colors.typography : colors.white }
             ]}
           >
-            {expanded ? 'Close' : 'Play'}
+            {expanded ? t('common.close') : t('common.play')}
           </Text>
         </Pressable>
 
         {meta.midiUri != null && onShareMidi != null ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Export MIDI"
+            accessibilityLabel={t('library.exportMidi')}
             onPress={handleShare}
             style={[
               styles.actionButton,
@@ -168,14 +170,14 @@ export function RecordingCard({
             ]}
           >
             <Text style={[styles.actionLabel, { color: colors.typography }]}>
-              Export
+              {t('common.export')}
             </Text>
           </Pressable>
         ) : null}
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Delete recording"
+          accessibilityLabel={t('library.deleteRecording')}
           onPress={handleDelete}
           style={[
             styles.actionButton,
@@ -183,7 +185,7 @@ export function RecordingCard({
           ]}
         >
           <Text style={[styles.actionLabel, { color: colors.error }]}>
-            Delete
+            {t('common.delete')}
           </Text>
         </Pressable>
       </View>

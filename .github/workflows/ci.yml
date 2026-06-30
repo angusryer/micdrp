@@ -1,17 +1,15 @@
 name: CI
 
-# NOTE: Automatic CI runs are temporarily DISABLED to conserve GitHub Actions
-# minutes while the audio-engine work is in progress. The pipeline below is
-# fixed and working under Yarn 3. Re-enable the `push` / `pull_request`
-# triggers (commented out below) before deployment ops.
 on:
+  push:
+    branches:
+      - main
+      - 'claude/**'
+  pull_request:
+    branches:
+      - main
+      - 'claude/**'
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - main
-  # pull_request:
-  #   branches:
-  #     - main
 
 jobs:
   lint:
