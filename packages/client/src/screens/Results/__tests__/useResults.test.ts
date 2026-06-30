@@ -1,22 +1,22 @@
 /**
- * Unit tests for the Results offline pipeline + cloud-persistence hook
- * (WP-CLIENT-ANALYSIS owns the Results wiring).
+ * Unit tests for the Results offline pipeline + practice-progress persistence.
  *
  * These exercise the REAL `logic` pipeline (smoothPitch → segmentNotes →
- * notesToMidi) and the REAL on-device `computeFeedback` over a synthetic
- * `PitchSample[]` fixture. Only the side-effecting seams are mocked:
- * `data/files.writeMidi` (fs) and `data/recordingsRepo` (Supabase). Persistence
- * is asserted by reading the `CreateRecordingInput` + blobs the repo was given.
+ * notesToMidi → scorePitch) and the REAL on-device `computeFeedback` over a
+ * synthetic `PitchSample[]` fixture. Only the side-effecting seams are mocked:
+ * `data/files.writeMidi` (fs) and `data/practiceProgressRepo` (Supabase).
+ * Persistence is asserted by reading the `CreatePracticeProgressInput` the repo
+ * was given — a practice take writes a trajectory row, not a recording.
  *
- * The hook is driven through a tiny harness rendered with `react-test-renderer`
- * (a declared devDependency), matching the existing hook tests. No device needed.
+ * The hook is driven through a tiny harness rendered with `react-test-renderer`.
  */
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
 import { notesToMidi, segmentNotes, smoothPitch } from 'logic';
-import type { RecordingDto } from 'shared';
+import type { PracticeProgressDto } from 'shared';
 
 import type { PitchSample, RecordingHandle } from '../../../audio/contract';
+import type { PracticeParams } from '../../../navigation/types';
 import { analyzeHandle, useResults, type UseResultsValue } from '../useResults';
 
 // fs seam: writeMidi resolves a deterministic file:// URI without touching disk.
@@ -24,34 +24,40 @@ jest.mock('../../../data/files', () => ({
   writeMidi: jest.fn((id: string) => Promise.resolve(`file:///mock/${id}.mid`))
 }));
 
-// Supabase seam: recordingsRepo.create echoes a canonical RecordingDto.
-jest.mock('../../../data/recordingsRepo', () => ({
-  recordingsRepo: {
+// Supabase seam: practiceProgressRepo.create echoes a canonical row.
+jest.mock('../../../data/practiceProgressRepo', () => ({
+  practiceProgressRepo: {
     create: jest.fn()
   }
 }));
 
 import { writeMidi } from '../../../data/files';
-import { recordingsRepo } from '../../../data/recordingsRepo';
+import { practiceProgressRepo } from '../../../data/practiceProgressRepo';
 
-const createMock = recordingsRepo.create as jest.MockedFunction<
-  typeof recordingsRepo.create
+const createMock = practiceProgressRepo.create as jest.MockedFunction<
+  typeof practiceProgressRepo.create
 >;
 
-function dtoFor(over: Partial<RecordingDto> = {}): RecordingDto {
+const PRACTICE: PracticeParams = {
+  melodyId: 'major-scale',
+  rootMidi: 60,
+  noteDurationMs: 400
+};
+
+function progressFor(
+  over: Partial<PracticeProgressDto> = {}
+): PracticeProgressDto {
   return {
-    id: 'rec-test',
+    id: 'prog-test',
     userId: 'user-1',
-    title: 'My Take',
     createdAtMs: 1_000,
-    durationMs: 360,
-    sampleRateHz: 44100,
-    noteCount: 3,
-    score: 100,
-    key: 'C major',
-    tempoBpm: null,
-    audioPath: 'user-1/rec-test.m4a',
-    midiPath: 'user-1/rec-test.mid',
+    melodyId: 'major-scale',
+    rootMidi: 60,
+    noteDurationMs: 400,
+    score: 80,
+    inTuneRatio: 0.9,
+    meanCentsError: 12,
+    evaluatedFrames: 30,
     ...over
   };
 }
@@ -109,7 +115,6 @@ async function renderUseResults(
   await act(async () => {
     tree = TestRenderer.create(React.createElement(Harness));
   });
-  // Let the persistence effect's async chain settle.
   await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
@@ -123,7 +128,7 @@ async function renderUseResults(
 
 beforeEach(() => {
   jest.clearAllMocks();
-  createMock.mockResolvedValue(dtoFor());
+  createMock.mockResolvedValue(progressFor());
 });
 
 describe('analyzeHandle (pure pipeline)', () => {
@@ -139,60 +144,45 @@ describe('analyzeHandle (pure pipeline)', () => {
     const expected = notesToMidi(segmentNotes(smoothPitch(handle.samples)));
     expect(Array.from(midi)).toEqual(Array.from(expected));
 
-    // Sanity: a well-formed SMF header (MThd) and one note-on per note.
     expect(Array.from(midi.slice(0, 4))).toEqual([0x4d, 0x54, 0x68, 0x64]);
     const noteOns = Array.from(midi).filter((b) => b === 0x90).length;
     expect(noteOns).toBeGreaterThanOrEqual(notes.length);
   });
 
-  it('synthesizes on-device feedback alongside the notes', () => {
-    const { feedback } = analyzeHandle(makeHandle());
+  it('scores against the self grid and synthesizes feedback', () => {
+    const { score, feedback } = analyzeHandle(makeHandle());
+    expect(score.evaluatedFrames).toBeGreaterThan(0);
     expect(feedback.perNote).toHaveLength(3);
     expect(feedback.overallScore).toBeGreaterThan(0);
-    expect(feedback.strengths.length).toBeGreaterThan(0);
   });
 });
 
-describe('useResults (cloud persistence)', () => {
-  it('writes the .mid and creates a cloud recording exactly once', async () => {
-    const handle = makeHandle();
-
-    const { value } = await renderUseResults(handle, {
-      createdAtMs: 1_000,
-      title: 'My Take'
+describe('useResults (practice-progress persistence)', () => {
+  it('writes the .mid and creates a progress row exactly once', async () => {
+    const { value } = await renderUseResults(makeHandle(), {
+      practice: PRACTICE
     });
 
     expect(writeMidi).toHaveBeenCalledTimes(1);
     expect(writeMidi).toHaveBeenCalledWith('rec-test', expect.any(Uint8Array));
 
     expect(createMock).toHaveBeenCalledTimes(1);
-    const [input, blobs] = createMock.mock.calls[0];
-    expect(input.title).toBe('My Take');
-    expect(input.durationMs).toBe(360);
-    expect(input.sampleRateHz).toBe(44100);
-    expect(input.noteCount).toBe(3);
+    const [input] = createMock.mock.calls[0];
+    expect(input.melodyId).toBe('major-scale');
+    expect(input.rootMidi).toBe(60);
+    expect(input.noteDurationMs).toBe(400);
     expect(typeof input.score).toBe('number');
-    expect(blobs?.audioUri).toBe('file:///mock/rec-test.wav');
-    expect(blobs?.midiBytes).toBeInstanceOf(Uint8Array);
+    expect(typeof input.evaluatedFrames).toBe('number');
 
     const v = value();
     expect(v.status).toBe('saved');
     expect(v.midiUri).toBe('file:///mock/rec-test.mid');
-    expect(v.recording?.id).toBe('rec-test');
+    expect(v.progress?.id).toBe('prog-test');
     expect(v.notes.map((n) => n.midi)).toEqual([60, 62, 64]);
   });
 
-  it('forwards the on-device key/tempo/score onto the create input', async () => {
-    await renderUseResults(makeHandle(), { createdAtMs: 1 });
-
-    const [input] = createMock.mock.calls[0];
-    expect(input).toHaveProperty('key');
-    expect(input).toHaveProperty('tempoBpm');
-    expect(input).toHaveProperty('score');
-  });
-
-  it('does not persist when persist:false (analysis still available)', async () => {
-    const { value } = await renderUseResults(makeHandle(), { persist: false });
+  it('does not persist without practice params (analysis still available)', async () => {
+    const { value } = await renderUseResults(makeHandle(), {});
 
     expect(writeMidi).not.toHaveBeenCalled();
     expect(createMock).not.toHaveBeenCalled();
@@ -201,13 +191,26 @@ describe('useResults (cloud persistence)', () => {
     expect(value().status).toBe('idle');
   });
 
+  it('does not persist when persist:false', async () => {
+    const { value } = await renderUseResults(makeHandle(), {
+      practice: PRACTICE,
+      persist: false
+    });
+
+    expect(writeMidi).not.toHaveBeenCalled();
+    expect(createMock).not.toHaveBeenCalled();
+    expect(value().status).toBe('idle');
+  });
+
   it('surfaces an error status when the cloud create fails', async () => {
     createMock.mockRejectedValueOnce(new Error('network'));
 
-    const { value } = await renderUseResults(makeHandle(), { createdAtMs: 1 });
+    const { value } = await renderUseResults(makeHandle(), {
+      practice: PRACTICE
+    });
 
     expect(value().status).toBe('error');
-    expect(value().recording).toBeNull();
+    expect(value().progress).toBeNull();
   });
 
   it('persists only once across re-renders for the same handle', async () => {
@@ -216,7 +219,7 @@ describe('useResults (cloud persistence)', () => {
     let renderApi: UseResultsValue | null = null;
     function Harness({ tick }: { tick: number }): null {
       void tick; // force a prop change → re-render
-      renderApi = useResults(handle, { createdAtMs: 5 });
+      renderApi = useResults(handle, { practice: PRACTICE });
       return null;
     }
 

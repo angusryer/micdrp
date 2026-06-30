@@ -24,7 +24,7 @@ const mockStart = jest.fn(() => Promise.resolve());
 const mockStop = jest.fn(() => Promise.resolve(HANDLE));
 const controllerState = { isRecording: false };
 
-jest.mock('../../Record/useRecordController', () => ({
+jest.mock('../../capture/useRecordController', () => ({
   useRecordController: () => ({
     sharedPitch: { value: 0 },
     sharedClarity: { value: 0 },

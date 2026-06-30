@@ -1,9 +1,9 @@
 /**
- * PlaybackBar — play/pause the captured audio for a recording (WP-LIBRARY-UI).
+ * PlaybackBar — play/pause a note's captured audio.
  *
- * Uses react-native-audio-api's `AudioContext` to decode and play the
- * `file://` audio URI stored in a `RecordingMeta`. Playback state is local
- * to this component; it is entirely separate from the live recording path.
+ * Uses react-native-audio-api's `AudioContext` to decode and play a note's
+ * audio URI. Playback state is local to this component; it is entirely separate
+ * from the live recording path.
  *
  * Lifecycle:
  *   1. User taps Play → fetch the file via RNFS, decode with
@@ -11,13 +11,11 @@
  *      destination, and start.
  *   2. User taps Pause (or audio ends naturally) → close the context and
  *      transition back to `stopped`.
- *   3. A new `audioUri` prop (different recording) resets state.
+ *   3. A new `audioUri` prop (different note) resets state.
  *
  * react-native-audio-api provides `AudioContext` for decoding/playback.
  * We avoid direct PCM access — the audio path rule applies only to the live
  * recording hot path, not playback.
- *
- * See docs/NATIVE_BUILD_PLAN.md §3 (WP-LIBRARY-UI).
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {

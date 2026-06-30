@@ -20,16 +20,19 @@ merged to `main` unless marked **Phase V** (needs a real dev machine) or
 | Area | State |
 |---|---|
 | **Pure-TS DSP core** (`packages/logic`) | Complete + unit-tested: `detectPitch` (MPM/NSDF), `frequencyToNote`, `smoothPitch`, `segmentNotes`, `notesToMidi`, `scorePitch`, `detectKey`, `estimateTempo`. CI-green. |
-| **Domain/contract types** | `packages/shared` (API DTOs: `RecordingDto`/`FeedbackDto`/`ProfileDto`/`AppError`). Analysis primitives (`NOTE_NAMES`, `PitchFrame`, `TargetNote`, `DEFAULT_TOLERANCE_CENTS`) live in `packages/logic`. (The old `packages/models` was deleted — it was orphaned.) |
+| **Domain/contract types** | `packages/shared` (API DTOs: `NoteDto`/`PracticeProgressDto`/`FeedbackDto`/`ProfileDto`/`AppError`). Analysis primitives (`NOTE_NAMES`, `PitchFrame`, `TargetNote`, `DEFAULT_TOLERANCE_CENTS`) live in `packages/logic`. (The old `packages/models` was deleted — it was orphaned.) |
+| **Corpus analysis** (`packages/logic/analysis.ts`) | `melodyToIntervals`, `intervalHistogram`, `frequentFragments`, `impliedHarmony` (template-matching, tuneable), `chordReflection` (key-relative), `avoidanceProfile` (distance from the singer's centroid), `analyzeCorpus`. Pure, unit-tested, perceptually grounded. |
 | **Native C++ DSP** (`packages/client/cpp/dsp`) | `Mpm`, `notes`, `ring_buffer`, `pitch_engine` — a port of `logic`, **host-compiled + parity-tested** against the TS oracle (`PARITY OK`). |
 | **Native audio bridge** | iOS `AudioEngineModule.{h,mm}` (AVAudioEngine) + Android `AudioEngineModule.java` + `cpp/audio_jni.cpp` → feed C++ MPM, emit throttled `PitchSample`. TS wrapper `src/audio/AudioEngine.ts` + `useAudioEngine` selects Tier 1 (native) or Tier 2 (audio-api worklet). |
-| **App** (`packages/client/src`) | Record (Skia + Reanimated live pitch line, off-JS-thread), Results (score + feedback + MIDI export/share), Library (history + playback), Settings (engine tuning + theme); XState machines; navigation gated on auth. |
-| **Auth + backend** | Supabase: `src/lib/supabase.ts` + Keychain session adapter (`src/lib/secureSession.ts`); `src/auth/` (AuthContext/useAuth/LoginScreen); `supabase/` (schema, RLS, `takes` storage bucket, `delete_account` RPC). |
-| **Data + sync** | `src/data/recordingsRepo.ts` (cloud CRUD) + `src/data/profilesRepo.ts` (profile + account deletion) + `src/data/currentUser.ts` (shared auth guard) + `src/data/sync.ts` (local-first MMKV cache reconcile); one store. |
-| **Profile** | `src/screens/Profile/` (display-name edit, sign out, delete account) on its own tab; `useProfile` hook. |
-| **Practice (full)** | Practice tab → pick exercise (`screens/Practice/PracticeScreen`) → `PracticeSession` records against the melody with target+live pitch scrolling in sync (`PracticePitchView`, Skia) and adaptive reference audio (play-along on headphones / count-in otherwise, `usePracticeSession` + `audio/outputRoute`) → Results scores against the chosen melody. Engine: `logic/melodies.ts` + `audio/referenceTone.ts`. Remaining gaps in `docs/OPEN_QUESTIONS.md`. |
+| **App** (`packages/client/src`) | **3 tabs: Practice · Notes · Dashboard**, plus a header button → **Account & Settings**. Capture primitives (Skia + Reanimated live pitch line, off-JS-thread) live in `screens/capture/`; XState machines; navigation gated on auth. |
+| **Notes** | `src/screens/Notes/` — capture (no score gate) + list + per-note detail/analysis (key, tempo, range, steadiness, tap-to-hear, MIDI export) + playback. `useNoteCapture` (analyse + save), `useNotes` (cache-first list), `analysis/note.ts`. The `melody_json` is persisted so corpus analysis never re-touches audio. |
+| **Dashboard** | `src/screens/Dashboard/` — training trend (`TrendChart`, Skia) from `practice_progress`, most-common patterns (intervals / fragments / chord changes) and most-avoided patterns from `analyzeCorpus`. `useDashboard` recomputes on change. |
+| **Auth + backend** | Supabase: `src/lib/supabase.ts` + Keychain session adapter (`src/lib/secureSession.ts`); `src/auth/` (AuthContext/useAuth/LoginScreen); `supabase/` (schema, RLS, `notes` storage bucket, `delete_account` RPC). |
+| **Data + sync** | `src/data/notesRepo.ts` + `notesSync.ts`/`notesCache.ts` (notes cloud CRUD + cache, melody included), `practiceProgressRepo.ts` + `practiceProgressSync.ts` (trajectory), `profilesRepo.ts`, `currentUser.ts`; server-authoritative MMKV cache; one store. |
+| **Account & Settings** | `src/screens/Account/AccountScreen.tsx` consolidates the old Profile + Settings (account, chord-inference knobs, engine tuning, theme, about), reached via a header button. `useProfile` + `useSettings` + `useAnalysisSettings`. |
+| **Practice (full)** | Practice tab → pick exercise (`screens/Practice/PracticeScreen`) → `PracticeSession` records against the melody with target+live pitch scrolling in sync (`PracticePitchView`, Skia) and adaptive reference audio (play-along on headphones / count-in otherwise, `usePracticeSession` + `audio/outputRoute`) → Results scores against the chosen melody and writes a `practice_progress` row (no audio kept). Engine: `logic/melodies.ts` + `audio/referenceTone.ts`. |
 | **On-device feedback** | `src/analysis/feedback.ts` → `FeedbackDto` from `logic`, surfaced in Results. |
-| **i18n** | `src/i18n/` (i18next + device locale); Record/Library/Settings keyed. |
+| **i18n** | `src/i18n/` (i18next + device locale); Practice/Notes/Dashboard/Account/Settings keyed. |
 | **CI** | `lint` + `typecheck` + pure-TS `test` all green. Gated to `workflow_dispatch` (manual). |
 | **Deployment** | `packages/client/fastlane/` + `.github/workflows/release-{ios,android}.yml` (manual) + `scripts/`. |
 
@@ -164,36 +167,41 @@ Still deferred (small, non-blocking):
 
 ## 7. Suggested next steps (when you resume)
 
-1. **Build the Notes + Dashboard module** — the designed next feature; full spec in
-   `docs/NOTES_MODULE_DESIGN.md` (and §8 below). This is the planned next session.
-2. **Phase V** (a few hours on a Mac): regenerate the lockfile, `pod install` +
+1. **Phase V** (a few hours on a Mac): regenerate the lockfile, `pod install` +
    Xcode wiring, Gradle, provision Supabase, boot on a device. Turns the scaffold
-   into a running app and flips CI fully green incl. the client suite.
+   into a running app and flips CI fully green incl. the client suite. This now
+   also exercises the new `notes` + `practice_progress` schema (apply migration
+   `0001_init.sql` to a fresh project — it is a clean rewrite, no `recordings`).
+2. **Notes/Dashboard polish on hardware**: chart visual design, note titling/tags,
+   optional MIDI import path (see `docs/NOTES_MODULE_DESIGN.md` §11) — all deferred.
 
-*(Practice / target-melody mode and the account/profile features are already
-built and merged — see §1.)*
+*(Practice mode, account/profile, and the **Notes + Dashboard module** are all
+built and merged — see §1 and §8.)*
 
 ---
 
-## 8. Next build — Notes + Dashboard (designed, not yet built)
+## 8. Notes + Dashboard module — BUILT
 
-Full spec: **`docs/NOTES_MODULE_DESIGN.md`**. What the next session does:
+Design spec: **`docs/NOTES_MODULE_DESIGN.md`**. What shipped:
 
-- **Reframe freeform recording as "Notes."** The old **Record + Library** tabs
-  collapse into one **Notes** surface (capture a sung idea → analyse → keep). The
-  per-take self-score logic is **kept but reframed as descriptive analysis**
-  (key/tempo/range/steadiness), not a grade.
-- **Continual on-device pattern analysis** over the notes corpus: most/least-sung
-  **intervals**, recurring **fragments** (interval n-grams), and **chord-change
-  reflection** (implied harmony, tuneable). "Most avoided" = patterns *furthest*
-  from the user's common-pattern centroid.
-- **New `Dashboard` tab**: training-progress trajectory + most-common + most-avoided
-  patterns.
-- **IA → 3 tabs**: **Practice · Notes · Dashboard**. Profile + Settings merge into a
-  single **Account & Settings** screen reached from a header button.
-- **Data**: replace `recordings` with `notes` (adds `melody_json` so analysis is
-  pure-data) + a lightweight `practice_progress` table (trajectory only, no audio —
-  practice takes themselves are not kept).
+- **Freeform recording reframed as "Notes."** The old **Record + Library** tabs
+  collapsed into one **Notes** surface (`screens/Notes/`): capture a sung idea →
+  analyse → keep. Self-score logic is **kept but reframed as descriptive analysis**
+  (key/tempo/range/steadiness), no grade. `melody_json` is persisted so analysis is
+  pure-data.
+- **On-device corpus analysis** (`packages/logic/analysis.ts`): interval histogram,
+  recurring **fragments** (phrase-aware interval n-grams, with a playable example),
+  **chord reflection** (template-matched implied harmony, key-relative, tuneable),
+  and an **avoidance profile** ("most avoided" = furthest from the singer's
+  common-pattern centroid). All perceptually grounded and unit-tested.
+- **`Dashboard` tab** (`screens/Dashboard/`): training-progress trend (`TrendChart`,
+  Skia) from `practice_progress` + most-common + most-avoided patterns.
+- **IA → 3 tabs**: **Practice · Notes · Dashboard**; Profile + Settings merged into a
+  single **Account & Settings** screen (`screens/Account/`) reached from a header
+  button, with the chord-inference tuning knobs.
+- **Data**: `recordings` replaced by `notes` (+ `melody_json`) and `practice_progress`
+  (trajectory only, no audio). Migration `0001_init.sql` rewritten; `Database` type +
+  `shared` DTOs updated; storage bucket renamed `takes` → `notes`.
 - Compute is **on-device, recomputed on change** (no server job).
 
-Decisions are locked in `docs/NOTES_MODULE_DESIGN.md` §2; build order in §10.
+Remaining (deferred) items are in `docs/NOTES_MODULE_DESIGN.md` §11 and §7 above.

@@ -25,7 +25,7 @@ import {
   type RecordingHandle
 } from '../../audio/contract';
 import type { PracticeParams } from '../../navigation/types';
-import { useRecordController } from '../Record/useRecordController';
+import { useRecordController } from '../capture/useRecordController';
 
 export type PracticePhase =
   | 'idle'
