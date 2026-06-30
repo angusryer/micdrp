@@ -17,6 +17,7 @@ import {
 import Share from 'react-native-share';
 
 import { useTheme } from '../../theme';
+import { useTranslation } from '../../i18n';
 
 export interface ExportSheetProps {
   /** `file://` URI of the exported `.mid`, or null until it has been written. */
@@ -29,6 +30,7 @@ type ShareStatus = 'idle' | 'sharing' | 'error';
 
 export function ExportSheet({ midiUri, title }: ExportSheetProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [status, setStatus] = useState<ShareStatus>('idle');
 
   const onShare = useCallback(async () => {
@@ -59,7 +61,7 @@ export function ExportSheet({ midiUri, title }: ExportSheetProps) {
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ disabled }}
-        accessibilityLabel="Export MIDI"
+        accessibilityLabel={t('results.exportMidi')}
         disabled={disabled}
         onPress={onShare}
         style={[
@@ -72,16 +74,20 @@ export function ExportSheet({ midiUri, title }: ExportSheetProps) {
         {status === 'sharing' ? (
           <ActivityIndicator color={colors.white} />
         ) : (
-          <Text style={[styles.buttonText, { color: colors.white }]}>Export MIDI</Text>
+          <Text style={[styles.buttonText, { color: colors.white }]}>
+            {t('results.exportMidi')}
+          </Text>
         )}
       </Pressable>
 
       {midiUri == null ? (
-        <Text style={[styles.hint, { color: colors.gray300 }]}>Preparing MIDI…</Text>
+        <Text style={[styles.hint, { color: colors.gray300 }]}>
+          {t('results.preparingMidi')}
+        </Text>
       ) : null}
       {status === 'error' ? (
         <Text style={[styles.hint, { color: colors.error }]}>
-          Couldn’t share the file. Try again.
+          {t('results.shareError')}
         </Text>
       ) : null}
     </View>

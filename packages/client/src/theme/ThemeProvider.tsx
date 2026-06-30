@@ -30,7 +30,12 @@ export interface ThemeValue {
   setPalette(palette: ETheme): void;
 }
 
-const ThemeContext = createContext<ThemeValue | undefined>(undefined);
+/**
+ * Exported so resilient consumers (e.g. the top-level ErrorBoundary, which may
+ * render after a provider has unmounted) can read the theme via `useContext`
+ * with their own fallback instead of throwing through {@link useTheme}.
+ */
+export const ThemeContext = createContext<ThemeValue | undefined>(undefined);
 
 interface ThemeProviderProps {
   children: React.ReactNode;

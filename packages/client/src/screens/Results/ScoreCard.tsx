@@ -11,6 +11,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { PitchScore } from 'logic';
 
 import { useTheme } from '../../theme';
+import { useTranslation } from '../../i18n';
 
 export interface ScoreCardProps {
   /** Number of segmented notes in the take. */
@@ -44,6 +45,7 @@ function Stat(props: {
 
 export function ScoreCard({ noteCount, durationMs, score }: ScoreCardProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   return (
     <View
@@ -57,32 +59,38 @@ export function ScoreCard({ noteCount, durationMs, score }: ScoreCardProps) {
         <View style={styles.scoreBlock}>
           <Text
             style={[styles.score, { color: colors.primary500 }]}
-            accessibilityLabel={`Pitch score ${score.score} out of 100`}
+            accessibilityLabel={t('results.scoreAccessibility', {
+              score: score.score
+            })}
           >
             {score.score}
           </Text>
-          <Text style={[styles.scoreUnit, { color: colors.gray300 }]}>/ 100</Text>
+          <Text style={[styles.scoreUnit, { color: colors.gray300 }]}>
+            {t('results.outOf100')}
+          </Text>
         </View>
       ) : (
-        <Text style={[styles.noScore, { color: colors.gray300 }]}>No reference melody</Text>
+        <Text style={[styles.noScore, { color: colors.gray300 }]}>
+          {t('results.noReferenceMelody')}
+        </Text>
       )}
 
       <View style={styles.row}>
         <Stat
-          label="Notes"
+          label={t('results.notes')}
           value={String(noteCount)}
           color={colors.typography}
           muted={colors.gray300}
         />
         <Stat
-          label="Length"
+          label={t('results.length')}
           value={formatDuration(durationMs)}
           color={colors.typography}
           muted={colors.gray300}
         />
         {score != null ? (
           <Stat
-            label="In tune"
+            label={t('results.inTune')}
             value={`${Math.round(score.inTuneRatio * 100)}%`}
             color={colors.typography}
             muted={colors.gray300}

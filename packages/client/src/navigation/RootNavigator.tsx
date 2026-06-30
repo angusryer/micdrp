@@ -5,11 +5,13 @@ import {
 } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React, { useCallback } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
 import { useAuth } from '../auth';
 import { useTheme } from '../theme';
 import { useTranslation } from '../i18n';
+import { Icon, type IconName } from '../components/Icon';
+import Splash from '../screens/Splash';
 import AccountScreen from '../screens/Account/AccountScreen';
 import DashboardScreen from '../screens/Dashboard/DashboardScreen';
 import LoginScreen from '../screens/Login/LoginScreen';
@@ -46,19 +48,24 @@ function AccountHeaderButton() {
       accessibilityLabel={t('account.open')}
       style={styles.headerButton}
     >
-      <Text style={[styles.headerButtonText, { color: colors.primary500 }]}>
-        {t('account.headerIcon')}
-      </Text>
+      <Icon name="settings" size={24} color={colors.primary500} />
     </Pressable>
   );
 }
+
+/** Tab id → glyph for the bottom tab bar. */
+const TAB_ICONS: Record<keyof MainTabParamList, IconName> = {
+  Practice: 'practice',
+  Notes: 'notes',
+  Dashboard: 'dashboard'
+};
 
 function MainTabs() {
   const { colors } = useTheme();
   const { t } = useTranslation();
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: true,
         headerStyle: { backgroundColor: colors.neutral300 },
         headerTitleStyle: { color: colors.typography },
@@ -66,8 +73,11 @@ function MainTabs() {
         headerRight: () => <AccountHeaderButton />,
         tabBarActiveTintColor: colors.primary500,
         tabBarInactiveTintColor: colors.gray300,
-        tabBarStyle: { backgroundColor: colors.neutral100 }
-      }}
+        tabBarStyle: { backgroundColor: colors.neutral100 },
+        tabBarIcon: ({ color, size }) => (
+          <Icon name={TAB_ICONS[route.name]} size={size} color={color} />
+        )
+      })}
     >
       <Tab.Screen
         name="Practice"
@@ -93,7 +103,8 @@ export default function RootNavigator() {
   const { t } = useTranslation();
 
   if (loading) {
-    return null; // initial session restore; a splash can replace this later
+    // Initial session restore: show the branded splash instead of a blank frame.
+    return <Splash />;
   }
 
   return (
@@ -139,6 +150,5 @@ export default function RootNavigator() {
 }
 
 const styles = StyleSheet.create({
-  headerButton: { paddingHorizontal: 16 },
-  headerButtonText: { fontSize: 20 }
+  headerButton: { paddingHorizontal: 16 }
 });

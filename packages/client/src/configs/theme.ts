@@ -113,81 +113,89 @@ export const palettes: Record<
       }
     }
   },
-  // Dark mode palette colors
+  // Dark mode palette colors.
+  //
+  // These are true dark surfaces (not a copy of the light ramp): backgrounds
+  // collapse toward near-black while keeping the role ordering screens rely on
+  // (canvas `neutral50` is the deepest, `neutral100` cards sit above the
+  // `neutral300` screen base, `neutral500` are visible hairlines). Muted greys
+  // are lightened so secondary text stays legible, and `primary500`/`primary100`
+  // are brightened so accents and the melody contour still read on the dark
+  // Skia canvases.
   dark: {
     [ETheme.Blue]: {
       selectedPalette: ETheme.Blue,
       colors: {
         ...basicColors,
-        error: '#FF4949',
-        gold: '#8D8476',
-        typography: '#323E58',
-        gray50: '#F3F4F6',
-        gray100: '#ADB1B8',
-        gray300: '#828894',
-        gray500: '#545A63',
-        gray700: '#3E444C',
-        neutral50: '#FDFBF7',
-        neutral100: '#FBF6EE',
-        neutral300: '#F8F0E3',
-        neutral500: '#D9CEBD',
-        primary25: '#F3F8FF',
-        primary50: '#CADFFF',
-        primary100: '#A7C8FC',
+        error: '#FF6B6B',
+        gold: '#CBB98C',
+        typography: '#ECEEF2',
+        gray50: '#2A2E36',
+        gray100: '#5C626D',
+        gray300: '#9BA1AD',
+        gray500: '#B3B9C4',
+        gray700: '#D6DAE1',
+        neutral50: '#0E1116',
+        neutral100: '#1B1F27',
+        neutral300: '#13161C',
+        neutral500: '#363B46',
+        primary25: '#0F1B2E',
+        primary50: '#14294A',
+        primary100: '#5E8FD6',
         primary300: '#4F8BE6',
-        primary500: '#0F52BA',
-        primary700: '#013B95',
-        primary900: '#021A40'
+        primary500: '#3D7BE0',
+        primary700: '#7DA9EE',
+        primary900: '#C3D9F8'
       }
     },
     [ETheme.Red]: {
       selectedPalette: ETheme.Red,
       colors: {
         ...basicColors,
-        error: '#D43939',
-        gold: '#8D7E76',
-        typography: '#29121B',
-        gray50: '#F6F5F5',
-        gray100: '#B8ADB1',
-        gray300: '#948289',
-        gray500: '#63545A',
-        gray700: '#3D3135',
-        neutral50: '#FDFBFA',
-        neutral100: '#FBF5F2',
-        neutral300: '#F9F0EC',
-        neutral500: '#D9C7BD',
-        primary25: '#FBF4F6',
-        primary50: '#FFEAF2',
-        primary100: '#F7BFD4',
+        error: '#FF6B6B',
+        gold: '#CBB08C',
+        typography: '#F3EAEE',
+        gray50: '#322A2E',
+        gray100: '#6D5C62',
+        gray300: '#AD9BA2',
+        gray500: '#C4B3B9',
+        gray700: '#E1D6DA',
+        neutral50: '#140E11',
+        neutral100: '#241B1F',
+        neutral300: '#1A1316',
+        neutral500: '#46363B',
+        primary25: '#2E0F1B',
+        primary50: '#4A1429',
+        primary100: '#E68AAE',
         primary300: '#F3639E',
-        primary500: '#E0115F',
-        primary700: '#850837',
-        primary900: '#2F0213'
+        primary500: '#EC3F76',
+        primary700: '#F78CB1',
+        primary900: '#FBC9D9'
       }
     },
     [ETheme.Green]: {
       selectedPalette: ETheme.Green,
       colors: {
         ...basicColors,
-        error: '#FF4949',
-        gold: '#8D7A76',
-        typography: '#384343',
-        gray50: '#F3FFFF',
-        gray100: '#C4C8C8',
-        gray300: '#889090',
-        gray500: '#546363',
-        gray700: '#313D3D',
-        neutral50: '#FDFBFB',
-        neutral100: '#FEFEFE',
-        neutral300: '#FBF9F8',
-        neutral500: '#E5D6D3',
-        primary25: '#F3FFFF',
-        primary50: '#DDFCFC',
-        primary100: '#BAF6F6',
+        error: '#FF6B6B',
+        gold: '#BFC79C',
+        typography: '#E9F0EE',
+        gray50: '#2A322F',
+        gray100: '#5C6D67',
+        gray300: '#9BADA7',
+        gray500: '#B3C4BE',
+        gray700: '#D6E1DD',
+        neutral50: '#0C1212',
+        neutral100: '#18211F',
+        neutral300: '#101715',
+        neutral500: '#34433F',
+        primary25: '#0E2929',
+        primary50: '#134A4A',
+        primary100: '#5FD0D0',
         primary300: '#45DFDF',
-        primary500: '#008080',
-        primary700: '#085555',
-        primary900: '#032929'
+        primary500: '#13A3A3',
+        primary700: '#7DEEEE',
+        primary900: '#C3F7F7'
       }
     }
   }

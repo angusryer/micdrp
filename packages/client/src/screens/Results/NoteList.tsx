@@ -18,6 +18,7 @@ import {
 import { NOTE_NAMES, type NoteEvent } from 'logic';
 
 import { useTheme } from '../../theme';
+import { useTranslation } from '../../i18n';
 
 export interface NoteListProps {
   notes: NoteEvent[];
@@ -38,15 +39,22 @@ function formatTime(ms: number): string {
 
 export function NoteList({ notes, onPressNote }: NoteListProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   const renderItem = useCallback(
     ({ item, index }: ListRenderItemInfo<NoteEvent>) => {
       const cents = Math.round(item.cents);
       const centsLabel = cents === 0 ? '±0' : cents > 0 ? `+${cents}` : `${cents}`;
       const tappable = onPressNote != null;
-      const label = `Note ${index + 1}: ${midiToLabel(item.midi)}, ${Math.round(
-        item.durationMs
-      )} milliseconds, ${centsLabel} cents${tappable ? ', tap to hear' : ''}`;
+      const label = t(
+        tappable ? 'results.noteRowTappable' : 'results.noteRow',
+        {
+          index: index + 1,
+          name: midiToLabel(item.midi),
+          ms: Math.round(item.durationMs),
+          cents: centsLabel
+        }
+      );
       const cells = (
         <>
           <Text style={[styles.name, { color: colors.typography }]}>
@@ -84,14 +92,14 @@ export function NoteList({ notes, onPressNote }: NoteListProps) {
         </View>
       );
     },
-    [colors, onPressNote]
+    [colors, onPressNote, t]
   );
 
   if (notes.length === 0) {
     return (
       <View style={styles.empty}>
         <Text style={[styles.emptyText, { color: colors.gray300 }]}>
-          No notes detected in this take.
+          {t('results.noNotes')}
         </Text>
       </View>
     );
