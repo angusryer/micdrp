@@ -9,6 +9,11 @@ export type RootStackParamList = {
   Results: { handle: RecordingHandle };
 };
 
+/** Unauthenticated stack, shown when there is no Supabase session. */
+export type AuthStackParamList = {
+  Login: undefined;
+};
+
 export type MainTabParamList = {
   Record: undefined;
   Library: undefined;
