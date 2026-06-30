@@ -73,3 +73,17 @@ This will raise the major version number by one:
 `yarn build -Me [s|p|d] [ios|android|both]`
 
 ### Note that _only the build number will increment when specifying the `d` (developement) environment
+
+---
+
+## Native App (React Native 0.72 + New Architecture)
+
+The `packages/client` package is a bare React Native app (not Expo) with a
+shared C++ DSP core for real-time pitch detection. Key documentation:
+
+| Document | What it covers |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Data-flow diagram (mic → C++ MPM → JSI → Reanimated/Skia), package map, three-tier DSP model, offline pipeline reuse from `packages/logic` |
+| [docs/NATIVE_SETUP.md](docs/NATIVE_SETUP.md) | Phase V runbook: Node/Yarn via Corepack, `yarn install`, `bundle install && pod install`, New Architecture flags (`RCT_NEW_ARCH_ENABLED` / `newArchEnabled`), microphone permissions, running on device (iOS + Android), verifying react-native-audio-api + reanimated + Skia |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Signing setup (Match for iOS, keystore for Android), the full ENV/secrets matrix consumed by fastlane and the release workflows, TestFlight and Play internal-track steps, release runbook, rollback procedures, how to enable the `workflow_dispatch` release workflows |
+| [docs/NATIVE_BUILD_PLAN.md](docs/NATIVE_BUILD_PLAN.md) | Authoritative spec: architecture decisions, work-package breakdown (WP-FOUNDATION through WP-SYNTH), invariants for all agents |

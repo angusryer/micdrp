@@ -1,0 +1,13 @@
+# Appfile — all identity values come from CI/environment secrets.
+# Never hard-code Apple IDs, team IDs, package names, or any credentials here.
+
+# iOS / App Store Connect
+app_identifier(ENV["IOS_BUNDLE_ID"] || "io.ryer.micdrp")
+apple_id(ENV["APPLE_ID"])
+itc_team_id(ENV["ITC_TEAM_ID"])   # App Store Connect Team ID
+team_id(ENV["APPLE_TEAM_ID"])     # Developer Portal Team ID (J3RCPBZHWM in exportOptions)
+
+# Android
+# package_name is consumed by supply (Play Store) — keep separate from ios app_identifier
+# supply reads SUPPLY_PACKAGE_NAME from env; we also set it explicitly for clarity.
+json_key_file("")   # Not used here — set SUPPLY_JSON_KEY_DATA or pass via lane argument

@@ -1,0 +1,112 @@
+name: Release iOS
+
+# NOTE: Automatic triggers are DISABLED (matching the repo's disabled-by-default CI policy).
+# This workflow must be dispatched manually from the GitHub Actions UI or via the API.
+# Enable push/pull_request triggers only when you are ready for automated releases.
+on:
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: "Fastlane lane to run"
+        required: true
+        type: choice
+        options:
+          - beta
+          - release
+        default: beta
+      version_number:
+        description: "Semantic version (e.g. 1.2.3). Leave blank to keep current."
+        required: false
+        type: string
+      build_number:
+        description: "Build number integer (e.g. 42). Leave blank to keep current."
+        required: false
+        type: string
+
+jobs:
+  release-ios:
+    name: "iOS ${{ inputs.lane }}"
+    runs-on: macos-14    # Xcode 15, arm64 runner required for iOS builds
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # -------------------------------------------------------------------
+      # Node / Yarn setup — matches .github/actions/setup/action.yml
+      # -------------------------------------------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: .nvmrc
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Cache Yarn dependencies
+        id: yarn-cache
+        uses: actions/cache@v3
+        with:
+          path: "**/node_modules"
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Install Node dependencies
+        if: steps.yarn-cache.outputs.cache-hit != 'true'
+        run: yarn install --immutable
+
+      # -------------------------------------------------------------------
+      # Ruby / Bundler setup
+      # -------------------------------------------------------------------
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "2.7"
+          bundler-cache: true
+          working-directory: packages/client
+
+      # -------------------------------------------------------------------
+      # CocoaPods (cached)
+      # -------------------------------------------------------------------
+      - name: Cache CocoaPods
+        uses: actions/cache@v3
+        with:
+          path: packages/client/ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('packages/client/ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+
+      - name: Install CocoaPods
+        working-directory: packages/client
+        run: bundle exec pod install --project-directory=ios
+
+      # -------------------------------------------------------------------
+      # Run the release script (wraps fastlane)
+      # The script writes ASC_API_KEY_JSON to a temp file and exports
+      # ASC_API_KEY_PATH for fastlane; cleanup is handled via trap.
+      # -------------------------------------------------------------------
+      - name: Release iOS (${{ inputs.lane }})
+        env:
+          LANE: ${{ inputs.lane }}
+          VERSION_NUMBER: ${{ inputs.version_number }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          ENVFILE: packages/client/.env.production
+
+          # Apple / Match
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ITC_TEAM_ID: ${{ secrets.ITC_TEAM_ID }}
+          IOS_BUNDLE_ID: ${{ secrets.IOS_BUNDLE_ID }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
+          MATCH_USERNAME: ${{ secrets.APPLE_ID }}
+
+          # App Store Connect API key (raw JSON; the script writes it to a temp file)
+          ASC_API_KEY_JSON: ${{ secrets.ASC_API_KEY_JSON }}
+
+          # Optional release notes
+          RELEASE_NOTES: ${{ secrets.RELEASE_NOTES }}
+
+        run: sh scripts/release-ios.sh "${LANE}"

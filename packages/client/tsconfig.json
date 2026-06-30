@@ -9,7 +9,14 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "jsx": "react-native",
-    "noEmit": true
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "logic": ["../logic/src/index.ts"],
+      "logic/*": ["../logic/src/*"],
+      "models": ["../models/src/index.ts"],
+      "models/*": ["../models/src/*"]
+    }
   },
   "exclude": [".bundle", "android", "ios", "node_modules", "vendor"]
 }
