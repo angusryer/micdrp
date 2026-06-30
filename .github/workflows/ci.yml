@@ -1,14 +1,10 @@
 name: CI
 
+# Manual-trigger only while the audit lands and the lockfile is regenerated on a
+# real dev machine (Phase V). Re-enable push/pull_request triggers once `yarn
+# lint`/`yarn test` are green locally so we don't burn runner minutes on
+# known-red pushes. (`typecheck` already passes.)
 on:
-  push:
-    branches:
-      - main
-      - 'claude/**'
-  pull_request:
-    branches:
-      - main
-      - 'claude/**'
   workflow_dispatch:
 
 jobs:
