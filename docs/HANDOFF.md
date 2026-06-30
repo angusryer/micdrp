@@ -40,6 +40,8 @@ merged to `main` unless marked **Phase V** (needs a real dev machine) or
 - `docs/NATIVE_SETUP.md` — **the Phase V runbook** (pod install, Gradle, Xcode steps).
 - `docs/DEPLOYMENT.md` — signing, secrets matrix, release runbook.
 - `docs/AUDIT_FINDINGS.md` — cleanliness audit results + deferred items.
+- `docs/OPEN_QUESTIONS.md` — parked product-UX decisions.
+- **`docs/NOTES_MODULE_DESIGN.md` — the NEXT build: Notes + Dashboard module (see §8).**
 - `docs/OPEN_QUESTIONS.md` — parked product-UX decisions (practice mode, sharing).
 
 ---
@@ -149,8 +151,9 @@ Still deferred (small, non-blocking):
 
 ## 6. Workflow / repo conventions
 
-- **Dev branch:** `claude/latest-repo-changes-vip5ss` (currently reset onto merged
-  `main` @ `2af3da2`). Merged PRs are final; start follow-up work fresh off `main`.
+- **Dev branch:** `claude/latest-repo-changes-vip5ss`, always reset onto the latest
+  merged `main` before new work. Merged PRs are final; start follow-up work fresh
+  off `main` (force-with-lease the branch when it only carries already-merged history).
 - **Merges:** repo disallows merge commits → use **squash**.
 - Monorepo: Yarn 3 (Berry), `nodeLinker: node-modules`, Corepack. Packages:
   `client` (RN app), `logic`, `shared`. (The Express `server` and the orphaned
@@ -161,10 +164,36 @@ Still deferred (small, non-blocking):
 
 ## 7. Suggested next steps (when you resume)
 
-1. **Phase V** (a few hours on a Mac): regenerate the lockfile, `pod install` +
-   Xcode wiring, Gradle, provision Supabase, boot on a device. This turns the
-   scaffold into a running app and flips CI fully green incl. the client suite.
-2. Then knock out the deferred cleanups (§4 items 1–4) — small, CI-validatable.
-3. Then build the **reference-tone / target-melody** feature — it's the missing
-   half of the product loop (sing *against* a target), and the scoring path
-   already supports it.
+1. **Build the Notes + Dashboard module** — the designed next feature; full spec in
+   `docs/NOTES_MODULE_DESIGN.md` (and §8 below). This is the planned next session.
+2. **Phase V** (a few hours on a Mac): regenerate the lockfile, `pod install` +
+   Xcode wiring, Gradle, provision Supabase, boot on a device. Turns the scaffold
+   into a running app and flips CI fully green incl. the client suite.
+
+*(Practice / target-melody mode and the account/profile features are already
+built and merged — see §1.)*
+
+---
+
+## 8. Next build — Notes + Dashboard (designed, not yet built)
+
+Full spec: **`docs/NOTES_MODULE_DESIGN.md`**. What the next session does:
+
+- **Reframe freeform recording as "Notes."** The old **Record + Library** tabs
+  collapse into one **Notes** surface (capture a sung idea → analyse → keep). The
+  per-take self-score logic is **kept but reframed as descriptive analysis**
+  (key/tempo/range/steadiness), not a grade.
+- **Continual on-device pattern analysis** over the notes corpus: most/least-sung
+  **intervals**, recurring **fragments** (interval n-grams), and **chord-change
+  reflection** (implied harmony, tuneable). "Most avoided" = patterns *furthest*
+  from the user's common-pattern centroid.
+- **New `Dashboard` tab**: training-progress trajectory + most-common + most-avoided
+  patterns.
+- **IA → 3 tabs**: **Practice · Notes · Dashboard**. Profile + Settings merge into a
+  single **Account & Settings** screen reached from a header button.
+- **Data**: replace `recordings` with `notes` (adds `melody_json` so analysis is
+  pure-data) + a lightweight `practice_progress` table (trajectory only, no audio —
+  practice takes themselves are not kept).
+- Compute is **on-device, recomputed on change** (no server job).
+
+Decisions are locked in `docs/NOTES_MODULE_DESIGN.md` §2; build order in §10.
