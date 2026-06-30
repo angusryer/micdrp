@@ -17,7 +17,7 @@
 
 #include <vector>
 
-#include "mpm.h"    // micdrp::dsp::detectPitch, MpmOptions, PitchResult
+#include "mpm.h"    // micdrp::dsp::Mpm, EngineConfig, PitchResult
 #include "notes.h"  // micdrp::dsp::frequencyToNote, NoteReading
 
 namespace {
@@ -50,6 +50,14 @@ class PitchEngine {
  public:
   explicit PitchEngine(const EngineConfig &cfg) : cfg_(cfg) {
     buffer_.reserve(static_cast<size_t>(cfg.frameSize) * 2);
+    micdrp::dsp::EngineConfig dsp;
+    dsp.sampleRateHz = cfg.sampleRateHz;
+    dsp.frameSize = static_cast<std::size_t>(cfg.frameSize);
+    dsp.hopSize = static_cast<std::size_t>(cfg.hopSize);
+    dsp.minFrequencyHz = cfg.minFrequencyHz;
+    dsp.maxFrequencyHz = cfg.maxFrequencyHz;
+    dsp.clarityThreshold = cfg.clarityThreshold;
+    mpm_.configure(dsp);
   }
 
   std::vector<PitchSample> &samples() { return samples_; }
@@ -67,12 +75,8 @@ class PitchEngine {
 
  private:
   void analyzeWindow(double tMs, std::vector<PitchSample> &out) {
-    micdrp::dsp::MpmOptions opts;
-    opts.clarityThreshold = cfg_.clarityThreshold;
-    opts.minFrequency = cfg_.minFrequencyHz;
-    opts.maxFrequency = cfg_.maxFrequencyHz;
     micdrp::dsp::PitchResult r =
-        micdrp::dsp::detectPitch(buffer_.data(), cfg_.frameSize, cfg_.sampleRateHz, opts);
+        mpm_.detect(buffer_.data(), static_cast<std::size_t>(cfg_.frameSize));
 
     PitchSample s;
     s.timestampMs = tMs;
@@ -88,6 +92,7 @@ class PitchEngine {
   }
 
   EngineConfig cfg_;
+  micdrp::dsp::Mpm mpm_;
   std::vector<float> buffer_;
   std::vector<PitchSample> samples_;
 };

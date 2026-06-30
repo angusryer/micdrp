@@ -151,17 +151,4 @@ PitchResult Mpm::detect(const float* frame, std::size_t n) {
   return PitchResult{0.0, clamp01(static_cast<double>(highest)), false};
 }
 
-PitchResult detectPitch(const float* frame, std::size_t n, double sampleRateHz,
-                        const MpmOptions& opts) {
-  EngineConfig cfg;
-  cfg.sampleRateHz = sampleRateHz;
-  cfg.frameSize = n;
-  cfg.minFrequencyHz = opts.minFrequency;
-  cfg.maxFrequencyHz = opts.maxFrequency;
-  cfg.clarityThreshold = opts.clarityThreshold;
-  Mpm mpm;
-  mpm.configure(cfg);
-  return mpm.detect(frame, n);
-}
-
 }  // namespace micdrp::dsp

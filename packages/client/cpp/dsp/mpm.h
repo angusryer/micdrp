@@ -41,23 +41,6 @@ struct PitchResult {
   bool voiced = false;       // true iff a confident pitch was accepted
 };
 
-// Options for the one-shot detectPitch() convenience below. Mirrors the
-// options bag of logic/mpm.ts detectPitch(samples, sampleRate, opts).
-struct MpmOptions {
-  double clarityThreshold = 0.9;
-  double minFrequency = 70.0;
-  double maxFrequency = 1200.0;
-};
-
-// One-shot convenience used by the native bridges (ios/AudioEngineModule.mm,
-// android/.../audio_jni.cpp). Builds a transient Mpm from opts + sampleRate and
-// runs a single detection. Returns the same PitchResult as Mpm::detect
-// (frequencyHz/clarity/voiced). This allocates per call, so it is fine on the
-// analysis/consumer thread; for the real-time audio thread prefer Mpm /
-// PitchEngine, which pre-size their scratch buffers.
-PitchResult detectPitch(const float* frame, std::size_t n, double sampleRateHz,
-                        const MpmOptions& opts);
-
 class Mpm {
  public:
   Mpm() = default;
