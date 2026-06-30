@@ -35,7 +35,7 @@ jest.mock('react-native-reanimated', () => {
     Extrapolation: { CLAMP: 'clamp', EXTEND: 'extend', IDENTITY: 'identity' },
     Easing: new Proxy({}, { get: () => () => 0 })
   };
-});
+}, { virtual: true });
 
 // react-native-mmkv: in-memory backing store.
 jest.mock('react-native-mmkv', () => {
@@ -75,7 +75,7 @@ jest.mock('react-native-mmkv', () => {
     }
   }
   return { MMKV };
-});
+}, { virtual: true });
 
 // @shopify/react-native-skia: render children, stub drawing primitives.
 jest.mock('@shopify/react-native-skia', () => {
@@ -96,7 +96,7 @@ jest.mock('@shopify/react-native-skia', () => {
     useFont: () => null,
     vec: (x, y) => ({ x, y })
   };
-});
+}, { virtual: true });
 
 // Native audio engine + fs + share: virtual mocks (may be absent in some setups).
 jest.mock(
