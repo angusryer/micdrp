@@ -4,14 +4,17 @@ Status snapshot for picking the project back up. Everything described here is
 merged to `main` unless marked **Phase V** (needs a real dev machine) or
 **Deferred**.
 
-> **One-paragraph summary.** micdrp is a React Native singing app: you sing, it
-> shows your pitch in real time, scores the take, and gives feedback. The
-> performance-critical pitch detection runs in a **shared C++ DSP core** on the
-> audio thread (never the JS thread). Accounts/storage/sync use **Supabase**
-> (managed Postgres + Auth + Storage). Post-take analysis runs **on-device** by
-> reusing the pure-TS `logic` package. The whole app is built and CI-green for
-> everything verifiable without a device; the remaining work is a human running
-> the native build once (Phase V).
+> **One-paragraph summary.** micdrp is a React Native singing app with three
+> tabs — **Practice** (sing against a target melody, scored, with a live target +
+> pitch overlay), **Notes** (record sung musical-idea memos that are analysed and
+> kept), and **Dashboard** (training trend + the singer's melodic/harmonic
+> tendencies mined from their notes corpus). The performance-critical pitch
+> detection runs in a **shared C++ DSP core** on the audio thread (never the JS
+> thread); melodies render as a live (and static, piano-roll) **time × pitch**
+> view. Accounts/storage/sync use **Supabase** (Postgres + Auth + Storage).
+> Post-take and corpus analysis run **on-device** by reusing the pure-TS `logic`
+> package. The whole app is built and CI-green for everything verifiable without a
+> device; the remaining work is a human running the native build once (Phase V).
 
 ---
 
@@ -27,6 +30,7 @@ merged to `main` unless marked **Phase V** (needs a real dev machine) or
 | **App** (`packages/client/src`) | **3 tabs: Practice · Notes · Dashboard**, plus a header button → **Account & Settings**. Capture primitives (Skia + Reanimated live pitch line, off-JS-thread) live in `screens/capture/`; XState machines; navigation gated on auth. |
 | **Notes** | `src/screens/Notes/` — capture (no score gate) + list + per-note detail/analysis (key, tempo, range, steadiness, tap-to-hear, MIDI export) + playback. `useNoteCapture` (analyse + save), `useNotes` (cache-first list), `analysis/note.ts`. The `melody_json` is persisted so corpus analysis never re-touches audio. |
 | **Dashboard** | `src/screens/Dashboard/` — training trend (`TrendChart`, Skia) from `practice_progress`, most-common patterns (intervals / fragments / chord changes) and most-avoided patterns from `analyzeCorpus`. `useDashboard` recomputes on change. |
+| **Melody piano-roll** | `src/components/MelodyView.tsx` (Skia) over a pure, unit-tested `src/components/melodyLayout.ts` — a static time × pitch view of a melody. Used in Note detail (a "Shape" section), each Note card, and the Dashboard fragment thumbnails. The static counterpart to the live capture pitch line. |
 | **Auth + backend** | Supabase: `src/lib/supabase.ts` + Keychain session adapter (`src/lib/secureSession.ts`); `src/auth/` (AuthContext/useAuth/LoginScreen); `supabase/` (schema, RLS, `notes` storage bucket, `delete_account` RPC). |
 | **Data + sync** | `src/data/notesRepo.ts` + `notesSync.ts`/`notesCache.ts` (notes cloud CRUD + cache, melody included), `practiceProgressRepo.ts` + `practiceProgressSync.ts` (trajectory), `profilesRepo.ts`, `currentUser.ts`; server-authoritative MMKV cache; one store. |
 | **Account & Settings** | `src/screens/Account/AccountScreen.tsx` consolidates the old Profile + Settings (account, chord-inference knobs, engine tuning, theme, about), reached via a header button. `useProfile` + `useSettings` + `useAnalysisSettings`. |
@@ -203,5 +207,8 @@ Design spec: **`docs/NOTES_MODULE_DESIGN.md`**. What shipped:
   (trajectory only, no audio). Migration `0001_init.sql` rewritten; `Database` type +
   `shared` DTOs updated; storage bucket renamed `takes` → `notes`.
 - Compute is **on-device, recomputed on change** (no server job).
+- **Melody piano-roll** (follow-up, merged): `src/components/MelodyView.tsx` +
+  pure `melodyLayout.ts` render a melody as a static **time × pitch** view, used
+  in Note detail ("Shape"), the Note cards, and the Dashboard fragment thumbnails.
 
 Remaining (deferred) items are in `docs/NOTES_MODULE_DESIGN.md` §11 and §7 above.

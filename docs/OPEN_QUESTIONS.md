@@ -52,3 +52,20 @@ future scope (each is a separate data-model + privacy decision).
 - **Email change** — not built (deferred); Supabase `updateUser` supports it.
 - **`delete_account` RPC privileges** — still to verify on a real Supabase
   project (fallback: an Edge Function with the service role). Phase V check.
+
+## 5. Notes + Dashboard module — BUILT
+
+Shipped per `docs/NOTES_MODULE_DESIGN.md` (3-tab IA, notes corpus analysis,
+Dashboard, Account & Settings, time × pitch piano-roll). See `docs/HANDOFF.md`
+§8 for the as-built map.
+
+**Still open / deferred:**
+1. **Cross-device aggregation** — corpus analysis is on-device only; a
+   server-side aggregate is deferred.
+2. **Note tagging / titling / folders** — notes are auto-titled (timestamp) and
+   flat; richer organisation is deferred.
+3. **MIDI/file import for notes** — currently sung-only; an import path is open.
+4. **Chord-inference defaults** — `DEFAULT_CHORD_INFERENCE` (key-relative triads,
+   2s window) is a first guess; tune against real corpora once there's device data.
+5. **Chart visual design** — `TrendChart` + the pattern bars are deliberately
+   lightweight; revisit on hardware.
