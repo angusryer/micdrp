@@ -37,10 +37,7 @@ jobs:
       # packages — the DSP + analysis + contract core — which fully validate
       # here. The full client suite runs via `yarn test` once deps are installed.
       - name: Run unit tests (pure-TS packages)
-        run: |
-          yarn workspace logic test --coverage --maxWorkers=2
-          yarn workspace models test --passWithNoTests --maxWorkers=2
-          yarn workspace shared test --passWithNoTests --maxWorkers=2
+        run: TEST_PACKAGES="logic models shared" yarn test --maxWorkers=2 --coverage
 
   # The real mobile binary build/deploy (scripts/build.sh) requires macOS,
   # Xcode and Android signing, so it is a deployment-op concern rather than a
