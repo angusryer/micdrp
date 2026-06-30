@@ -196,6 +196,7 @@ export const recordingsRepo = {
     // Read the captured audio off disk as base64, decode to bytes, upload.
     // react-native-fs is the single fs seam; import lazily so non-RN tests that
     // never call create() don't need it resolved.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires -- deliberate lazy load (see above)
     const RNFS = require('react-native-fs') as typeof import('react-native-fs');
     const localAudioPath = blobs.audioUri.replace(/^file:\/\//, '');
     const audioB64 = await RNFS.readFile(localAudioPath, 'base64');
