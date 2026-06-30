@@ -16,8 +16,6 @@
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		874E8F2629CCCE4200E04F31 /* env.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 874E8F2529CCCE4200E04F31 /* env.xcconfig */; };
 		874E8F2729CCCE4200E04F31 /* env.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 874E8F2529CCCE4200E04F31 /* env.xcconfig */; };
-		87D82CAD29ABFC3800A430BC /* AudioControlModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 87D82CAC29ABFC3800A430BC /* AudioControlModule.m */; };
-		87D82CAE29ABFC3800A430BC /* AudioControlModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 87D82CAC29ABFC3800A430BC /* AudioControlModule.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,8 +45,6 @@
 		5DCACB8F33CDC322A6C60F78 /* libPods-micdrp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-micdrp.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = micdrp/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		874E8F2529CCCE4200E04F31 /* env.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = env.xcconfig; sourceTree = "<group>"; };
-		87D82CAB29ABF90700A430BC /* AudioControlModule.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AudioControlModule.h; sourceTree = "<group>"; };
-		87D82CAC29ABFC3800A430BC /* AudioControlModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AudioControlModule.m; sourceTree = "<group>"; };
 		89C6BE57DB24E9ADA2F236DE /* Pods-micdrp-micdrpTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-micdrp-micdrpTests.release.xcconfig"; path = "Target Support Files/Pods-micdrp-micdrpTests/Pods-micdrp-micdrpTests.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
@@ -100,8 +96,6 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB71A68108700A75B9A /* main.m */,
-				87D82CAB29ABF90700A430BC /* AudioControlModule.h */,
-				87D82CAC29ABFC3800A430BC /* AudioControlModule.m */,
 			);
 			name = micdrp;
 			sourceTree = "<group>";
@@ -418,7 +412,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				87D82CAE29ABFC3800A430BC /* AudioControlModule.m in Sources */,
 				00E356F31AD99517003FC87E /* micdrpTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -427,7 +420,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				87D82CAD29ABFC3800A430BC /* AudioControlModule.m in Sources */,
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 			);

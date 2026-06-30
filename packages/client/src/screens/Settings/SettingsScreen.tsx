@@ -11,11 +11,9 @@
  * shown between a "−" and "+" button, both constrained within the field's min/max.
  * The clarityThreshold (0..1, step 0.01) uses a finer step.
  *
- * Theme palette changes are persisted immediately.  The actual ThemeProvider
- * lives in AppProviders and reads from useSettings at mount; the palette chosen
- * here takes effect on the next cold start or when the parent re-renders with
- * the new value.  (WP-SYNTH can wire live swapping once AppProviders is updated
- * to accept a dynamic palette prop from this hook.)
+ * Theme palette changes go straight to the ThemeProvider (the single owner of
+ * the active palette via `useTheme().setPalette`), which recolors the whole app
+ * live and persists the choice for the next launch.
  *
  * Typed as `BottomTabScreenProps<MainTabParamList, 'Settings'>`.
  * See docs/NATIVE_BUILD_PLAN.md §3 (WP-SETTINGS-UI).
@@ -225,10 +223,11 @@ function PaletteSwatch({
 // ---------------------------------------------------------------------------
 
 export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
-  const { colors } = useTheme();
+  // The active palette is owned by the ThemeProvider so changing it recolors the
+  // whole app live; engine tuning stays in useSettings.
+  const { colors, palette: themePalette, setPalette } = useTheme();
   const { t } = useTranslation();
-  const { engineConfig, setEngineConfig, resetEngineConfig, themePalette, setThemePalette } =
-    useSettings();
+  const { engineConfig, setEngineConfig, resetEngineConfig } = useSettings();
 
   const makeStepHandler = useCallback(
     (field: FieldSpec, direction: StepDirection) => (): void => {
@@ -305,7 +304,7 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
                   label={translatedLabel}
                   swatch={swatch}
                   selected={themePalette === palette}
-                  onPress={() => setThemePalette(palette)}
+                  onPress={() => setPalette(palette)}
                 />
               );
             })}

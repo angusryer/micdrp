@@ -9,5 +9,6 @@ export const TABLES = {
   recordings: 'recordings'
 } as const;
 
-/** Default cents tolerance for "in tune" (mirrors logic scoring default). */
-export const IN_TUNE_TOLERANCE_CENTS = 50;
+// The "in tune" cents tolerance lives in `logic` (DEFAULT_TOLERANCE_CENTS) — it
+// is a scoring-algorithm parameter, owned by the package that defines scoring,
+// not a cross-cutting wire constant.

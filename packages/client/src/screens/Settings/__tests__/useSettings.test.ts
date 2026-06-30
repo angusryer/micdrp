@@ -4,19 +4,20 @@
  * Exercises the full round-trip through the mocked MMKV store wired by
  * jest.setup.js.  The real `data/store` module is used (it already talks to
  * the in-memory mock MMKV), so these tests validate:
- *   - Initial state equals DEFAULT_ENGINE_CONFIG + ETheme.Blue.
+ *   - Initial state equals DEFAULT_ENGINE_CONFIG.
  *   - Partial overrides are merged and persisted.
  *   - A second call to setEngineConfig accumulates on the previous override.
  *   - resetEngineConfig() returns all values to defaults and clears the store key.
- *   - setThemePalette() persists and returns the new palette.
  *   - Loading a fresh hook instance picks up previously persisted overrides
  *     (simulating an app restart).
+ *
+ * The theme palette is owned by the ThemeProvider now, so its persistence is
+ * covered by theme/__tests__/ThemeProvider.test.tsx, not here.
  */
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
 
 import { DEFAULT_ENGINE_CONFIG } from '../../../audio/contract';
-import { ETheme } from '../../../configs/theme';
 import store from '../../../data/store';
 import { useSettings, type UseSettingsValue } from '../useSettings';
 
@@ -75,11 +76,6 @@ describe('useSettings', () => {
     it('returns DEFAULT_ENGINE_CONFIG when nothing is persisted', () => {
       const { api } = mount();
       expect(api().engineConfig).toEqual(DEFAULT_ENGINE_CONFIG);
-    });
-
-    it('returns ETheme.Blue as the default theme palette', () => {
-      const { api } = mount();
-      expect(api().themePalette).toBe(ETheme.Blue);
     });
   });
 
@@ -172,62 +168,7 @@ describe('useSettings', () => {
     });
   });
 
-  describe('setThemePalette', () => {
-    it('updates the in-memory palette immediately', () => {
-      const { api } = mount();
-
-      void act(() => {
-        api().setThemePalette(ETheme.Red);
-      });
-
-      expect(api().themePalette).toBe(ETheme.Red);
-    });
-
-    it('persists the palette so a fresh hook instance reads it back', () => {
-      const { unmount, api } = mount();
-      void act(() => {
-        api().setThemePalette(ETheme.Green);
-      });
-      unmount();
-
-      const { api: api2 } = mount();
-      expect(api2().themePalette).toBe(ETheme.Green);
-    });
-
-    it('can switch back to Blue after choosing another palette', () => {
-      const { api } = mount();
-
-      void act(() => {
-        api().setThemePalette(ETheme.Red);
-      });
-      void act(() => {
-        api().setThemePalette(ETheme.Blue);
-      });
-
-      expect(api().themePalette).toBe(ETheme.Blue);
-    });
-  });
-
   describe('loading persisted state on mount', () => {
-    it('reads all supported palette values correctly', () => {
-      const palettes: ETheme[] = [ETheme.Blue, ETheme.Red, ETheme.Green];
-      for (const palette of palettes) {
-        store.clearAll();
-        // Write directly to the store to simulate data from a previous session.
-        store.setString('settings:themePalette', palette);
-
-        const { api } = mount();
-        expect(api().themePalette).toBe(palette);
-      }
-    });
-
-    it('falls back to Blue for an unrecognised persisted palette value', () => {
-      store.setString('settings:themePalette', 'Purple');
-
-      const { api } = mount();
-      expect(api().themePalette).toBe(ETheme.Blue);
-    });
-
     it('falls back to defaults for a corrupt JSON engine config', () => {
       // Write invalid JSON directly to the store key.
       store.setString('settings:engineConfig', '{not valid json}');

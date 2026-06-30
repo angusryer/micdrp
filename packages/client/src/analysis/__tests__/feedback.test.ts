@@ -6,7 +6,7 @@
  * sensible `shared` `FeedbackDto`. No mocks: `computeFeedback` is pure over
  * `handle.samples`, so there is no I/O to stub.
  */
-import { IN_TUNE_TOLERANCE_CENTS } from 'shared';
+import { DEFAULT_TOLERANCE_CENTS } from 'logic';
 
 import type { PitchSample, RecordingHandle } from '../../audio/contract';
 import { computeFeedback } from '../feedback';
@@ -56,7 +56,7 @@ describe('computeFeedback', () => {
 
     expect(fb.overallScore).toBeGreaterThan(90);
     expect(fb.inTuneRatio).toBeGreaterThan(0.9);
-    expect(fb.meanCentsError).toBeLessThan(IN_TUNE_TOLERANCE_CENTS);
+    expect(fb.meanCentsError).toBeLessThan(DEFAULT_TOLERANCE_CENTS);
     expect(fb.strengths.length).toBeGreaterThan(0);
     // A clean, in-tune take should not be flagged for pitch drift.
     expect(fb.improvements.join(' ')).not.toMatch(/drifted/i);
@@ -83,7 +83,7 @@ describe('computeFeedback', () => {
       expect(note.index).toBe(index);
       expect(typeof note.midi).toBe('number');
       expect(typeof note.centsError).toBe('number');
-      expect(note.inTune).toBe(Math.abs(note.centsError) <= IN_TUNE_TOLERANCE_CENTS);
+      expect(note.inTune).toBe(Math.abs(note.centsError) <= DEFAULT_TOLERANCE_CENTS);
     });
     expect(fb.perNote.map((n) => n.midi)).toEqual([57, 60, 64, 69]);
   });

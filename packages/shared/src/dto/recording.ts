@@ -1,6 +1,6 @@
 /**
  * Recording DTOs — the wire/row shape for a saved take. Self-contained
- * primitives (shared is the lowest layer; it must not import models/logic).
+ * primitives (shared is the lowest layer; it must not import logic).
  * Client and backend map their own domain types to/from this.
  */
 export interface RecordingDto {

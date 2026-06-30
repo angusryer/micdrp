@@ -26,16 +26,13 @@ import {
   scorePitch,
   segmentNotes,
   smoothPitch,
+  DEFAULT_TOLERANCE_CENTS,
   type KeyEstimate,
   type NoteEvent,
   type PitchScore,
   type TargetNote
 } from 'logic';
-import {
-  IN_TUNE_TOLERANCE_CENTS,
-  type FeedbackDto,
-  type NoteFeedback
-} from 'shared';
+import { type FeedbackDto, type NoteFeedback } from 'shared';
 
 import type { RecordingHandle } from '../audio/contract';
 
@@ -73,7 +70,7 @@ function perNoteFeedback(notes: readonly NoteEvent[]): NoteFeedback[] {
       index: i,
       midi: n.midi,
       centsError: n.cents,
-      inTune: Math.abs(n.cents) <= IN_TUNE_TOLERANCE_CENTS
+      inTune: Math.abs(n.cents) <= DEFAULT_TOLERANCE_CENTS
     });
   }
   return out;
@@ -133,7 +130,7 @@ function narrate(
   }
 
   // Mean cents error, as a sharp/flat tendency.
-  if (score.meanCentsError > IN_TUNE_TOLERANCE_CENTS) {
+  if (score.meanCentsError > DEFAULT_TOLERANCE_CENTS) {
     improvements.push(
       `Notes averaged ${Math.round(score.meanCentsError)} cents off centre.`
     );

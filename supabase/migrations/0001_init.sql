@@ -117,6 +117,31 @@ create trigger on_auth_user_created
   for each row execute procedure public.handle_new_user();
 
 -- ============================================================
+-- RPC: delete_account — hard-delete the caller's own account
+-- ============================================================
+-- Deletes the caller's auth.users row, which cascades to public.profiles and
+-- public.recordings (both reference auth.users with on delete cascade). The
+-- client removes the user's storage blobs before calling this, since storage
+-- objects are not covered by the FK cascade.
+--
+-- SECURITY DEFINER lets an authenticated client delete its own auth user; the
+-- body is hard-scoped to auth.uid() so a caller can only ever delete itself.
+-- Execute is granted to the `authenticated` role only.
+create or replace function public.delete_account()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+
+revoke all on function public.delete_account() from public, anon;
+grant execute on function public.delete_account() to authenticated;
+
+-- ============================================================
 -- Storage bucket: 'takes'
 -- Objects are stored at: <user_id>/<recording_id>.<ext>
 -- Bucket is private (not public); access is via signed URLs.

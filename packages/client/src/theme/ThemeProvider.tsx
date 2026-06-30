@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useMemo } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState
+} from 'react';
 import { useColorScheme } from 'react-native';
 import {
   dimensions,
@@ -7,6 +13,7 @@ import {
   palettes,
   typography
 } from '../configs/theme';
+import { loadPalette, savePalette } from './palettePreference';
 
 type Scheme = 'light' | 'dark';
 type Palette = (typeof palettes)['light'][ETheme.Blue];
@@ -19,21 +26,41 @@ export interface ThemeValue {
   dimensions: typeof dimensions;
   typography: typeof typography;
   effects: typeof effects;
+  /** Switch the active palette and persist it; recolors the live tree at once. */
+  setPalette(palette: ETheme): void;
 }
 
 const ThemeContext = createContext<ThemeValue | undefined>(undefined);
 
 interface ThemeProviderProps {
   children: React.ReactNode;
-  palette?: ETheme;
+  /**
+   * Optional initial palette (mainly for tests/storybook). When omitted the
+   * provider restores the user's persisted choice, so a cold start already
+   * shows the selected palette.
+   */
+  initialPalette?: ETheme;
 }
 
+/**
+ * The single owner of the active palette. It holds the palette in state so that
+ * `setPalette` recolors every consumer live (no cold start required), and it
+ * persists the choice through {@link savePalette} so the next launch restores it.
+ */
 export function ThemeProvider({
   children,
-  palette = ETheme.Blue
-}: ThemeProviderProps) {
+  initialPalette
+}: ThemeProviderProps): React.JSX.Element {
   const system = useColorScheme();
   const scheme: Scheme = system === 'dark' ? 'dark' : 'light';
+  const [palette, setPaletteState] = useState<ETheme>(
+    () => initialPalette ?? loadPalette()
+  );
+
+  const setPalette = useCallback((next: ETheme): void => {
+    savePalette(next);
+    setPaletteState(next);
+  }, []);
 
   const value = useMemo<ThemeValue>(
     () => ({
@@ -42,9 +69,10 @@ export function ThemeProvider({
       colors: palettes[scheme][palette].colors,
       dimensions,
       typography,
-      effects
+      effects,
+      setPalette
     }),
-    [scheme, palette]
+    [scheme, palette, setPalette]
   );
 
   return (

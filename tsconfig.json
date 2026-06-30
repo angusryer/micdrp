@@ -7,9 +7,6 @@
       "path": "packages/client"
     },
     {
-      "path": "packages/models"
-    },
-    {
       "path": "packages/logic"
     },
     {

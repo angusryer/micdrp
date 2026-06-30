@@ -17,5 +17,6 @@ export type AuthStackParamList = {
 export type MainTabParamList = {
   Record: undefined;
   Library: undefined;
+  Profile: undefined;
   Settings: undefined;
 };

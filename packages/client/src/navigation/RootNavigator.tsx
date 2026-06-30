@@ -5,6 +5,7 @@ import React from 'react';
 import { useAuth } from '../auth';
 import LibraryScreen from '../screens/Library/LibraryScreen';
 import LoginScreen from '../screens/Login/LoginScreen';
+import ProfileScreen from '../screens/Profile/ProfileScreen';
 import RecordScreen from '../screens/Record/RecordScreen';
 import ResultsScreen from '../screens/Results/ResultsScreen';
 import SettingsScreen from '../screens/Settings/SettingsScreen';
@@ -23,6 +24,7 @@ function MainTabs() {
     <Tab.Navigator screenOptions={{ headerShown: false }}>
       <Tab.Screen name='Record' component={RecordScreen} />
       <Tab.Screen name='Library' component={LibraryScreen} />
+      <Tab.Screen name='Profile' component={ProfileScreen} />
       <Tab.Screen name='Settings' component={SettingsScreen} />
     </Tab.Navigator>
   );

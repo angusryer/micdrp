@@ -26,7 +26,6 @@
     "i18next": "^23.15.1",
     "logic": "workspace:*",
     "lodash": "^4.17.21",
-    "models": "workspace:*",
     "react": "^18.2.0",
     "react-i18next": "^15.0.2",
     "react-native": "^0.72.4",

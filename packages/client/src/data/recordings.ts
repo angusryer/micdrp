@@ -3,12 +3,13 @@
  *
  * The index is a single MMKV JSON record: a map of `id -> RecordingMeta`. A
  * {@link RecordingMeta} is the *on-disk index record* — small, denormalised, and
- * cheap to list — while the heavy `models.Recording` (full `PitchSample[]`) is
- * never stored here; its bytes live on disk (see `files.ts`) addressed by id.
+ * cheap to list — while the heavy take analysis (full `PitchSample[]`) is never
+ * stored here; its bytes live on disk (see `files.ts`) addressed by id.
  *
  * `RecordingMeta` is deliberately a superset of the durable scalar fields of
- * `models.Recording` (`id`, `createdAtMs`, `durationMs`, `sampleRateHz`) plus the
- * file URIs and derived summary stats the Library/Results screens render.
+ * the canonical `shared.RecordingDto` (`id`, `createdAtMs`, `durationMs`,
+ * `sampleRateHz`) plus the file URIs and derived summary stats the
+ * Library/Results screens render.
  *
  * This module is the single READ path for that cache. The cache is *written*
  * exclusively by `sync.ts` (server-authoritative, one whole-index write under
@@ -17,7 +18,7 @@
  *
  * See docs/NATIVE_BUILD_PLAN.md §3 (WP-PERSIST).
  */
-import type { Recording } from 'models';
+import type { RecordingDto } from 'shared';
 
 import { getJSON } from './store';
 
@@ -26,7 +27,7 @@ export const RECORDINGS_INDEX_KEY = 'recordings.index';
 
 /**
  * The on-disk index record for one take. Mirrors the durable scalar fields of
- * `models.Recording` and adds file references + summary stats. The full
+ * `shared.RecordingDto` and adds file references + summary stats. The full
  * `PitchSample[]` analysis is NOT kept here — only on disk / recomputed.
  */
 export interface RecordingMeta {
@@ -34,11 +35,11 @@ export interface RecordingMeta {
   id: string;
   /** User-facing title. */
   title: string;
-  /** Wall-clock creation time, ms since epoch (mirrors `Recording.createdAtMs`). */
+  /** Wall-clock creation time, ms since epoch (mirrors `RecordingDto.createdAtMs`). */
   createdAtMs: number;
-  /** Total duration in ms (mirrors `Recording.durationMs`). */
+  /** Total duration in ms (mirrors `RecordingDto.durationMs`). */
   durationMs: number;
-  /** Capture sample rate in Hz (mirrors `Recording.sampleRateHz`). */
+  /** Capture sample rate in Hz (mirrors `RecordingDto.sampleRateHz`). */
   sampleRateHz: number;
   /** `file://` URI of the captured audio. */
   audioUri: string;
@@ -51,15 +52,15 @@ export interface RecordingMeta {
 }
 
 /**
- * Compile-time assurance that the scalar fields stay aligned with
- * `models.Recording`. Exported (not a bare unused local) so it survives
+ * Compile-time assurance that the scalar fields stay aligned with the canonical
+ * `shared.RecordingDto`. Exported (not a bare unused local) so it survives
  * `noUnusedLocals`; it carries no runtime cost.
  */
 export type RecordingMetaScalars = Pick<
-  Recording,
+  RecordingDto,
   'id' | 'createdAtMs' | 'durationMs' | 'sampleRateHz'
 > &
-  (RecordingMeta extends Pick<Recording, 'id' | 'createdAtMs' | 'durationMs' | 'sampleRateHz'>
+  (RecordingMeta extends Pick<RecordingDto, 'id' | 'createdAtMs' | 'durationMs' | 'sampleRateHz'>
     ? unknown
     : never);
 

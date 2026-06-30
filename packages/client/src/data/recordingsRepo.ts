@@ -10,7 +10,7 @@
  * shape, row column names are the DB shape, and neither is duplicated.
  *
  * The bucket is private, so reads return short-lived signed URLs for playback.
- * Domain types stay in `models`/`logic`; this layer only ever produces DTOs.
+ * Domain analysis types stay in `logic`; this layer only ever produces DTOs.
  *
  * See docs/PROJECT_COMPLETION_PLAN.md §1 (data model) and §3 (WP-CLIENT-DATA).
  */
@@ -19,6 +19,7 @@ import type { CreateRecordingInput, RecordingDto } from 'shared';
 
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/supabase';
+import { requireUserId } from './currentUser';
 
 type RecordingRow = Database['public']['Tables']['recordings']['Row'];
 
@@ -105,19 +106,6 @@ export function base64ToBytes(b64: string): Uint8Array {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/** The current authenticated user's id, or throw an Unauthorized AppError. */
-async function requireUserId(): Promise<string> {
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) {
-    throw appError(
-      AppErrorCode.Unauthorized,
-      'No authenticated user for recordings access',
-      error ?? undefined
-    );
-  }
-  return data.user.id;
-}
 
 /** Lowercase file extension of a path/URI, without the dot; '' if none. */
 function extOf(uri: string): string {
