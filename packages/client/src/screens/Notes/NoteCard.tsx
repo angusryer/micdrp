@@ -8,13 +8,23 @@
  * delegated to the parent.
  */
 import React, { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View
+} from 'react-native';
 
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
+import { MelodyView } from '../../components/MelodyView';
 import { midiToLabel } from '../Results/NoteList';
 import type { NoteMeta } from '../../data/notesCache';
 import { PlaybackBar } from './PlaybackBar';
+
+/** Horizontal space consumed by the list padding (16) + card padding (14) each side. */
+const CARD_HORIZONTAL_INSET = 2 * (16 + 14);
 
 export interface NoteCardProps {
   note: NoteMeta;
@@ -45,6 +55,7 @@ function formatDate(ms: number): string {
 export function NoteCard({ note, onOpen, onDelete }: NoteCardProps) {
   const { colors, dimensions } = useTheme();
   const { t } = useTranslation();
+  const { width } = useWindowDimensions();
   const [expanded, setExpanded] = useState(false);
 
   const handleTogglePlay = useCallback((): void => setExpanded((v) => !v), []);
@@ -112,6 +123,16 @@ export function NoteCard({ note, onOpen, onDelete }: NoteCardProps) {
             </>
           ) : null}
         </View>
+
+        {note.melody.length > 0 ? (
+          <View style={styles.melodyWrap}>
+            <MelodyView
+              notes={note.melody}
+              width={width - CARD_HORIZONTAL_INSET}
+              height={48}
+            />
+          </View>
+        ) : null}
       </Pressable>
 
       {expanded && note.audioUri ? (
@@ -191,6 +212,7 @@ const styles = StyleSheet.create({
   },
   metaText: { fontSize: 12 },
   metaDot: { fontSize: 12 },
+  melodyWrap: { marginTop: 10 },
   playbackWrap: { paddingVertical: 4 },
   actions: {
     flexDirection: 'row',

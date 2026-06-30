@@ -28,7 +28,7 @@ import { midiSequenceToTargets, type Fragment } from 'logic';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { createReferenceTonePlayer } from '../../audio/referenceTone';
-import { midiToLabel } from '../Results/NoteList';
+import { MelodyView } from '../../components/MelodyView';
 import { useDashboard } from './useDashboard';
 import { TrendChart } from './TrendChart';
 
@@ -161,12 +161,15 @@ export function DashboardScreen(): React.JSX.Element {
                         { borderColor: colors.neutral500 }
                       ]}
                     >
-                      <Text
-                        style={[styles.fragmentText, { color: colors.typography }]}
-                        numberOfLines={1}
-                      >
-                        {fr.exampleMidi.map(midiToLabel).join(' · ')}
-                      </Text>
+                      <MelodyView
+                        notes={midiSequenceToTargets(
+                          fr.exampleMidi,
+                          FRAGMENT_NOTE_MS
+                        )}
+                        width={chartWidth * 0.5}
+                        height={36}
+                        showContour={false}
+                      />
                       <Text style={[styles.countText, { color: colors.gray300 }]}>
                         ×{fr.count} ▶
                       </Text>
@@ -324,6 +327,5 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 8
   },
-  fragmentText: { flex: 1, fontSize: 14, fontWeight: '600' },
   countText: { fontSize: 13 }
 });
