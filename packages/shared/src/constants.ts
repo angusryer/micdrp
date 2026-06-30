@@ -1,12 +1,13 @@
 /** Shared constants used across client and backend definitions. */
 
-/** Supabase Storage bucket for audio + MIDI blobs. */
-export const STORAGE_BUCKET = 'takes';
+/** Supabase Storage bucket for note audio blobs. */
+export const STORAGE_BUCKET = 'notes';
 
 /** Supabase table names — single source of truth for both sides. */
 export const TABLES = {
   profiles: 'profiles',
-  recordings: 'recordings'
+  notes: 'notes',
+  practiceProgress: 'practice_progress'
 } as const;
 
 // The "in tune" cents tolerance lives in `logic` (DEFAULT_TOLERANCE_CENTS) — it

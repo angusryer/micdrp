@@ -22,7 +22,7 @@ import {
 import type { TargetNote } from 'logic';
 
 import { useTheme } from '../../theme';
-import { UNVOICED_MIDI } from '../Record/useRecordController';
+import { UNVOICED_MIDI } from '../capture/useRecordController';
 
 export interface PracticePitchViewProps {
   sharedMidi: SharedValue<number>;

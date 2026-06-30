@@ -7,3 +7,4 @@ export * from './smoothing';
 export * from './key';
 export * from './tempo';
 export * from './melodies';
+export * from './analysis';

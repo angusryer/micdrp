@@ -1,5 +1,9 @@
 # micdrp — Notes + Dashboard module (design / build spec)
 
+> **Status: BUILT.** This module shipped — see `docs/HANDOFF.md` §8 for the
+> as-built summary and file map. The text below is the original design spec, kept
+> for rationale; §11 lists what remains deferred.
+
 Spec for the next build session. Reframes freeform recording as **Notes**, adds
 continual on-device pattern analysis over the notes corpus, and a **Dashboard**
 that visualizes training progress and the user's melodic/harmonic tendencies.

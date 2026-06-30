@@ -13,7 +13,7 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { findMelody, type PitchScore, type TargetNote } from 'logic';
+import { findMelody, type TargetNote } from 'logic';
 
 import type { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme';
@@ -35,21 +35,22 @@ export default function ResultsScreen({ route }: Props) {
 
   // For a practice take, rebuild the reference melody so scoring + per-note
   // feedback target it (rather than the take itself).
+  const melody = practice ? findMelody(practice.melodyId) : undefined;
   const targets = useMemo<TargetNote[] | undefined>(() => {
-    if (!practice) {
+    if (!practice || !melody) {
       return undefined;
     }
-    const melody = findMelody(practice.melodyId);
-    return melody
-      ? melody.build({
-          rootMidi: practice.rootMidi,
-          noteDurationMs: practice.noteDurationMs
-        })
-      : undefined;
-  }, [practice]);
+    return melody.build({
+      rootMidi: practice.rootMidi,
+      noteDurationMs: practice.noteDurationMs
+    });
+  }, [practice, melody]);
 
-  const { notes, feedback, midiUri, recording } = useResults(handle, { targets });
-  const title = recording?.title ?? 'Take';
+  const { notes, score, feedback, midiUri } = useResults(handle, {
+    targets,
+    practice
+  });
+  const title = melody?.name ?? 'Take';
 
   // Tap a note to hear its true pitch (reuses the practice reference-tone player).
   const tonePlayer = useMemo(() => createReferenceTonePlayer(), []);
@@ -60,16 +61,6 @@ export default function ResultsScreen({ route }: Props) {
     },
     [tonePlayer]
   );
-
-  // ScoreCard renders the same frame-level pitch numbers `computeFeedback`
-  // already derived — adapt the FeedbackDto to the `PitchScore` shape it expects
-  // rather than re-running the pipeline.
-  const score: PitchScore = {
-    score: feedback.overallScore,
-    inTuneRatio: feedback.inTuneRatio,
-    meanCentsError: feedback.meanCentsError,
-    evaluatedFrames: feedback.perNote.length
-  };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.neutral300 }]}>

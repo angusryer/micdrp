@@ -1,7 +1,14 @@
 -- micdrp — initial schema
 -- Apply with: supabase db push
--- Tables mirror the shared DTO contract (packages/shared/src/dto/).
--- Column names use snake_case to match Postgres convention; the client
+--
+-- Two purpose-built tables back the app:
+--   * notes             — the corpus of sung musical-idea memos. melody_json is
+--                         the symbolic source of truth for all corpus analysis,
+--                         so re-aggregation never re-touches the audio blob.
+--   * practice_progress — one lightweight metrics row per finished practice
+--                         session (trajectory only; no audio is kept for practice).
+--
+-- Column names use snake_case to match Postgres convention; the client data
 -- layer maps them to camelCase DTOs.
 
 -- ============================================================
@@ -42,53 +49,97 @@ create policy "profiles: owner delete"
   using (auth.uid() = id);
 
 -- ============================================================
--- recordings — one row per saved take
--- Maps to RecordingDto (packages/shared/src/dto/recording.ts).
+-- notes — one row per sung "note" (a musical-idea memo)
+-- Maps to NoteDto (packages/shared/src/dto/note.ts).
 -- ============================================================
-create table public.recordings (
-  id             uuid primary key default uuid_generate_v4(),
-  user_id        uuid not null references auth.users (id) on delete cascade,
-  title          text not null,
-  created_at     timestamptz not null default now(),
-  duration_ms    integer not null,
-  sample_rate_hz integer not null,
-  note_count     integer not null default 0,
-  -- score: 0..100 pitch accuracy, null if not yet analysed
-  score          numeric(5, 2),
-  -- detected key, e.g. "A minor"
-  key            text,
-  tempo_bpm      numeric(6, 2),
-  -- storage paths within the 'takes' bucket (null until uploaded)
-  audio_path     text,
-  midi_path      text
+create table public.notes (
+  id              uuid primary key default uuid_generate_v4(),
+  user_id         uuid not null references auth.users (id) on delete cascade,
+  created_at      timestamptz not null default now(),
+  title           text not null,
+  duration_ms     integer not null,
+  sample_rate_hz  integer not null,
+  -- storage path within the 'notes' bucket (null until uploaded)
+  audio_path      text,
+  -- NoteEvent[] — the symbolic melody; source of truth for all corpus analysis
+  melody_json     jsonb not null,
+  -- descriptive self-analysis (not a grade):
+  key             text,
+  tempo_bpm       numeric(6, 2),
+  in_tune_ratio   numeric(5, 4),
+  mean_cents_error numeric(7, 2),
+  note_count      integer not null default 0,
+  range_low_midi  integer,
+  range_high_midi integer
 );
 
-comment on table public.recordings is
-  'One row per captured singing take; blobs live in the ''takes'' storage bucket.';
+comment on table public.notes is
+  'One row per sung musical-idea memo; audio lives in the ''notes'' storage bucket, melody_json is the symbolic source of truth for analysis.';
 
--- Row-Level Security: users may only access their own recordings.
-alter table public.recordings enable row level security;
+alter table public.notes enable row level security;
 
-create policy "recordings: owner select"
-  on public.recordings for select
+create policy "notes: owner select"
+  on public.notes for select
   using (auth.uid() = user_id);
 
-create policy "recordings: owner insert"
-  on public.recordings for insert
+create policy "notes: owner insert"
+  on public.notes for insert
   with check (auth.uid() = user_id);
 
-create policy "recordings: owner update"
-  on public.recordings for update
+create policy "notes: owner update"
+  on public.notes for update
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
-create policy "recordings: owner delete"
-  on public.recordings for delete
+create policy "notes: owner delete"
+  on public.notes for delete
   using (auth.uid() = user_id);
 
--- Index for the most common query: list a user's recordings newest-first.
-create index recordings_user_created
-  on public.recordings (user_id, created_at desc);
+-- Index for the most common query: list a user's notes newest-first.
+create index notes_user_created
+  on public.notes (user_id, created_at desc);
+
+-- ============================================================
+-- practice_progress — trajectory of training sessions (no audio)
+-- Maps to PracticeProgressDto (packages/shared/src/dto/practiceProgress.ts).
+-- ============================================================
+create table public.practice_progress (
+  id               uuid primary key default uuid_generate_v4(),
+  user_id          uuid not null references auth.users (id) on delete cascade,
+  created_at       timestamptz not null default now(),
+  melody_id        text not null,
+  root_midi        integer not null,
+  note_duration_ms integer not null,
+  score            numeric(5, 2),
+  in_tune_ratio    numeric(5, 4),
+  mean_cents_error numeric(7, 2),
+  evaluated_frames integer not null default 0
+);
+
+comment on table public.practice_progress is
+  'One row per finished practice session; powers the Dashboard training trend. No audio is retained.';
+
+alter table public.practice_progress enable row level security;
+
+create policy "practice_progress: owner select"
+  on public.practice_progress for select
+  using (auth.uid() = user_id);
+
+create policy "practice_progress: owner insert"
+  on public.practice_progress for insert
+  with check (auth.uid() = user_id);
+
+create policy "practice_progress: owner update"
+  on public.practice_progress for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "practice_progress: owner delete"
+  on public.practice_progress for delete
+  using (auth.uid() = user_id);
+
+create index practice_progress_user_created
+  on public.practice_progress (user_id, created_at desc);
 
 -- ============================================================
 -- Trigger: auto-insert profile on new auth user
@@ -119,10 +170,10 @@ create trigger on_auth_user_created
 -- ============================================================
 -- RPC: delete_account — hard-delete the caller's own account
 -- ============================================================
--- Deletes the caller's auth.users row, which cascades to public.profiles and
--- public.recordings (both reference auth.users with on delete cascade). The
--- client removes the user's storage blobs before calling this, since storage
--- objects are not covered by the FK cascade.
+-- Deletes the caller's auth.users row, which cascades to public.profiles,
+-- public.notes and public.practice_progress (all reference auth.users with
+-- on delete cascade). The client removes the user's storage blobs before
+-- calling this, since storage objects are not covered by the FK cascade.
 --
 -- SECURITY DEFINER lets an authenticated client delete its own auth user; the
 -- body is hard-scoped to auth.uid() so a caller can only ever delete itself.
@@ -142,52 +193,52 @@ revoke all on function public.delete_account() from public, anon;
 grant execute on function public.delete_account() to authenticated;
 
 -- ============================================================
--- Storage bucket: 'takes'
--- Objects are stored at: <user_id>/<recording_id>.<ext>
+-- Storage bucket: 'notes'
+-- Objects are stored at: <user_id>/<note_id>.<ext>
 -- Bucket is private (not public); access is via signed URLs.
 -- ============================================================
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
-  'takes',
-  'takes',
+  'notes',
+  'notes',
   false,
   52428800, -- 50 MiB
-  array['audio/mp4', 'audio/m4a', 'audio/aac', 'audio/mpeg', 'audio/x-m4a', 'audio/midi', 'audio/mid']
+  array['audio/mp4', 'audio/m4a', 'audio/aac', 'audio/mpeg', 'audio/x-m4a', 'audio/wav']
 )
 on conflict (id) do nothing;
 
--- Storage RLS policies on storage.objects for the 'takes' bucket.
+-- Storage RLS policies on storage.objects for the 'notes' bucket.
 -- Path convention: <auth.uid()>/<filename>
 -- Policies check that the leading path segment equals the authenticated user's id.
 
-create policy "takes: owner select"
+create policy "notes: owner select"
   on storage.objects for select
   using (
-    bucket_id = 'takes'
+    bucket_id = 'notes'
     and auth.uid()::text = (storage.foldername(name))[1]
   );
 
-create policy "takes: owner insert"
+create policy "notes: owner insert"
   on storage.objects for insert
   with check (
-    bucket_id = 'takes'
+    bucket_id = 'notes'
     and auth.uid()::text = (storage.foldername(name))[1]
   );
 
-create policy "takes: owner update"
+create policy "notes: owner update"
   on storage.objects for update
   using (
-    bucket_id = 'takes'
+    bucket_id = 'notes'
     and auth.uid()::text = (storage.foldername(name))[1]
   )
   with check (
-    bucket_id = 'takes'
+    bucket_id = 'notes'
     and auth.uid()::text = (storage.foldername(name))[1]
   );
 
-create policy "takes: owner delete"
+create policy "notes: owner delete"
   on storage.objects for delete
   using (
-    bucket_id = 'takes'
+    bucket_id = 'notes'
     and auth.uid()::text = (storage.foldername(name))[1]
   );

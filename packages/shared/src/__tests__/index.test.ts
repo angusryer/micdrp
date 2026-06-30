@@ -8,7 +8,8 @@ describe('shared contract', () => {
   });
 
   it('exposes backend constants', () => {
-    expect(STORAGE_BUCKET).toBe('takes');
-    expect(TABLES.recordings).toBe('recordings');
+    expect(STORAGE_BUCKET).toBe('notes');
+    expect(TABLES.notes).toBe('notes');
+    expect(TABLES.practiceProgress).toBe('practice_progress');
   });
 });

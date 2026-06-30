@@ -24,6 +24,10 @@ export type RootStackParamList = {
   PracticeSession: PracticeParams;
   /** `practice` is set when the take was sung against a target melody. */
   Results: { handle: RecordingHandle; practice?: PracticeParams };
+  /** A single note's detail / analysis, addressed by id. */
+  NoteDetail: { id: string };
+  /** Consolidated Account & Settings, reached from a header button. */
+  Account: undefined;
 };
 
 /** Unauthenticated stack, shown when there is no Supabase session. */
@@ -32,9 +36,7 @@ export type AuthStackParamList = {
 };
 
 export type MainTabParamList = {
-  Record: undefined;
   Practice: undefined;
-  Library: undefined;
-  Profile: undefined;
-  Settings: undefined;
+  Notes: undefined;
+  Dashboard: undefined;
 };

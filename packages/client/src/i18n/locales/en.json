@@ -58,17 +58,47 @@
     "shareError": "Couldn't share the file. Try again.",
     "outOf100": "/ 100"
   },
-  "library": {
-    "title": "Library",
-    "emptyTitle": "No recordings yet",
-    "emptySubtitle": "Head to the Record tab to capture your first take.",
+  "notes": {
+    "title": "Notes",
+    "detailTitle": "Note",
+    "capture": "Capture a note",
+    "recording": "Listening…",
+    "saveError": "Couldn't save that note. Try again.",
+    "emptyTitle": "No notes yet",
+    "emptySubtitle": "Sing an idea above and it's saved here, analysed automatically.",
+    "openNote": "Open {{title}}",
+    "openAnalysis": "Open analysis",
+    "analysis": "Analysis",
+    "playNote": "Play note",
     "closePlayer": "Close player",
-    "playRecording": "Play recording",
-    "exportMidi": "Export MIDI",
-    "deleteRecording": "Delete recording",
-    "note_one": "{{count}} note",
-    "note_other": "{{count}} notes",
-    "refreshing": "Refreshing…"
+    "deleteNote": "Delete note",
+    "notesTapToHear": "Notes (tap to hear)",
+    "notFound": "Note not found.",
+    "stat": {
+      "key": "Key",
+      "tempo": "Tempo",
+      "range": "Range",
+      "steadiness": "In tune",
+      "notes": "Notes",
+      "length": "Length"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "emptyTitle": "Nothing to show yet",
+    "emptySubtitle": "Record some notes and run a few practice sessions to see your tendencies.",
+    "progressTitle": "Training progress",
+    "latestScore": "Latest: {{score}}",
+    "sessions": "{{count}} sessions",
+    "noProgress": "Finish a practice session to start the trend.",
+    "commonTitle": "Most common patterns",
+    "noNotes": "Record some notes to surface your patterns.",
+    "intervals": "Intervals",
+    "fragments": "Melodic fragments",
+    "chordChanges": "Chord changes",
+    "playFragment": "Play fragment",
+    "avoidedTitle": "Most avoided",
+    "avoidedHint": "Intervals furthest from your usual patterns."
   },
   "practice": {
     "title": "Practice",
@@ -96,6 +126,11 @@
       "failed": "Something went wrong with this take."
     }
   },
+  "account": {
+    "title": "Account & Settings",
+    "open": "Open account and settings",
+    "headerIcon": "⚙︎"
+  },
   "profile": {
     "title": "Profile",
     "sections": {
@@ -109,9 +144,9 @@
     "signOut": "Sign out",
     "delete": {
       "action": "Delete account",
-      "hint": "This permanently removes your account, recordings, and audio. This cannot be undone.",
+      "hint": "This permanently removes your account, notes, and audio. This cannot be undone.",
       "confirmTitle": "Delete account?",
-      "confirmBody": "This permanently deletes your account and all of your recordings. This cannot be undone.",
+      "confirmBody": "This permanently deletes your account and all of your notes. This cannot be undone.",
       "confirm": "Delete",
       "cancel": "Cancel"
     }
@@ -119,9 +154,18 @@
   "settings": {
     "title": "Settings",
     "sections": {
+      "analysis": "Analysis",
       "engine": "Engine",
       "appearance": "Appearance",
       "about": "About"
+    },
+    "analysis": {
+      "windowMs": "Window",
+      "vocabulary": "Chords",
+      "triads": "Triads",
+      "sevenths": "7ths",
+      "keyRelative": "Key-relative",
+      "minConfidence": "Min confidence"
     },
     "engine": {
       "frameSize": "Frame Size",

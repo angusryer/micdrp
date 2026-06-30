@@ -31,12 +31,24 @@ describe('i18n initialisation', () => {
     expect(i18n.t('record.stop')).toBe('Stop');
   });
 
-  it('resolves library.title', () => {
-    expect(i18n.t('library.title')).toBe('Library');
+  it('resolves notes.title', () => {
+    expect(i18n.t('notes.title')).toBe('Notes');
   });
 
-  it('resolves library.emptyTitle', () => {
-    expect(i18n.t('library.emptyTitle')).toBe('No recordings yet');
+  it('resolves notes.emptyTitle', () => {
+    expect(i18n.t('notes.emptyTitle')).toBe('No notes yet');
+  });
+
+  it('resolves dashboard.title', () => {
+    expect(i18n.t('dashboard.title')).toBe('Dashboard');
+  });
+
+  it('resolves account.title', () => {
+    expect(i18n.t('account.title')).toBe('Account & Settings');
+  });
+
+  it('resolves settings.analysis.vocabulary', () => {
+    expect(i18n.t('settings.analysis.vocabulary')).toBe('Chords');
   });
 
   it('resolves settings.title', () => {
