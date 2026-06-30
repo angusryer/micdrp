@@ -28,13 +28,14 @@ type Mode = 'signIn' | 'signUp';
 
 export default function LoginScreen(): React.JSX.Element {
   const { colors } = useTheme();
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, resetPassword } = useAuth();
 
   const [mode, setMode] = useState<Mode>('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const isSignUp = mode === 'signUp';
   const canSubmit =
@@ -65,7 +66,28 @@ export default function LoginScreen(): React.JSX.Element {
   const toggleMode = useCallback(() => {
     setMode((m) => (m === 'signIn' ? 'signUp' : 'signIn'));
     setError(null);
+    setNotice(null);
   }, []);
+
+  const onForgotPassword = useCallback(async () => {
+    const trimmedEmail = email.trim();
+    if (trimmedEmail.length === 0) {
+      setNotice(null);
+      setError('Enter your email to reset your password.');
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await resetPassword(trimmedEmail);
+      setNotice('Check your email for a reset link.');
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setSubmitting(false);
+    }
+  }, [email, resetPassword]);
 
   const inputStyle = useMemo(
     () => [
@@ -130,6 +152,15 @@ export default function LoginScreen(): React.JSX.Element {
             </Text>
           ) : null}
 
+          {notice ? (
+            <Text
+              style={[styles.notice, { color: colors.primary500 }]}
+              accessibilityLiveRegion="polite"
+            >
+              {notice}
+            </Text>
+          ) : null}
+
           <TouchableOpacity
             style={[
               styles.button,
@@ -170,6 +201,20 @@ export default function LoginScreen(): React.JSX.Element {
                 : "Don't have an account? Sign up"}
             </Text>
           </TouchableOpacity>
+
+          {!isSignUp ? (
+            <TouchableOpacity
+              style={styles.forgot}
+              onPress={() => void onForgotPassword()}
+              disabled={submitting}
+              accessibilityRole="button"
+              accessibilityLabel="Reset your password"
+            >
+              <Text style={[styles.forgotText, { color: colors.gray300 }]}>
+                Forgot password?
+              </Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -212,6 +257,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textAlign: 'center'
   },
+  notice: {
+    fontSize: 14,
+    marginBottom: 12,
+    textAlign: 'center',
+    fontWeight: '600'
+  },
   button: {
     height: 52,
     borderRadius: 12,
@@ -230,5 +281,13 @@ const styles = StyleSheet.create({
   toggleText: {
     fontSize: 14,
     fontWeight: '600'
+  },
+  forgot: {
+    marginTop: 12,
+    alignItems: 'center'
+  },
+  forgotText: {
+    fontSize: 13,
+    fontWeight: '500'
   }
 });

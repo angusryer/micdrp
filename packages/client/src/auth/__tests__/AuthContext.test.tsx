@@ -16,6 +16,7 @@ const onAuthStateChange = jest.fn();
 const signInWithPassword = jest.fn();
 const signUp = jest.fn();
 const signOut = jest.fn();
+const resetPasswordForEmail = jest.fn();
 const unsubscribe = jest.fn();
 
 jest.mock('../../lib/supabase', () => ({
@@ -24,7 +25,8 @@ jest.mock('../../lib/supabase', () => ({
       onAuthStateChange: (...args: unknown[]) => onAuthStateChange(...args),
       signInWithPassword: (...args: unknown[]) => signInWithPassword(...args),
       signUp: (...args: unknown[]) => signUp(...args),
-      signOut: (...args: unknown[]) => signOut(...args)
+      signOut: (...args: unknown[]) => signOut(...args),
+      resetPasswordForEmail: (...args: unknown[]) => resetPasswordForEmail(...args)
     }
   }
 }));
@@ -116,6 +118,18 @@ describe('AuthProvider / useAuth', () => {
     });
 
     expect(signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('resetPassword delegates to supabase.auth.resetPasswordForEmail', async () => {
+    wireListener();
+    resetPasswordForEmail.mockResolvedValue({ error: null });
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await act(async () => {
+      await result.current.resetPassword('a@b.c');
+    });
+
+    expect(resetPasswordForEmail).toHaveBeenCalledWith('a@b.c');
   });
 
   it('maps a Supabase auth error onto the shared AppError shape', async () => {

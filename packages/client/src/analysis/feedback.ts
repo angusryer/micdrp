@@ -29,6 +29,7 @@ import {
   DEFAULT_TOLERANCE_CENTS,
   type KeyEstimate,
   type NoteEvent,
+  type PitchFrame,
   type PitchScore,
   type TargetNote
 } from 'logic';
@@ -58,6 +59,38 @@ function selfTargets(notes: readonly NoteEvent[]): TargetNote[] {
     targets.push({ midi: n.midi, startMs: n.startMs, endMs: n.endMs });
   }
   return targets;
+}
+
+/**
+ * Per-target feedback for a practice take: for each note of the reference
+ * melody, average the signed cents error of the voiced frames that fell in its
+ * time window. A target with no voiced frames is reported as not-in-tune (the
+ * singer missed/skipped it). Used only when scoring against an external melody.
+ */
+function perTargetFeedback(
+  frames: readonly PitchFrame[],
+  targets: readonly TargetNote[]
+): NoteFeedback[] {
+  return targets.map((target, index) => {
+    let sum = 0;
+    let count = 0;
+    for (const f of frames) {
+      if (f.midi == null) {
+        continue;
+      }
+      if (f.timestampMs >= target.startMs && f.timestampMs < target.endMs) {
+        sum += (f.midi - target.midi) * 100 + (f.cents ?? 0);
+        count++;
+      }
+    }
+    const centsError = count > 0 ? sum / count : 0;
+    return {
+      index,
+      midi: target.midi,
+      centsError,
+      inTune: count > 0 && Math.abs(centsError) <= DEFAULT_TOLERANCE_CENTS
+    };
+  });
 }
 
 /** Per-note feedback from the segmentation (mean cents deviation per note). */
@@ -155,12 +188,22 @@ function narrate(
 
 /**
  * Run the full offline feedback pipeline over a finished capture and synthesize
- * a {@link FeedbackDto}. Pure: depends only on `handle.samples`.
+ * a {@link FeedbackDto}. Pure: depends only on `handle.samples` (+ the optional
+ * reference melody).
+ *
+ * When `externalTargets` is supplied (a practice take sung against a chosen
+ * melody) the take is scored against THAT melody and `perNote` reports one entry
+ * per target note. With no targets it falls back to the self-referential grid
+ * (how steadily each sung note was held), the unaccompanied-take behaviour.
  */
-export function computeFeedback(handle: RecordingHandle): FeedbackDto {
+export function computeFeedback(
+  handle: RecordingHandle,
+  externalTargets?: readonly TargetNote[]
+): FeedbackDto {
   const smoothed = smoothPitch(handle.samples);
   const notes = segmentNotes(smoothed);
-  const targets = selfTargets(notes);
+  const usingTargets = externalTargets != null && externalTargets.length > 0;
+  const targets = usingTargets ? [...externalTargets] : selfTargets(notes);
   const score = scorePitch(smoothed, targets);
   const key = detectKey(notes);
   const tempo = estimateTempo(notes);
@@ -179,7 +222,9 @@ export function computeFeedback(handle: RecordingHandle): FeedbackDto {
     meanCentsError: score.meanCentsError,
     key: keyLabel,
     tempoBpm,
-    perNote: perNoteFeedback(notes),
+    perNote: usingTargets
+      ? perTargetFeedback(smoothed, targets)
+      : perNoteFeedback(notes),
     ...narrative
   };
 }
