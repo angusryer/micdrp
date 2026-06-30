@@ -1,6 +1,6 @@
 /**
  * Feedback DTO — produced on-device from the `logic` pipeline after a take and
- * shown in Results. Self-contained primitives (no models/logic import).
+ * shown in Results. Self-contained primitives (no logic import).
  */
 export interface NoteFeedback {
   /** Position in the sung sequence. */

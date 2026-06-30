@@ -10,8 +10,6 @@
     "build": "tsc"
   },
   "dependencies": {
-    "cross-env": "^7.0.3",
-    "models": "workspace:*",
-    "shared": "workspace:*"
+    "cross-env": "^7.0.3"
   }
 }

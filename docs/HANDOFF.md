@@ -20,12 +20,14 @@ merged to `main` unless marked **Phase V** (needs a real dev machine) or
 | Area | State |
 |---|---|
 | **Pure-TS DSP core** (`packages/logic`) | Complete + unit-tested: `detectPitch` (MPM/NSDF), `frequencyToNote`, `smoothPitch`, `segmentNotes`, `notesToMidi`, `scorePitch`, `detectKey`, `estimateTempo`. CI-green. |
-| **Domain/contract types** | `packages/models` (domain), `packages/shared` (API DTOs: `RecordingDto`/`FeedbackDto`/`ProfileDto`/`AppError`). |
+| **Domain/contract types** | `packages/shared` (API DTOs: `RecordingDto`/`FeedbackDto`/`ProfileDto`/`AppError`). Analysis primitives (`NOTE_NAMES`, `PitchFrame`, `TargetNote`, `DEFAULT_TOLERANCE_CENTS`) live in `packages/logic`. (The old `packages/models` was deleted — it was orphaned.) |
 | **Native C++ DSP** (`packages/client/cpp/dsp`) | `Mpm`, `notes`, `ring_buffer`, `pitch_engine` — a port of `logic`, **host-compiled + parity-tested** against the TS oracle (`PARITY OK`). |
 | **Native audio bridge** | iOS `AudioEngineModule.{h,mm}` (AVAudioEngine) + Android `AudioEngineModule.java` + `cpp/audio_jni.cpp` → feed C++ MPM, emit throttled `PitchSample`. TS wrapper `src/audio/AudioEngine.ts` + `useAudioEngine` selects Tier 1 (native) or Tier 2 (audio-api worklet). |
 | **App** (`packages/client/src`) | Record (Skia + Reanimated live pitch line, off-JS-thread), Results (score + feedback + MIDI export/share), Library (history + playback), Settings (engine tuning + theme); XState machines; navigation gated on auth. |
-| **Auth + backend** | Supabase: `src/lib/supabase.ts` + Keychain session adapter (`src/lib/secureSession.ts`); `src/auth/` (AuthContext/useAuth/LoginScreen); `supabase/` (schema, RLS, `takes` storage bucket). |
-| **Data + sync** | `src/data/recordingsRepo.ts` (cloud CRUD) + `src/data/sync.ts` (local-first MMKV cache reconcile); one store. |
+| **Auth + backend** | Supabase: `src/lib/supabase.ts` + Keychain session adapter (`src/lib/secureSession.ts`); `src/auth/` (AuthContext/useAuth/LoginScreen); `supabase/` (schema, RLS, `takes` storage bucket, `delete_account` RPC). |
+| **Data + sync** | `src/data/recordingsRepo.ts` (cloud CRUD) + `src/data/profilesRepo.ts` (profile + account deletion) + `src/data/currentUser.ts` (shared auth guard) + `src/data/sync.ts` (local-first MMKV cache reconcile); one store. |
+| **Profile** | `src/screens/Profile/` (display-name edit, sign out, delete account) on its own tab; `useProfile` hook. |
+| **Practice (engine)** | `logic/melodies.ts` (target exercise catalogue → `TargetNote[]`) + `audio/referenceTone.ts` (play targets as reference tones). Scoring path (`scorePitch`) already supports external targets. Screen wiring is parked — see `docs/OPEN_QUESTIONS.md`. |
 | **On-device feedback** | `src/analysis/feedback.ts` → `FeedbackDto` from `logic`, surfaced in Results. |
 | **i18n** | `src/i18n/` (i18next + device locale); Record/Library/Settings keyed. |
 | **CI** | `lint` + `typecheck` + pure-TS `test` all green. Gated to `workflow_dispatch` (manual). |
@@ -38,6 +40,7 @@ merged to `main` unless marked **Phase V** (needs a real dev machine) or
 - `docs/NATIVE_SETUP.md` — **the Phase V runbook** (pod install, Gradle, Xcode steps).
 - `docs/DEPLOYMENT.md` — signing, secrets matrix, release runbook.
 - `docs/AUDIT_FINDINGS.md` — cleanliness audit results + deferred items.
+- `docs/OPEN_QUESTIONS.md` — parked product-UX decisions (practice mode, sharing).
 
 ---
 
@@ -61,7 +64,7 @@ Mic ─► native capture (AVAudioEngine / AudioRecord, C++)
 ```
 
 **Architectural law (enforced, keep enforcing):** heavy processing native/compiled;
-no shims/patches/back-compat; one source of truth (`models`/`logic`/`shared`/`supabase`).
+no shims/patches/back-compat; one source of truth (`logic`/`shared`/`supabase`).
 
 ---
 
@@ -92,41 +95,48 @@ registry egress). Everything below needs a Mac + Android tooling. Full detail in
 
 ---
 
-## 4. Deferred / open items (from the audit)
+## 4. Deferred / open items
 
-Tracked in `docs/AUDIT_FINDINGS.md`; none block Phase V:
+Cleanup items 1–5 below were **resolved in the completion batch** (see
+`docs/AUDIT_FINDINGS.md`):
 
-1. **iOS legacy demo module removal** — delete `ios/AudioControlModule.{h,m}` and
-   their 8 `project.pbxproj` references (exact entries listed in AUDIT_FINDINGS).
-   Android side already removed. Human-only (Xcode).
-2. **`models` package role** — domain types are reached via `contract`/`logic`,
-   not directly; decide whether to keep `models` as the base or fold its used bits
-   (`NOTE_NAMES`/`NoteName`) into `logic` and the rest into `shared`. Validate via CI.
-3. **`IN_TUNE_TOLERANCE_CENTS` duplicate** — `shared/constants.ts` vs the `50`
-   default in `logic/scoring.ts`; pick one owner once the models/shared boundary is set.
-4. **Stale prebuilt bundle** — `android/app/src/main/assets/index.android.bundle`
-   references removed demo code; regenerated on build, safe to delete + gitignore.
-5. **Live theme swap** — `useSettings` persists the palette but `providers.tsx`
-   reads a static default; wire a dynamic palette into `ThemeProvider` for live swap.
-6. **`notes.ts` ↔ `models` NOTE_NAMES** — intentionally duplicated (keeps `logic`
-   dependency-free for worklet/server). Don't "dedup" it again without a runtime test.
+1. **iOS legacy demo module removal — DONE** (files + all 8 pbxproj refs gone).
+2. **`models` package — DELETED** (orphaned; truth now in `logic` + `shared`).
+3. **`IN_TUNE_TOLERANCE_CENTS` duplicate — RESOLVED** (`logic` owns
+   `DEFAULT_TOLERANCE_CENTS`; removed from `shared`).
+4. **Stale prebuilt bundle — DELETED + gitignored.**
+5. **Live theme swap — DONE** — `ThemeProvider` now owns the palette
+   (`useTheme().setPalette`), recolors the live tree, and restores the persisted
+   choice on cold start (it was previously ignored). `useSettings` no longer
+   handles the palette.
 
-### Product features not yet built (future scope, not regressions)
-- Reference-tone / backing-track playback to sing against (the original prototype's core).
-- Target-melody mode (the `scorePitch` target path exists; no UI to pick a song yet).
-- Profile screen / account management UI; sharing/social.
+Still deferred (small, non-blocking):
+- **midi→label inline math** — `Record/NoteRibbon` + `Results/NoteList` inline
+  midi→name; revisit if `logic` exposes a worklet-safe label helper.
+
+### Product features
+- **Profile / account management — BUILT** (display-name edit, sign out, delete
+  account incl. the `delete_account` RPC). Its own tab.
+- **Practice / target-melody — engine BUILT, UX parked.** `logic/melodies.ts`
+  (catalogue) + `audio/referenceTone.ts` (reference playback) + the existing
+  `scorePitch` target path are done and tested. The screen wiring (how the user
+  picks an exercise, the live target line, reference-playback timing) has genuine
+  UX ambiguity and is documented in `docs/OPEN_QUESTIONS.md`.
+- **Sharing/social** — still future scope (see `docs/OPEN_QUESTIONS.md`).
 
 ---
 
 ## 5. CI notes (important)
 
 - Jobs: `lint`, `typecheck`, `test` (+ GitGuardian). All green on `main`.
-- **`test` runs only `logic`/`models`/`shared`** (the pure-TS core) via
-  `TEST_PACKAGES="logic models shared" yarn test`. The client RN suite is skipped
+- **`test` runs only `logic`/`shared`** (the pure-TS core) via
+  `TEST_PACKAGES="logic shared" yarn test`. The client RN suite is skipped
   in CI because the stale-lockfile `node_modules` can't resolve the RN UI stack
   under Jest. After Phase V step 1, drop the `TEST_PACKAGES` override so CI runs the
   full `yarn test`, and re-enable `push`/`pull_request` triggers in
-  `.github/workflows/ci.yml` (currently `workflow_dispatch` only).
+  `.github/workflows/ci.yml` (currently `workflow_dispatch` only). The client Jest
+  setup now mocks `react-native-config`, so supabase-importing suites (App smoke,
+  Profile, data repos) can import `lib/supabase` without throwing.
 - Gotcha already solved: invoke tests via the root `yarn test` (test.sh), not
   `yarn workspace <pkg> test` directly — Yarn 3 only exposes a workspace's own
   dependency binaries, so a direct call gives `command not found: jest`.
@@ -141,8 +151,8 @@ Tracked in `docs/AUDIT_FINDINGS.md`; none block Phase V:
   `main` @ `2af3da2`). Merged PRs are final; start follow-up work fresh off `main`.
 - **Merges:** repo disallows merge commits → use **squash**.
 - Monorepo: Yarn 3 (Berry), `nodeLinker: node-modules`, Corepack. Packages:
-  `client` (RN app), `logic`, `models`, `shared`. (The Express `server` package was
-  deleted — backend is Supabase.)
+  `client` (RN app), `logic`, `shared`. (The Express `server` and the orphaned
+  `models` packages were deleted — backend is Supabase; domain truth is `logic`+`shared`.)
 - Build is **authored, not device-tested** except the C++ core (host-verified).
 
 ---

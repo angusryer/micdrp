@@ -158,3 +158,18 @@ jest.mock(
 );
 
 jest.mock('react-native-url-polyfill/auto', () => ({}), { virtual: true });
+
+// react-native-config: supply test Supabase env so `lib/supabase` can construct
+// the client at import time (it throws when URL/key are absent). Real values are
+// injected from the environment on device builds; these are inert test stand-ins.
+jest.mock(
+  'react-native-config',
+  () => ({
+    __esModule: true,
+    default: {
+      SUPABASE_URL: 'http://localhost:54321',
+      SUPABASE_ANON_KEY: 'test-anon-key'
+    }
+  }),
+  { virtual: true }
+);

@@ -12,6 +12,6 @@ set -e
 # args (e.g. `--coverage` from CI) are forwarded to jest. Override the package
 # set with TEST_PACKAGES (CI runs only the Node-resolvable pure-TS packages,
 # since the client RN suite needs the native deps installed — Phase V).
-for pkg in ${TEST_PACKAGES:-logic models shared client}; do
+for pkg in ${TEST_PACKAGES:-logic shared client}; do
   yarn workspace "$pkg" test --passWithNoTests "$@"
 done

@@ -16,8 +16,15 @@ export interface TargetNote {
   endMs: number;
 }
 
+/**
+ * Canonical cents tolerance for "in tune". `logic` owns this default because it
+ * is a property of the scoring algorithm; every other layer (e.g. the client's
+ * feedback synthesis) imports it from here rather than re-declaring the value.
+ */
+export const DEFAULT_TOLERANCE_CENTS = 50;
+
 export interface ScoreOptions {
-  /** Cents within which a frame counts as "in tune" (default 50). */
+  /** Cents within which a frame counts as "in tune" (default {@link DEFAULT_TOLERANCE_CENTS}). */
   toleranceCents?: number;
   /** Match pitch class only, ignoring octave errors (default false). */
   ignoreOctave?: boolean;
@@ -42,7 +49,7 @@ export function scorePitch(
   targets: TargetNote[],
   options: ScoreOptions = {}
 ): PitchScore {
-  const tolerance = options.toleranceCents ?? 50;
+  const tolerance = options.toleranceCents ?? DEFAULT_TOLERANCE_CENTS;
   const ignoreOctave = options.ignoreOctave ?? false;
 
   let evaluated = 0;

@@ -1,9 +1,9 @@
 /**
  * Turn a stream of per-frame pitch analyses into discrete sung notes.
  *
- * Pure and dependency-free. The input is structurally compatible with
- * `models.PitchSample` (so a `PitchSample[]` can be passed directly) without
- * importing across packages.
+ * Pure and dependency-free. The input {@link PitchFrame} is structurally
+ * compatible with the native-boundary `PitchSample` (audio `contract.ts`), so a
+ * `PitchSample[]` can be passed directly without importing across packages.
  */
 
 export interface PitchFrame {

@@ -14,8 +14,9 @@
  * native-boundary pitch frame: `frequencyHz` is 0 (never null) when unvoiced,
  * matching the C++/wire representation. It is structurally compatible with
  * `logic`'s `PitchFrame`, so the offline pipeline consumes a `PitchSample[]`
- * directly. (Distinct on purpose from the `models` domain types, which use
- * `null` for unvoiced and are not on the native boundary.)
+ * directly. (`frequencyHz` uses 0 — not null — for unvoiced because this type
+ * sits on the native boundary; `logic` operates on `midi`/`cents`, which stay
+ * null when unvoiced.)
  */
 export interface PitchSample {
   /** Milliseconds from capture start. */

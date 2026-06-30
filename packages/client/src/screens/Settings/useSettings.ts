@@ -1,28 +1,25 @@
 /**
- * useSettings — persisted EngineConfig overrides + theme palette selection.
+ * useSettings — persisted EngineConfig overrides.
  *
  * Reads from and writes to the shared MMKV store via `data/store`. The live
  * config is `DEFAULT_ENGINE_CONFIG` merged with whatever overrides the user
  * has saved. On first launch (nothing persisted) all values equal the
  * defaults, so the engine always has sane numbers.
  *
- * Theme palette (`ETheme.Blue | Red | Green`) is stored separately under its
- * own key and surfaced as `themePalette` / `setThemePalette`.
- *
- * This hook is the single write-seam for settings: every control in
- * `SettingsScreen` calls into it, and nothing else writes these keys.
+ * The theme palette is NOT owned here — it lives in the ThemeProvider
+ * (`useTheme().palette` / `setPalette`) so a change recolors the live tree. This
+ * hook is the single write-seam for engine settings; nothing else writes the
+ * engine-config key.
  *
  * See docs/NATIVE_BUILD_PLAN.md §3 (WP-SETTINGS-UI).
  */
 import { useCallback, useEffect, useState } from 'react';
 
 import { DEFAULT_ENGINE_CONFIG, type EngineConfig } from '../../audio/contract';
-import { ETheme } from '../../configs/theme';
 import store from '../../data/store';
 
-/** MMKV keys — keep stable; changing them orphans existing persisted data. */
+/** MMKV key — keep stable; changing it orphans existing persisted data. */
 const KEY_ENGINE_CONFIG = 'settings:engineConfig';
-const KEY_THEME_PALETTE = 'settings:themePalette';
 
 /** All overrides are optional; any key absent means "use the default". */
 export type EngineConfigOverrides = Partial<EngineConfig>;
@@ -42,12 +39,6 @@ export interface UseSettingsValue {
 
   /** Reset all engine settings back to `DEFAULT_ENGINE_CONFIG`. */
   resetEngineConfig(): void;
-
-  /** The persisted theme palette, defaulting to `ETheme.Blue`. */
-  themePalette: ETheme;
-
-  /** Persist a new theme palette selection. */
-  setThemePalette(palette: ETheme): void;
 }
 
 function loadEngineConfig(): EngineConfig {
@@ -55,23 +46,13 @@ function loadEngineConfig(): EngineConfig {
   return { ...DEFAULT_ENGINE_CONFIG, ...(overrides ?? {}) };
 }
 
-function loadThemePalette(): ETheme {
-  const raw = store.getString(KEY_THEME_PALETTE);
-  if (raw === ETheme.Red || raw === ETheme.Green || raw === ETheme.Blue) {
-    return raw;
-  }
-  return ETheme.Blue;
-}
-
 export function useSettings(): UseSettingsValue {
   const [engineConfig, setEngineConfigState] = useState<EngineConfig>(loadEngineConfig);
-  const [themePalette, setThemePaletteState] = useState<ETheme>(loadThemePalette);
 
   // Sync from store on mount in case another component has written since last
   // render (though in practice settings is the only writer).
   useEffect(() => {
     setEngineConfigState(loadEngineConfig());
-    setThemePaletteState(loadThemePalette());
   }, []);
 
   const setEngineConfig = useCallback((overrides: EngineConfigOverrides): void => {
@@ -90,17 +71,10 @@ export function useSettings(): UseSettingsValue {
     setEngineConfigState({ ...DEFAULT_ENGINE_CONFIG });
   }, []);
 
-  const setThemePalette = useCallback((palette: ETheme): void => {
-    store.setString(KEY_THEME_PALETTE, palette);
-    setThemePaletteState(palette);
-  }, []);
-
   return {
     engineConfig,
     setEngineConfig,
-    resetEngineConfig,
-    themePalette,
-    setThemePalette
+    resetEngineConfig
   };
 }
 

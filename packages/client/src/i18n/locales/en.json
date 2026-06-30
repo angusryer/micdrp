@@ -70,6 +70,26 @@
     "note_other": "{{count}} notes",
     "refreshing": "Refreshing…"
   },
+  "profile": {
+    "title": "Profile",
+    "sections": {
+      "account": "Account",
+      "danger": "Danger zone"
+    },
+    "email": "Email",
+    "displayName": "Display name",
+    "displayNamePlaceholder": "Your name",
+    "save": "Save",
+    "signOut": "Sign out",
+    "delete": {
+      "action": "Delete account",
+      "hint": "This permanently removes your account, recordings, and audio. This cannot be undone.",
+      "confirmTitle": "Delete account?",
+      "confirmBody": "This permanently deletes your account and all of your recordings. This cannot be undone.",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    }
+  },
   "settings": {
     "title": "Settings",
     "sections": {
@@ -90,7 +110,7 @@
       "increase": "Increase {{label}}"
     },
     "appearance": {
-      "themeHint": "Theme takes effect on next app launch.",
+      "themeHint": "Theme changes apply instantly.",
       "themeLabel": "{{label}} theme",
       "palettes": {
         "blue": "Blue",

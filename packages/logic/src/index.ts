@@ -6,3 +6,4 @@ export * from './scoring';
 export * from './smoothing';
 export * from './key';
 export * from './tempo';
+export * from './melodies';

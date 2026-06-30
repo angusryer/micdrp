@@ -18,3 +18,10 @@ export type {
   RecordingHandle
 } from './contract';
 export { DEFAULT_ENGINE_CONFIG } from './contract';
+
+export { createReferenceTonePlayer } from './referenceTone';
+export type {
+  ReferenceTonePlayer,
+  ReferenceToneOptions,
+  AudioContextLike
+} from './referenceTone';

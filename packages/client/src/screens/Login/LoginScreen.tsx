@@ -22,18 +22,9 @@ import {
 
 import { useAuth } from '../../auth';
 import { useTheme } from '../../theme';
+import { errorMessage } from '../../utilities/errorMessage';
 
 type Mode = 'signIn' | 'signUp';
-
-function messageFrom(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-  if (typeof error === 'string' && error) {
-    return error;
-  }
-  return 'Something went wrong. Please try again.';
-}
 
 export default function LoginScreen(): React.JSX.Element {
   const { colors } = useTheme();
@@ -65,7 +56,7 @@ export default function LoginScreen(): React.JSX.Element {
       // On success the auth listener updates the session and the navigator
       // reactively swaps stacks — nothing to do here.
     } catch (e) {
-      setError(messageFrom(e));
+      setError(errorMessage(e));
     } finally {
       setSubmitting(false);
     }

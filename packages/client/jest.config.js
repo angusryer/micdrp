@@ -17,8 +17,6 @@ module.exports = {
   moduleNameMapper: {
     '^logic$': '<rootDir>/../logic/src/index.ts',
     '^logic/(.*)$': '<rootDir>/../logic/src/$1',
-    '^models$': '<rootDir>/../models/src/index.ts',
-    '^models/(.*)$': '<rootDir>/../models/src/$1',
     '^shared$': '<rootDir>/../shared/src/index.ts',
     '^shared/(.*)$': '<rootDir>/../shared/src/$1'
   }
