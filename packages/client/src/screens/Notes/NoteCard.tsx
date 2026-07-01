@@ -181,7 +181,7 @@ export function NoteCard({ note, onOpen, onDelete }: NoteCardProps) {
           accessibilityRole="button"
           accessibilityLabel={t('notes.deleteNote')}
           onPress={handleDelete}
-          style={[styles.actionButton, { backgroundColor: colors.neutral300 }]}
+          style={[styles.actionButton, styles.deleteButton]}
         >
           <Text style={[styles.actionLabel, { color: colors.error }]}>
             {t('common.delete')}
@@ -216,6 +216,7 @@ const styles = StyleSheet.create({
   playbackWrap: { paddingVertical: 4 },
   actions: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
     marginTop: 4
   },
@@ -225,6 +226,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center'
+  },
+  // Tertiary, destructive: pushed to the end with no fill so it doesn't read as
+  // a peer of the primary Play / Analysis actions.
+  deleteButton: {
+    marginLeft: 'auto',
+    backgroundColor: 'transparent'
   },
   actionLabel: {
     fontSize: 13,

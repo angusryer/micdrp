@@ -91,7 +91,15 @@ jest.mock('@shopify/react-native-skia', () => {
     Rect: noop,
     Text: noop,
     Skia: {
-      Path: { Make: () => ({ moveTo() {}, lineTo() {}, reset() {}, close() {} }) }
+      Path: {
+        Make: () => ({ moveTo() {}, lineTo() {}, reset() {}, close() {} }),
+        MakeFromSVGString: () => ({
+          moveTo() {},
+          lineTo() {},
+          reset() {},
+          close() {}
+        })
+      }
     },
     useFont: () => null,
     vec: (x, y) => ({ x, y })

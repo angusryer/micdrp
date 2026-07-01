@@ -17,6 +17,7 @@ import { findMelody, type TargetNote } from 'logic';
 
 import type { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme';
+import { useTranslation } from '../../i18n';
 import { createReferenceTonePlayer } from '../../audio/referenceTone';
 import { ExportSheet } from './ExportSheet';
 import { FeedbackCard } from './FeedbackCard';
@@ -31,6 +32,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Results'>;
 
 export default function ResultsScreen({ route }: Props) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { handle, practice } = route.params;
 
   // For a practice take, rebuild the reference melody so scoring + per-note
@@ -50,7 +52,7 @@ export default function ResultsScreen({ route }: Props) {
     targets,
     practice
   });
-  const title = melody?.name ?? 'Take';
+  const title = melody?.name ?? t('results.take');
 
   // Tap a note to hear its true pitch (reuses the practice reference-tone player).
   const tonePlayer = useMemo(() => createReferenceTonePlayer(), []);
@@ -65,7 +67,9 @@ export default function ResultsScreen({ route }: Props) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.neutral300 }]}>
       <View style={styles.content}>
-        <Text style={[styles.heading, { color: colors.typography }]}>Results</Text>
+        <Text style={[styles.heading, { color: colors.typography }]}>
+          {t('results.title')}
+        </Text>
 
         <ScoreCard
           noteCount={notes.length}
@@ -77,7 +81,7 @@ export default function ResultsScreen({ route }: Props) {
 
         <View style={styles.listWrap}>
           <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
-            Notes (tap to hear)
+            {t('results.notesSection')}
           </Text>
           <NoteList notes={notes} onPressNote={playNote} />
         </View>

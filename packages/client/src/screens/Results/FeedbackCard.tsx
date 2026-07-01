@@ -13,6 +13,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { FeedbackDto } from 'shared';
 
 import { useTheme } from '../../theme';
+import { useTranslation } from '../../i18n';
 
 export interface FeedbackCardProps {
   /** On-device feedback for the take. */
@@ -55,6 +56,7 @@ function Section(props: {
 
 export function FeedbackCard({ feedback }: FeedbackCardProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   return (
     <View
@@ -63,39 +65,43 @@ export function FeedbackCard({ feedback }: FeedbackCardProps) {
         { backgroundColor: colors.neutral100, borderColor: colors.neutral500 }
       ]}
       accessibilityRole="summary"
-      accessibilityLabel="Take feedback"
+      accessibilityLabel={t('results.feedbackLabel')}
     >
       <View style={styles.chips}>
         <Chip
-          label="Key"
+          label={t('results.key')}
           value={feedback.key ?? '—'}
           color={colors.typography}
           muted={colors.gray300}
         />
         <Chip
-          label="Tempo"
-          value={feedback.tempoBpm != null ? `${feedback.tempoBpm} BPM` : '—'}
+          label={t('results.tempo')}
+          value={
+            feedback.tempoBpm != null
+              ? t('results.bpm', { value: feedback.tempoBpm })
+              : '—'
+          }
           color={colors.typography}
           muted={colors.gray300}
         />
       </View>
 
       <Section
-        title="Strengths"
+        title={t('results.strengths')}
         items={feedback.strengths}
         bullet="+"
         titleColor={colors.primary500}
         textColor={colors.typography}
       />
       <Section
-        title="To improve"
+        title={t('results.improvements')}
         items={feedback.improvements}
         bullet="!"
         titleColor={colors.gray500}
         textColor={colors.typography}
       />
       <Section
-        title="Try this"
+        title={t('results.suggestions')}
         items={feedback.suggestions}
         bullet="→"
         titleColor={colors.gray500}

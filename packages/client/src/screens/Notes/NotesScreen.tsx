@@ -11,6 +11,7 @@
 import React, { useCallback } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   RefreshControl,
   SafeAreaView,
@@ -75,11 +76,25 @@ export function NotesScreen(): React.JSX.Element {
     [navigation]
   );
 
+  // Deleting a note destroys real captured audio with no undo, so confirm first
+  // (mirrors the account-deletion guard in AccountScreen).
   const handleRemove = useCallback(
     (id: string): void => {
-      void remove(id);
+      const note = notes.find((n) => n.id === id);
+      Alert.alert(
+        t('notes.delete.confirmTitle'),
+        t('notes.delete.confirmBody', { title: note?.title ?? '' }),
+        [
+          { text: t('notes.delete.cancel'), style: 'cancel' },
+          {
+            text: t('notes.delete.confirm'),
+            style: 'destructive',
+            onPress: () => void remove(id)
+          }
+        ]
+      );
     },
-    [remove]
+    [notes, remove, t]
   );
 
   const renderItem = useCallback(

@@ -48,7 +48,9 @@
   },
   "results": {
     "title": "Results",
+    "take": "Take",
     "notes": "Notes",
+    "notesSection": "Notes (tap to hear)",
     "noReferenceMelody": "No reference melody",
     "inTune": "In tune",
     "length": "Length",
@@ -56,7 +58,21 @@
     "exportMidi": "Export MIDI",
     "preparingMidi": "Preparing MIDI…",
     "shareError": "Couldn't share the file. Try again.",
-    "outOf100": "/ 100"
+    "outOf100": "/ 100",
+    "scoreAccessibility": "Pitch score {{score}} out of 100",
+    "feedbackLabel": "Take feedback",
+    "key": "Key",
+    "tempo": "Tempo",
+    "bpm": "{{value}} BPM",
+    "strengths": "Strengths",
+    "improvements": "To improve",
+    "suggestions": "Try this",
+    "noteRow": "Note {{index}}: {{name}}, {{ms}} milliseconds, {{cents}} cents",
+    "noteRowTappable": "Note {{index}}: {{name}}, {{ms}} milliseconds, {{cents}} cents, tap to hear"
+  },
+  "errorScreen": {
+    "title": "Something went wrong",
+    "body": "The app ran into an unexpected problem. You can try again."
   },
   "notes": {
     "title": "Notes",
@@ -75,6 +91,12 @@
     "deleteNote": "Delete note",
     "notesTapToHear": "Notes (tap to hear)",
     "notFound": "Note not found.",
+    "delete": {
+      "confirmTitle": "Delete note?",
+      "confirmBody": "“{{title}}” will be permanently deleted. This can't be undone.",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    },
     "stat": {
       "key": "Key",
       "tempo": "Tempo",
@@ -129,8 +151,7 @@
   },
   "account": {
     "title": "Account & Settings",
-    "open": "Open account and settings",
-    "headerIcon": "⚙︎"
+    "open": "Open account and settings"
   },
   "profile": {
     "title": "Profile",
