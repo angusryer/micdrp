@@ -10,10 +10,10 @@
  */
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Canvas, Path, RoundedRect, Skia } from '@shopify/react-native-skia';
+import { Canvas, Line, Path, RoundedRect, Skia, vec } from '@shopify/react-native-skia';
 
 import { useTheme } from '../theme';
-import { layoutMelody, type MelodyNote } from './melodyLayout';
+import { layoutMelody, type MelodyGrid, type MelodyNote } from './melodyLayout';
 
 export interface MelodyViewProps {
   notes: readonly MelodyNote[];
@@ -23,6 +23,14 @@ export interface MelodyViewProps {
   showContour?: boolean;
   /** Override the bar colour (defaults to the theme primary). */
   color?: string;
+  /**
+   * Draw bar and beat rules behind the melody.
+   *
+   * Omit it and the view is exactly as it was: a shape, with no claim about
+   * where the beat sits. Supplying a grid is what turns the piano roll into
+   * something you can read rhythm off.
+   */
+  grid?: MelodyGrid;
 }
 
 export function MelodyView({
@@ -30,14 +38,15 @@ export function MelodyView({
   width,
   height,
   showContour = true,
-  color
+  color,
+  grid
 }: MelodyViewProps): React.JSX.Element {
   const { colors } = useTheme();
   const barColor = color ?? colors.primary500;
 
   const layout = useMemo(
-    () => layoutMelody(notes, { width, height }),
-    [notes, width, height]
+    () => layoutMelody(notes, { width, height, grid }),
+    [notes, width, height, grid]
   );
 
   // Contour: a polyline through each bar's left-edge centre, in time order.
@@ -65,6 +74,16 @@ export function MelodyView({
   return (
     <View style={[styles.wrap, { width, height }]}>
       <Canvas style={{ width, height }}>
+        {/* Rules first, so the melody always reads on top of its own grid. */}
+        {layout.gridLines.map((g, i) => (
+          <Line
+            key={`g${i}`}
+            p1={vec(g.x, 0)}
+            p2={vec(g.x, height)}
+            strokeWidth={g.isBar ? 1 : StyleSheet.hairlineWidth}
+            color={g.isBar ? colors.neutral500 : colors.neutral100}
+          />
+        ))}
         {contour ? (
           <Path
             path={contour}
