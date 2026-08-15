@@ -107,7 +107,12 @@
       "meter": "Time"
     },
     "gridAssumed": "Time signature assumed. This idea does not state its metre clearly enough to tell.",
-    "gridNone": "Not enough rhythm here to find a beat."
+    "gridNone": "Not enough rhythm here to find a beat.",
+    "harmony": "Chords",
+    "harmonyHint": "Drag a chord up or down to move it through the key, sideways to change its shape, tap to hear it. Hold to undo a change.",
+    "harmonyNone": "A backdrop needs a beat to sit on, and there is not enough rhythm here to find one.",
+    "harmonyReset": "Reset chords",
+    "chordCard": "{{chord}}, bar {{bar}}"
   },
   "dashboard": {
     "title": "Dashboard",

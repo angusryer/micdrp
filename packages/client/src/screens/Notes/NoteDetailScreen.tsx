@@ -20,6 +20,9 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { notesToMidi, quantize, type NoteEvent } from 'logic';
 
+import { ChordTrack } from './ChordTrack';
+import { useChordTrack } from './useChordTrack';
+
 import type { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
@@ -100,6 +103,9 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
     };
   }, [note, melody]);
 
+  // The editable harmonic backdrop, derived from the same fitted grid the bar
+  // lines are drawn from, so chords and bars always agree.
+  const chords = useChordTrack(melody, grid);
   // Tap a note to hear its pitch.
   const tonePlayer = useMemo(() => createReferenceTonePlayer(), []);
   useEffect(() => () => tonePlayer.stop(), [tonePlayer]);
@@ -108,6 +114,21 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
       tonePlayer.play([{ midi, startMs: 0, endMs: TAP_NOTE_MS }]);
     },
     [tonePlayer]
+  );
+
+  // A chord is just its notes sounded together, which the reference player
+  // already supports: overlapping targets over the same span.
+  const auditionChord = useCallback(
+    (index: number) => {
+      const midis = chords.voicing(index);
+      if (midis.length === 0) {
+        return;
+      }
+      tonePlayer.play(
+        midis.map((midi) => ({ midi, startMs: 0, endMs: chords.auditionMs }))
+      );
+    },
+    [tonePlayer, chords]
   );
 
   if (!note) {
@@ -192,6 +213,41 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
           </>
         ) : null}
 
+        {melody.length > 0 ? (
+          <>
+            <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
+              {t('notes.harmony')}
+            </Text>
+            {chords.slots.length > 0 ? (
+              <>
+                <ChordTrack
+                  slots={chords.slots}
+                  onNudge={chords.nudge}
+                  onReshape={chords.reshape}
+                  onAudition={auditionChord}
+                  onRevert={chords.revert}
+                />
+                <Text style={[styles.caption, { color: colors.gray300 }]}>
+                  {t('notes.harmonyHint')}
+                </Text>
+                {chords.hasEdits ? (
+                  <Text
+                    accessibilityRole="button"
+                    onPress={chords.revertAll}
+                    style={[styles.action, { color: colors.primary500 }]}
+                  >
+                    {t('notes.harmonyReset')}
+                  </Text>
+                ) : null}
+              </>
+            ) : (
+              <Text style={[styles.caption, { color: colors.gray300 }]}>
+                {t('notes.harmonyNone')}
+              </Text>
+            )}
+          </>
+        ) : null}
+
         <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
           {t('notes.analysis')}
         </Text>
@@ -256,6 +312,7 @@ const styles = StyleSheet.create({
     gap: 4
   },
   caption: { fontSize: 12, lineHeight: 17 },
+  action: { fontSize: 13, fontWeight: '700' },
   statLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4 },
   statValue: { fontSize: 16, fontWeight: '700' },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center' }

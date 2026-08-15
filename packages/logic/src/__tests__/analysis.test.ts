@@ -142,7 +142,9 @@ describe('impliedHarmony', () => {
     expect(chords).toHaveLength(1);
     expect(chords[0].rootPc).toBe(0);
     expect(chords[0].quality).toBe('maj');
-    expect(chords[0].label).toBe('Cmaj');
+    // A bare major triad is written 'C', not 'Cmaj' — QUALITY_SUFFIX.maj is
+    // deliberately empty, which is standard chord notation.
+    expect(chords[0].label).toBe('C');
     expect(chords[0].confidence).toBeGreaterThan(0);
   });
 
