@@ -173,7 +173,7 @@ function resultant(
  * independent, so the effective count is much smaller than the number swept.
  * Confidence is how far the observed strength clears that chance level.
  */
-function calibrateConfidence(strength: number, effectiveCount: number): number {
+export function calibrateConfidence(strength: number, effectiveCount: number): number {
   if (effectiveCount < 2) {
     return 0;
   }
@@ -196,12 +196,12 @@ function calibrateConfidence(strength: number, effectiveCount: number): number {
  * dominated by one very long note carries less rhythmic evidence than its
  * onset count suggests.
  */
-function effectiveCount(weights: readonly number[]): number {
+export function effectiveCount(weights: readonly number[]): number {
   let sum = 0;
   let sumSquares = 0;
-  for (let i = 0; i < weights.length; i++) {
-    sum += weights[i];
-    sumSquares += weights[i] * weights[i];
+  for (const weight of weights) {
+    sum += weight;
+    sumSquares += weight * weight;
   }
   return sumSquares > 0 ? (sum * sum) / sumSquares : 0;
 }
@@ -351,8 +351,7 @@ export function choosePulsesPerBeat(pulseMs: number): {
 } {
   let bestMultiple = 1;
   let bestScore = -1;
-  for (let i = 0; i < PULSES_PER_BEAT.length; i++) {
-    const multiple = PULSES_PER_BEAT[i];
+  for (const multiple of PULSES_PER_BEAT) {
     const periodMs = pulseMs * multiple;
     const bpm = periodToBpm(periodMs);
     if (bpm < MIN_BPM || bpm > MAX_BPM) {
@@ -381,10 +380,10 @@ function onsetsOf(notes: readonly NoteEvent[]): {
   });
   const onsets: number[] = [];
   const weights: number[] = [];
-  for (let i = 0; i < sorted.length; i++) {
-    onsets.push(sorted[i].startMs);
+  for (const event of sorted) {
+    onsets.push(event.startMs);
     // Longer notes are stronger metrical evidence, but only mildly so.
-    weights.push(Math.sqrt(Math.max(sorted[i].durationMs, 1)));
+    weights.push(Math.sqrt(Math.max(event.durationMs, 1)));
   }
   return { onsets: onsets, weights: weights };
 }
