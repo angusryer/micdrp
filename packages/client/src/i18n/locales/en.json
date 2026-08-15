@@ -103,8 +103,11 @@
       "range": "Range",
       "steadiness": "In tune",
       "notes": "Notes",
-      "length": "Length"
-    }
+      "length": "Length",
+      "meter": "Time"
+    },
+    "gridAssumed": "Time signature assumed. This idea does not state its metre clearly enough to tell.",
+    "gridNone": "Not enough rhythm here to find a beat."
   },
   "dashboard": {
     "title": "Dashboard",

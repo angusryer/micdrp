@@ -70,3 +70,62 @@ describe('layoutMelody', () => {
     expect(midiHigh).toBeGreaterThan(midiLow);
   });
 });
+
+describe('layoutMelody — grid rules', () => {
+  const grid = { bpm: 120, offsetMs: 0, beatsPerBar: 4 };
+  // 8 beats at 120bpm = 4000ms, i.e. two full bars.
+  const twoBars = [
+    { midi: 60, startMs: 0, endMs: 500 },
+    { midi: 62, startMs: 2000, endMs: 2500 },
+    { midi: 64, startMs: 3500, endMs: 4000 }
+  ];
+
+  it('draws no rules unless a grid is supplied', () => {
+    const layout = layoutMelody(twoBars, { width: 300, height: 100 });
+    expect(layout.gridLines).toEqual([]);
+  });
+
+  it('marks bar lines every beatsPerBar beats', () => {
+    const layout = layoutMelody(twoBars, { width: 300, height: 100, grid });
+    const bars = layout.gridLines.filter((g) => g.isBar);
+    // Bar lines at 0ms and 2000ms and 4000ms across a 0-4000ms span.
+    expect(bars.map((b) => b.bar)).toEqual([1, 2, 3]);
+    expect(layout.gridLines.some((g) => !g.isBar)).toBe(true);
+  });
+
+  it('places rules on the same time scale as the notes', () => {
+    const layout = layoutMelody(twoBars, { width: 300, height: 100, grid });
+    const secondBar = layout.gridLines.find((g) => g.bar === 2)!;
+    // 2000ms is halfway through the 0-4000ms span, as is the second note.
+    expect(secondBar.x).toBeCloseTo(layout.rects[1].x, 5);
+  });
+
+  it('keeps every rule inside the drawn area', () => {
+    const layout = layoutMelody(twoBars, { width: 300, height: 100, grid });
+    for (const line of layout.gridLines) {
+      expect(line.x).toBeGreaterThanOrEqual(0);
+      expect(line.x).toBeLessThanOrEqual(300);
+    }
+  });
+
+  // A long take at speed implies hundreds of beats, which at phone width is a
+  // grey wash. Past the cap the beats go and the bar lines stay.
+  it('drops beat rules but keeps bar lines on a long take', () => {
+    const long = [
+      { midi: 60, startMs: 0, endMs: 400 },
+      { midi: 62, startMs: 120000, endMs: 120400 }
+    ];
+    const layout = layoutMelody(long, { width: 300, height: 100, grid });
+    expect(layout.gridLines.every((g) => g.isBar)).toBe(true);
+    expect(layout.gridLines.length).toBeGreaterThan(0);
+  });
+
+  it('ignores a grid with no usable tempo', () => {
+    const layout = layoutMelody(twoBars, {
+      width: 300,
+      height: 100,
+      grid: { bpm: 0, offsetMs: 0, beatsPerBar: 4 }
+    });
+    expect(layout.gridLines).toEqual([]);
+  });
+});

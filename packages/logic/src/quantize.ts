@@ -67,10 +67,15 @@ export interface MusicalGrid {
   confidence: number;
   /**
    * 0..1 — how well they support the TIME SIGNATURE specifically, which is a
-   * much weaker inference than tempo. Below 0.5 the signature is the 4/4
-   * default rather than something measured, and is worth asking the user about.
+   * much weaker inference than tempo.
    */
   meterConfidence: number;
+  /**
+   * False when `timeSignature` is the 4/4 default rather than something
+   * measured. A UI should present an unstated metre as an assumption open to
+   * correction, not as a finding.
+   */
+  meterIsStated: boolean;
 }
 
 export interface QuantizedNote extends NoteEvent {
@@ -251,7 +256,8 @@ export function fitGrid(notes: readonly NoteEvent[]): MusicalGrid {
       stepsPerBeat: SIMPLE_STEPS_PER_BEAT,
       timeSignature: '4/4',
       confidence: 0,
-      meterConfidence: 0
+      meterConfidence: 0,
+      meterIsStated: false
     };
   }
 
@@ -286,7 +292,8 @@ export function fitGrid(notes: readonly NoteEvent[]): MusicalGrid {
     stepsPerBeat: isCompound ? COMPOUND_STEPS_PER_BEAT : SIMPLE_STEPS_PER_BEAT,
     timeSignature: timeSignature,
     confidence: calibrateConfidence(pulse.strength, support),
-    meterConfidence: meterConfidence
+    meterConfidence: meterConfidence,
+    meterIsStated: stated
   };
 }
 

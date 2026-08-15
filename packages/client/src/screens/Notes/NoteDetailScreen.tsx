@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { notesToMidi, type NoteEvent } from 'logic';
+import { notesToMidi, quantize, type NoteEvent } from 'logic';
 
 import type { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme';
@@ -57,6 +57,26 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
 
   const note = useMemo(() => cachedNotes().find((n) => n.id === id), [id]);
   const melody = (note?.melody ?? []) as NoteEvent[];
+
+  // Fit the metrical grid here rather than reading a stored one. The melody is
+  // persisted, so this costs nothing and needs no migration — and it means
+  // notes captured before the tempo estimator was fixed are re-read correctly
+  // instead of keeping a bpm that was often double what was actually sung.
+  const quantized = useMemo(() => quantize(melody), [melody]);
+  const grid = quantized.grid;
+  const hasGrid = grid.bpm > 0 && melody.length > 1;
+  const meterIsStated = grid.meterIsStated;
+  const gridForView = useMemo(
+    () =>
+      hasGrid
+        ? {
+            bpm: grid.bpm,
+            offsetMs: grid.offsetMs,
+            beatsPerBar: grid.beatsPerBar
+          }
+        : undefined,
+    [hasGrid, grid.bpm, grid.offsetMs, grid.beatsPerBar]
+  );
 
   // Generate + write the MIDI for export from the stored symbolic melody.
   const [midiUri, setMidiUri] = useState<string | null>(null);
@@ -108,11 +128,13 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
       : '—';
   const steadiness =
     note.inTuneRatio != null ? `${Math.round(note.inTuneRatio * 100)}%` : '—';
-  const tempo = note.tempoBpm != null ? `${Math.round(note.tempoBpm)} BPM` : '—';
+  const tempo = hasGrid ? `${grid.bpm} BPM` : '—';
+  const meter = hasGrid ? grid.timeSignature : '—';
 
   const stats: Array<{ label: string; value: string }> = [
     { label: t('notes.stat.key'), value: note.key ?? '—' },
     { label: t('notes.stat.tempo'), value: tempo },
+    { label: t('notes.stat.meter'), value: meter },
     { label: t('notes.stat.range'), value: range },
     { label: t('notes.stat.steadiness'), value: steadiness },
     { label: t('notes.stat.notes'), value: String(note.noteCount) },
@@ -151,8 +173,22 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
                 notes={melody}
                 width={width - 2 * CONTENT_PADDING - 2}
                 height={MELODY_VIEW_HEIGHT}
+                grid={gridForView}
               />
             </View>
+            {/* Say when the bar lines are an assumption rather than a reading.
+                A short sung idea often does not state its metre, and drawing
+                confident bar lines over one would be inventing information. */}
+            {hasGrid && !meterIsStated ? (
+              <Text style={[styles.caption, { color: colors.gray300 }]}>
+                {t('notes.gridAssumed')}
+              </Text>
+            ) : null}
+            {!hasGrid ? (
+              <Text style={[styles.caption, { color: colors.gray300 }]}>
+                {t('notes.gridNone')}
+              </Text>
+            ) : null}
           </>
         ) : null}
 
@@ -219,6 +255,7 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 4
   },
+  caption: { fontSize: 12, lineHeight: 17 },
   statLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4 },
   statValue: { fontSize: 16, fontWeight: '700' },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center' }

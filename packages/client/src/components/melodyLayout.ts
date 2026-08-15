@@ -14,6 +14,28 @@ export interface MelodyNote {
   endMs: number;
 }
 
+/**
+ * The metrical frame to draw behind the notes, from `logic`'s `fitGrid`.
+ *
+ * Only the fields the drawing needs, so the layout math stays independent of
+ * the full `MusicalGrid` shape.
+ */
+export interface MelodyGrid {
+  bpm: number;
+  /** Time of the first bar line, in ms. */
+  offsetMs: number;
+  beatsPerBar: number;
+}
+
+/** A vertical rule behind the melody: a bar line or a plain beat. */
+export interface GridLine {
+  x: number;
+  /** True for a bar line, false for an ordinary beat within the bar. */
+  isBar: boolean;
+  /** 1-based bar number, set only on bar lines. */
+  bar: number | null;
+}
+
 export interface MelodyLayoutOptions {
   width: number;
   height: number;
@@ -23,6 +45,8 @@ export interface MelodyLayoutOptions {
   laneFill?: number;
   /** Minimum bar thickness in px (default 3). */
   minBarHeight?: number;
+  /** When given, bar and beat rules are positioned across the same time span. */
+  grid?: MelodyGrid;
 }
 
 /** One positioned note bar plus the centre point used for the contour line. */
@@ -42,6 +66,65 @@ export interface MelodyLayout {
   midiLow: number;
   /** Highest pitch lane shown (one semitone above the highest sung note). */
   midiHigh: number;
+  /** Bar and beat rules, empty unless a grid was supplied. */
+  gridLines: GridLine[];
+}
+
+/**
+ * Cap on the rules drawn across one view.
+ *
+ * A long take at a fast tempo can imply hundreds of beats, which at this
+ * width would be a grey wash rather than a readable grid. Past the cap the
+ * beats are dropped and only bar lines are kept, which is the information that
+ * actually helps at that zoom.
+ */
+const MAX_GRID_LINES = 96;
+
+/**
+ * Vertical rules for the grid across the melody's visible time span.
+ *
+ * Lines outside the sung span are skipped: the view is scaled to the melody,
+ * not to the grid, so a bar line before the first note or after the last has
+ * nothing to mark.
+ */
+function layoutGridLines(
+  grid: MelodyGrid,
+  t0: number,
+  span: number,
+  pad: number,
+  innerW: number
+): GridLine[] {
+  const beatMs = 60000 / grid.bpm;
+  // A zero bpm yields an infinite beat, which passes a bare `> 0` check and
+  // then collapses the whole take onto a single rule at beat zero.
+  if (!Number.isFinite(beatMs) || beatMs <= 0 || !(grid.beatsPerBar > 0)) {
+    return [];
+  }
+  const t1 = t0 + span;
+  const totalBeats = span / beatMs;
+  // Beats become noise long before bars do, so thin them out first.
+  const beatsFit = totalBeats <= MAX_GRID_LINES;
+
+  const lines: GridLine[] = [];
+  const firstBeat = Math.ceil((t0 - grid.offsetMs) / beatMs);
+  const lastBeat = Math.floor((t1 - grid.offsetMs) / beatMs);
+  for (let beat = firstBeat; beat <= lastBeat; beat++) {
+    let position = beat % grid.beatsPerBar;
+    if (position < 0) {
+      position += grid.beatsPerBar;
+    }
+    const isBar = position === 0;
+    if (!isBar && !beatsFit) {
+      continue;
+    }
+    const timeMs = grid.offsetMs + beat * beatMs;
+    lines.push({
+      x: pad + ((timeMs - t0) / span) * innerW,
+      isBar,
+      bar: isBar ? Math.floor(beat / grid.beatsPerBar) + 1 : null
+    });
+  }
+  return lines;
 }
 
 /**
@@ -117,5 +200,10 @@ export function layoutMelody(
     };
   });
 
-  return { rects, midiLow, midiHigh };
+  const gridLines =
+    options.grid && notes.length > 0
+      ? layoutGridLines(options.grid, t0, span, pad, innerW)
+      : [];
+
+  return { rects, midiLow, midiHigh, gridLines };
 }
