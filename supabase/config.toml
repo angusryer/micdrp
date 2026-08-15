@@ -3,11 +3,11 @@
 # Run `supabase init` to scaffold this file if it doesn't exist, then replace
 # with this content (project_id must match your remote project slug).
 
-[project]
+# `project_id` is top-level in the current CLI schema; it used to sit under a
+# [project] table, which no longer parses.
 # Set this to the slug shown in your Supabase dashboard URL:
 #   https://supabase.com/dashboard/project/<project_id>
-# Never commit the actual value — set it via `supabase link --project-ref <ref>`
-# or the SUPABASE_PROJECT_ID environment variable.
+# Link the real remote with `supabase link --project-ref <ref>`.
 project_id = "micdrp"
 
 [api]
@@ -41,11 +41,11 @@ port = 54323
 api_url = "http://127.0.0.1"
 openai_api_key = "env(OPENAI_API_KEY)"
 
-[inbucket]
+# Local mail catcher. Renamed from [inbucket] in newer CLI versions.
+[local_smtp]
 enabled = true
 port = 54324
 smtp_port = 54325
-pop3_port = 54326
 
 [storage]
 enabled = true
@@ -86,7 +86,6 @@ verify_enabled = false
 enroll_enabled = false
 verify_enabled = false
 otp_length = 6
-otp_expiry = 300
 
 [edge_runtime]
 enabled = true
