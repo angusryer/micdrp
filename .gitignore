@@ -124,7 +124,12 @@ dist
 # Environment Configs
 ./services/crm-service/config.env
 
-lib/
+# Build output only. This must NOT be a bare `lib/`: that pattern matches at
+# any depth and silently swallowed packages/client/src/lib — the Supabase
+# client, its generated Database types and the Keychain session adapter — so a
+# clean clone of this repo could not build the client at all.
+/lib/
+packages/*/lib/
 
 build/
 
