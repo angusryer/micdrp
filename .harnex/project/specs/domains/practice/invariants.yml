@@ -1,0 +1,89 @@
+invariants:
+  - id: INV-PRACT-001
+    description: The reference never bleeds into the take
+    severity: critical
+    check: >
+      The reference sounds during recording only when the audio route is
+      headphones. On every other route, and whenever the route is
+      unknown, the reference plays before recording begins and the take
+      is recorded in silence. Verified by driving the route probe to
+      speaker, unknown, and throwing, and asserting no reference audio
+      overlaps the recording window in any of the three.
+
+  - id: INV-PRACT-002
+    description: No audio is kept for a practice take
+    severity: critical
+    check: >
+      A finished session writes exactly one practice_progress row and
+      uploads nothing. No storage object is created for a practice take
+      under any route or outcome. Verified by listing the bucket after a
+      session and asserting it is unchanged.
+
+  - id: INV-PRACT-003
+    description: Targets tile the timeline exactly
+    severity: critical
+    check: >
+      For every catalogue exercise at any tonic and note length,
+      consecutive targets satisfy endMs equal to the next startMs, with
+      no gap and no overlap, so scoring finds exactly one target per
+      instant inside the melody.
+
+  - id: INV-PRACT-004
+    description: An unscorable take is not a zero
+    severity: critical
+    check: >
+      A take with no voiced frames inside any target has evaluatedFrames
+      0, and is presented as unscorable rather than as a score of zero.
+      The persisted row carries a null score, not 0.
+
+  - id: INV-PRACT-005
+    description: Only frames inside a target are scored
+    severity: major
+    check: >
+      Unvoiced frames and frames whose timestamp falls outside every
+      target do not contribute to evaluatedFrames, inTuneRatio,
+      meanCentsError, or the score. Silence before the first note and
+      after the last is not counted against the singer.
+
+  - id: INV-PRACT-006
+    description: The score degrades smoothly, not in steps
+    severity: major
+    check: >
+      A frame's contribution falls linearly with absolute cents error and
+      reaches zero at 200 cents. Two takes differing by a few cents
+      differ by a few points, so the score does not jump at the tolerance
+      boundary.
+
+  - id: INV-PRACT-007
+    description: A singer reaches only their own progress
+    severity: critical
+    check: >
+      Every read, insert, update and delete against practice_progress is
+      constrained to rows where user_id matches the authenticated user,
+      enforced by row-level security. Verified by attempting a read
+      against another singer's rows and asserting it returns nothing.
+
+  - id: INV-PRACT-008
+    description: An exercise is a pattern, not a fixed set of notes
+    severity: major
+    check: >
+      Every catalogue exercise builds from a tonic and a note length.
+      Building the same exercise at two tonics yields targets whose
+      semitone intervals are identical and whose absolute notes differ by
+      the tonic difference.
+
+  - id: INV-PRACT-009
+    description: The target and the live pitch share one clock
+    severity: major
+    check: >
+      The scrolling target and the live pitch line advance from the same
+      transport value, so what the singer sees as the current target is
+      the target their current frame is scored against.
+
+  - id: INV-PRACT-010
+    description: A session that never records leaves nothing behind
+    severity: major
+    check: >
+      A denied microphone permission, or a session abandoned before
+      recording, writes no practice_progress row. Verified by counting
+      the singer's rows before and after.

@@ -1,0 +1,23 @@
+# Domain Development State — overwrite each meaningful change
+updated_at: "2026-08-18T00:00:00Z"
+updated_by: agent
+phase: specifying
+phase_detail: >
+  Specs written from a crawl of screens/Practice, screens/Results,
+  audio/outputRoute.ts, logic/scoring.ts and logic/melodies.ts, plus the
+  practice_progress table. 7 capabilities, 10 invariants, 18 acceptance
+  tests, 3 views, 7 interactions.
+
+  The adaptive-reference rule is now an invariant rather than a comment
+  (INV-PRACT-001), with rejection tests covering all three non-headphone
+  routes — speaker, no probe registered, and a probe that throws —
+  because the failure mode is a take that scores itself.
+blockers:
+  - >
+    No verification target. Acceptance tests report SKIP until an adapter
+    with a fake engine and a scriptable route probe is wired.
+  - >
+    The headphone route probe is unimplemented on device. outputRoute
+    returns false until a native probe is registered, so play-along never
+    engages in the real app. Specified as correct-but-conservative
+    behaviour; wiring the probe is Phase V work.

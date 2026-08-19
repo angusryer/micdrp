@@ -1,0 +1,86 @@
+interactions:
+  - id: INT-PRACT-001
+    name: Pick something to practise
+    view: VIEW-PRACT-001
+    steps:
+      - Open the Practice tab
+      - Choose an exercise
+      - Set the tonic and the pace
+      - Start
+    outcome: >
+      The session opens with the exercise built at the chosen tonic and pace.
+    maps_to:
+      capability: practice.list_exercises
+
+  - id: INT-PRACT-002
+    name: Sing along on headphones
+    view: VIEW-PRACT-002
+    precondition: Headphones are the current audio output.
+    steps:
+      - Start the session
+      - Sing with the reference
+    outcome: >
+      The reference sounds while recording, and the target scrolls in
+      step with the singer's pitch line.
+    maps_to:
+      capability: practice.run_session
+
+  - id: INT-PRACT-003
+    name: Sing after a count-in
+    view: VIEW-PRACT-002
+    precondition: The output route is not headphones, or is unknown.
+    steps:
+      - Start the session
+      - Listen to the count-in
+      - Sing in silence
+    outcome: >
+      The reference plays once before recording, then the take is
+      recorded with no reference sounding, so nothing bleeds into it.
+    maps_to:
+      capability: practice.run_session
+
+  - id: INT-PRACT-004
+    name: Stop, or let it end
+    view: VIEW-PRACT-002
+    steps:
+      - Press stop, or sing to the end of the melody
+    outcome: >
+      Recording ends, the take is scored against the melody, and the
+      results open.
+    maps_to:
+      capability: practice.score_take
+
+  - id: INT-PRACT-005
+    name: See what the take was worth
+    view: VIEW-PRACT-003
+    steps:
+      - Finish a take
+    outcome: >
+      The score, the in-tune fraction, the mean cents error, and a
+      per-target breakdown are shown, and the session's numbers are kept.
+    error_handling: >
+      A take with nothing to score is presented as unscorable and its row
+      carries a null score.
+    maps_to:
+      capability: practice.explain_result
+
+  - id: INT-PRACT-006
+    name: Hear a note that was missed
+    view: VIEW-PRACT-003
+    steps:
+      - Tap a row in the per-target breakdown
+    outcome: The target's pitch sounds so the singer can hear what was meant.
+    maps_to:
+      capability: practice.explain_result
+
+  - id: INT-PRACT-007
+    name: Keep the trajectory
+    view: VIEW-PRACT-003
+    precondition: The session finished.
+    steps:
+      - Finish a take
+    outcome: >
+      One progress row is written under the signed-in singer. No audio is
+      uploaded or kept.
+    maps_to:
+      capability: practice.record_progress

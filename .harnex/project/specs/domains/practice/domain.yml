@@ -1,0 +1,59 @@
+domain:
+  name: practice
+  version: 0.1.0
+  status: specifying
+  owner: human
+
+  description: >
+    Singing against something. The singer picks an exercise, the app
+    presents it, they sing it, and the take is scored against that
+    melody note by note.
+
+    How the reference is presented depends on where the sound is going.
+    On headphones the reference plays while recording, so the singer can
+    hear what they are matching. On a speaker it plays once as a count-in
+    and then the take is recorded in silence, because a reference through
+    a speaker bleeds into the microphone and scores itself. With no way
+    to tell, the app assumes the speaker — the choice that can never
+    corrupt a take.
+
+    Only the trajectory is kept. A practice take is scored and its
+    numbers are saved; the audio is discarded.
+
+  interfaces:
+    - type: ui
+      description: >
+        The Practice tab — exercise picker, the guided session with a
+        scrolling target and live pitch, and the scored results.
+    - type: storage
+      description: >
+        The practice_progress table, one row per finished session,
+        guarded by row-level security. No audio is stored.
+
+  boundaries:
+    owns:
+      - The built-in exercise catalogue and how a melody is built from a
+        tonic and a note length
+      - Choosing the reference presentation from the audio output route
+      - The session transport — count-in, recording, and stopping at the
+        melody's length
+      - Frame-level scoring against absolute target timings
+      - What counts as in tune, and how a score degrades with cents error
+      - Turning a score into readable feedback
+      - The practice_progress row and the fact that no audio is retained
+    does_not_own:
+      - Capturing audio or detecting pitch (pitch)
+      - Segmenting a take (transcription)
+      - Keeping a sung idea (notes owns anything worth keeping)
+      - The training trend drawn from these rows (insights)
+      - Who the signed-in singer is (account)
+
+  depends_on:
+    - domain: pitch
+      reason: Records the take and supplies the frames that are scored
+    - domain: account
+      reason: Every progress row belongs to the signed-in singer
+
+  depended_on_by:
+    - domain: insights
+      reason: The training trend is drawn from practice_progress rows

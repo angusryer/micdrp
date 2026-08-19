@@ -9,6 +9,11 @@ domains:
     path: .harnex/project/specs/domains/pitch
     priority: high
     status: specifying
+  practice:
+    description: 'Practising a target melody: exercise catalogue, guided session, scoring, results'
+    path: .harnex/project/specs/domains/practice
+    priority: medium
+    status: specifying
   transcription:
     description: 'Pitch frames to symbolic music: segmentation, key, tempo, metrical grid, harmony, MIDI'
     path: .harnex/project/specs/domains/transcription

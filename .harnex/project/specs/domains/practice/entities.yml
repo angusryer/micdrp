@@ -1,0 +1,127 @@
+entities:
+  - name: PracticeMelody
+    description: >
+      One exercise in the built-in catalogue. A melody is a pattern of
+      semitone offsets, not fixed notes, so the same exercise transposes
+      to whatever tonic suits the singer's voice.
+    properties:
+      - name: id
+        type: string
+        required: true
+        immutable: true
+        description: Stable identifier, also the value stored on a progress row.
+      - name: name
+        type: string
+        required: true
+        description: What the exercise is called.
+      - name: description
+        type: string
+        required: true
+        description: What the exercise trains.
+
+  - name: TargetNote
+    description: >
+      One note of the reference, with absolute timing. Targets tile the
+      timeline back to back so exactly one is in force at any instant.
+    properties:
+      - name: midi
+        type: number
+        required: true
+        description: The note to sing.
+      - name: startMs
+        type: number
+        required: true
+        description: When the note begins.
+      - name: endMs
+        type: number
+        required: true
+        description: When the note ends, which is the next note's start.
+
+  - name: PitchScore
+    description: >
+      What a take was worth. The score degrades smoothly with cents
+      error rather than stepping at the tolerance, so a near miss reads
+      differently from a wrong note.
+    properties:
+      - name: score
+        type: number
+        required: true
+        description: Overall result.
+        constraints: ["is within 0 and 100 inclusive"]
+      - name: inTuneRatio
+        type: number
+        required: true
+        description: Fraction of evaluated frames within tolerance.
+        constraints: ["is within 0 and 1 inclusive"]
+      - name: meanCentsError
+        type: number
+        required: true
+        description: Mean absolute cents error over evaluated frames.
+        constraints: ["is greater than or equal to 0"]
+      - name: evaluatedFrames
+        type: number
+        required: true
+        description: >
+          Voiced frames that overlapped a target and were scored. Zero
+          means the take is unscorable, not that it scored zero.
+
+  - name: PracticeProgress
+    description: >
+      One finished session, kept as numbers only. Enough to draw a trend
+      and to say what was practised, with no audio retained.
+    properties:
+      - name: id
+        type: string
+        required: true
+        immutable: true
+        description: Server-generated identifier.
+      - name: userId
+        type: string
+        required: true
+        immutable: true
+        description: The singer this session belongs to.
+      - name: createdAtMs
+        type: number
+        required: true
+        immutable: true
+        description: When the session finished.
+      - name: melodyId
+        type: string
+        required: true
+        immutable: true
+        description: Which catalogue exercise was practised.
+      - name: rootMidi
+        type: number
+        required: true
+        immutable: true
+        description: The tonic the exercise was built from.
+      - name: noteDurationMs
+        type: number
+        required: true
+        immutable: true
+        description: How long each note was held.
+      - name: score
+        type: number
+        required: false
+        description: Overall result, or null when the take was unscorable.
+      - name: inTuneRatio
+        type: number
+        required: false
+        description: Fraction of frames within tolerance, or null.
+      - name: meanCentsError
+        type: number
+        required: false
+        description: Mean absolute cents error, or null.
+      - name: evaluatedFrames
+        type: number
+        required: true
+        description: How many frames the score was computed from.
+
+  - name: SessionPhase
+    description: Where a practice session has got to.
+    properties:
+      - name: value
+        type: string
+        required: true
+        description: The current phase.
+        constraints: ["is one of idle, preparing, countIn, recording, analyzing"]

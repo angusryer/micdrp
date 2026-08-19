@@ -1,0 +1,72 @@
+# What a finished session keeps, and who can read it.
+acceptance:
+  - id: ACC-PRACT-015
+    interface: ui
+    title: A finished session keeps its numbers and no audio
+    given:
+      - a signed-in singer S
+      - the audio output route is headphones
+      - the exercise major-scale at tonic 60 with 500 ms notes
+      - the microphone permission is granted
+      - a perfect take is ready
+    when:
+      - the singer runs the session
+    then:
+      - singer S has 1 progress rows recorded
+      - no audio was uploaded
+      - the result field melodyId is major-scale
+      - the result field rootMidi is 60
+    maps_to:
+      capability: practice.record_progress
+      invariants: [INV-PRACT-002]
+      interaction: INT-PRACT-007
+      view: VIEW-PRACT-003
+
+  - id: ACC-PRACT-016
+    interface: storage
+    title: An unscorable session is recorded with a null score
+    given:
+      - a signed-in singer S
+      - the audio output route is headphones
+      - the exercise major-scale at tonic 60 with 500 ms notes
+      - the microphone permission is granted
+      - a silent take is ready
+    when:
+      - the singer runs the session
+    then:
+      - singer S has 1 progress rows recorded
+      - the result field score is null
+      - the result field evaluatedFrames is 0
+    maps_to:
+      capability: practice.record_progress
+      invariants: [INV-PRACT-004]
+
+  - id: ACC-PRACT-017
+    interface: storage
+    title: One singer cannot read another's progress
+    given:
+      - a signed-in singer S
+      - a signed-in singer T
+      - singer T has 5 progress rows
+    when:
+      - singer S reads their progress
+    then:
+      - singer S has 0 progress rows recorded
+    maps_to:
+      capability: practice.record_progress
+      invariants: [INV-PRACT-007]
+
+  - id: ACC-PRACT-018
+    interface: ui
+    title: A scored take is explained with every target accounted for
+    given:
+      - the exercise major-scale at tonic 60 with 500 ms notes
+      - a flat_by_30_cents take is ready
+    when:
+      - the take is scored
+    then:
+      - the result field perNoteCount is 15
+      - the result field score is within 80 and 90 inclusive
+    maps_to:
+      capability: practice.explain_result
+      interaction: INT-PRACT-005

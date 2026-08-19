@@ -1,0 +1,170 @@
+# Practice test grammar extensions. Tests drive a project adapter with a
+# fake engine, a scriptable audio-route probe, and a fake Supabase client
+# enforcing row-level security. No microphone and no speaker are involved.
+
+given:
+  - id: GX-PRACT-SINGER
+    pattern: 'a signed-in singer {label}'
+    mode: extension
+    action: pract_signer
+    params: { label: "{label}" }
+    resolution: Register an authenticated singer and make it current.
+
+  - id: GX-PRACT-ROUTE
+    pattern: 'the audio output route is {value}'
+    mode: extension
+    action: pract_route
+    params: { route: "{value}" }
+    resolution: >
+      Set the headphone probe. {value} is headphones, speaker, unknown
+      (no probe registered), or throwing.
+
+  - id: GX-PRACT-EXERCISE
+    pattern: 'the exercise {value} at tonic {N} with {value2} ms notes'
+    mode: extension
+    action: pract_exercise
+    params: { melodyId: "{value}", rootMidi: "{N}", noteDurationMs: "{value2}" }
+    resolution: Select a catalogue exercise and its build options.
+
+  - id: GX-PRACT-TAKE
+    pattern: 'a {value} take is ready'
+    mode: extension
+    action: pract_take_fixture
+    params: { quality: "{value}" }
+    resolution: >
+      Arm the fake engine with scripted frames. {value} is perfect,
+      flat_by_30_cents, an_octave_low, silent, or off_target.
+
+  - id: GX-PRACT-PERMISSION
+    pattern: 'the microphone permission is {value}'
+    mode: extension
+    action: pract_permission
+    params: { permission: "{value}" }
+    resolution: Set what the fake engine's permission request resolves to.
+
+  - id: GX-PRACT-ROWS
+    pattern: 'singer {label} has {N} progress rows'
+    mode: extension
+    action: pract_seed_rows
+    params: { owner: "{label}", count: "{N}" }
+    resolution: Seed practice_progress rows owned by {label}.
+
+when:
+  - id: WX-PRACT-RUN
+    pattern: 'the singer runs the session'
+    mode: extension
+    action: pract_run_session
+    resolution: >
+      Run the full session over the armed take, recording every phase
+      transition and every window in which reference audio sounded.
+
+  - id: WX-PRACT-SCORE
+    pattern: 'the take is scored'
+    mode: extension
+    action: pract_score
+    resolution: Score the armed take against the selected exercise's targets.
+
+  - id: WX-PRACT-SCORE-OPT
+    pattern: 'the take is scored with {field} {value}'
+    mode: extension
+    action: pract_score_with_option
+    params: { option: "{field}", value: "{value}" }
+    resolution: Score with one ScoreOptions override.
+
+  - id: WX-PRACT-BUILD
+    pattern: 'the targets are built'
+    mode: extension
+    action: pract_build_targets
+    resolution: Build the selected exercise's targets.
+
+  - id: WX-PRACT-CATALOGUE
+    pattern: 'the singer opens the Practice tab'
+    mode: extension
+    action: pract_open_tab
+    resolution: Read the catalogue, recording whether any network call was made.
+
+  - id: WX-PRACT-READ
+    pattern: 'singer {label} reads their progress'
+    mode: extension
+    action: pract_read_progress
+    params: { actor: "{label}" }
+    resolution: Query practice_progress as {label} through the guarded client.
+
+then:
+  - id: TX-PRACT-FIELD
+    pattern: 'the result field {field} is {value}'
+    mode: extension
+    action: assert_field
+    params: { field: "{field}", value: "{value}" }
+    resolution: Assert a scalar result field equals {value} exactly.
+
+  - id: TX-PRACT-RANGE
+    pattern: 'the result field {field} is within {value} and {value2} inclusive'
+    mode: extension
+    action: assert_range
+    params: { field: "{field}", low: "{value}", high: "{value2}" }
+    resolution: Assert a numeric result field falls inside the closed interval.
+
+  - id: TX-PRACT-NO-OVERLAP
+    pattern: 'no reference audio sounded while recording'
+    mode: extension
+    action: assert_no_reference_overlap
+    resolution: >
+      Assert every recorded reference-playback window ends at or before
+      the recording window begins.
+
+  - id: TX-PRACT-OVERLAP
+    pattern: 'reference audio sounded while recording'
+    mode: extension
+    action: assert_reference_overlap
+    resolution: Assert a reference-playback window overlaps the recording window.
+
+  - id: TX-PRACT-PHASES
+    pattern: 'the session passed through {value}'
+    mode: extension
+    action: assert_phases
+    params: { phases: "{value}" }
+    resolution: Assert the ordered phase transitions, given as a comma-separated list.
+
+  - id: TX-PRACT-TILED
+    pattern: 'the targets tile the timeline with no gap and no overlap'
+    mode: extension
+    action: assert_targets_tiled
+    resolution: >
+      Assert each target's endMs equals the next target's startMs and
+      that exactly one target covers every instant inside the melody.
+
+  - id: TX-PRACT-INTERVALS
+    pattern: 'the target intervals match the exercise at any tonic'
+    mode: extension
+    action: assert_transposition_invariant
+    resolution: >
+      Build the same exercise at two tonics and assert identical semitone
+      intervals with absolute notes offset by the tonic difference.
+
+  - id: TX-PRACT-ROWS
+    pattern: 'singer {label} has {N} progress rows recorded'
+    mode: extension
+    action: assert_row_count
+    params: { owner: "{label}", count: "{N}" }
+    resolution: Assert how many practice_progress rows the named singer owns.
+
+  - id: TX-PRACT-NO-AUDIO
+    pattern: 'no audio was uploaded'
+    mode: extension
+    action: assert_no_upload
+    resolution: Assert the storage bucket is unchanged across the session.
+
+  - id: TX-PRACT-UNSCORABLE
+    pattern: 'the take is reported as unscorable'
+    mode: extension
+    action: assert_unscorable
+    resolution: >
+      Assert evaluatedFrames is 0, the result is presented as unscorable
+      rather than as a zero, and any persisted score is null.
+
+  - id: TX-PRACT-OFFLINE
+    pattern: 'no network call was made'
+    mode: extension
+    action: assert_no_network
+    resolution: Assert the fake client recorded no request.
