@@ -1,0 +1,3 @@
+layer: framework
+description: Project-agnostic framework files. Extractable to a standalone repo.
+base_path: .harnex/framework/

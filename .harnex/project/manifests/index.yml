@@ -1,0 +1,58 @@
+manifest_version: "1.0.0"
+
+layers:
+  framework:
+    path: .harnex/project/manifests/layers/framework.yml
+    scope: Project-agnostic framework (schema, grammar, workflow, tooling, agent compliance)
+  architecture:
+    path: .harnex/project/manifests/layers/architecture.yml
+    scope: Constraints, permissions, runtime rules, project intent, orchestration
+  domains:
+    path: .harnex/project/manifests/layers/domains/_index.yml
+    scope: Per-domain spec files and test extensions
+  src:
+    path: .harnex/project/manifests/layers/src/_index.yml
+    scope: Implementation code (services, models, endpoints)
+
+routing:
+  concepts:
+    grammar:
+      layer: framework
+    permissions:
+      layer: architecture
+    serialization:
+      layer: architecture
+    stability:
+      files: [.harnex/framework/stability.yml, .harnex/project/stability.yml]
+    constraints:
+      layer: [framework, architecture]
+    agent_compliance:
+      layer: framework
+      files: [.harnex/framework/harness/]
+
+  actions:
+    add_domain:
+      read: [framework]
+      write: [domains]
+      why: New domain needs spec files and acceptance tests
+
+    implement_domain:
+      read: [domains, architecture]
+      write: [src]
+      why: Build server endpoints matching contracts
+
+    install_harness:
+      read: [framework]
+      write: [framework]
+      why: Run .harnex/framework/harness/install.sh to wire skills/plugins/agents/tools
+
+root_files:
+  AGENTS.md:
+    purpose: Project-root agent entry point — symlink to .harnex/instructions/core.md
+    stability: stable
+  CLAUDE.md:
+    purpose: Project-root Claude Code entry point — symlink to .harnex/instructions/core.md
+    stability: stable
+  .harnex/instructions/core.md:
+    purpose: Generated agent operating guide (framework AGENTS.md + plugin instructions inlined)
+    stability: stable

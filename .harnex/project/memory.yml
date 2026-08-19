@@ -1,0 +1,11 @@
+memory_config_version: "1.0.0"
+
+embedding:
+  model: sentence-transformers/all-MiniLM-L6-v2
+  dimensions: 384
+  device: cpu
+
+# Uncomment and fill in to opt in to a team server:
+# server:
+#   url: https://memory.example.com
+#   project_token: env://HARNEX_MEMORY_PROJECT_TOKEN
