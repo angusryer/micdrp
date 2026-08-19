@@ -1,4 +1,4 @@
-import { ColorSchemeName, ColorValue } from 'react-native';
+import { ColorSchemeName } from 'react-native';
 import { ETheme } from '../configs/theme';
 /**
  * This module contains the complete set of design system
@@ -6,7 +6,13 @@ import { ETheme } from '../configs/theme';
  */
 
 export type EThemeKeys = keyof typeof ETheme;
-export type DeviceScheme = Exclude<ColorSchemeName, null | undefined>;
+// RN 0.86 widened ColorSchemeName to include 'unspecified'. The design system
+// only defines light and dark palettes; consumers already fold 'unspecified'
+// into light, so exclude it here rather than inventing a third palette.
+export type DeviceScheme = Exclude<
+  ColorSchemeName,
+  null | undefined | 'unspecified'
+>;
 
 declare interface ITheme extends IThemePalette {
   palettes: Record<EThemeKeys, IThemePalette>;
@@ -27,27 +33,27 @@ declare interface IThemePalette {
  * @variation neutral500: Divider lines
  */
 declare interface IPaletteColors {
-  white: ColorValue | string;
-  black: ColorValue | string;
-  typography: ColorValue | string;
-  gold: ColorValue | string;
-  error: ColorValue | string;
-  neutral50: ColorValue | string; // Navigation bar and button background
-  neutral100: ColorValue | string; // Tile and card background
-  neutral300: ColorValue | string; // Page backbround
-  neutral500: ColorValue | string; // Divider lines
-  primary25: ColorValue | string;
-  primary50: ColorValue | string;
-  primary100: ColorValue | string;
-  primary300: ColorValue | string;
-  primary500: ColorValue | string;
-  primary700: ColorValue | string;
-  primary900: ColorValue | string;
-  gray50: ColorValue | string;
-  gray100: ColorValue | string;
-  gray300: ColorValue | string;
-  gray500: ColorValue | string;
-  gray700: ColorValue | string;
+  white: string;
+  black: string;
+  typography: string;
+  gold: string;
+  error: string;
+  neutral50: string; // Navigation bar and button background
+  neutral100: string; // Tile and card background
+  neutral300: string; // Page backbround
+  neutral500: string; // Divider lines
+  primary25: string;
+  primary50: string;
+  primary100: string;
+  primary300: string;
+  primary500: string;
+  primary700: string;
+  primary900: string;
+  gray50: string;
+  gray100: string;
+  gray300: string;
+  gray500: string;
+  gray700: string;
 }
 
 // New values must be copied over to ../styles/theme.ts

@@ -57,6 +57,7 @@ export interface Database {
           display_name?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       notes: {
         Row: {
@@ -110,6 +111,7 @@ export interface Database {
           range_low_midi?: number | null;
           range_high_midi?: number | null;
         };
+        Relationships: [];
       };
       practice_progress: {
         Row: {
@@ -148,6 +150,7 @@ export interface Database {
           mean_cents_error?: number | null;
           evaluated_frames?: number;
         };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
