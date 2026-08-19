@@ -1,0 +1,9 @@
+pinned_paths: []
+
+stable_paths:
+  - .harnex/framework/golden-principles.md
+  - .harnex/framework/schema.yml
+  - .harnex/framework/agent-workflow.yml
+
+draft_paths:
+  - .harnex/project/

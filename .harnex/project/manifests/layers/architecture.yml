@@ -1,0 +1,17 @@
+layer: architecture
+description: Project-level constraints, permissions, coordination, and intent.
+base_path: .harnex/project/
+
+files:
+  constraints.yml:
+    purpose: Serialization, permissions, runtime rules
+    stability: draft
+  coordination.yml:
+    purpose: Lock protocol for domain claiming
+    stability: stable
+  intent.yml:
+    purpose: Future domains and roadmap
+    stability: draft
+  stability.yml:
+    purpose: Project-specific stability overrides
+    stability: stable

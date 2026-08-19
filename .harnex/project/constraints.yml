@@ -1,0 +1,38 @@
+constraints_version: "1.0.0"
+
+runtime:
+  port: 3000
+  language: agent_choice
+  database: agent_choice
+  process_model: single_process
+
+  build:
+    script: src/build.sh
+  start:
+    script: src/start.sh
+
+serialization:
+  rest:
+    case: snake_case
+  graphql:
+    case: camelCase
+  timestamps:
+    format: iso8601
+    timezone: UTC
+  nulls:
+    rest: "null (JSON null, not absent)"
+
+permissions:
+  role_hierarchy:
+    - guest
+    - reporter
+    - developer
+    - maintainer
+    - owner
+  role_access_levels:
+    guest: 10
+    reporter: 20
+    developer: 30
+    maintainer: 40
+    owner: 50
+  permission_matrix: {}

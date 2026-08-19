@@ -1,0 +1,2 @@
+lock_dir: .harnex/project/locks
+staleness_timeout_hours: 4
