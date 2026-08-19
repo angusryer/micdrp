@@ -44,8 +44,9 @@ function detectLocale(): string {
 // ---------------------------------------------------------------------------
 //
 // `initReactI18next` handles the `use()` chain; `resources` are bundled so
-// there is no async loading step. `initImmediate: false` ensures the init
-// completes synchronously, so the provider is ready before the first render.
+// there is no async loading step. i18next v25 dropped `initImmediate` — with
+// inline resources and no backend, init already completes synchronously, so the
+// provider is ready before the first render.
 
 i18n
   .use(initReactI18next)
@@ -56,9 +57,7 @@ i18n
     interpolation: {
       // React already escapes values; no need for i18next escaping.
       escapeValue: false
-    },
-    // No async loading — resources are imported at build time.
-    initImmediate: false
+    }
   });
 
 // ---------------------------------------------------------------------------

@@ -8,7 +8,7 @@
  *
  * See docs/NATIVE_BUILD_PLAN.md §3 (WP-PERSIST).
  */
-import RNFS from '@dr.pogodin/react-native-fs';
+import * as RNFS from '@dr.pogodin/react-native-fs';
 
 /** Subdirectory (under the document dir) that holds all per-recording artifacts. */
 export const RECORDINGS_SUBDIR = 'recordings';

@@ -98,7 +98,7 @@ export function useRecordController(): RecordController {
   // screen supplies what `recording`/`analyzing` entry actions actually do.
   const machine = useMemo(
     () =>
-      recordingMachine.withConfig({
+      recordingMachine.provide({
         actions: {
           engineStart: () => {
             // Subscribe to the live stream exactly once per recording.
