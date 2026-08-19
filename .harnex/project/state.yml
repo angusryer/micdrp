@@ -25,17 +25,24 @@ known_gaps:
     store, and a row-level-security-enforcing Supabase client would make
     all 126 acceptance tests executable.
   - >
-    The naming_alignment release gate indexes Python only, and looks for
-    a domain's code under .harnex/framework/<domain>/. A TypeScript
-    project cannot resolve capabilities by convention, so every
-    capability declares implemented_by with a path. Symbol-level
-    declarations (path::symbol) would fail too — the checker matches
-    Python def/class syntax.
+    All 53 capabilities fail the naming_alignment release gate, which is
+    registered in release_gate.CHECKS. Three causes, filed upstream as
+    harnex#152: consumer-domain code dirs resolve to .harnex/framework/
+    <domain>/ which never exists (index size 0, so convention resolution
+    is impossible); the symbol index reads Python and shell only; and
+    implemented_by paths are joined to .harnex/ rather than the project
+    root, so the declared paths do not resolve. A ../-prefixed path-only
+    implemented_by would pass but bakes the harness install location into
+    every spec file, and the ::symbol form still cannot be used.
+    run.sh --validate and doctor --specs are unaffected and green.
   - >
     test-extensions.yml exceeds the 150-line budget in notes (160),
-    insights (182) and account (184). The framework globs siblings for
-    entities, capabilities and invariants but loads exactly one
-    test-extensions.yml per domain, so the file cannot be split.
+    practice (170), insights (182) and account (184). The framework globs
+    siblings for entities, capabilities and invariants, and accepts an
+    acceptance/ directory, but loads exactly one test-extensions.yml per
+    domain, so the file cannot be split. Filed upstream as harnex#153.
+    pitch (149) and transcription (147) comply only because most of their
+    resolution prose was stripped to buy lines.
   - >
     Several logic files exceed the 150-line budget: analysis.ts (839),
     tempo.ts (440), quantize.ts (401), harmony.ts (380), key.ts (197),
