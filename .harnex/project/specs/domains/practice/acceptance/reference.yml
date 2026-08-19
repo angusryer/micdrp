@@ -1,0 +1,133 @@
+# How the reference is presented, and the session transport.
+acceptance:
+  - id: ACC-PRACT-001
+    interface: ui
+    title: On headphones the reference plays while recording
+    given:
+      - a signed-in singer S
+      - the audio output route is headphones
+      - the exercise major-scale at tonic 60 with 500 ms notes
+      - the microphone permission is granted
+      - a perfect take is ready
+    when:
+      - the singer runs the session
+    then:
+      - reference audio sounded while recording
+      - the session passed through "preparing,recording,analyzing"
+    maps_to:
+      capability: practice.run_session
+      invariants: [INV-PRACT-001]
+      interaction: INT-PRACT-002
+      view: VIEW-PRACT-002
+
+  - id: ACC-PRACT-002
+    interface: ui
+    title: On a speaker the reference plays before recording
+    given:
+      - a signed-in singer S
+      - the audio output route is speaker
+      - the exercise major-scale at tonic 60 with 500 ms notes
+      - the microphone permission is granted
+      - a perfect take is ready
+    when:
+      - the singer runs the session
+    then:
+      - no reference audio sounded while recording
+      - the session passed through "preparing,countIn,recording,analyzing"
+    maps_to:
+      capability: practice.run_session
+      invariants: [INV-PRACT-001]
+      interaction: INT-PRACT-003
+
+  - id: ACC-PRACT-003
+    interface: ui
+    title: An unknown route is treated as a speaker
+    given:
+      - a signed-in singer S
+      - the audio output route is unknown
+      - the exercise major-scale at tonic 60 with 500 ms notes
+      - the microphone permission is granted
+      - a perfect take is ready
+    when:
+      - the singer runs the session
+    then:
+      - no reference audio sounded while recording
+      - the session passed through "preparing,countIn,recording,analyzing"
+    maps_to:
+      capability: practice.choose_presentation
+      invariants: [INV-PRACT-001]
+
+  - id: ACC-PRACT-004
+    interface: ui
+    title: A failing route probe is treated as a speaker
+    given:
+      - a signed-in singer S
+      - the audio output route is throwing
+      - the exercise major-scale at tonic 60 with 500 ms notes
+      - the microphone permission is granted
+      - a perfect take is ready
+    when:
+      - the singer runs the session
+    then:
+      - no reference audio sounded while recording
+    maps_to:
+      capability: practice.choose_presentation
+      invariants: [INV-PRACT-001]
+
+  - id: ACC-PRACT-005
+    interface: ui
+    title: A denied microphone leaves nothing behind
+    given:
+      - a signed-in singer S
+      - the audio output route is headphones
+      - the exercise major-scale at tonic 60 with 500 ms notes
+      - the microphone permission is denied
+      - a perfect take is ready
+    when:
+      - the singer runs the session
+    then:
+      - singer S has 0 progress rows recorded
+      - no audio was uploaded
+    maps_to:
+      capability: practice.run_session
+      invariants: [INV-PRACT-010]
+
+  - id: ACC-PRACT-006
+    interface: ui
+    title: The catalogue needs no network
+    given:
+      - a signed-in singer S
+    when:
+      - the singer opens the Practice tab
+    then:
+      - no network call was made
+    maps_to:
+      capability: practice.list_exercises
+      interaction: INT-PRACT-001
+      view: VIEW-PRACT-001
+
+  - id: ACC-PRACT-007
+    interface: module
+    title: Targets tile the timeline exactly
+    given:
+      - the exercise major-scale at tonic 60 with 500 ms notes
+    when:
+      - the targets are built
+    then:
+      - the targets tile the timeline with no gap and no overlap
+    maps_to:
+      capability: practice.build_targets
+      invariants: [INV-PRACT-003]
+
+  - id: ACC-PRACT-008
+    interface: module
+    title: An exercise transposes without changing shape
+    given:
+      - the exercise major-scale at tonic 60 with 500 ms notes
+    when:
+      - the targets are built
+    then:
+      - the target intervals match the exercise at any tonic
+    maps_to:
+      capability: practice.build_targets
+      invariants: [INV-PRACT-008]

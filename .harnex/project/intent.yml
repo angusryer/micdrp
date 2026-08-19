@@ -4,14 +4,6 @@
 # that spec validation stays green at every commit.
 
 future_domains:
-  - name: practice
-    priority: medium
-    description: >
-      Practising against a target melody. Owns the built-in exercise
-      catalogue, the guided session with reference audio and a scrolling
-      target, scoring a take, and the practice_progress trajectory.
-    code: packages/client/src/screens/{Practice,Results}, packages/logic/src/{melodies,scoring}.ts
-
   - name: insights
     priority: medium
     description: >

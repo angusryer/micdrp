@@ -1,0 +1,139 @@
+capabilities:
+  - name: practice.list_exercises
+    description: >
+      Offer the built-in catalogue, easiest first, so a singer can pick
+      what to work on.
+    actor: singer
+    implemented_by: packages/logic/src/melodies.ts
+    parameters:
+      required: []
+    preconditions: []
+    postconditions:
+      - every exercise carries a stable id, a name, and a description
+      - the catalogue is ordered easiest first
+      - the catalogue is available without a network call
+    permissions:
+      - role: visitor
+        notes: The catalogue is built in, not fetched.
+
+  - name: practice.build_targets
+    description: >
+      Build an exercise's absolute-timed target notes from a tonic and a
+      note length, so the same pattern transposes to any voice.
+    actor: system
+    implemented_by: packages/logic/src/melodies.ts
+    parameters:
+      required: [melodyId]
+      optional: [rootMidi, noteDurationMs]
+    preconditions:
+      - melodyId names an exercise in the catalogue
+    postconditions:
+      - targets tile the timeline back to back with no gap and no overlap
+      - each target's endMs equals the next target's startMs
+      - exactly one target is in force at any instant within the melody
+      - the tonic defaults to middle C and the note length to 500 ms
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: practice.choose_presentation
+    description: >
+      Decide how the reference is presented by asking where the sound is
+      going — play-along on headphones, count-in otherwise.
+    actor: system
+    implemented_by: packages/client/src/audio/outputRoute.ts
+    parameters:
+      required: []
+    preconditions: []
+    postconditions:
+      - headphones select play-along, where the reference sounds while recording
+      - any other route selects a count-in, after which the take is
+        recorded in silence
+      - no registered route probe resolves to the speaker assumption
+      - a probe that throws resolves to the speaker assumption
+    permissions:
+      - role: visitor
+        notes: A device-level question, asked before any account is involved.
+
+  - name: practice.run_session
+    description: >
+      Run one take against the chosen exercise — pre-roll, record for the
+      melody's length, then stop.
+    actor: singer
+    implemented_by: packages/client/src/screens/Practice/usePracticeSession.ts
+    parameters:
+      required: [melodyId]
+      optional: [rootMidi, noteDurationMs]
+    preconditions:
+      - the singer is signed in
+      - the microphone permission is granted
+      - melodyId names an exercise in the catalogue
+    postconditions:
+      - the phase advances through preparing, then countIn only when the
+        presentation is a count-in, then recording, then analyzing
+      - recording lasts the melody's length
+      - the target and the live pitch advance on the same clock
+      - a denied microphone permission ends the session with no row written
+    permissions:
+      - role: singer
+        notes: A session is run by and recorded for the signed-in singer.
+
+  - name: practice.score_take
+    description: >
+      Score a take frame by frame against the reference, measuring cents
+      error at every voiced frame that falls inside a target.
+    actor: system
+    implemented_by: packages/logic/src/scoring.ts
+    parameters:
+      required: [frames, targets]
+      optional: [toleranceCents, ignoreOctave]
+    preconditions:
+      - targets is a list of TargetNote values
+    postconditions:
+      - unvoiced frames are not evaluated
+      - a frame outside every target is not evaluated
+      - a frame within the tolerance counts as in tune
+      - the frame score degrades linearly and reaches zero at 200 cents
+      - ignoring the octave folds the error into the nearest octave
+      - a take with no evaluated frames returns zero everywhere
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: practice.record_progress
+    description: >
+      Keep the numbers from a finished session, and nothing else.
+    actor: singer
+    implemented_by: packages/client/src/data/practiceProgressRepo.ts
+    parameters:
+      required: [melodyId, rootMidi, noteDurationMs, evaluatedFrames]
+      optional: [score, inTuneRatio, meanCentsError]
+    preconditions:
+      - the singer is signed in
+      - the session has finished
+    postconditions:
+      - one row is written per finished session
+      - no audio is uploaded or retained for a practice take
+      - the row records which exercise was practised and at what tonic
+      - an unscorable take is recorded with a null score
+    permissions:
+      - role: singer
+        notes: Rows are written under the signed-in singer only.
+
+  - name: practice.explain_result
+    description: >
+      Turn a score into something readable — what went well, what to work
+      on, and how each target was sung.
+    actor: singer
+    implemented_by: packages/client/src/analysis/feedback.ts
+    parameters:
+      required: [score, frames, targets]
+    preconditions:
+      - the take has at least one evaluated frame
+    postconditions:
+      - the feedback reports the same score the take was given
+      - every target is accounted for in the per-note breakdown
+      - an unscorable take is explained as unscorable rather than as zero
+    permissions:
+      - role: singer
+        notes: Feedback is computed on device from the singer's own take.

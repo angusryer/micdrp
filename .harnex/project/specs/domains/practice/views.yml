@@ -1,0 +1,55 @@
+views:
+  - id: VIEW-PRACT-001
+    name: Practice
+    route: Practice
+    description: >
+      The tab. Pick an exercise and how to sing it — which tonic, how
+      long each note is held.
+    requires_auth: true
+    min_role: singer
+    data_sources:
+      - practice.list_exercises
+    elements:
+      - The built-in catalogue, easiest first, each with a name and what it trains
+      - A tonic control, so the exercise sits in the singer's range
+      - A pace control, setting how long each note is held
+      - A start control that opens the session
+
+  - id: VIEW-PRACT-002
+    name: Practice session
+    route: Practice/Session
+    description: >
+      The take itself. The reference and the singer's pitch scroll
+      together, so the target under the playhead is the one being scored.
+    requires_auth: true
+    min_role: singer
+    parent_view: VIEW-PRACT-001
+    data_sources:
+      - practice.build_targets
+      - practice.run_session
+    elements:
+      - The target melody drawn over time and pitch, scrolling
+      - The live pitch line drawn on the same clock, off the JS thread
+      - Status text naming the current phase
+      - A count-in before recording, on any route other than headphones
+      - A stop control, with the take also ending at the melody's length
+
+  - id: VIEW-PRACT-003
+    name: Results
+    route: Practice/Results
+    description: >
+      What the take was worth, against the melody that was actually
+      practised, with each target accounted for.
+    requires_auth: true
+    min_role: singer
+    parent_view: VIEW-PRACT-002
+    data_sources:
+      - practice.score_take
+      - practice.explain_result
+      - practice.record_progress
+    elements:
+      - The overall score
+      - The fraction sung in tune and the mean cents error
+      - What went well and what to work on
+      - A per-target breakdown, each row tappable to hear the note
+      - An unscorable take presented as unscorable rather than as zero

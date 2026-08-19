@@ -1,0 +1,87 @@
+# Scoring a take, and what is kept from it.
+acceptance:
+  - id: ACC-PRACT-009
+    interface: module
+    title: A take sung on pitch scores at the top
+    given:
+      - the exercise major-scale at tonic 60 with 500 ms notes
+      - a perfect take is ready
+    when:
+      - the take is scored
+    then:
+      - the result field score is 100
+      - the result field inTuneRatio is 1
+      - the result field meanCentsError is 0
+    maps_to:
+      capability: practice.score_take
+
+  - id: ACC-PRACT-010
+    interface: module
+    title: A near miss stays in tune and costs a little
+    given:
+      - the exercise major-scale at tonic 60 with 500 ms notes
+      - a flat_by_30_cents take is ready
+    when:
+      - the take is scored
+    then:
+      - the result field inTuneRatio is 1
+      - the result field score is within 80 and 90 inclusive
+    maps_to:
+      capability: practice.score_take
+      invariants: [INV-PRACT-006]
+
+  - id: ACC-PRACT-011
+    interface: module
+    title: An octave error is a wrong note by default
+    given:
+      - the exercise major-scale at tonic 60 with 500 ms notes
+      - an_octave_low take is ready
+    when:
+      - the take is scored
+    then:
+      - the result field score is 0
+      - the result field inTuneRatio is 0
+    maps_to:
+      capability: practice.score_take
+
+  - id: ACC-PRACT-012
+    interface: module
+    title: An octave error can be forgiven on request
+    given:
+      - the exercise major-scale at tonic 60 with 500 ms notes
+      - an_octave_low take is ready
+    when:
+      - the take is scored with ignoreOctave true
+    then:
+      - the result field score is 100
+      - the result field inTuneRatio is 1
+    maps_to:
+      capability: practice.score_take
+
+  - id: ACC-PRACT-013
+    interface: module
+    title: Silence is unscorable, not zero
+    given:
+      - the exercise major-scale at tonic 60 with 500 ms notes
+      - a silent take is ready
+    when:
+      - the take is scored
+    then:
+      - the take is reported as unscorable
+    maps_to:
+      capability: practice.score_take
+      invariants: [INV-PRACT-004]
+
+  - id: ACC-PRACT-014
+    interface: module
+    title: Singing outside the melody is not counted
+    given:
+      - the exercise major-scale at tonic 60 with 500 ms notes
+      - an off_target take is ready
+    when:
+      - the take is scored
+    then:
+      - the take is reported as unscorable
+    maps_to:
+      capability: practice.score_take
+      invariants: [INV-PRACT-005]
