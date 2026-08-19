@@ -1,6 +1,6 @@
 # Practice test grammar extensions. Tests drive a project adapter with a
-# fake engine, a scriptable audio-route probe, and a fake Supabase client
-# enforcing row-level security. No microphone and no speaker are involved.
+# fake engine, a scriptable audio-route probe, and a fake backend client
+# enforcing access rules. No microphone and no speaker are involved.
 
 given:
   - id: GX-PRACT-SINGER

@@ -24,7 +24,7 @@ domain:
     - type: storage
       description: >
         The notes table and the private notes storage bucket, reached
-        through the Supabase client and guarded by row-level security.
+        through the backend client and guarded by backend access rules.
 
   boundaries:
     owns:

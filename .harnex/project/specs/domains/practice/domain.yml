@@ -28,7 +28,7 @@ domain:
     - type: storage
       description: >
         The practice_progress table, one row per finished session,
-        guarded by row-level security. No audio is stored.
+        guarded by backend access rules. No audio is stored.
 
   boundaries:
     owns:

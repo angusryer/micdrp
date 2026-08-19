@@ -16,7 +16,7 @@ blockers:
   - >
     No verification target. Acceptance tests report SKIP until an
     adapter with a fake engine and a row-level-security-enforcing fake
-    Supabase client is wired.
+    backend client is wired.
 known_conflicts:
   - >
     test-extensions.yml is 160 lines, over the 150-line spec-file

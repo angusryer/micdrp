@@ -1,9 +1,14 @@
 constraints_version: "1.0.0"
 
-# micdrp is a React Native app over a Supabase backend. There is no
-# first-party HTTP server: the "backend" is Postgres + Auth + Storage
-# reached through the Supabase client, and every domain's compute runs
-# on-device against the pure-TS `logic` package.
+# micdrp is a React Native app over a self-hosted PocketBase backend: one
+# Go binary providing auth, record collections with per-record access rules,
+# and file storage. Every domain's compute runs on-device against the pure-TS
+# `logic` package; the backend only stores and guards.
+#
+# It replaced Supabase, whose free tier the project outgrew. Self-hosting
+# removes the per-project ceiling entirely, and the four things this app
+# needs — email auth, owned records, blobs, and server-side ownership rules —
+# are all first-class in PocketBase.
 
 runtime:
   language: typescript
@@ -16,11 +21,12 @@ runtime:
     packages: [packages/logic, packages/shared]
     native_core: packages/client/cpp/dsp
   backend:
-    provider: supabase
-    database: postgres
-    auth: supabase_auth
-    storage: supabase_storage
-    schema: supabase/migrations
+    provider: pocketbase
+    database: sqlite
+    auth: pocketbase_auth
+    storage: pocketbase_files
+    schema: backend/migrations
+    deployment: self_hosted
   build:
     script: scripts/build.sh
   start:
@@ -55,7 +61,10 @@ permissions:
     visitor: 10
     singer: 20
   ownership:
-    model: row_level_security
-    predicate: "auth.uid() = user_id"
-    enforced_by: supabase/migrations/0001_init.sql
+    model: record_access_rules
+    predicate: "@request.auth.id = user"
+    enforced_by: backend/migrations
+    note: >
+      Enforced by the backend on every request, never by client code. The
+      client cannot widen its own access by editing a query.
   permission_matrix: {}

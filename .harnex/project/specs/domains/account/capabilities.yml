@@ -95,7 +95,7 @@ capabilities:
       - another singer's profile cannot be read or updated
     permissions:
       - role: singer
-        notes: Row-level security scopes the update to the caller's own row.
+        notes: Backend access rules scope the update to the caller's own row.
 
   - name: account.delete
     description: >

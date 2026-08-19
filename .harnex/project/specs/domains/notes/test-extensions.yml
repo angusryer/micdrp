@@ -1,5 +1,5 @@
 # Notes test grammar extensions. Tests drive a project adapter holding a
-# fake engine, a fake Supabase client enforcing row-level security, and an
+# fake engine, a fake backend client enforcing access rules, and an
 # in-memory cache.
 
 given:

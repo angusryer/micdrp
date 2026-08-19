@@ -1,6 +1,6 @@
 # Account test grammar extensions. Tests drive a project adapter with a
-# fake auth SDK, a scriptable secret store, a fake Supabase client
-# enforcing row-level security, and an in-memory device store.
+# fake auth SDK, a scriptable secret store, a fake backend client
+# enforcing access rules, and an in-memory device store.
 
 given:
   - id: GX-ACCT-REGISTERED

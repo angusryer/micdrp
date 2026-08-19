@@ -60,7 +60,7 @@ invariants:
     check: >
       Every read, insert, update and delete against practice_progress is
       constrained to rows where user_id matches the authenticated user,
-      enforced by row-level security. Verified by attempting a read
+      enforced by backend access rules. Verified by attempting a read
       against another singer's rows and asserting it returns nothing.
 
   - id: INV-PRACT-008

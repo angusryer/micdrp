@@ -49,7 +49,7 @@ invariants:
     check: >
       Every read, insert, update and delete against profiles is
       constrained to the row whose id matches the authenticated user,
-      enforced by row-level security.
+      enforced by backend access rules.
 
   - id: INV-ACCOUNT-007
     description: Every account has exactly one profile
