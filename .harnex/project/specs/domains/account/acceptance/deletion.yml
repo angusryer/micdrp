@@ -1,0 +1,78 @@
+# Profile, ownership, and leaving for good.
+acceptance:
+  - id: ACC-ACCOUNT-010
+    interface: storage
+    title: A singer edits only their own profile
+    given:
+      - a signed-in singer S
+      - a registered singer T
+    when:
+      - singer S calls account.edit_profile on singer T
+    then:
+      - the call is rejected and nothing is changed
+    maps_to:
+      capability: account.edit_profile
+      invariants: [INV-ACCOUNT-006]
+      interaction: INT-ACCOUNT-005
+
+  - id: ACC-ACCOUNT-011
+    interface: ui
+    title: A display name change lands on the singer's own row
+    given:
+      - a signed-in singer S
+    when:
+      - singer S calls account.edit_profile
+    then:
+      - the result field displayName is "Gus"
+      - singer S has exactly one profile
+    maps_to:
+      capability: account.edit_profile
+      invariants: [INV-ACCOUNT-006]
+
+  - id: ACC-ACCOUNT-012
+    interface: ui
+    title: Deleting an account takes everything with it
+    given:
+      - a signed-in singer S
+      - singer S has 3 notes and 3 stored objects
+    when:
+      - singer S calls account.delete
+    then:
+      - singer S has 0 notes and 0 stored objects left
+      - a session does not exist
+      - the app is at the sign-in gate
+    maps_to:
+      capability: account.delete
+      interaction: INT-ACCOUNT-009
+      view: VIEW-ACCOUNT-002
+
+  - id: ACC-ACCOUNT-013
+    interface: storage
+    title: Storage is cleared before the account is deleted
+    given:
+      - a signed-in singer S
+      - singer S has 3 notes and 3 stored objects
+    when:
+      - singer S calls account.delete
+    then:
+      - storage was cleared before the account was deleted
+      - singer S has 0 notes and 0 stored objects left
+    maps_to:
+      capability: account.delete
+      invariants: [INV-ACCOUNT-003]
+
+  - id: ACC-ACCOUNT-014
+    interface: storage
+    title: Deleting an account leaves other singers untouched
+    given:
+      - a signed-in singer S
+      - a signed-in singer T
+      - singer T has 4 notes and 4 stored objects
+      - singer S has 1 notes and 1 stored objects
+    when:
+      - singer S calls account.delete
+    then:
+      - singer T has 4 notes and 4 stored objects left
+    maps_to:
+      capability: account.delete
+      invariants: [INV-ACCOUNT-004]

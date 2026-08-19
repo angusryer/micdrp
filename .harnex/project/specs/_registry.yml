@@ -1,4 +1,9 @@
 domains:
+  account:
+    description: Authentication, profile, device settings, and account deletion
+    path: .harnex/project/specs/domains/account
+    priority: medium
+    status: specifying
   insights:
     description: Corpus insight over a singer's own notes plus their training trend
     path: .harnex/project/specs/domains/insights

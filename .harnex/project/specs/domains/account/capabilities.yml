@@ -1,0 +1,121 @@
+capabilities:
+  - name: account.sign_in
+    description: Sign an existing singer in with their email and password.
+    actor: visitor
+    implemented_by: packages/client/src/auth/AuthContext.tsx
+    parameters:
+      required: [email, password]
+    preconditions:
+      - email is well formed
+      - password is non-empty
+    postconditions:
+      - a session is established and persisted to the platform secret store
+      - the app moves past the sign-in gate
+      - wrong credentials leave no session and report a stable error shape
+    permissions:
+      - role: visitor
+        notes: The only capability a signed-out visitor needs.
+
+  - name: account.sign_up
+    description: Create an account, which creates its profile row with it.
+    actor: visitor
+    implemented_by: packages/client/src/auth/AuthContext.tsx
+    parameters:
+      required: [email, password]
+    preconditions:
+      - email is well formed
+      - email is not already registered
+    postconditions:
+      - an auth user is created
+      - a profile row is created automatically for that user
+      - creating a profile twice for one user does not fail
+    permissions:
+      - role: visitor
+        notes: Open registration.
+
+  - name: account.sign_out
+    description: End the session and clear it from the secret store.
+    actor: singer
+    implemented_by: packages/client/src/auth/AuthContext.tsx
+    parameters:
+      required: []
+    preconditions:
+      - a session exists
+    postconditions:
+      - the stored session is cleared
+      - the app returns to the sign-in gate
+      - no singer-owned row is deleted
+    permissions:
+      - role: singer
+        notes: Only the signed-in singer can end their own session.
+
+  - name: account.restore_session
+    description: >
+      Bring back the stored session on launch, or decide there is none.
+      Every failure resolves to no session rather than an error.
+    actor: system
+    implemented_by: packages/client/src/lib/secureSession.ts
+    parameters:
+      required: []
+    preconditions: []
+    postconditions:
+      - a valid stored session signs the singer straight in
+      - a missing entry resolves to no session
+      - a secret-store read that fails resolves to no session
+      - no path throws, so a launch is never blocked by the secret store
+    permissions:
+      - role: visitor
+        notes: Runs before any identity is known.
+
+  - name: account.reset_password
+    description: Send a password reset to a registered address.
+    actor: visitor
+    implemented_by: packages/client/src/screens/Login/LoginScreen.tsx
+    parameters:
+      required: [email]
+    preconditions:
+      - email is well formed
+    postconditions:
+      - the response does not reveal whether the address is registered
+      - no session is established
+    permissions:
+      - role: visitor
+        notes: Available from the sign-in screen.
+
+  - name: account.edit_profile
+    description: Change the display name on the singer's own profile.
+    actor: singer
+    implemented_by: packages/client/src/data/profilesRepo.ts
+    parameters:
+      required: [displayName]
+    preconditions:
+      - the singer is signed in
+    postconditions:
+      - only the signed-in singer's row is updated
+      - another singer's profile cannot be read or updated
+    permissions:
+      - role: singer
+        notes: Row-level security scopes the update to the caller's own row.
+
+  - name: account.delete
+    description: >
+      Remove the account for good — storage objects first, then the auth
+      user, whose deletion cascades to every owned row.
+    actor: singer
+    implemented_by: packages/client/src/screens/Account/AccountScreen.tsx
+    parameters:
+      required: []
+    preconditions:
+      - the singer is signed in
+      - the singer has confirmed the deletion
+    postconditions:
+      - the singer's storage objects are removed before the account is deleted
+      - the auth user is deleted
+      - the profile, notes, and practice progress rows are gone by cascade
+      - the routine deletes only the caller, never another account
+      - the app returns to the sign-in gate with no stored session
+    permissions:
+      - role: singer
+        notes: >
+          The routine runs with elevated rights but is hard-scoped to the
+          caller, and is executable only by an authenticated role.

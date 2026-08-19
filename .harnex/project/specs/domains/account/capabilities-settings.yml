@@ -1,0 +1,57 @@
+# Device settings. Split from capabilities.yml to stay inside the
+# 150-line spec-file budget (Axiom 3).
+capabilities:
+  - name: account.set_engine_settings
+    description: >
+      Change how capture and detection behave on this device, merging a
+      partial override into what is stored.
+    actor: singer
+    implemented_by: packages/client/src/screens/Account/useSettings.ts
+    parameters:
+      required: [overrides]
+    preconditions:
+      - every supplied field is a known engine field
+    postconditions:
+      - supplied fields are stored and omitted fields keep their value
+      - the resolved configuration is always complete, with defaults
+        filling anything not overridden
+      - nothing outside this capability writes the engine settings key
+      - the settings are device-local and are not uploaded
+    permissions:
+      - role: visitor
+        notes: Device-local; no account is required to tune capture.
+
+  - name: account.set_analysis_settings
+    description: >
+      Change the chord-inference knobs the corpus analysis reads.
+    actor: singer
+    implemented_by: packages/client/src/screens/Account/useAnalysisSettings.ts
+    parameters:
+      required: [overrides]
+    preconditions:
+      - every supplied field is a known chord-inference field
+    postconditions:
+      - the change merges into the stored settings rather than replacing them
+      - the resolved settings fall back to the defaults the logic package owns
+      - resetting returns every knob to those defaults
+      - nothing outside this capability writes the analysis settings key
+    permissions:
+      - role: visitor
+        notes: Device-local.
+
+  - name: account.read_settings
+    description: >
+      Resolve the device settings for a consumer, merging stored
+      overrides over the defaults.
+    actor: system
+    implemented_by: packages/client/src/data/store.ts
+    parameters:
+      required: [key]
+    preconditions: []
+    postconditions:
+      - a device with nothing stored resolves to the defaults exactly
+      - a stored value that cannot be parsed resolves to the defaults
+      - the resolved value is complete
+    permissions:
+      - role: visitor
+        notes: Device-local read.

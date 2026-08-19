@@ -1,13 +1,8 @@
 # The domain map for micdrp. A domain is a vertical slice: it owns its
 # entities, capabilities, invariants, and every interface it exposes.
-# Domains are registered in _registry.yml as their specs are written, so
-# that spec validation stays green at every commit.
+#
+# All six domains are now specified and registered in _registry.yml.
+# Anything new goes here first, then moves to the registry once its specs
+# validate, so the registry never holds a half-specified domain.
 
-future_domains:
-  - name: account
-    priority: medium
-    description: >
-      Who the singer is and what is theirs. Owns sign-in and sign-out,
-      secure session storage, the profile row, device settings including
-      the analysis knobs, and account deletion.
-    code: packages/client/src/{auth,screens/Account,screens/Login,lib}
+future_domains: []

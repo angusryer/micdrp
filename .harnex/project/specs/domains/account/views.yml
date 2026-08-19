@@ -1,0 +1,46 @@
+views:
+  - id: VIEW-ACCOUNT-001
+    name: Sign in
+    route: Login
+    description: >
+      The gate. Sign in, create an account, or ask for a password reset.
+      Nothing else in the app is reachable until this is past.
+    requires_auth: false
+    min_role: visitor
+    data_sources:
+      - account.sign_in
+      - account.sign_up
+      - account.reset_password
+    elements:
+      - An email field and a password field
+      - A sign-in control and a create-account control
+      - A forgotten-password control
+      - An error message that does not say whether the address is registered
+
+  - id: VIEW-ACCOUNT-002
+    name: Account and settings
+    route: Account
+    description: >
+      One screen for everything about the singer and their device — who
+      they are, how capture behaves, how chords are inferred, how the app
+      looks, and how to leave.
+    requires_auth: true
+    min_role: singer
+    data_sources:
+      - account.edit_profile
+      - account.set_engine_settings
+      - account.set_analysis_settings
+      - account.read_settings
+      - account.sign_out
+      - account.delete
+    elements:
+      - The display name, editable in place
+      - Engine controls for the capture and detection parameters
+      - Chord-inference controls for window length, vocabulary, labelling,
+        and the confidence floor
+      - A reset control returning the analysis knobs to their defaults
+      - A theme control, which recolours the app immediately
+      - An about section
+      - A sign-out control
+      - A delete-account control, confirmed before it runs, warning that
+        everything the singer has kept goes with it

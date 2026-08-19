@@ -1,0 +1,28 @@
+# Domain Development State — overwrite each meaningful change
+updated_at: "2026-08-18T00:00:00Z"
+updated_by: agent
+phase: specifying
+phase_detail: >
+  Specs written from a crawl of auth/, lib/secureSession.ts,
+  screens/Account, screens/Login, profilesRepo, and migration 0001.
+  10 capabilities, 12 invariants, 20 acceptance tests, 2 views, 9
+  interactions.
+
+  Two security properties are pinned with rejection tests rather than
+  left as comments: the refresh token lives only in the platform secret
+  store (INV-ACCOUNT-001), and every read of that store degrades to "no
+  session" instead of throwing (INV-ACCOUNT-002), covering a locked
+  device, an empty store, and a store that raises.
+
+  Account deletion is specified in order — storage objects first, then
+  the auth user — because the database cascade does not reach storage
+  (INV-ACCOUNT-003), and the routine is scoped so it can only ever
+  delete its caller (INV-ACCOUNT-004).
+blockers:
+  - >
+    No verification target. Acceptance tests report SKIP until an adapter
+    with a fake auth SDK and scriptable secret store is wired.
+known_conflicts:
+  - >
+    test-extensions.yml is 184 lines, over the 150-line spec-file budget.
+    The framework loads exactly one per domain with no sibling glob.

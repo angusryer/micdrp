@@ -1,0 +1,100 @@
+invariants:
+  - id: INV-ACCOUNT-001
+    description: The refresh token lives only in the platform secret store
+    severity: critical
+    check: >
+      No auth token is written to plain application storage. The session
+      adapter reads and writes the platform secret store exclusively.
+      Verified by asserting the app's document storage contains no token
+      after a sign-in.
+
+  - id: INV-ACCOUNT-002
+    description: A failed secret-store read never blocks a launch
+    severity: critical
+    check: >
+      Every session read resolves rather than throwing. A missing entry,
+      a locked device, and a store that raises all resolve to no session,
+      so the app opens at the sign-in gate instead of crashing. Verified
+      by driving the store to each failure and asserting the app reaches
+      a rendered state.
+
+  - id: INV-ACCOUNT-003
+    description: Deletion removes storage before it removes the account
+    severity: critical
+    check: >
+      The singer's storage objects are deleted before the account
+      routine is called, because the database cascade does not cover
+      storage objects. Verified by asserting the ordering and by listing
+      the bucket prefix after a deletion.
+
+  - id: INV-ACCOUNT-004
+    description: The deletion routine can only delete its caller
+    severity: critical
+    check: >
+      The routine's body is scoped to the authenticated user, and execute
+      is granted to the authenticated role only, revoked from anonymous
+      and public. No parameter selects which account is deleted.
+
+  - id: INV-ACCOUNT-005
+    description: Signing out keeps everything the singer made
+    severity: critical
+    check: >
+      Sign-out clears the stored session and nothing else. No profile,
+      note, or progress row is deleted, and the cached lists survive so a
+      re-sign-in on the same device paints immediately.
+
+  - id: INV-ACCOUNT-006
+    description: A singer reaches only their own profile
+    severity: critical
+    check: >
+      Every read, insert, update and delete against profiles is
+      constrained to the row whose id matches the authenticated user,
+      enforced by row-level security.
+
+  - id: INV-ACCOUNT-007
+    description: Every account has exactly one profile
+    severity: major
+    check: >
+      A profile row is created automatically when an auth user is
+      created, and creating one twice for the same user is a no-op rather
+      than a failure, so a retried sign-up cannot produce a duplicate.
+
+  - id: INV-ACCOUNT-008
+    description: Each settings key has exactly one write seam
+    severity: major
+    check: >
+      Only account.set_engine_settings writes the engine settings key and
+      only account.set_analysis_settings writes the analysis settings
+      key. Verified by searching the client for writes to either key.
+
+  - id: INV-ACCOUNT-009
+    description: Settings defaults come from one place
+    severity: major
+    check: >
+      Engine defaults come from the audio contract and chord-inference
+      defaults from the logic package. No screen restates a default
+      value, so the interface and the analysis cannot disagree.
+
+  - id: INV-ACCOUNT-010
+    description: A settings change is a merge, never a replacement
+    severity: major
+    check: >
+      Applying a partial override leaves every unsupplied field at its
+      current value. Verified by setting one field twice and asserting
+      the first change survives the second.
+
+  - id: INV-ACCOUNT-011
+    description: The palette is not a setting this domain owns
+    severity: minor
+    check: >
+      The theme palette is read and written through the theme provider,
+      not through the settings store, so a change recolours the live tree
+      rather than waiting for a restart.
+
+  - id: INV-ACCOUNT-012
+    description: A password reset does not reveal who is registered
+    severity: major
+    check: >
+      The response to a reset request is identical for a registered and
+      an unregistered address, so the screen cannot be used to enumerate
+      accounts.

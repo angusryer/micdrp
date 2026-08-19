@@ -1,0 +1,109 @@
+interactions:
+  - id: INT-ACCOUNT-001
+    name: Sign in
+    view: VIEW-ACCOUNT-001
+    steps:
+      - Enter an email and password
+      - Sign in
+    outcome: >
+      The session is established, stored in the platform secret store,
+      and the app opens past the gate.
+    error_handling: >
+      Wrong credentials leave no session and show a stable error.
+    maps_to:
+      capability: account.sign_in
+
+  - id: INT-ACCOUNT-002
+    name: Create an account
+    view: VIEW-ACCOUNT-001
+    steps:
+      - Enter an email and password
+      - Create the account
+    outcome: The account and its profile row are created together.
+    maps_to:
+      capability: account.sign_up
+
+  - id: INT-ACCOUNT-003
+    name: Ask for a password reset
+    view: VIEW-ACCOUNT-001
+    steps:
+      - Enter an email
+      - Choose the forgotten-password control
+    outcome: >
+      The same confirmation is shown whether or not the address is
+      registered.
+    maps_to:
+      capability: account.reset_password
+
+  - id: INT-ACCOUNT-004
+    name: Come back later
+    view: VIEW-ACCOUNT-001
+    precondition: A session was stored on a previous run.
+    steps:
+      - Open the app
+    outcome: The stored session signs the singer straight in.
+    error_handling: >
+      A secret store that cannot be read shows the sign-in gate rather
+      than failing to launch.
+    maps_to:
+      capability: account.restore_session
+
+  - id: INT-ACCOUNT-005
+    name: Change what you are called
+    view: VIEW-ACCOUNT-002
+    steps:
+      - Edit the display name
+      - Save
+    outcome: The singer's own profile row is updated.
+    maps_to:
+      capability: account.edit_profile
+
+  - id: INT-ACCOUNT-006
+    name: Tune how capture behaves
+    view: VIEW-ACCOUNT-002
+    steps:
+      - Change an engine control
+    outcome: >
+      The change is stored on the device and applies to the next capture.
+      Every other engine value is left alone.
+    maps_to:
+      capability: account.set_engine_settings
+
+  - id: INT-ACCOUNT-007
+    name: Tune how chords are inferred
+    view: VIEW-ACCOUNT-002
+    steps:
+      - Change a chord-inference control, or reset them
+    outcome: >
+      The corpus analysis uses the new setting. Resetting returns every
+      knob to the defaults the logic package owns.
+    maps_to:
+      capability: account.set_analysis_settings
+
+  - id: INT-ACCOUNT-008
+    name: Sign out
+    view: VIEW-ACCOUNT-002
+    steps:
+      - Choose sign out
+    outcome: >
+      The stored session is cleared and the app returns to the gate.
+      Nothing the singer made is deleted.
+    maps_to:
+      capability: account.sign_out
+
+  - id: INT-ACCOUNT-009
+    name: Leave for good
+    view: VIEW-ACCOUNT-002
+    precondition: The singer is signed in.
+    steps:
+      - Choose delete account
+      - Read what will be removed
+      - Confirm
+    outcome: >
+      The stored audio goes first, then the account, and every owned row
+      with it. The app returns to the gate with no stored session.
+    error_handling: >
+      Cancelling at the confirmation leaves the account and everything in
+      it untouched.
+    maps_to:
+      capability: account.delete

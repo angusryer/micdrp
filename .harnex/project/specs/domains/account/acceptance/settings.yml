@@ -1,0 +1,86 @@
+# Device settings — merge semantics and defaults.
+acceptance:
+  - id: ACC-ACCOUNT-015
+    interface: ui
+    title: A device with nothing stored resolves to the defaults
+    given:
+      - the stored engine settings are {}
+    when:
+      - the engine settings are resolved
+    then:
+      - the resolved engine setting clarityThreshold is 0.9
+      - the resolved engine setting sampleRateHz is 44100
+    maps_to:
+      capability: account.read_settings
+      invariants: [INV-ACCOUNT-009]
+
+  - id: ACC-ACCOUNT-016
+    interface: ui
+    title: An unparseable stored value falls back to the defaults
+    given:
+      - the stored engine settings are corrupt
+    when:
+      - the engine settings are resolved
+    then:
+      - the resolved engine setting clarityThreshold is 0.9
+    maps_to:
+      capability: account.read_settings
+
+  - id: ACC-ACCOUNT-017
+    interface: ui
+    title: Changing one engine setting leaves the others alone
+    given:
+      - the stored engine settings are {}
+    when:
+      - the singer sets clarityThreshold to 0.8
+    then:
+      - the resolved engine setting clarityThreshold is 0.8
+      - the resolved engine setting sampleRateHz is 44100
+    maps_to:
+      capability: account.set_engine_settings
+      invariants: [INV-ACCOUNT-010]
+      interaction: INT-ACCOUNT-006
+      view: VIEW-ACCOUNT-002
+
+  - id: ACC-ACCOUNT-018
+    interface: ui
+    title: A second change does not undo the first
+    given:
+      - the stored engine settings are {}
+    when:
+      - the singer sets clarityThreshold to 0.8
+      - the singer sets emitRateHz to 30
+    then:
+      - the resolved engine setting clarityThreshold is 0.8
+      - the resolved engine setting emitRateHz is 30
+    maps_to:
+      capability: account.set_engine_settings
+      invariants: [INV-ACCOUNT-010]
+
+  - id: ACC-ACCOUNT-019
+    interface: ui
+    title: Changing a chord knob leaves the others alone
+    given:
+      - the stored analysis settings are {}
+    when:
+      - the singer sets vocabulary to sevenths
+    then:
+      - the resolved analysis setting vocabulary is sevenths
+    maps_to:
+      capability: account.set_analysis_settings
+      invariants: [INV-ACCOUNT-010]
+      interaction: INT-ACCOUNT-007
+
+  - id: ACC-ACCOUNT-020
+    interface: ui
+    title: Resetting returns every chord knob to its default
+    given:
+      - the stored analysis settings are {}
+    when:
+      - the singer sets vocabulary to sevenths
+      - the singer resets the analysis settings
+    then:
+      - the resolved analysis setting vocabulary is triads
+    maps_to:
+      capability: account.set_analysis_settings
+      invariants: [INV-ACCOUNT-009]
