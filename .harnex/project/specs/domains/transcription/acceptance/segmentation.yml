@@ -1,0 +1,58 @@
+# Segmentation, key, tempo, grid.
+acceptance:
+  - id: ACC-TRANS-001
+    interface: module
+    title: A change of note ends the current note
+    given:
+      - a frame stream S of [[0,60,0,0.9],[50,60,0,0.9],[100,62,0,0.9],[150,62,0,0.9]]
+    when:
+      - transcription.segment_notes runs on S
+    then:
+      - the result contains 2 notes
+      - the notes are ordered and non-overlapping
+      - the result field notes.0.midi is 60
+      - the result field notes.1.midi is 62
+    maps_to:
+      capability: transcription.segment_notes
+      invariants: [INV-TRANS-008]
+
+  - id: ACC-TRANS-002
+    interface: module
+    title: A short unvoiced gap does not split a note
+    given:
+      - a frame stream S of [[0,60,0,0.9],[20,null,null,0.1],[40,60,0,0.9],[100,60,0,0.9]]
+    when:
+      - transcription.segment_notes runs on S with maxGapMs 40
+    then:
+      - the result contains 1 notes
+    maps_to:
+      capability: transcription.segment_notes
+      invariants: [INV-TRANS-008]
+
+  - id: ACC-TRANS-003
+    interface: module
+    title: A long unvoiced gap ends the note
+    given:
+      - a frame stream S of [[0,60,0,0.9],[100,60,0,0.9],[400,60,0,0.9],[500,60,0,0.9]]
+    when:
+      - transcription.segment_notes runs on S with maxGapMs 40
+    then:
+      - the result contains 2 notes
+      - the notes are ordered and non-overlapping
+    maps_to:
+      capability: transcription.segment_notes
+      invariants: [INV-TRANS-008]
+
+  - id: ACC-TRANS-004
+    interface: module
+    title: A note too short to have been meant is discarded
+    given:
+      - a frame stream S of [[0,60,0,0.9],[10,60,0,0.9],[20,72,0,0.9],[500,72,0,0.9]]
+    when:
+      - transcription.segment_notes runs on S with minDurationMs 60
+    then:
+      - the result contains 1 notes
+      - the result field notes.0.midi is 72
+    maps_to:
+      capability: transcription.segment_notes
+      invariants: [INV-TRANS-008]

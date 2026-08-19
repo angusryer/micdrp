@@ -1,0 +1,127 @@
+# Harmony and export. Split from capabilities.yml to stay inside the
+# 150-line spec-file budget (Axiom 3).
+capabilities:
+  - name: transcription.harmonize_to_grid
+    description: >
+      Lay an inferred chord progression over the bars of a fitted grid,
+      one slot per bar or per half bar, so the result can be drawn as a
+      chart, stepped through, and played.
+    actor: system
+    implemented_by: packages/logic/src/harmony.ts
+    parameters:
+      required: [notes, grid]
+      optional: [chordsPerBar, vocabulary, key]
+    preconditions:
+      - notes is a list of NoteEvent values
+      - grid is a MusicalGrid
+    postconditions:
+      - an empty melody or a grid with bpm at or below 0 yields no slots
+      - each slot spans exactly one bar divided by chordsPerBar
+      - the key is detected from the melody when not supplied
+      - every slot carries both an absolute and a roman-numeral label
+      - every slot returned by inference has isEdited false
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: transcription.transpose_chord
+    description: >
+      Move a chord through the key by scale degrees, or by semitones when
+      chromatic motion is asked for. A chord already outside the key has
+      no degree to step from and moves chromatically instead.
+    actor: singer
+    implemented_by: packages/logic/src/harmony.ts
+    parameters:
+      required: [slot, key, amount]
+      optional: [chromatic]
+    preconditions:
+      - slot is a ChordSlot
+      - key is a KeyEstimate
+    postconditions:
+      - a diatonic move takes the quality of the degree it lands on
+      - a chromatic move keeps the chord's quality
+      - a move of zero returns the slot unchanged
+      - any non-zero move sets isEdited true
+      - both labels are recomputed for the new root
+    permissions:
+      - role: visitor
+        notes: Pure computation over a slot the caller already holds.
+
+  - name: transcription.set_chord
+    description: >
+      Change a slot's shape by stepping through the quality cycle, or set
+      its root and quality outright from a picker.
+    actor: singer
+    implemented_by: packages/logic/src/harmony.ts
+    parameters:
+      required: [slot, key]
+      optional: [step, rootPc, quality]
+    preconditions:
+      - slot is a ChordSlot
+      - key is a KeyEstimate
+    postconditions:
+      - stepping the quality keeps the chord's root
+      - the quality cycle is ordered by distance from a plain major triad
+      - a set slot has isEdited true
+      - both labels are recomputed
+    permissions:
+      - role: visitor
+        notes: Pure computation over a slot the caller already holds.
+
+  - name: transcription.revert_slot
+    description: >
+      Return a slot to what the melody implied, discarding a hand edit,
+      without recomputing the whole analysis.
+    actor: singer
+    implemented_by: packages/logic/src/harmony.ts
+    parameters:
+      required: [edited, inferred]
+    preconditions:
+      - edited is a ChordSlot
+      - inferred is the ChordSlot originally inferred for the same position
+    postconditions:
+      - the result carries the inferred chord, labels, and confidence
+      - the result keeps the edited slot's startMs and endMs
+      - the result has isEdited false
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: transcription.voice_chord
+    description: >
+      Turn a chord into the MIDI notes that sound it, placed to sit below
+      a sung line rather than compete with it.
+    actor: system
+    implemented_by: packages/logic/src/harmony.ts
+    parameters:
+      required: [rootPc, quality]
+      optional: [bottomMidi, inversion]
+    preconditions:
+      - quality is a supported chord quality
+    postconditions:
+      - every voiced note is at or above bottomMidi
+      - the voicing contains one note per chord tone
+      - inversion 0 places the root lowest
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: transcription.notes_to_midi
+    description: >
+      Assemble a take's notes into the bytes of a format 0 Standard MIDI
+      File, with velocity derived from clarity unless fixed.
+    actor: singer
+    implemented_by: packages/logic/src/midi.ts
+    parameters:
+      required: [notes]
+      optional: [ticksPerQuarter, bpm, velocity]
+    preconditions:
+      - notes is a list of NoteEvent values
+    postconditions:
+      - the result begins with a valid MIDI header chunk
+      - every note produces a note-on and a matching note-off
+      - velocity is derived from clarity when not supplied
+      - velocity is within 0 and 127 inclusive
+    permissions:
+      - role: singer
+        notes: Export is offered on a note the singer owns.

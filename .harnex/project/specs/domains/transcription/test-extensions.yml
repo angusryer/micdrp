@@ -1,0 +1,147 @@
+# Transcription test grammar extensions. A pure-TS library domain: tests
+# drive a project adapter over packages/logic with synthesized note
+# lists, so every case is deterministic and needs no audio.
+
+given:
+  - id: GX-TRN-FRAMES
+    pattern: 'a frame stream {label} of {value}'
+    mode: extension
+    action: trn_frames_literal
+    params: { label: "{label}", frames: "{value}" }
+    resolution: >
+      Register a PitchFrame list as [timestampMs, midi, cents, clarity]
+      tuples; midi null is an unvoiced frame.
+
+  - id: GX-TRN-NOTES
+    pattern: 'a melody {label} of {value}'
+    mode: extension
+    action: trn_notes_literal
+    params: { label: "{label}", notes: "{value}" }
+    resolution: >
+      Register a NoteEvent list as [midi, startMs, durationMs] triples;
+      cents defaults to 0 and clarity to 0.9.
+
+  - id: GX-TRN-ONSETS
+    pattern: 'a melody {label} of {N} onsets at {value} bpm starting {value2} ms late'
+    mode: extension
+    action: trn_notes_metronomic
+    params: { label: "{label}", count: "{N}", bpm: "{value}", offsetMs: "{value2}" }
+    resolution: >
+      Generate {N} evenly spaced onsets at the given tempo, displaced by
+      {value2} ms, for exercising phase fitting.
+
+  - id: GX-TRN-GRID
+    pattern: 'a grid {label} at {value} bpm in {value2}'
+    mode: extension
+    action: trn_grid_literal
+    params: { label: "{label}", bpm: "{value}", timeSignature: "{value2}" }
+    resolution: Register a MusicalGrid with the given tempo and signature.
+
+  - id: GX-TRN-SLOT
+    pattern: 'chord slot {label} is {value} in the key of {value2}'
+    mode: extension
+    action: trn_slot_literal
+    params: { label: "{label}", chord: "{value}", key: "{value2}" }
+    resolution: >
+      Register a ChordSlot for the named chord and key, with isEdited
+      false and a non-zero confidence.
+
+when:
+  - id: WX-TRN-CALL
+    pattern: 'transcription.{value} runs on {label}'
+    mode: extension
+    action: trn_call
+    params: { capability: "{value}", label: "{label}" }
+    resolution: Invoke the named capability on the registered input with defaults.
+
+  - id: WX-TRN-CALL-OPT
+    pattern: 'transcription.{value} runs on {label} with {field} {value2}'
+    mode: extension
+    action: trn_call_with_option
+    params: { capability: "{value}", label: "{label}", option: "{field}", value: "{value2}" }
+    resolution: Invoke the named capability with a single option override.
+
+  - id: WX-TRN-EDIT
+    pattern: 'the singer moves chord {label} by {value} {value2}'
+    mode: extension
+    action: trn_chord_move
+    params: { label: "{label}", amount: "{value}", unit: "{value2}" }
+    resolution: >
+      Apply transposeDiatonic when {value2} is degrees and
+      transposeChromatic when it is semitones.
+
+  - id: WX-TRN-SET
+    pattern: 'the singer sets chord {label} to {value}'
+    mode: extension
+    action: trn_chord_set
+    params: { label: "{label}", chord: "{value}" }
+    resolution: Apply setChord with the named root and quality.
+
+  - id: WX-TRN-REVERT
+    pattern: 'the singer reverts chord {label}'
+    mode: extension
+    action: trn_chord_revert
+    params: { label: "{label}" }
+    resolution: Apply revertSlot against the originally inferred slot.
+
+  - id: WX-TRN-REHARMONIZE
+    pattern: 'harmonization runs again over {label}'
+    mode: extension
+    action: trn_reharmonize
+    params: { label: "{label}" }
+    resolution: Re-run harmonizeToGrid over a progression that already has edits.
+
+then:
+  - id: TX-TRN-FIELD
+    pattern: 'the result field {field} is {value}'
+    mode: extension
+    action: assert_field
+    params: { field: "{field}", value: "{value}" }
+    resolution: >
+      Assert a scalar result field equals {value}. Dotted paths index
+      into lists, for example notes.0.bar.
+
+  - id: TX-TRN-RANGE
+    pattern: 'the result field {field} is within {value} and {value2} inclusive'
+    mode: extension
+    action: assert_range
+    params: { field: "{field}", low: "{value}", high: "{value2}" }
+    resolution: Assert a numeric result field falls inside the closed interval.
+
+  - id: TX-TRN-COUNT
+    pattern: 'the result contains {N} {value}'
+    mode: extension
+    action: assert_count
+    params: { count: "{N}", collection: "{value}" }
+    resolution: Assert the named result collection has exactly {N} members.
+
+  - id: TX-TRN-PERFORMANCE-KEPT
+    pattern: 'every quantized note keeps its performed timing'
+    mode: extension
+    action: assert_performance_preserved
+    resolution: >
+      Assert each quantized note's startMs, endMs, durationMs, cents and
+      clarity equal the source note's, field by field.
+
+  - id: TX-TRN-ORDERED
+    pattern: 'the notes are ordered and non-overlapping'
+    mode: extension
+    action: assert_notes_ordered
+    resolution: >
+      Assert ascending startMs, no overlap between consecutive notes, and
+      endMs at or after startMs for each.
+
+  - id: TX-TRN-SLOT-FIELD
+    pattern: 'chord slot {label} is {value} and edited {value2}'
+    mode: extension
+    action: assert_slot
+    params: { label: "{label}", chord: "{value}", isEdited: "{value2}" }
+    resolution: >
+      Assert the slot's absolute label and isEdited flag, and that its
+      roman numeral matches its root and quality in the current key.
+
+  - id: TX-TRN-UNCHANGED
+    pattern: 'chord slot {label} is unchanged'
+    mode: extension
+    action: assert_slot_unchanged
+    resolution: Assert rootPc, quality and isEdited match the pre-call values.

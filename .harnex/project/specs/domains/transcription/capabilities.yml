@@ -1,0 +1,111 @@
+# Structure: notes, key, tempo, grid.
+capabilities:
+  - name: transcription.segment_notes
+    description: >
+      Group a stream of pitch frames into discrete sung notes, tolerating
+      short unvoiced gaps within a note and discarding notes too short to
+      have been meant.
+    actor: system
+    implemented_by: packages/logic/src/segmentation.ts
+    parameters:
+      required: [frames]
+      optional: [minDurationMs, maxGapMs]
+    preconditions:
+      - frames is a list of PitchFrame values
+    postconditions:
+      - a note ends when the frame's midi changes
+      - an unvoiced gap longer than maxGapMs ends the current note
+      - an unvoiced gap at or under maxGapMs does not end the note
+      - notes shorter than minDurationMs are discarded
+      - each note's cents is the mean cents of its frames
+      - each note's clarity is the mean clarity of its frames
+      - notes are returned in ascending startMs order
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: transcription.detect_key
+    description: >
+      Detect the most likely key of a passage by correlating a
+      duration-weighted pitch-class histogram against the 24 rotated
+      Krumhansl-Kessler profiles.
+    actor: system
+    implemented_by: packages/logic/src/key.ts
+    parameters:
+      required: [input]
+    preconditions:
+      - input is a list of PitchFrame or NoteEvent values
+    postconditions:
+      - notes contribute their duration to the histogram and frames
+        contribute one unit each
+      - the winning profile determines tonic and mode
+      - confidence is half the correlation gap to the runner-up, clamped
+        to 0 and 1
+      - empty or silent input resolves to C major with confidence 0
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: transcription.estimate_tempo
+    description: >
+      Infer the beat a take was sung to, fitting the grid's phase from
+      the onsets rather than assuming the take began on a beat.
+    actor: system
+    implemented_by: packages/logic/src/tempo.ts
+    parameters:
+      required: [notes]
+    preconditions:
+      - notes is a list of NoteEvent values
+    postconditions:
+      - fewer than two onsets returns bpm 0 with confidence 0
+      - bpm is clamped to 40 and 240 inclusive when non-zero
+      - offsetMs is the fitted phase reported modulo one beat
+      - onsets are weighted by the square root of their duration
+      - a take whose first onset is not at time zero is not reported at
+        double its true tempo
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: transcription.fit_grid
+    description: >
+      Fit a full metrical grid — tempo, phase, bar length, subdivision —
+      to a take, and report separately how well the onsets support the
+      time signature.
+    actor: system
+    implemented_by: packages/logic/src/quantize.ts
+    parameters:
+      required: [notes]
+    preconditions:
+      - notes is a list of NoteEvent values
+    postconditions:
+      - beatsPerBar is one of 2, 3, or 4
+      - a metre other than 4 is chosen only when it clearly outscores 4
+      - stepsPerBeat is 4 in simple metre and 6 in compound
+      - meterIsStated is false when the signature is the 4/4 default
+      - meterConfidence is reported independently of confidence
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: transcription.quantize
+    description: >
+      Express a take's notes against its fitted grid, adding notated
+      positions and durations while leaving every performed value intact.
+    actor: system
+    implemented_by: packages/logic/src/quantize.ts
+    parameters:
+      required: [notes]
+    preconditions:
+      - notes is a list of NoteEvent values
+    postconditions:
+      - every quantized note keeps its original startMs, endMs,
+        durationMs, cents, and clarity
+      - gridDurationMs is at least one grid step
+      - deviationMs is negative when the singer was early and positive
+        when late
+      - bar and beat are 1-based
+      - medianDeviationMs is the median absolute deviation from the grid
+    permissions:
+      - role: visitor
+        notes: Pure computation.

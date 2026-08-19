@@ -1,0 +1,17 @@
+# Domain Development State — overwrite each meaningful change
+updated_at: "2026-08-18T00:00:00Z"
+updated_by: agent
+phase: specifying
+phase_detail: >
+  Specs written from a crawl of packages/logic: segmentation, key,
+  tempo, quantize, harmony, midi. 11 capabilities, 11 invariants, 24
+  acceptance tests. The governing rule — quantization changes the
+  notation and never the performance — is pinned as INV-TRANS-001.
+
+  The tempo phase fix and the metre-is-stated flag on this branch are
+  both now specified rather than only commented, so a regression in
+  either is a spec violation instead of a surprise.
+blockers:
+  - >
+    No verification target. Acceptance tests report SKIP until a direct
+    adapter over packages/logic is wired.

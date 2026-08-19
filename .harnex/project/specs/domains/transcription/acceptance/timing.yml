@@ -1,0 +1,117 @@
+# Key, tempo, grid, quantization.
+acceptance:
+  - id: ACC-TRANS-005
+    interface: module
+    title: A C major melody is detected as C major
+    given:
+      - a melody M of [[60,0,400],[62,400,400],[64,800,400],[65,1200,400],[67,1600,800]]
+    when:
+      - transcription.detect_key runs on M
+    then:
+      - the result field tonicName is C
+      - the result field mode is major
+      - the result field confidence is within 0 and 1 inclusive
+    maps_to:
+      capability: transcription.detect_key
+      invariants: [INV-TRANS-009]
+
+  - id: ACC-TRANS-006
+    interface: module
+    title: Silence resolves to C major with no confidence
+    given:
+      - a melody M of []
+    when:
+      - transcription.detect_key runs on M
+    then:
+      - the result field tonicName is C
+      - the result field mode is major
+      - the result field confidence is 0
+    maps_to:
+      capability: transcription.detect_key
+      invariants: [INV-TRANS-010]
+
+  - id: ACC-TRANS-007
+    interface: module
+    title: A take that starts late is not reported at double tempo
+    given:
+      - a melody M of 8 onsets at 100 bpm starting 300 ms late
+    when:
+      - transcription.estimate_tempo runs on M
+    then:
+      - the result field bpm is 100
+      - the result field confidence is within 0 and 1 inclusive
+    maps_to:
+      capability: transcription.estimate_tempo
+      invariants: [INV-TRANS-002, INV-TRANS-007]
+
+  - id: ACC-TRANS-008
+    interface: module
+    title: Too few onsets carry no tempo
+    given:
+      - a melody M of [[60,0,400]]
+    when:
+      - transcription.estimate_tempo runs on M
+    then:
+      - the result field bpm is 0
+      - the result field confidence is 0
+    maps_to:
+      capability: transcription.estimate_tempo
+      invariants: [INV-TRANS-010]
+
+  - id: ACC-TRANS-009
+    interface: module
+    title: An unmeasured metre is marked as an assumption
+    given:
+      - a melody M of [[60,0,500],[62,500,500]]
+    when:
+      - transcription.fit_grid runs on M
+    then:
+      - the result field timeSignature is 4/4
+      - the result field meterIsStated is false
+      - the result field meterConfidence is within 0 and 1 inclusive
+    maps_to:
+      capability: transcription.fit_grid
+      invariants: [INV-TRANS-003, INV-TRANS-009]
+
+  - id: ACC-TRANS-010
+    interface: module
+    title: A fitted grid uses a plausible tempo and a supported bar length
+    given:
+      - a melody M of 16 onsets at 120 bpm starting 0 ms late
+    when:
+      - transcription.fit_grid runs on M
+    then:
+      - the result field bpm is within 40 and 240 inclusive
+      - the result field stepsPerBeat is 4
+      - the result field isCompound is false
+    maps_to:
+      capability: transcription.fit_grid
+      invariants: [INV-TRANS-007]
+
+  - id: ACC-TRANS-011
+    interface: module
+    title: Quantization leaves the performance untouched
+    given:
+      - a melody M of 12 onsets at 90 bpm starting 140 ms late
+    when:
+      - transcription.quantize runs on M
+    then:
+      - every quantized note keeps its performed timing
+      - the result field notes.0.bar is 1
+    maps_to:
+      capability: transcription.quantize
+      invariants: [INV-TRANS-001]
+
+  - id: ACC-TRANS-012
+    interface: module
+    title: A note shorter than a grid step is still notated
+    given:
+      - a melody M of [[60,0,20],[62,500,500],[64,1000,500],[65,1500,500]]
+    when:
+      - transcription.quantize runs on M
+    then:
+      - every quantized note keeps its performed timing
+      - the result field notes.0.gridDurationMs is within 1 and 100000 inclusive
+    maps_to:
+      capability: transcription.quantize
+      invariants: [INV-TRANS-011]

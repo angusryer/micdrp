@@ -4,3 +4,8 @@ domains:
     path: .harnex/project/specs/domains/pitch
     priority: high
     status: specifying
+  transcription:
+    description: 'Pitch frames to symbolic music: segmentation, key, tempo, metrical grid, harmony, MIDI'
+    path: .harnex/project/specs/domains/transcription
+    priority: high
+    status: specifying
