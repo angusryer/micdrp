@@ -77,6 +77,8 @@ web_modules/
 
 # dotenv environment variables file
 **/*.env*
+# ...but the documented template carries no values and must be committed.
+!**/.env.example
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
