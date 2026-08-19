@@ -2,9 +2,10 @@
  * AudioEngine — the single TS implementation of the {@link AudioEngine} contract.
  *
  * Tier selection (see docs/NATIVE_BUILD_PLAN.md §0):
- *   • Tier 1 (canonical): `NativeModules.AudioEngineModule` is present — the C++
- *     DSP core runs on the real-time audio thread and pushes throttled
- *     `PitchSample` events over `NativeEventEmitter`. PCM never reaches JS.
+ *   • Tier 1 (canonical): the AudioEngineModule TurboModule is present — the
+ *     C++ DSP core runs on the real-time audio thread and pushes throttled
+ *     `PitchSample` events over the codegen event emitters. PCM never reaches
+ *     JS.
  *   • Tier 2 (fallback): no native module — drive a `react-native-audio-api`
  *     AudioWorklet (src/audio/worklet/pitchProcessor.ts) that runs the pure-TS
  *     `logic` detector on the audio worklet runtime and posts `PitchSample`s.
@@ -14,8 +15,8 @@
  * default export.
  */
 
-import { NativeEventEmitter, NativeModules } from 'react-native';
-import type { NativeModule } from 'react-native';
+import NativeAudioEngine from '../specs/NativeAudioEngine';
+import type { Spec as NativeAudioEngineModule } from '../specs/NativeAudioEngine';
 
 import {
   AudioEngine as AudioEngineContract,
@@ -27,28 +28,20 @@ import {
 } from './contract';
 import { createWorkletPitchEngine, WorkletPitchEngine } from './worklet/pitchProcessor';
 
-const PITCH_EVENT = 'AudioEnginePitch';
-const STATE_EVENT = 'AudioEngineState';
-
 type PitchListener = (sample: PitchSample) => void;
 type StateListener = (state: EngineState) => void;
 
-interface NativeAudioEngineModule {
-  configure(config: Partial<EngineConfig>): Promise<void>;
-  start(): Promise<void>;
-  stop(): Promise<RecordingHandle>;
-  requestPermission(): Promise<boolean>;
-  // RCTEventEmitter parity (Android no-ops, iOS auto-provided).
-  addListener?(eventName: string): void;
-  removeListeners?(count: number): void;
-}
-
+/**
+ * Resolve the TurboModule, or null when it is absent (a stripped build, or
+ * Jest). getEnforcing throws rather than returning null, so the absence is
+ * caught here and reported as "no Tier 1", which is what selects the fallback.
+ */
 function getNativeModule(): NativeAudioEngineModule | null {
-  const mod = (NativeModules as Record<string, unknown>).AudioEngineModule;
-  if (mod == null) {
+  try {
+    return NativeAudioEngine;
+  } catch {
     return null;
   }
-  return mod as NativeAudioEngineModule;
 }
 
 /**
@@ -70,7 +63,6 @@ function toPitchSample(raw: unknown): PitchSample {
 
 class AudioEngineImpl implements AudioEngineContract {
   private readonly native: NativeAudioEngineModule | null;
-  private readonly emitter: NativeEventEmitter | null;
 
   private config: EngineConfig = { ...DEFAULT_ENGINE_CONFIG };
   private state: EngineState = 'idle';
@@ -88,14 +80,11 @@ class AudioEngineImpl implements AudioEngineContract {
 
   constructor() {
     this.native = getNativeModule();
-    this.emitter = this.native
-      ? new NativeEventEmitter(this.native as unknown as NativeModule)
-      : null;
   }
 
   /** True when the canonical C++ native module is available. */
   get isNative(): boolean {
-    return this.native != null && this.emitter != null;
+    return this.native != null;
   }
 
   /** Which tier is active: 1 = native C++, 2 = audio-api worklet fallback. */
@@ -177,7 +166,18 @@ class AudioEngineImpl implements AudioEngineContract {
     this.pitchListeners.forEach((l) => l(sample));
   }
 
-  private normalizeHandle(handle: RecordingHandle): RecordingHandle {
+  /**
+   * Adapt a handle from either tier into the strict contract shape. The
+   * codegen type marks midi/cents optional; the contract requires them present
+   * and nullable, and toPitchSample is what reconciles the two.
+   */
+  private normalizeHandle(handle: {
+    id: string;
+    uri: string;
+    sampleRateHz: number;
+    durationMs: number;
+    samples: readonly unknown[];
+  }): RecordingHandle {
     return {
       ...handle,
       samples: Array.isArray(handle.samples) ? handle.samples.map(toPitchSample) : []
@@ -185,16 +185,17 @@ class AudioEngineImpl implements AudioEngineContract {
   }
 
   private attachNative(): void {
-    if (!this.emitter) {
+    const native = this.native;
+    if (!native) {
       return;
     }
     if (this.nativePitchSub == null) {
-      this.nativePitchSub = this.emitter.addListener(PITCH_EVENT, (raw: unknown) => {
+      this.nativePitchSub = native.onPitch((raw) => {
         this.emitPitch(toPitchSample(raw));
       });
     }
     if (this.nativeStateSub == null) {
-      this.nativeStateSub = this.emitter.addListener(STATE_EVENT, (raw: unknown) => {
+      this.nativeStateSub = native.onState((raw) => {
         this.setState(raw as EngineState);
       });
     }

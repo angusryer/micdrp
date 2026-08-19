@@ -2,7 +2,7 @@
  * Unit tests for notesRepo (cloud CRUD) with a mocked Supabase client.
  *
  * The supabase client is mocked per-test with a tiny chainable query builder +
- * storage stub. react-native-fs is the global virtual mock (jest.setup.js)
+ * storage stub. the fs library is the global virtual mock (jest.setup.js)
  * returning a base64 string for readFile. We assert the snake_case row ->
  * camelCase DTO mapping (including melody_json -> melody), and the
  * insert -> upload -> patch order.

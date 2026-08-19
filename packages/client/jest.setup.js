@@ -113,7 +113,7 @@ jest.mock(
   { virtual: true }
 );
 jest.mock(
-  'react-native-fs',
+  '@dr.pogodin/react-native-fs',
   () => ({
     DocumentDirectoryPath: '/tmp/micdrp',
     writeFile: jest.fn(() => Promise.resolve()),

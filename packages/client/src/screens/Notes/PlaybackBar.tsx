@@ -25,7 +25,7 @@ import {
   Text,
   View
 } from 'react-native';
-import RNFS from 'react-native-fs';
+import RNFS from '@dr.pogodin/react-native-fs';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { AudioContext } = require('react-native-audio-api') as {
   AudioContext: new () => AudioContextLike;

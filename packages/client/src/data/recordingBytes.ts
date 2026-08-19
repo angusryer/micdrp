@@ -1,7 +1,7 @@
 /**
  * base64 <-> bytes helpers for Storage uploads.
  *
- * Captured audio is read off disk as base64 (react-native-fs), but Supabase
+ * Captured audio is read off disk as base64 (@dr.pogodin/react-native-fs), but Supabase
  * Storage wants raw bytes. These are pure and dependency-free (no `Buffer`/
  * `atob`) so they run on-device and in tests alike.
  */
