@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
+ 
 // Jest setup: mock the native modules the app pulls in so component/hook tests
 // can run on the host without a device. Individual test files may override these.
 
@@ -168,17 +168,57 @@ jest.mock(
 
 jest.mock('react-native-url-polyfill/auto', () => ({}), { virtual: true });
 
-// react-native-config: supply test Supabase env so `lib/supabase` can construct
-// the client at import time (it throws when URL/key are absent). Real values are
-// injected from the environment on device builds; these are inert test stand-ins.
+// pocketbase ships ESM from every entry point its CJS build exports only the
+// client class, so neither is loadable here. No test exercises the real SDK —
+// the repos and auth run against src/testing/fakeBackend, which enforces the
+// same ownership rules — so this stands in for module construction only.
+jest.mock(
+  'pocketbase',
+  () => {
+    class AsyncAuthStore {
+      constructor(config) {
+        this.config = config;
+        this.token = '';
+        this.record = null;
+      }
+      get isValid() {
+        return false;
+      }
+      clear() {}
+      onChange() {
+        return () => undefined;
+      }
+    }
+    class PocketBase {
+      constructor(url, authStore) {
+        this.baseURL = url;
+        this.authStore = authStore ?? new AsyncAuthStore({});
+        this.files = {
+          getToken: () => Promise.resolve('file-token'),
+          getURL: () => ''
+        };
+      }
+      collection() {
+        throw new Error(
+          'The real PocketBase SDK is not exercised in tests; mock ' +
+            'src/lib/backend with src/testing/fakeBackend instead.'
+        );
+      }
+      autoCancellation() {}
+    }
+    return { __esModule: true, default: PocketBase, AsyncAuthStore };
+  },
+  { virtual: true }
+);
+
+// react-native-config: supply a test backend URL so `lib/backend` can construct
+// the client at import time (it throws when the URL is absent). The real value
+// is injected from the environment on device builds; this is an inert stand-in.
 jest.mock(
   'react-native-config',
   () => ({
     __esModule: true,
-    default: {
-      SUPABASE_URL: 'http://localhost:54321',
-      SUPABASE_ANON_KEY: 'test-anon-key'
-    }
+    default: { BACKEND_URL: 'http://127.0.0.1:8090' }
   }),
   { virtual: true }
 );

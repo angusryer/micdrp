@@ -3,7 +3,6 @@
  *
  * - `store`                — typed MMKV singleton wrapper (id `micdrp`).
  * - `files`                — filesystem path helpers + MIDI blob writer.
- * - `recordingBytes`       — base64 <-> bytes for Storage uploads.
  * - `currentUser`          — the authenticated user's id (shared auth guard).
  * - `notesCache`           — read access over the MMKV notes cache (+ corpus melodies).
  * - `notesRepo`            — Supabase Postgres + Storage CRUD for notes (source of truth).
@@ -14,7 +13,6 @@
  */
 export * from './store';
 export * from './files';
-export * from './recordingBytes';
 export * from './currentUser';
 export * from './notesCache';
 export * from './notesRepo';

@@ -3107,78 +3107,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@supabase/auth-js@npm:2.112.3":
-  version: 2.112.3
-  resolution: "@supabase/auth-js@npm:2.112.3"
-  dependencies:
-    tslib: 2.8.1
-  checksum: 2e7670d0d8908d3673a554638566e79648d020eb1f49de208b6d33fd001671f171d5960c6ba95dc6169a2f1651c662d5641fbb25ff00a4efdafa1b822ec5f0a5
-  languageName: node
-  linkType: hard
-
-"@supabase/functions-js@npm:2.112.3":
-  version: 2.112.3
-  resolution: "@supabase/functions-js@npm:2.112.3"
-  dependencies:
-    tslib: 2.8.1
-  checksum: 306423d8aaeee46d6299052d754654f95f14a1f76ceffd27744602fe245219a1a62d4f3db0669e2acec9f62f87a6f4595f243a92f4db3f236552ef9b2efc3a5a
-  languageName: node
-  linkType: hard
-
-"@supabase/phoenix@npm:0.4.5":
-  version: 0.4.5
-  resolution: "@supabase/phoenix@npm:0.4.5"
-  checksum: 49dd1dad8083df687fa54cbaa75f65cd5900b13e2f193c2e266ac8a2c7a71f1a250db748ef01297845533f9a9cb62c8f867e93058ecb05c003208276092601d4
-  languageName: node
-  linkType: hard
-
-"@supabase/postgrest-js@npm:2.112.3":
-  version: 2.112.3
-  resolution: "@supabase/postgrest-js@npm:2.112.3"
-  dependencies:
-    tslib: 2.8.1
-  checksum: 9aec328be3d4a49de5e7043111735cdf153bf3f4552e970e709622350ed57ceef324ec0e372fa86d9146ff6fc8d07f490ff49a73150b52bf4ae1a7002f548db9
-  languageName: node
-  linkType: hard
-
-"@supabase/realtime-js@npm:2.112.3":
-  version: 2.112.3
-  resolution: "@supabase/realtime-js@npm:2.112.3"
-  dependencies:
-    "@supabase/phoenix": 0.4.5
-    tslib: 2.8.1
-  checksum: e6f4d2efd8baeec00c199fb2429b08c3b390cbaa05e752f92bba1ea092ec604b3fbd4fd91aa5fbe0e42eacb15d52422661f5064f35c004bc045bb2b1bbbf6ddc
-  languageName: node
-  linkType: hard
-
-"@supabase/storage-js@npm:2.112.3":
-  version: 2.112.3
-  resolution: "@supabase/storage-js@npm:2.112.3"
-  dependencies:
-    iceberg-js: ^0.8.1
-    tslib: 2.8.1
-  checksum: a1db9c62ab7d86c1e63fa9e6d2a9655db1b52f23c812190519b94191aa1a4c986249d28c25f631002af8a271bec4ebc0a7251bbbbf10807d0661eb2ea16f4ee8
-  languageName: node
-  linkType: hard
-
-"@supabase/supabase-js@npm:^2.112.3":
-  version: 2.112.3
-  resolution: "@supabase/supabase-js@npm:2.112.3"
-  dependencies:
-    "@supabase/auth-js": 2.112.3
-    "@supabase/functions-js": 2.112.3
-    "@supabase/postgrest-js": 2.112.3
-    "@supabase/realtime-js": 2.112.3
-    "@supabase/storage-js": 2.112.3
-  peerDependencies:
-    "@opentelemetry/api": ">=1.0.0"
-  peerDependenciesMeta:
-    "@opentelemetry/api":
-      optional: true
-  checksum: f1f56d6efed1c1a395906dcff171cdeb1f92513fe30bfd39932e7a557743ce1e87eb6350c55e8a4f174ec89b9d0a8071285914413d6fda0cc2b5e64b7f2f1225
-  languageName: node
-  linkType: hard
-
 "@testing-library/react-native@npm:^14.0.1":
   version: 14.0.1
   resolution: "@testing-library/react-native@npm:14.0.1"
@@ -4631,12 +4559,12 @@ __metadata:
     "@react-navigation/native": ^7.3.17
     "@react-navigation/native-stack": ^7.18.9
     "@shopify/react-native-skia": ^2.11.0
-    "@supabase/supabase-js": ^2.112.3
     "@xstate/react": ^6.1.0
     cross-env: ^10.1.0
     i18next: ^26.3.6
     lodash: ^4.18.1
     logic: "workspace:*"
+    pocketbase: ^0.28.0
     react: ^19.2.8
     react-i18next: ^17.0.11
     react-native: ^0.86.2
@@ -6969,13 +6897,6 @@ __metadata:
     typescript:
       optional: true
   checksum: 87d6f716bdfbac14d2ec82e6889a3f53bfeb0e5f1bf9b63b9ec1fe5577d08f2c5e638d91648ff6883fc03183ada33bccb3ea36dd209ff23866a6b08d6a81ff65
-  languageName: node
-  linkType: hard
-
-"iceberg-js@npm:^0.8.1":
-  version: 0.8.1
-  resolution: "iceberg-js@npm:0.8.1"
-  checksum: 679e52f82a285b3e1da69bfb7c6c54af95067ca56293299b4ffcc196329a4f2eeb1502fe55c0b44cc80e9eb1bf34001b76ee9f0e13268a753d0cfe8d27072e56
   languageName: node
   linkType: hard
 
@@ -9704,6 +9625,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"pocketbase@npm:^0.28.0":
+  version: 0.28.0
+  resolution: "pocketbase@npm:0.28.0"
+  checksum: 2ad4c1246bf0d79a0f4066ce0450edb34c6596760246eabc306b9f53fe248416036b1d5381a7745ad8dbf3900d39f943750d2c7e1a3d6a78f4f57ea6b80cde32
+  languageName: node
+  linkType: hard
+
 "possible-typed-array-names@npm:^1.0.0, possible-typed-array-names@npm:^1.1.0":
   version: 1.1.0
   resolution: "possible-typed-array-names@npm:1.1.0"
@@ -11530,13 +11458,6 @@ __metadata:
     minimist: ^1.2.6
     strip-bom: ^3.0.0
   checksum: 59f35407a390d9482b320451f52a411a256a130ff0e7543d18c6f20afab29ac19fbe55c360a93d6476213cc335a4d76ce90f67df54c4e9037f7d240920832201
-  languageName: node
-  linkType: hard
-
-"tslib@npm:2.8.1":
-  version: 2.8.1
-  resolution: "tslib@npm:2.8.1"
-  checksum: e4aba30e632b8c8902b47587fd13345e2827fa639e7c3121074d5ee0880723282411a8838f830b55100cbe4517672f84a2472667d355b81e8af165a55dc6203a
   languageName: node
   linkType: hard
 

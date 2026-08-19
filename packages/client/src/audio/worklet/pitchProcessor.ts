@@ -84,7 +84,7 @@ export function analyzeFrame(
  */
 function loadAudioApi(): Record<string, unknown> | null {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     return require('react-native-audio-api') as Record<string, unknown>;
   } catch {
     return null;

@@ -14,15 +14,14 @@
  *
  * The bucket is private, so reads return short-lived signed URLs for playback.
  */
-import { STORAGE_BUCKET, TABLES, AppErrorCode, appError } from 'shared';
+import { AppErrorCode, appError } from 'shared';
 import type { CreateNoteInput, NoteDto, NoteEventDto } from 'shared';
 
-import { type Json, supabase } from '../lib/supabase';
-import type { Database } from '../lib/supabase';
+import { backend, COLLECTIONS } from '../lib/backend';
+import type { NoteRecord } from '../lib/backend';
 import { requireUserId } from './currentUser';
-import { base64ToBytes } from './recordingBytes';
 
-type NoteRow = Database['public']['Tables']['notes']['Row'];
+type NoteRow = NoteRecord;
 
 /** Blobs the client supplies when creating a note. */
 export interface NoteBlobs {
@@ -30,8 +29,8 @@ export interface NoteBlobs {
   audioUri: string;
 }
 
-/** Seconds a signed Storage URL stays valid (one hour). */
-const SIGNED_URL_TTL_SECONDS = 3600;
+/** The collection an audio file hangs off, for building its URL. */
+const NOTES_COLLECTION = COLLECTIONS.notes;
 
 // ---------------------------------------------------------------------------
 // Row <-> DTO mapping (the only place snake_case meets camelCase)
@@ -46,12 +45,13 @@ function toMelody(json: unknown): NoteEventDto[] {
 function rowToDto(row: NoteRow): NoteDto {
   return {
     id: row.id,
-    userId: row.user_id,
+    userId: row.user,
     title: row.title,
-    createdAtMs: Date.parse(row.created_at),
+    createdAtMs: Date.parse(row.created),
     durationMs: row.duration_ms,
     sampleRateHz: row.sample_rate_hz,
-    audioPath: row.audio_path,
+    // '' means nothing was attached; the DTO models absence as null.
+    audioPath: row.audio.length > 0 ? row.audio : null,
     melody: toMelody(row.melody_json),
     key: row.key,
     tempoBpm: row.tempo_bpm,
@@ -78,18 +78,30 @@ function extOf(uri: string): string {
   return q.slice(dot + 1).toLowerCase();
 }
 
-/** A short-lived signed URL for a Storage object, or null on absent/failed path. */
-async function signPath(path: string | null): Promise<string | null> {
-  if (!path) {
+/**
+ * A short-lived private URL for a note's audio, or null when it has none.
+ *
+ * Files on a collection whose view rule is owner-only are private: the URL
+ * carries a token minted for the current session, so it is useless to anyone
+ * else and expires on its own.
+ */
+async function fileUrl(
+  noteId: string,
+  filename: string | null
+): Promise<string | null> {
+  if (!filename) {
     return null;
   }
-  const { data, error } = await supabase.storage
-    .from(STORAGE_BUCKET)
-    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
-  if (error || !data) {
+  try {
+    const token = await backend.files.getToken();
+    return backend.files.getURL(
+      { id: noteId, collectionName: NOTES_COLLECTION },
+      filename,
+      { token }
+    );
+  } catch {
     return null;
   }
-  return data.signedUrl;
 }
 
 // ---------------------------------------------------------------------------
@@ -98,136 +110,93 @@ async function signPath(path: string | null): Promise<string | null> {
 
 export const notesRepo = {
   /**
-   * Persist a finished note: insert the row (with the symbolic melody), upload
-   * the captured audio to the private bucket under `${userId}/${id}.{ext}`, then
-   * patch the row with the resulting Storage path. Returns the canonical
-   * {@link NoteDto}.
+   * Persist a finished note: the symbolic melody and the captured audio go up
+   * in one multipart request. The previous backend needed two round trips —
+   * insert the row, upload the blob, then patch the row with its path — and
+   * read the whole audio file into a base64 string in JS memory to do it.
+   * FormData streams the file straight off disk by URI instead.
    */
   async create(input: CreateNoteInput, blobs: NoteBlobs): Promise<NoteDto> {
     const userId = await requireUserId();
 
-    const { data: inserted, error: insertError } = await supabase
-      .from(TABLES.notes)
-      .insert({
-        user_id: userId,
-        title: input.title,
-        duration_ms: input.durationMs,
-        sample_rate_hz: input.sampleRateHz,
-        audio_path: null,
-        // NoteEventDto is an interface, so it lacks the implicit index
-        // signature the Json type requires. The shape is plain data and this is
-        // the boundary where it becomes a jsonb column.
-        melody_json: input.melody as unknown as Json,
-        key: input.key ?? null,
-        tempo_bpm: input.tempoBpm ?? null,
-        in_tune_ratio: input.inTuneRatio ?? null,
-        mean_cents_error: input.meanCentsError ?? null,
-        note_count: input.noteCount,
-        range_low_midi: input.rangeLowMidi ?? null,
-        range_high_midi: input.rangeHighMidi ?? null
-      })
-      .select()
-      .single();
+    const form = new FormData();
+    form.append('user', userId);
+    form.append('title', input.title);
+    form.append('duration_ms', String(input.durationMs));
+    form.append('sample_rate_hz', String(input.sampleRateHz));
+    form.append('melody_json', JSON.stringify(input.melody));
+    form.append('note_count', String(input.noteCount));
+    if (input.key != null) form.append('key', input.key);
+    if (input.tempoBpm != null) form.append('tempo_bpm', String(input.tempoBpm));
+    if (input.inTuneRatio != null)
+      form.append('in_tune_ratio', String(input.inTuneRatio));
+    if (input.meanCentsError != null)
+      form.append('mean_cents_error', String(input.meanCentsError));
+    if (input.rangeLowMidi != null)
+      form.append('range_low_midi', String(input.rangeLowMidi));
+    if (input.rangeHighMidi != null)
+      form.append('range_high_midi', String(input.rangeHighMidi));
 
-    if (insertError || !inserted) {
-      throw appError(
-        AppErrorCode.Storage,
-        'Failed to insert note row',
-        insertError ?? undefined
-      );
-    }
-
-    const id = inserted.id;
     const audioExt = extOf(blobs.audioUri) || 'wav';
-    const audioPath = `${userId}/${id}.${audioExt}`;
+    // React Native's FormData accepts a {uri,name,type} descriptor and streams
+    // the file off disk; the DOM lib types only know about Blob.
+    form.append(
+      'audio',
+      { uri: blobs.audioUri, name: `audio.${audioExt}`, type: `audio/${audioExt}` }
+    );
 
-    // Read the captured audio off disk as base64, decode to bytes, upload.
-    // the fs library is the single fs seam; import lazily so non-RN tests that
-    // never call create() don't need it resolved.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires -- deliberate lazy load (see above)
-    const RNFS = require('@dr.pogodin/react-native-fs') as typeof import('@dr.pogodin/react-native-fs');
-    const localAudioPath = blobs.audioUri.replace(/^file:\/\//, '');
-    const audioB64 = await RNFS.readFile(localAudioPath, 'base64');
-    const audioBytes = base64ToBytes(audioB64);
-
-    const audioUpload = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(audioPath, audioBytes, {
-        contentType: audioExt === 'wav' ? 'audio/wav' : 'audio/mp4',
-        upsert: true
-      });
-
-    if (audioUpload.error) {
-      throw appError(
-        AppErrorCode.Storage,
-        'Failed to upload note audio',
-        audioUpload.error
-      );
+    try {
+      const record = await backend
+        .collection(COLLECTIONS.notes)
+        .create<NoteRow>(form);
+      return rowToDto(record);
+    } catch (error) {
+      throw appError(AppErrorCode.Storage, 'Failed to save note', error);
     }
-
-    const { data: updated, error: updateError } = await supabase
-      .from(TABLES.notes)
-      .update({ audio_path: audioPath })
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (updateError || !updated) {
-      throw appError(
-        AppErrorCode.Storage,
-        'Failed to attach storage path to note',
-        updateError ?? undefined
-      );
-    }
-
-    return rowToDto(updated);
   },
 
   /** All notes for the current user, newest first. */
   async list(): Promise<NoteDto[]> {
-    const userId = await requireUserId();
-    const { data, error } = await supabase
-      .from(TABLES.notes)
-      .select()
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    await requireUserId();
+    try {
+      // The access rule already scopes this to the caller.
+      const records = await backend
+        .collection(COLLECTIONS.notes)
+        .getFullList<NoteRow>({ sort: '-created' });
+      return records.map(rowToDto);
+    } catch (error) {
       throw appError(AppErrorCode.Network, 'Failed to list notes', error);
     }
-    return (data ?? []).map(rowToDto);
   },
 
   /** A single note by id, or null when not found / not owned. */
   async get(id: string): Promise<NoteDto | null> {
-    const { data, error } = await supabase
-      .from(TABLES.notes)
-      .select()
-      .eq('id', id)
-      .maybeSingle();
-
-    if (error) {
-      throw appError(AppErrorCode.Network, 'Failed to fetch note', error);
+    try {
+      const record = await backend
+        .collection(COLLECTIONS.notes)
+        .getOne<NoteRow>(id);
+      return rowToDto(record);
+    } catch {
+      // A record owned by someone else is indistinguishable from a missing
+      // one, which is the point: the backend does not confirm its existence.
+      return null;
     }
-    return data ? rowToDto(data) : null;
   },
 
-  /** A fresh signed Storage URL for a note's audio blob (the bucket is private). */
+  /** A fresh private URL for a note's audio. */
   async signedAudioUrl(note: NoteDto): Promise<string | null> {
-    return signPath(note.audioPath);
+    return fileUrl(note.id, note.audioPath);
   },
 
   /**
-   * Delete a note: remove its Storage blob (best-effort) then the row. RLS scopes
-   * the row delete to the owner.
+   * Delete a note. Deleting the record takes its attached audio with it, and
+   * the access rule scopes the delete to the owner, so there is no separate
+   * blob sweep and no way to delete someone else's.
    */
   async remove(id: string): Promise<void> {
-    const existing = await this.get(id);
-    if (existing?.audioPath) {
-      await supabase.storage.from(STORAGE_BUCKET).remove([existing.audioPath]);
-    }
-    const { error } = await supabase.from(TABLES.notes).delete().eq('id', id);
-    if (error) {
+    try {
+      await backend.collection(COLLECTIONS.notes).delete(id);
+    } catch (error) {
       throw appError(AppErrorCode.Network, 'Failed to delete note', error);
     }
   }

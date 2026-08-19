@@ -4,67 +4,46 @@
  * user, delegates sign in/up/out, maps errors onto the shared AppError shape,
  * and unsubscribes on unmount.
  */
-import { act, render, renderHook, waitFor } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import React from 'react';
-import { Text } from 'react-native';
 import { AppErrorCode } from 'shared';
 
 import { AuthProvider, useAuth } from '../AuthContext';
 
 // --- Mock the single Supabase client --------------------------------------
-const mockOnAuthStateChange = jest.fn();
-const mockSignInWithPassword = jest.fn();
-const mockSignUp = jest.fn();
-const mockSignOut = jest.fn();
-const mockResetPasswordForEmail = jest.fn();
-const unsubscribe = jest.fn();
-
-jest.mock('../../lib/supabase', () => ({
-  supabase: {
-    auth: {
-      onAuthStateChange: (...args: unknown[]) => mockOnAuthStateChange(...args),
-      signInWithPassword: (...args: unknown[]) => mockSignInWithPassword(...args),
-      signUp: (...args: unknown[]) => mockSignUp(...args),
-      signOut: (...args: unknown[]) => mockSignOut(...args),
-      resetPasswordForEmail: (...args: unknown[]) => mockResetPasswordForEmail(...args)
-    }
-  }
-}));
-
-type Listener = (event: string, session: unknown) => void;
-
-/** Capture the listener so tests can drive auth state changes. */
-function wireListener(): { emit: Listener } {
-  let captured: Listener = () => undefined;
-  mockOnAuthStateChange.mockImplementation((cb: Listener) => {
-    captured = cb;
-    return { data: { subscription: { unsubscribe } } };
-  });
-  return {
-    emit: (event, session) => captured(event, session)
+jest.mock('../../lib/backend', () => {
+  const fake = jest.requireActual('../../testing/fakeBackend') as {
+    fakeBackend: unknown;
   };
-}
+  return {
+    __esModule: true,
+    backend: fake.fakeBackend,
+    default: fake.fakeBackend,
+    COLLECTIONS: {
+      users: 'users',
+      notes: 'notes',
+      practiceProgress: 'practice_progress'
+    }
+  };
+});
+
+import {
+  fakeBackend,
+  resetFakeBackend,
+  signInFake
+} from '../../testing/fakeBackend';
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <AuthProvider>{children}</AuthProvider>
 );
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  resetFakeBackend();
 });
 
 describe('AuthProvider / useAuth', () => {
-  it('starts loading and resolves to a null session when restore yields nothing', async () => {
-    const { emit } = wireListener();
+  it('resolves to a null session when nothing was restored', async () => {
     const { result } = await renderHook(() => useAuth(), { wrapper });
-
-    expect(result.current.loading).toBe(true);
-    expect(result.current.session).toBeNull();
-    expect(result.current.user).toBeNull();
-
-    await act(async () => {
-      emit('INITIAL_SESSION', null);
-    });
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.session).toBeNull();
@@ -72,97 +51,81 @@ describe('AuthProvider / useAuth', () => {
   });
 
   it('restores a session and derives the user from it', async () => {
-    const { emit } = wireListener();
-    const session = { access_token: 'tok', user: { id: 'u1', email: 'a@b.c' } };
+    const id = await signInFake('ada@micdrp.test');
     const { result } = await renderHook(() => useAuth(), { wrapper });
-
-    await act(async () => {
-      emit('SIGNED_IN', session);
-    });
 
     await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.session).toBe(session);
-    expect(result.current.user).toEqual({ id: 'u1', email: 'a@b.c' });
+    expect(result.current.session).not.toBeNull();
+    expect(result.current.user?.id).toBe(id);
   });
 
-  it('signIn delegates to signInWithPassword', async () => {
-    wireListener();
-    mockSignInWithPassword.mockResolvedValue({ error: null });
+  it('signIn establishes a session', async () => {
     const { result } = await renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
     await act(async () => {
-      await result.current.signIn('a@b.c', 'pw');
+      await result.current.signIn('ada@micdrp.test', 'password12345');
     });
 
-    expect(mockSignInWithPassword).toHaveBeenCalledWith({
-      email: 'a@b.c',
-      password: 'pw'
-    });
+    await waitFor(() => expect(result.current.session).not.toBeNull());
+    expect(result.current.user?.email).toBe('ada@micdrp.test');
   });
 
-  it('signUp delegates to supabase.auth.signUp', async () => {
-    wireListener();
-    mockSignUp.mockResolvedValue({ error: null });
+  it('signUp creates the account and lands signed in', async () => {
     const { result } = await renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
     await act(async () => {
-      await result.current.signUp('a@b.c', 'pw');
+      await result.current.signUp('new@micdrp.test', 'password12345');
     });
 
-    expect(mockSignUp).toHaveBeenCalledWith({ email: 'a@b.c', password: 'pw' });
+    await waitFor(() => expect(result.current.session).not.toBeNull());
   });
 
-  it('signOut delegates to supabase.auth.signOut', async () => {
-    wireListener();
-    mockSignOut.mockResolvedValue({ error: null });
+  it('signOut clears the session without deleting anything', async () => {
+    const id = await signInFake();
+    await fakeBackend.collection('notes').create({ user: id, title: 'Kept' });
+
     const { result } = await renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
     await act(async () => {
       await result.current.signOut();
     });
 
-    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(result.current.session).toBeNull());
+    // Signing back in finds the note still there.
+    await signInFake();
+    expect(await fakeBackend.collection('notes').getFullList()).toHaveLength(1);
   });
 
-  it('resetPassword delegates to supabase.auth.resetPasswordForEmail', async () => {
-    wireListener();
-    mockResetPasswordForEmail.mockResolvedValue({ error: null });
+  it('resetPassword does not establish a session', async () => {
     const { result } = await renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
     await act(async () => {
-      await result.current.resetPassword('a@b.c');
+      await result.current.resetPassword('ada@micdrp.test');
     });
 
-    expect(mockResetPasswordForEmail).toHaveBeenCalledWith('a@b.c');
+    expect(result.current.session).toBeNull();
   });
 
-  it('maps a Supabase auth error onto the shared AppError shape', async () => {
-    wireListener();
-    mockSignInWithPassword.mockResolvedValue({
-      error: { message: 'Invalid login credentials' }
-    });
+  it('maps a backend error onto the shared AppError shape', async () => {
     const { result } = await renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
-    await act(async () => {
-      await expect(result.current.signIn('a@b.c', 'pw')).rejects.toMatchObject({
-        code: AppErrorCode.Auth,
-        message: 'Invalid login credentials'
-      });
-    });
-  });
+    jest
+      .spyOn(fakeBackend, 'collection')
+      .mockImplementationOnce(
+        () =>
+          ({
+            authWithPassword: () => Promise.reject(new Error('bad credentials'))
+          }) as never
+      );
 
-  it('unsubscribes the auth listener on unmount', async () => {
-    wireListener();
-    const { unmount } = await render(
-      <AuthProvider>
-        <Text>child</Text>
-      </AuthProvider>
-    );
-
-    await act(async () => {
-      await unmount();
-    });
-    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    await expect(
+      result.current.signIn('ada@micdrp.test', 'wrong')
+    ).rejects.toMatchObject({ code: AppErrorCode.Auth });
   });
 
   it('throws when useAuth is used outside an AuthProvider', async () => {

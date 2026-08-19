@@ -16,29 +16,34 @@ import { AuthProvider } from '../AuthContext';
 import { ThemeProvider } from '../../theme';
 import LoginScreen from '../../screens/Login/LoginScreen';
 
-// --- Mock the single Supabase client --------------------------------------
-const mockOnAuthStateChange = jest.fn();
-const mockSignInWithPassword = jest.fn();
-const mockSignUp = jest.fn();
-const mockSignOut = jest.fn();
-
-jest.mock('../../lib/supabase', () => ({
-  supabase: {
-    auth: {
-      onAuthStateChange: (...args: unknown[]) => mockOnAuthStateChange(...args),
-      signInWithPassword: (...args: unknown[]) => mockSignInWithPassword(...args),
-      signUp: (...args: unknown[]) => mockSignUp(...args),
-      signOut: (...args: unknown[]) => mockSignOut(...args)
+// --- Mock the single backend client ---------------------------------------
+jest.mock('../../lib/backend', () => {
+  const fake = jest.requireActual('../../testing/fakeBackend') as {
+    fakeBackend: unknown;
+  };
+  return {
+    __esModule: true,
+    backend: fake.fakeBackend,
+    default: fake.fakeBackend,
+    COLLECTIONS: {
+      users: 'users',
+      notes: 'notes',
+      practiceProgress: 'practice_progress'
     }
-  }
-}));
+  };
+});
+
+import {
+  fakeBackend,
+  failNextAuth,
+  resetFakeBackend
+} from '../../testing/fakeBackend';
+
+beforeEach(() => {
+  resetFakeBackend();
+});
 
 async function renderScreen() {
-  // The listener fires once with no session so AuthProvider leaves loading.
-  mockOnAuthStateChange.mockImplementation((cb: (e: string, s: unknown) => void) => {
-    cb('INITIAL_SESSION', null);
-    return { data: { subscription: { unsubscribe: jest.fn() } } };
-  });
   return await render(
     <ThemeProvider>
       <AuthProvider>
@@ -60,8 +65,7 @@ describe('LoginScreen', () => {
     expect(screen.getByLabelText('Sign in')).toBeTruthy();
   });
 
-  it('signs in with the entered credentials', async () => {
-    mockSignInWithPassword.mockResolvedValue({ error: null });
+  it('signs in with the entered credentials, trimmed', async () => {
     await renderScreen();
 
     await fireEvent.changeText(screen.getByLabelText('Email'), '  a@b.c ');
@@ -70,15 +74,13 @@ describe('LoginScreen', () => {
       await fireEvent.press(screen.getByLabelText('Sign in'));
     });
 
-    expect(mockSignInWithPassword).toHaveBeenCalledWith({
-      email: 'a@b.c',
-      password: 'secret'
-    });
-    expect(mockSignUp).not.toHaveBeenCalled();
+    // The email is trimmed before it reaches the backend.
+    await waitFor(() =>
+      expect(fakeBackend.authStore.record?.email).toBe('a@b.c')
+    );
   });
 
-  it('toggles to sign-up mode and calls signUp', async () => {
-    mockSignUp.mockResolvedValue({ error: null });
+  it('toggles to sign-up mode and creates an account', async () => {
     await renderScreen();
 
     await fireEvent.press(screen.getByLabelText('Switch to create an account'));
@@ -90,16 +92,15 @@ describe('LoginScreen', () => {
       await fireEvent.press(screen.getByLabelText('Sign up'));
     });
 
-    expect(mockSignUp).toHaveBeenCalledWith({
-      email: 'new@user.io',
-      password: 'pw123456'
-    });
+    // Sign-up creates the record, then authenticates it so the app lands
+    // signed in rather than back at the form.
+    await waitFor(() =>
+      expect(fakeBackend.authStore.record?.email).toBe('new@user.io')
+    );
   });
 
   it('shows an error message when sign in fails', async () => {
-    mockSignInWithPassword.mockResolvedValue({
-      error: { message: 'Invalid login credentials' }
-    });
+    failNextAuth('Invalid login credentials');
     await renderScreen();
 
     await fireEvent.changeText(screen.getByLabelText('Email'), 'a@b.c');
@@ -116,6 +117,6 @@ describe('LoginScreen', () => {
   it('does not submit when fields are empty', async () => {
     await renderScreen();
     await fireEvent.press(screen.getByLabelText('Sign in'));
-    expect(mockSignInWithPassword).not.toHaveBeenCalled();
+    expect(fakeBackend.authStore.isValid).toBe(false);
   });
 });

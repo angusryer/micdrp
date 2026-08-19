@@ -66,7 +66,7 @@ export interface ReferenceTonePlayer {
  */
 function defaultCreateContext(): AudioContextLike | null {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires -- optional native dep, resolved at runtime
+     
     const api = require('react-native-audio-api') as Record<string, unknown>;
     const Ctor = api.AudioContext as (new () => AudioContextLike) | undefined;
     if (typeof Ctor !== 'function') {
