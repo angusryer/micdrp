@@ -1,0 +1,30 @@
+# Project Development State — snapshot, not a log. Overwrite.
+updated_at: "2026-08-18T00:00:00Z"
+phase: specifying
+summary: >
+  micdrp is a built and merged React Native singing app (Practice,
+  Notes, Dashboard) over Supabase, with its DSP core in pure TS plus a
+  parity-tested C++ port. The harness was adopted after the fact, so
+  spec-writing is a crawl of working code rather than a green field.
+
+domains:
+  registered: [pitch]
+  planned: [transcription, notes, practice, insights, account]
+
+current_work: >
+  Writing specs domain by domain, registering each only once its specs
+  validate, so the registry never contains a half-specified domain.
+
+known_gaps:
+  - >
+    No verification target exists. The harness executes acceptance tests
+    against a URL or a direct adapter; micdrp has neither. A Node adapter
+    over packages/logic would make the pure domains executable.
+  - >
+    The naming_alignment release gate indexes Python only and looks under
+    .harnex/framework/<domain>/, so TypeScript capabilities cannot resolve
+    by convention. Every capability declares implemented_by with a path.
+  - >
+    Several logic files exceed the 150-line budget: analysis.ts (839),
+    tempo.ts (440), quantize.ts (401), harmony.ts (380), key.ts (197),
+    mpm.ts (153).

@@ -1,0 +1,149 @@
+# Pitch test grammar extensions. The base grammar is shaped for an HTTP
+# service; this domain is a pure-TS library plus a device capture session,
+# so its tests drive a project adapter and a fake engine tier — never a
+# real microphone.
+
+given:
+  - id: GX-PITCH-TONE
+    pattern: 'a PCM frame {label} of a {value} Hz sine at {value2} Hz'
+    mode: extension
+    action: pitch_frame_tone
+    params: { label: "{label}", frequencyHz: "{value}", sampleRateHz: "{value2}" }
+
+  - id: GX-PITCH-SILENCE
+    pattern: 'a PCM frame {label} of silence at {value} Hz'
+    mode: extension
+    action: pitch_frame_silence
+    params: { label: "{label}", sampleRateHz: "{value}" }
+
+  - id: GX-PITCH-SHORT
+    pattern: 'a PCM frame {label} of {N} samples at {value} Hz'
+    mode: extension
+    action: pitch_frame_length
+    params: { label: "{label}", length: "{N}", sampleRateHz: "{value}" }
+    resolution: Register a frame of exactly {N} samples, for the length precondition.
+
+  - id: GX-PITCH-STREAM
+    pattern: 'a pitch stream {label} of frames {value}'
+    mode: extension
+    action: pitch_stream_literal
+    params: { label: "{label}", frames: "{value}" }
+    resolution: Register a PitchFrame list as [timestampMs, midi, cents, clarity] tuples.
+
+  - id: GX-PITCH-ENGINE
+    pattern: 'a capture engine on the {value} tier with permission {value2}'
+    mode: extension
+    action: pitch_engine_fake
+    params: { tier: "{value}", permission: "{value2}" }
+    resolution: Fake AudioEngine replaying a scripted frame sequence; permission {value2}.
+
+  - id: GX-PITCH-SESSION
+    pattern: 'a capture session is {state}'
+    mode: extension
+    action: pitch_session_state
+    params: { state: "{state}" }
+    resolution: Drive the fake engine to idle or recording before the when step.
+
+when:
+  - id: WX-PITCH-DETECT
+    pattern: 'pitch.detect runs on frame {label}'
+    mode: extension
+    action: pitch_detect
+    params: { label: "{label}" }
+
+  - id: WX-PITCH-DETECT-OPTS
+    pattern: 'pitch.detect runs on frame {label} with {field} {value}'
+    mode: extension
+    action: pitch_detect_with_option
+    params: { label: "{label}", option: "{field}", value: "{value}" }
+    resolution: Call detectPitch with one MpmOptions override.
+
+  - id: WX-PITCH-SMOOTH
+    pattern: 'pitch.smooth runs on stream {label} with {field} {value}'
+    mode: extension
+    action: pitch_smooth
+    params: { label: "{label}", option: "{field}", value: "{value}" }
+
+  - id: WX-PITCH-CONVERT
+    pattern: 'pitch.read_note runs on {value} Hz'
+    mode: extension
+    action: pitch_read_note
+    params: { frequencyHz: "{value}" }
+
+  - id: WX-PITCH-ROUNDTRIP
+    pattern: 'pitch.to_midi round-trips {value} Hz'
+    mode: extension
+    action: pitch_midi_roundtrip
+    params: { frequencyHz: "{value}" }
+    resolution: Call frequencyToMidi then midiToFrequency, recording both.
+
+  - id: WX-PITCH-CAPTURE
+    pattern: 'the singer calls pitch.{value}'
+    mode: extension
+    action: pitch_engine_call
+    params: { method: "{value}" }
+    resolution: Invoke the named capture capability on the fake engine.
+
+then:
+  - id: TX-PITCH-NEAR
+    pattern: 'the detected frequency is within {value} percent of {value2} Hz'
+    mode: extension
+    action: assert_frequency_near
+    params: { tolerancePercent: "{value}", expectedHz: "{value2}" }
+    resolution: Assert frequency is non-null and inside the tolerance.
+
+  - id: TX-PITCH-NULL
+    pattern: 'no frequency is returned'
+    mode: extension
+    action: assert_frequency_null
+
+  - id: TX-PITCH-RANGE
+    pattern: 'the result field {field} is within {value} and {value2} inclusive'
+    mode: extension
+    action: assert_result_range
+    params: { field: "{field}", low: "{value}", high: "{value2}" }
+    resolution: Assert a numeric result field falls inside the closed interval.
+
+  - id: TX-PITCH-NUM
+    pattern: 'the result field {field} is {value}'
+    mode: extension
+    action: assert_result_field
+    params: { field: "{field}", value: "{value}" }
+
+  - id: TX-PITCH-STREAM-SHAPE
+    pattern: 'the smoothed stream has {N} frames with unchanged timestamps and clarity'
+    mode: extension
+    action: assert_stream_preserved
+    params: { count: "{N}" }
+    resolution: Assert length {N} and per-index timestampMs/clarity equality.
+
+  - id: TX-PITCH-FRAME-AT
+    pattern: 'smoothed frame {N} has midi {value}'
+    mode: extension
+    action: assert_smoothed_frame
+    params: { index: "{N}", midi: "{value}" }
+    resolution: Assert the output frame's midi. The literal null asserts a rest.
+
+  - id: TX-PITCH-REJECTED
+    pattern: 'the call is rejected and no capture session is running'
+    mode: extension
+    action: assert_call_rejected_idle
+
+  - id: TX-PITCH-NO-PCM
+    pattern: 'no delivered frame carries raw audio samples'
+    mode: extension
+    action: assert_no_pcm_delivered
+    resolution: Assert every delivered payload has exactly the PitchSample fields.
+
+  - id: TX-PITCH-THROTTLE
+    pattern: 'frames reach subscribers at no more than {N} per second'
+    mode: extension
+    action: assert_emit_rate
+    params: { rate: "{N}" }
+    resolution: Assert delivered timestamps imply a rate at or below {N}/s.
+
+  - id: TX-PITCH-FULL-RES
+    pattern: 'the returned handle carries more samples than were delivered live'
+    mode: extension
+    action: assert_handle_full_resolution
+    resolution: Assert handle sample count exceeds the throttled delivery count.

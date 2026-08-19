@@ -1,0 +1,86 @@
+invariants:
+  - id: INV-PITCH-001
+    description: PCM never crosses the native boundary
+    severity: critical
+    check: >
+      No message delivered from the engine to the JS thread carries raw
+      audio samples. Subscribers receive PitchSample frames only. Verified
+      by inspecting the native emitter payload shape on both tiers and the
+      worklet post message: neither contains a sample buffer.
+
+  - id: INV-PITCH-002
+    description: Clarity is always a probability
+    severity: critical
+    check: >
+      Every clarity value produced by detection or carried through
+      smoothing is within 0 and 1 inclusive, including on the paths that
+      return no frequency. Verified by asserting the bound on the result
+      of pitch.detect for silent, noisy, and tonal frames.
+
+  - id: INV-PITCH-003
+    description: An unvoiced frame is unvoiced in every field
+    severity: critical
+    check: >
+      A PitchSample with midi null also has cents null and frequencyHz 0,
+      and a PitchSample with a non-null midi has frequencyHz greater than
+      0. The two representations never disagree about whether the frame
+      is voiced.
+
+  - id: INV-PITCH-004
+    description: Smoothing preserves the frame timeline
+    severity: critical
+    check: >
+      pitch.smooth returns exactly as many frames as it was given, in the
+      same order, with each output frame carrying the input frame's
+      timestampMs and clarity unchanged. Only midi and cents may differ.
+
+  - id: INV-PITCH-005
+    description: Detection respects the configured frequency bounds
+    severity: critical
+    check: >
+      When minFrequency or maxFrequency is supplied, no returned
+      frequency lies outside them. A peak outside the bounds yields a
+      null frequency and still reports its clarity.
+
+  - id: INV-PITCH-006
+    description: The note reference is A4 = 440 Hz
+    severity: critical
+    check: >
+      frequencyToMidi(440) is exactly 69 and midiToFrequency(69) is
+      exactly 440. Every other domain that shows a note name derives it
+      from these conversions rather than restating the reference.
+
+  - id: INV-PITCH-007
+    description: Cents never exceed half a semitone
+    severity: critical
+    check: >
+      Every cents value produced by pitch.read_note is within -50 and 50
+      inclusive, because cents measures distance to the NEAREST note. A
+      value outside that range means the wrong note was chosen.
+
+  - id: INV-PITCH-008
+    description: The live stream is throttled, the stored analysis is not
+    severity: major
+    check: >
+      During a session, PitchSample frames reach subscribers at no more
+      than emitRateHz per second. The RecordingHandle returned by
+      pitch.stop_capture carries the full-resolution analysis, so
+      transcription never sees a decimated timeline.
+
+  - id: INV-PITCH-009
+    description: Tier selection is invisible to callers
+    severity: major
+    check: >
+      Both the native C++ tier and the worklet fallback satisfy the same
+      AudioEngine contract and emit the same PitchSample shape. No caller
+      branches on which tier is active. Verified by the C++/TS parity
+      test, which runs both detectors over the same frames and requires
+      matching results.
+
+  - id: INV-PITCH-010
+    description: A capture session is single-flight
+    severity: major
+    check: >
+      pitch.start_capture rejects while a session is already running, and
+      pitch.stop_capture rejects when no session is running. There is at
+      most one microphone session per process at any time.

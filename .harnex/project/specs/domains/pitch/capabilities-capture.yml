@@ -1,0 +1,92 @@
+# The capture session — the native-boundary half of the domain.
+# Split from capabilities.yml to stay inside the 150-line budget.
+capabilities:
+  - name: pitch.request_permission
+    description: >
+      Ask the operating system for microphone access and report whether
+      the singer granted it.
+    actor: singer
+    implemented_by: packages/client/src/audio/AudioEngine.ts
+    parameters:
+      required: []
+    preconditions:
+      - a capture engine tier is available
+    postconditions:
+      - the result is true only when the OS reports the permission granted
+      - no capture starts as a side effect
+    permissions:
+      - role: visitor
+        notes: >
+          Permission is device-level, not account-level. A signed-out
+          person can be asked, though no take can be persisted.
+
+  - name: pitch.configure_engine
+    description: >
+      Merge a partial set of engine parameters into the current
+      configuration.
+    actor: singer
+    implemented_by: packages/client/src/audio/AudioEngine.ts
+    parameters:
+      required: [config]
+      optional: []
+    preconditions:
+      - every supplied field is a known EngineConfig field
+    postconditions:
+      - supplied fields replace their current values
+      - omitted fields keep their current values
+      - the merged configuration applies to the next capture session
+    permissions:
+      - role: visitor
+        notes: Device-local tuning; not persisted to an account by this domain.
+
+  - name: pitch.start_capture
+    description: >
+      Begin microphone capture and analysis on the selected tier.
+    actor: singer
+    implemented_by: packages/client/src/audio/AudioEngine.ts
+    parameters:
+      required: []
+    preconditions:
+      - the microphone permission is granted
+      - no capture session is already running
+    postconditions:
+      - the engine state becomes recording
+      - PitchSample frames are delivered to every pitch subscriber
+      - frames are delivered at no more than emitRateHz per second
+      - raw PCM is not delivered to any subscriber
+    permissions:
+      - role: visitor
+        notes: Capture is device-local until a domain persists the result.
+
+  - name: pitch.stop_capture
+    description: >
+      End the capture session and resolve with the audio file plus the
+      full-resolution analysis of everything captured.
+    actor: singer
+    implemented_by: packages/client/src/audio/AudioEngine.ts
+    parameters:
+      required: []
+    preconditions:
+      - a capture session is running
+    postconditions:
+      - the engine state leaves recording
+      - a RecordingHandle is returned
+      - the returned samples are the unthrottled analysis, not the
+        throttled stream the subscribers saw
+      - durationMs equals the captured length
+      - no further PitchSample frames are delivered
+
+  - name: pitch.observe_stream
+    description: >
+      Subscribe to live PitchSample frames or to coarse EngineState
+      transitions for the duration of a session.
+    actor: singer
+    implemented_by: packages/client/src/audio/AudioEngine.ts
+    parameters:
+      required: [callback]
+    preconditions:
+      - callback is callable
+    postconditions:
+      - an unsubscribe function is returned
+      - calling the unsubscribe function stops delivery to that callback
+      - subscribing does not itself start a capture session

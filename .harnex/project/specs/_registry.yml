@@ -1,1 +1,6 @@
-domains: {}
+domains:
+  pitch:
+    description: Microphone capture and monophonic pitch detection (MPM), smoothing, and note conversion
+    path: .harnex/project/specs/domains/pitch
+    priority: high
+    status: specifying

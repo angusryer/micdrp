@@ -1,0 +1,72 @@
+# Smoothing — the median filter and the clarity gate.
+acceptance:
+  - id: ACC-PITCH-010
+    interface: module
+    title: A single-frame octave jump is filtered out
+    given:
+      - a pitch stream S of frames [[0,60,0,0.9],[10,60,0,0.9],[20,72,0,0.9],[30,60,0,0.9],[40,60,0,0.9]]
+    when:
+      - pitch.smooth runs on stream S with windowSize 5
+    then:
+      - the smoothed stream has 5 frames with unchanged timestamps and clarity
+      - smoothed frame 2 has midi 60
+    maps_to:
+      capability: pitch.smooth
+      invariants: [INV-PITCH-004]
+
+  - id: ACC-PITCH-011
+    interface: module
+    title: Smoothing never adds or drops a frame
+    given:
+      - a pitch stream S of frames [[0,60,3,0.9],[10,null,null,0.1],[20,62,-4,0.8]]
+    when:
+      - pitch.smooth runs on stream S with windowSize 3
+    then:
+      - the smoothed stream has 3 frames with unchanged timestamps and clarity
+    maps_to:
+      capability: pitch.smooth
+      invariants: [INV-PITCH-004]
+
+  - id: ACC-PITCH-012
+    interface: module
+    title: Frames below the clarity gate become rests
+    given:
+      - a pitch stream S of frames [[0,60,0,0.2],[10,60,0,0.2],[20,60,0,0.2]]
+    when:
+      - pitch.smooth runs on stream S with minClarity 0.5
+    then:
+      - the smoothed stream has 3 frames with unchanged timestamps and clarity
+      - smoothed frame 0 has midi null
+      - smoothed frame 1 has midi null
+      - smoothed frame 2 has midi null
+    maps_to:
+      capability: pitch.smooth
+      invariants: [INV-PITCH-003, INV-PITCH-004]
+
+  - id: ACC-PITCH-013
+    interface: module
+    title: A window of one disables the median but keeps the gate
+    given:
+      - a pitch stream S of frames [[0,60,0,0.9],[10,72,0,0.9],[20,60,0,0.9]]
+    when:
+      - pitch.smooth runs on stream S with windowSize 1
+    then:
+      - the smoothed stream has 3 frames with unchanged timestamps and clarity
+      - smoothed frame 1 has midi 72
+    maps_to:
+      capability: pitch.smooth
+      invariants: [INV-PITCH-004]
+
+  - id: ACC-PITCH-014
+    interface: module
+    title: Cents are dropped when the frame is moved to the median note
+    given:
+      - a pitch stream S of frames [[0,60,10,0.9],[10,60,10,0.9],[20,72,40,0.9],[30,60,10,0.9],[40,60,10,0.9]]
+    when:
+      - pitch.smooth runs on stream S with windowSize 5
+    then:
+      - smoothed frame 2 has midi 60
+      - the result field frames.2.cents is 0
+    maps_to:
+      capability: pitch.smooth
+      invariants: [INV-PITCH-004]
