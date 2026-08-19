@@ -1,6 +1,7 @@
 #import "AppDelegate.h"
 
 #import <React/RCTBundleURLProvider.h>
+#import <ReactAppDependencyProvider/RCTAppDependencyProvider.h>
 
 @implementation AppDelegate
 
@@ -9,24 +10,22 @@
   self.moduleName = @"micdrp";
   self.initialProps = @{};
 
+  // Under the New Architecture the autolinked module list is generated at pod
+  // install time and handed to the factory through this provider. Without it
+  // no third-party native module registers.
+  self.dependencyProvider = [RCTAppDependencyProvider new];
+
   return [super application:application didFinishLaunchingWithOptions:launchOptions];
 }
 
-- (NSURL *)sourceURLForBridge:(RCTBridge *)bridge
+/// Where the JS comes from: Metro while debugging, the bundled file otherwise.
+- (NSURL *)bundleURL
 {
 #if DEBUG
-  return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"index"];
+  return [RCTBundleURLProvider.sharedSettings jsBundleURLForBundleRoot:@"index"];
 #else
-  return [[NSBundle mainBundle] URLForResource:@"main" withExtension:@"jsbundle"];
+  return [NSBundle.mainBundle URLForResource:@"main" withExtension:@"jsbundle"];
 #endif
-}
-
-/// Keeps React 18's concurrent root on. RCTAppDelegate reads this; the manual
-/// bridge/TurboModule wiring the previous implementation carried is what the
-/// base class now does for us.
-- (BOOL)concurrentRootEnabled
-{
-  return YES;
 }
 
 @end

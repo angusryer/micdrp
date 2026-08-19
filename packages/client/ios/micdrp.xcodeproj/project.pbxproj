@@ -14,10 +14,10 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
 		1933D748D5F3E4026E5387AA /* mpm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DF912EB0FAD01209D28881AA /* mpm.cpp */; };
+		33F9A61EE3BC9A916E1D82E8 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B06DFC5A1521D1B52F8C216B /* PrivacyInfo.xcprivacy */; };
 		64FE505DA0AB8147C0E9A420 /* AudioEngineModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = 8AA58FD71262417B94E79C03 /* AudioEngineModule.mm */; };
 		7699B88040F8A987B510C191 /* libPods-micdrp-micdrpTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19F6CBCC0A4E27FBF8BF4A61 /* libPods-micdrp-micdrpTests.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
-		874E8F2629CCCE4200E04F31 /* env.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 874E8F2529CCCE4200E04F31 /* env.xcconfig */; };
 		874E8F2729CCCE4200E04F31 /* env.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 874E8F2529CCCE4200E04F31 /* env.xcconfig */; };
 /* End PBXBuildFile section */
 
@@ -52,6 +52,7 @@
 		89C6BE57DB24E9ADA2F236DE /* Pods-micdrp-micdrpTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-micdrp-micdrpTests.release.xcconfig"; path = "Target Support Files/Pods-micdrp-micdrpTests/Pods-micdrp-micdrpTests.release.xcconfig"; sourceTree = "<group>"; };
 		8AA58FD71262417B94E79C03 /* AudioEngineModule.mm */ = {isa = PBXFileReference; includeInIndex = 1; path = AudioEngineModule.mm; sourceTree = "<group>"; };
 		9562B779ABDCD05E23FEB32B /* notes.cpp */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.cpp; name = notes.cpp; path = ../cpp/dsp/notes.cpp; sourceTree = "<group>"; };
+		B06DFC5A1521D1B52F8C216B /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = micdrp/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C68CB312D3A22CF16FFF453D /* AudioEngineModule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = AudioEngineModule.h; sourceTree = "<group>"; };
 		DCE7820ABC08442729B30AF3 /* notes.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = notes.h; path = ../cpp/dsp/notes.h; sourceTree = "<group>"; };
 		DF912EB0FAD01209D28881AA /* mpm.cpp */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.cpp; name = mpm.cpp; path = ../cpp/dsp/mpm.cpp; sourceTree = "<group>"; };
@@ -105,6 +106,7 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB71A68108700A75B9A /* main.m */,
+				B06DFC5A1521D1B52F8C216B /* PrivacyInfo.xcprivacy */,
 			);
 			name = micdrp;
 			sourceTree = "<group>";
@@ -273,7 +275,7 @@
 			files = (
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
-				874E8F2629CCCE4200E04F31 /* env.xcconfig in Resources */,
+				33F9A61EE3BC9A916E1D82E8 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -602,7 +604,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
@@ -663,15 +665,23 @@
 				MARKETING_VERSION = "$(VERSION_NUMBER)";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_CFLAGS = "$(inherited)";
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-DRCT_REMOVE_LEGACY_ARCH=1",
+				);
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-DFOLLY_NO_CONFIG",
 					"-DFOLLY_MOBILE=1",
 					"-DFOLLY_USE_LIBCPP=1",
+					"-DRCT_REMOVE_LEGACY_ARCH=1",
 				);
-				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
+				PODFILE_DIR = "$(SRCROOT)";
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
 				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+				USE_HERMES = true;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
@@ -681,7 +691,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
@@ -734,15 +744,22 @@
 				);
 				MARKETING_VERSION = "$(VERSION_NUMBER)";
 				MTL_ENABLE_DEBUG_INFO = NO;
-				OTHER_CFLAGS = "$(inherited)";
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-DRCT_REMOVE_LEGACY_ARCH=1",
+				);
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-DFOLLY_NO_CONFIG",
 					"-DFOLLY_MOBILE=1",
 					"-DFOLLY_USE_LIBCPP=1",
+					"-DRCT_REMOVE_LEGACY_ARCH=1",
 				);
-				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
+				PODFILE_DIR = "$(SRCROOT)";
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
 				SDKROOT = iphoneos;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
+				USE_HERMES = true;
 				VALIDATE_PRODUCT = YES;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
