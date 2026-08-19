@@ -29,7 +29,6 @@
     "react": "^18.2.0",
     "react-i18next": "^15.0.2",
     "react-native": "^0.72.4",
-    "react-native-audio-api": "^0.12.2",
     "react-native-config": "^1.5.0",
     "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "~2.18.0",
