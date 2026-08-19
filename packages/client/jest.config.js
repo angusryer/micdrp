@@ -26,11 +26,11 @@ module.exports = {
       '|react-native-safe-area-context|@shopify/react-native-skia' +
       '|react-native-mmkv|react-native-nitro-modules|react-native-share' +
       '|react-native-audio-api|react-native-keychain|react-native-localize' +
-      '|react-native-url-polyfill|@dr.pogodin/react-native-fs' +
+      '|react-native-url-polyfill|@dr.pogodin/react-native-fs|pocketbase' +
       '|@supabase|i18next|react-i18next|xstate|@xstate)/)'
   ],
-  // Resolve workspace packages to their TS source for tests.
   moduleNameMapper: {
+    // Resolve workspace packages to their TS source for tests.
     '^logic$': '<rootDir>/../logic/src/index.ts',
     '^logic/(.*)$': '<rootDir>/../logic/src/$1',
     '^shared$': '<rootDir>/../shared/src/index.ts',

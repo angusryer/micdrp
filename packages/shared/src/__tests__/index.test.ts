@@ -1,4 +1,4 @@
-import { appError, AppErrorCode, STORAGE_BUCKET, TABLES } from '../index';
+import { appError, AppErrorCode } from '../index';
 
 describe('shared contract', () => {
   it('builds a typed AppError', () => {
@@ -7,9 +7,4 @@ describe('shared contract', () => {
     expect(e.message).toBe('missing');
   });
 
-  it('exposes backend constants', () => {
-    expect(STORAGE_BUCKET).toBe('notes');
-    expect(TABLES.notes).toBe('notes');
-    expect(TABLES.practiceProgress).toBe('practice_progress');
-  });
 });

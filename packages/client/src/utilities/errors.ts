@@ -92,7 +92,7 @@ export default class AppError<ErrorType = unknown> extends Error {
         break;
       default:
         // We trust lodash so we can disable these linting rules for this line
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+         
         if (_.isObject(err)) {
           _err = keepSrcObjEntriesAndMergeTargetVals<
             Required<ErrorData>,

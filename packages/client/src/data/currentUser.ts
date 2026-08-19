@@ -7,17 +7,13 @@
  */
 import { AppErrorCode, appError } from 'shared';
 
-import { supabase } from '../lib/supabase';
+import { backend } from '../lib/backend';
 
 /** The current authenticated user's id, or throw an Unauthorized AppError. */
 export async function requireUserId(): Promise<string> {
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) {
-    throw appError(
-      AppErrorCode.Unauthorized,
-      'No authenticated user',
-      error ?? undefined
-    );
+  const { isValid, record } = backend.authStore;
+  if (!isValid || !record) {
+    throw appError(AppErrorCode.Unauthorized, 'No authenticated user');
   }
-  return data.user.id;
+  return Promise.resolve(record.id);
 }

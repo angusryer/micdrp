@@ -13,7 +13,6 @@
  * There is no mock user and no local auth store; this is the only auth context
  * in the app.
  */
-import type { AuthError, Session, User } from '@supabase/supabase-js';
 import React, {
   createContext,
   useCallback,
@@ -24,13 +23,19 @@ import React, {
 } from 'react';
 import { AppErrorCode, appError } from 'shared';
 
-import { supabase } from '../lib/supabase';
+import { backend, COLLECTIONS, type UserRecord } from '../lib/backend';
+
+/** What the app needs from a session: who is signed in, and are they valid. */
+export interface Session {
+  token: string;
+  user: UserRecord;
+}
 
 export interface AuthContextValue {
   /** The current Supabase session, or `null` when signed out. */
   session: Session | null;
   /** Convenience accessor for `session.user`, or `null` when signed out. */
-  user: User | null;
+  user: UserRecord | null;
   /** `true` until the first auth state event resolves the restored session. */
   loading: boolean;
   signIn(email: string, password: string): Promise<void>;
@@ -43,16 +48,21 @@ export interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 /**
- * Map a Supabase `AuthError` (or any thrown value) onto the shared `AppError`
- * contract so callers always catch the same shape.
+ * Map a thrown backend error onto the shared `AppError` contract so callers
+ * always catch the same shape. appError already returns a real Error.
  */
-function toAppError(error: AuthError | null, fallback: string): Error & {
+function toAppError(error: unknown, fallback: string): Error & {
   code: AppErrorCode;
 } {
-  const app = appError(AppErrorCode.Auth, error?.message ?? fallback, error);
-  // Throw a real Error so React Native's red-box / try-catch ergonomics hold,
-  // while carrying the shared AppError fields for typed handling upstream.
-  return Object.assign(new Error(app.message), app);
+  const message =
+    error instanceof Error && error.message ? error.message : fallback;
+  return appError(AppErrorCode.Auth, message, error);
+}
+
+/** Read the current session off the auth store, or null when signed out. */
+function currentSession(): Session | null {
+  const { token, record } = backend.authStore;
+  return token && record ? { token, user: record as unknown as UserRecord } : null;
 }
 
 export function AuthProvider({
@@ -64,27 +74,23 @@ export function AuthProvider({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // The listener fires once on subscribe with the restored session (or null),
-    // which is what flips `loading` off — no separate getSession() race.
-    const {
-      data: { subscription }
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
+    // onChange fires immediately with the restored session (or nothing), which
+    // is what flips `loading` off — no separate "read the session" race.
+    const unsubscribe = backend.authStore.onChange(() => {
+      setSession(currentSession());
       setLoading(false);
-    });
+    }, true);
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return unsubscribe;
   }, []);
 
   const signIn = useCallback(
     async (email: string, password: string): Promise<void> => {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      if (error) {
+      try {
+        await backend
+          .collection(COLLECTIONS.users)
+          .authWithPassword(email, password);
+      } catch (error) {
         throw toAppError(error, 'Sign in failed.');
       }
     },
@@ -93,8 +99,18 @@ export function AuthProvider({
 
   const signUp = useCallback(
     async (email: string, password: string): Promise<void> => {
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) {
+      try {
+        await backend.collection(COLLECTIONS.users).create({
+          email,
+          password,
+          passwordConfirm: password
+        });
+        // Creating an account does not sign it in; the app expects to land
+        // signed in, as it did before.
+        await backend
+          .collection(COLLECTIONS.users)
+          .authWithPassword(email, password);
+      } catch (error) {
         throw toAppError(error, 'Sign up failed.');
       }
     },
@@ -102,15 +118,16 @@ export function AuthProvider({
   );
 
   const signOut = useCallback(async (): Promise<void> => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      throw toAppError(error, 'Sign out failed.');
-    }
+    // Clearing the store is synchronous and cannot fail; it also wipes the
+    // Keychain entry through the async store's clear hook.
+    backend.authStore.clear();
+    return Promise.resolve();
   }, []);
 
   const resetPassword = useCallback(async (email: string): Promise<void> => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
-    if (error) {
+    try {
+      await backend.collection(COLLECTIONS.users).requestPasswordReset(email);
+    } catch (error) {
       throw toAppError(error, 'Could not send a reset email.');
     }
   }, []);

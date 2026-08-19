@@ -11,21 +11,27 @@
  *
  * See supabase/migrations/0001_init.sql (profiles table + delete_account RPC).
  */
-import { STORAGE_BUCKET, TABLES, AppErrorCode, appError } from 'shared';
+import { AppErrorCode, appError } from 'shared';
 import type { ProfileDto } from 'shared';
 
-import { supabase } from '../lib/supabase';
-import type { Database } from '../lib/supabase';
+import { backend, COLLECTIONS } from '../lib/backend';
+import type { UserRecord } from '../lib/backend';
 import { requireUserId } from './currentUser';
 
-type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+/**
+ * The profile IS the auth record. PocketBase's users collection carries the
+ * display name, so there is no separate profiles collection to keep in step —
+ * one account has exactly one profile by construction.
+ */
+type ProfileRow = UserRecord;
 
-/** Map a Postgres row to the camelCase {@link ProfileDto} wire shape. */
+/** Map a record to the camelCase {@link ProfileDto} wire shape. */
 function rowToDto(row: ProfileRow): ProfileDto {
   return {
     id: row.id,
-    displayName: row.display_name,
-    createdAtMs: Date.parse(row.created_at)
+    // An empty name reads as "unset" so the UI falls back to the email.
+    displayName: row.name.length > 0 ? row.name : null,
+    createdAtMs: Date.parse(row.created)
   };
 }
 
@@ -33,20 +39,14 @@ export const profilesRepo = {
   /** The current user's profile. */
   async get(): Promise<ProfileDto> {
     const userId = await requireUserId();
-    const { data, error } = await supabase
-      .from(TABLES.profiles)
-      .select()
-      .eq('id', userId)
-      .single();
-
-    if (error || !data) {
-      throw appError(
-        AppErrorCode.Network,
-        'Failed to load profile',
-        error ?? undefined
-      );
+    try {
+      const record = await backend
+        .collection(COLLECTIONS.users)
+        .getOne<ProfileRow>(userId);
+      return rowToDto(record);
+    } catch (error) {
+      throw appError(AppErrorCode.Network, 'Failed to load profile', error);
     }
-    return rowToDto(data);
   },
 
   /**
@@ -56,48 +56,35 @@ export const profilesRepo = {
   async updateDisplayName(displayName: string): Promise<ProfileDto> {
     const userId = await requireUserId();
     const trimmed = displayName.trim();
-    const { data, error } = await supabase
-      .from(TABLES.profiles)
-      .update({ display_name: trimmed.length > 0 ? trimmed : null })
-      .eq('id', userId)
-      .select()
-      .single();
-
-    if (error || !data) {
-      throw appError(
-        AppErrorCode.Network,
-        'Failed to update profile',
-        error ?? undefined
-      );
+    try {
+      const record = await backend
+        .collection(COLLECTIONS.users)
+        .update<ProfileRow>(userId, { name: trimmed });
+      return rowToDto(record);
+    } catch (error) {
+      throw appError(AppErrorCode.Network, 'Failed to update profile', error);
     }
-    return rowToDto(data);
   },
 
   /**
-   * Permanently delete the account. Storage blobs are removed first (the FK
-   * cascade covers the DB rows but not Storage objects), then the `delete_account`
-   * RPC hard-deletes the auth user (cascading profiles + recordings), and finally
-   * the local session is cleared so the app returns to the auth stack.
+   * Permanently delete the account, then clear the local session so the app
+   * returns to the auth stack.
+   *
+   * Deleting the auth record is the whole operation: the collection's delete
+   * rule is `id = @request.auth.id`, so a caller can only ever delete
+   * themselves, and the cascadeDelete relations remove their notes and
+   * progress — attached audio files included. The previous backend needed a
+   * SECURITY DEFINER routine plus a hand-rolled blob sweep because its
+   * foreign-key cascade could not reach object storage.
    */
   async deleteAccount(): Promise<void> {
     const userId = await requireUserId();
-
-    // Best-effort blob cleanup: list the user's folder and remove every object.
-    const { data: files } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .list(userId);
-    if (files && files.length > 0) {
-      await supabase.storage
-        .from(STORAGE_BUCKET)
-        .remove(files.map((f) => `${userId}/${f.name}`));
-    }
-
-    const { error } = await supabase.rpc('delete_account');
-    if (error) {
+    try {
+      await backend.collection(COLLECTIONS.users).delete(userId);
+    } catch (error) {
       throw appError(AppErrorCode.Network, 'Failed to delete account', error);
     }
-
-    await supabase.auth.signOut();
+    backend.authStore.clear();
   }
 };
 
