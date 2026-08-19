@@ -25,3 +25,4 @@ known_conflicts:
     capabilities and invariants. Splitting is impossible and cutting the
     resolution prose would leave the patterns unimplementable, so the
     overage is deliberate.
+    Filed upstream as harnex#153.

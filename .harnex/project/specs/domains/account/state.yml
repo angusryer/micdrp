@@ -26,3 +26,4 @@ known_conflicts:
   - >
     test-extensions.yml is 184 lines, over the 150-line spec-file budget.
     The framework loads exactly one per domain with no sibling glob.
+    Filed upstream as harnex#153.

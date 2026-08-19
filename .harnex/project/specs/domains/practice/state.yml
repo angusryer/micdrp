@@ -21,3 +21,8 @@ blockers:
     returns false until a native probe is registered, so play-along never
     engages in the real app. Specified as correct-but-conservative
     behaviour; wiring the probe is Phase V work.
+known_conflicts:
+  - >
+    test-extensions.yml is 170 lines, over the 150-line spec-file budget.
+    The framework loads exactly one per domain with no sibling glob, so
+    the file cannot be split. Filed upstream as harnex#153.
