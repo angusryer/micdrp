@@ -1,0 +1,48 @@
+views:
+  - id: VIEW-NOTES-001
+    name: Notes
+    route: Notes
+    description: >
+      The tab. Every sung idea the singer has kept, newest first, each
+      card showing its title, when it was captured, how long it is, and
+      the shape of its melody. Capture starts from here.
+    requires_auth: true
+    min_role: singer
+    data_sources:
+      - notes.list
+    elements:
+      - A record control that starts and stops a capture
+      - A live pitch line while recording, drawn off the JS thread
+      - A list of note cards, newest first
+      - A melody shape on each card, drawn from the persisted melody
+      - A pull-to-refresh that re-syncs from the server
+      - An empty state shown when the singer has kept nothing yet
+      - A delete action on each card, confirmed before it runs
+
+  - id: VIEW-NOTES-002
+    name: Note detail
+    route: Notes/:id
+    description: >
+      One idea, examined. The melody as a piano roll with bar lines and
+      its time signature, the descriptive analysis, the editable chord
+      backdrop underneath it, playback, and export.
+    requires_auth: true
+    min_role: singer
+    parent_view: VIEW-NOTES-001
+    data_sources:
+      - notes.list
+      - notes.open_chord_track
+      - notes.play
+      - notes.export_midi
+    elements:
+      - The note's title
+      - A piano-roll melody view over time and pitch
+      - Bar lines and the time signature, presented as an assumption when
+        the metre was not measured
+      - The descriptive analysis — key, tempo, range, steadiness — with no
+        headline score
+      - A chord track under the melody, one slot per bar
+      - Controls on each chord slot to nudge it, reshape it, and revert it
+      - A revert-all control, shown only once something has been edited
+      - A playback bar, absent when the note has no stored audio
+      - An export control offering the melody as a MIDI file

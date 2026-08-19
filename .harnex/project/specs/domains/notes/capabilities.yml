@@ -1,0 +1,112 @@
+capabilities:
+  - name: notes.capture
+    description: >
+      Record a sung idea and keep it. Analysis runs after the engine
+      stops, off the live audio path, and the result is saved without a
+      quality gate.
+    actor: singer
+    implemented_by: packages/client/src/screens/Notes/useNoteCapture.ts
+    parameters:
+      required: []
+      optional: [title]
+    preconditions:
+      - the singer is signed in
+      - the microphone permission is granted
+    postconditions:
+      - the capture is analysed into a symbolic melody plus descriptive metrics
+      - a Note row is created carrying that melody
+      - the captured audio is uploaded and the row is patched with its path
+      - no minimum quality is required for the note to be kept
+      - the title defaults to a timestamped name when none is given
+      - a denied microphone permission leaves no note behind
+    permissions:
+      - role: singer
+        notes: A note is always created under the signed-in singer.
+
+  - name: notes.analyze_capture
+    description: >
+      Turn a finished capture into the fields a note persists — the
+      symbolic melody and the descriptive analysis. Not a grade.
+    actor: system
+    implemented_by: packages/client/src/analysis/note.ts
+    parameters:
+      required: [handle]
+    preconditions:
+      - handle is a RecordingHandle
+    postconditions:
+      - the melody comes from smoothing then segmenting the handle's samples
+      - key is null when the detection confidence is below the floor
+      - tempoBpm is null when the tempo confidence is below the floor
+      - rangeLowMidi and rangeHighMidi are null when the melody is empty
+      - no headline score is produced
+    permissions:
+      - role: visitor
+        notes: Pure computation over a handle the caller already holds.
+
+  - name: notes.list
+    description: >
+      Show the singer's notes newest first, painting the cache
+      immediately and then replacing it with the server's list.
+    actor: singer
+    implemented_by: packages/client/src/screens/Notes/useNotes.ts
+    parameters:
+      required: []
+    preconditions:
+      - the singer is signed in
+    postconditions:
+      - the cached list renders before any network call completes
+      - the server's list replaces the cache once it arrives
+      - a failed sync leaves the cached list on screen
+      - only the signed-in singer's notes are returned
+    permissions:
+      - role: singer
+        notes: Row-level security restricts the query to the singer's own rows.
+
+  - name: notes.delete
+    description: >
+      Remove a note, its stored audio, and its cache entry together.
+    actor: singer
+    implemented_by: packages/client/src/data/notesRepo.ts
+    parameters:
+      required: [id]
+    preconditions:
+      - the singer is signed in
+      - the note belongs to the signed-in singer
+    postconditions:
+      - the row is deleted before the local cache is re-synced
+      - the audio blob is removed from the notes bucket
+      - the note no longer appears in the list
+      - a note belonging to someone else is not deleted
+    permissions:
+      - role: singer
+        notes: Row-level security rejects a delete against another singer's row.
+
+  - name: notes.play
+    description: Play a note's captured audio back to the singer.
+    actor: singer
+    implemented_by: packages/client/src/screens/Notes/PlaybackBar.tsx
+    parameters:
+      required: [id]
+    preconditions:
+      - the note has an audio path
+    postconditions:
+      - playback position is reported while it runs
+      - a note whose upload never completed offers no playback
+    permissions:
+      - role: singer
+        notes: Playback resolves a signed URL scoped to the singer.
+
+  - name: notes.export_midi
+    description: Offer a note's melody as a Standard MIDI File.
+    actor: singer
+    implemented_by: packages/client/src/data/files.ts
+    parameters:
+      required: [id]
+    preconditions:
+      - the note belongs to the signed-in singer
+    postconditions:
+      - the file is assembled from the persisted melody, not from audio
+      - a file is produced even when the melody is empty
+    permissions:
+      - role: singer
+        notes: Export is offered only on the singer's own note.

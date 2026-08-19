@@ -1,0 +1,27 @@
+# Domain Development State — overwrite each meaningful change
+updated_at: "2026-08-18T00:00:00Z"
+updated_by: agent
+phase: specifying
+phase_detail: >
+  Specs written from a crawl of screens/Notes, analysis/note.ts, the
+  data layer, and the notes table in migration 0001. 10 capabilities,
+  11 invariants, 23 acceptance tests, 2 views, 9 interactions.
+
+  Three product commitments that were previously only prose in the
+  design doc are now invariants: every capture is kept with no score
+  gate (INV-NOTES-001), a note is described and never graded
+  (INV-NOTES-002), and the persisted melody is the source of truth so
+  no later question re-touches the audio (INV-NOTES-003).
+blockers:
+  - >
+    No verification target. Acceptance tests report SKIP until an
+    adapter with a fake engine and a row-level-security-enforcing fake
+    Supabase client is wired.
+known_conflicts:
+  - >
+    test-extensions.yml is 160 lines, over the 150-line spec-file
+    budget. The framework loads exactly one test-extensions.yml per
+    domain (test_executor.py) with no sibling glob, unlike entities,
+    capabilities and invariants. Splitting is impossible and cutting the
+    resolution prose would leave the patterns unimplementable, so the
+    overage is deliberate.

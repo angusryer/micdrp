@@ -1,0 +1,160 @@
+# Notes test grammar extensions. Tests drive a project adapter holding a
+# fake engine, a fake Supabase client enforcing row-level security, and an
+# in-memory cache.
+
+given:
+  - id: GX-NOTES-SINGER
+    pattern: 'a signed-in singer {label}'
+    mode: extension
+    action: notes_signer
+    params: { label: "{label}" }
+    resolution: Register an authenticated singer and make it current.
+
+  - id: GX-NOTES-NOTE
+    pattern: 'singer {label} has a note {label2} titled {title}'
+    mode: extension
+    action: notes_seed_note
+    params: { owner: "{label}", note: "{label2}", title: "{title}" }
+    resolution: Insert a note owned by {label} with a melody, a blob, key and tempo.
+
+  - id: GX-NOTES-NOTE-NO-AUDIO
+    pattern: 'singer {label} has a note {label2} with no stored audio'
+    mode: extension
+    action: notes_seed_note_no_audio
+    params: { owner: "{label}", note: "{label2}" }
+
+  - id: GX-NOTES-CAPTURE
+    pattern: 'a capture of a {value} take is ready'
+    mode: extension
+    action: notes_capture_fixture
+    params: { quality: "{value}" }
+    resolution: Arm the fake engine. {value} is clean, poor, silent, or empty.
+
+  - id: GX-NOTES-CACHE
+    pattern: 'the note cache holds {N} notes'
+    mode: extension
+    action: notes_seed_cache
+    params: { count: "{N}" }
+
+  - id: GX-NOTES-OFFLINE
+    pattern: 'the server is unreachable'
+    mode: extension
+    action: notes_server_offline
+
+  - id: GX-NOTES-TRACK
+    pattern: 'the chord track for note {label} is open'
+    mode: extension
+    action: notes_open_track
+    params: { note: "{label}" }
+
+when:
+  - id: WX-NOTES-CAPTURE
+    pattern: 'the singer records and stops'
+    mode: extension
+    action: notes_do_capture
+    resolution: Run the capture-analyse-save pipeline over the armed fixture.
+
+  - id: WX-NOTES-CAPTURE-TITLED
+    pattern: 'the singer records and stops with the title {title}'
+    mode: extension
+    action: notes_do_capture_titled
+    params: { title: "{title}" }
+
+  - id: WX-NOTES-CALL
+    pattern: 'singer {label} calls notes.{value} on note {label2}'
+    mode: extension
+    action: notes_call
+    params: { actor: "{label}", capability: "{value}", note: "{label2}" }
+    resolution: Invoke as {label}, who may differ from the owner, exercising ownership.
+
+  - id: WX-NOTES-OPEN-TAB
+    pattern: 'the singer opens the Notes tab'
+    mode: extension
+    action: notes_open_tab
+    resolution: Run the list flow, recording what painted before the sync resolved.
+
+  - id: WX-NOTES-CHORD-EDIT
+    pattern: 'the singer nudges chord {N} by {value} degrees'
+    mode: extension
+    action: notes_chord_nudge
+    params: { index: "{N}", degrees: "{value}" }
+
+  - id: WX-NOTES-CHORD-REVERT
+    pattern: 'the singer reverts chord {N}'
+    mode: extension
+    action: notes_chord_revert
+    params: { index: "{N}" }
+
+  - id: WX-NOTES-CHORD-TAP
+    pattern: 'the singer taps chord {N}'
+    mode: extension
+    action: notes_chord_audition
+    params: { index: "{N}" }
+
+  - id: WX-NOTES-REOPEN
+    pattern: 'the chord track is rebuilt'
+    mode: extension
+    action: notes_rebuild_track
+
+then:
+  - id: TX-NOTES-COUNT
+    pattern: 'singer {label} has {N} notes'
+    mode: extension
+    action: assert_note_count
+    params: { owner: "{label}", count: "{N}" }
+
+  - id: TX-NOTES-FIELD
+    pattern: 'the note field {field} is {value}'
+    mode: extension
+    action: assert_note_field
+    params: { field: "{field}", value: "{value}" }
+
+  - id: TX-NOTES-NO-SCORE
+    pattern: 'the note carries no score'
+    mode: extension
+    action: assert_no_score
+    resolution: Assert neither the row nor the detail projection exposes a score.
+
+  - id: TX-NOTES-REJECTED
+    pattern: 'the call is rejected and nothing is changed'
+    mode: extension
+    action: assert_rejected_unchanged
+    resolution: Assert failure and that no row, blob, or cache entry changed.
+
+  - id: TX-NOTES-PAINTED
+    pattern: 'the list painted {N} notes before the sync resolved'
+    mode: extension
+    action: assert_paint_before_sync
+    params: { count: "{N}" }
+    resolution: Assert the first render, ahead of any network result.
+
+  - id: TX-NOTES-BLOB
+    pattern: 'the stored audio for note {label} is {value}'
+    mode: extension
+    action: assert_blob_state
+    params: { note: "{label}", state: "{value}" }
+
+  - id: TX-NOTES-SLOT
+    pattern: 'chord {N} is {value} and edited {value2}'
+    mode: extension
+    action: assert_track_slot
+    params: { index: "{N}", chord: "{value}", isEdited: "{value2}" }
+
+  - id: TX-NOTES-SLOT-SAME
+    pattern: 'chord {N} is unchanged'
+    mode: extension
+    action: assert_track_slot_unchanged
+    params: { index: "{N}" }
+
+  - id: TX-NOTES-TRACK-FLAG
+    pattern: 'the track reports edits {value}'
+    mode: extension
+    action: assert_track_has_edits
+    params: { hasEdits: "{value}" }
+
+  - id: TX-NOTES-VOICING
+    pattern: 'every audition note is at or above midi {N}'
+    mode: extension
+    action: assert_voicing_floor
+    params: { floor: "{N}" }
+    resolution: Assert the recorded voicing respects the backdrop floor.

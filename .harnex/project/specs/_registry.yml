@@ -1,4 +1,9 @@
 domains:
+  notes:
+    description: 'Sung musical-idea memos: capture, analyse, persist, browse, chord backdrop, export'
+    path: .harnex/project/specs/domains/notes
+    priority: high
+    status: specifying
   pitch:
     description: Microphone capture and monophonic pitch detection (MPM), smoothing, and note conversion
     path: .harnex/project/specs/domains/pitch

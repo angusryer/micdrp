@@ -1,0 +1,137 @@
+entities:
+  - name: Note
+    description: >
+      One sung musical-idea memo. The row carries the symbolic melody as
+      well as the descriptive analysis, so every later question is
+      answered from data rather than from audio.
+    properties:
+      - name: id
+        type: string
+        required: true
+        immutable: true
+        description: Server-generated identifier.
+      - name: userId
+        type: string
+        required: true
+        immutable: true
+        description: The singer this note belongs to.
+      - name: title
+        type: string
+        required: true
+        description: >
+          What the singer calls this idea. Defaults to a timestamped name
+          so a capture is never blocked on naming it.
+      - name: createdAtMs
+        type: number
+        required: true
+        immutable: true
+        description: When the note was captured.
+      - name: durationMs
+        type: number
+        required: true
+        immutable: true
+        description: Length of the capture.
+      - name: sampleRateHz
+        type: number
+        required: true
+        immutable: true
+        description: Rate the audio was captured at.
+      - name: audioPath
+        type: string
+        required: false
+        description: >
+          Path within the private notes bucket, or null until the upload
+          completes. A note is usable without it.
+      - name: melody
+        type: array
+        items: NoteEvent
+        required: true
+        description: >
+          The symbolic melody. Source of truth for all later analysis;
+          persisted so no corpus question ever re-touches a waveform.
+      - name: key
+        type: string
+        required: false
+        description: >
+          Detected key, or null when the detection was too weak to assert.
+      - name: tempoBpm
+        type: number
+        required: false
+        description: Detected tempo, or null when too weak to assert.
+      - name: inTuneRatio
+        type: number
+        required: false
+        description: Fraction of frames within tolerance of the note sung.
+        constraints: ["is within 0 and 1 inclusive when not null"]
+      - name: meanCentsError
+        type: number
+        required: false
+        description: Mean absolute cents deviation across the take.
+      - name: noteCount
+        type: number
+        required: true
+        description: How many discrete notes the take contains.
+      - name: rangeLowMidi
+        type: number
+        required: false
+        description: Lowest note sung, or null when the melody is empty.
+      - name: rangeHighMidi
+        type: number
+        required: false
+        description: Highest note sung, or null when the melody is empty.
+    internal_properties:
+      - name: melody_json
+        type: jsonb
+        description: The Postgres column the melody is stored in.
+
+  - name: ChordTrack
+    description: >
+      The editing session over a note's harmonic backdrop. Holds the
+      inferred progression and the singer's changes side by side, so any
+      slot can be put back to what the melody implied without recomputing
+      the analysis.
+    properties:
+      - name: slots
+        type: array
+        items: ChordSlot
+        required: true
+        description: The current progression, one slot per bar or half bar.
+      - name: hasEdits
+        type: boolean
+        required: true
+        description: True when any slot has been changed by hand.
+      - name: auditionMs
+        type: number
+        required: true
+        description: How long a chord sounds when tapped.
+
+  - name: NoteMeta
+    description: >
+      The cached list projection. Enough to draw a note card without a
+      round trip, including the melody so the shape renders offline.
+    properties:
+      - name: id
+        type: string
+        required: true
+        description: The note's identifier.
+      - name: title
+        type: string
+        required: true
+        description: The note's title.
+      - name: createdAtMs
+        type: number
+        required: true
+        description: When it was captured.
+      - name: durationMs
+        type: number
+        required: true
+        description: How long it is.
+      - name: melody
+        type: array
+        items: NoteEvent
+        required: true
+        description: The symbolic melody, carried into the cache.
+      - name: audioUrl
+        type: string
+        required: false
+        description: Resolved playback URL, or null when not yet available.

@@ -1,0 +1,125 @@
+# Listing, ownership, deletion, playback, export.
+acceptance:
+  - id: ACC-NOTES-008
+    interface: ui
+    title: The cache paints before the server answers
+    given:
+      - a signed-in singer S
+      - the note cache holds 3 notes
+    when:
+      - the singer opens the Notes tab
+    then:
+      - the list painted 3 notes before the sync resolved
+    maps_to:
+      capability: notes.list
+      invariants: [INV-NOTES-006]
+      interaction: INT-NOTES-002
+      view: VIEW-NOTES-001
+
+  - id: ACC-NOTES-009
+    interface: ui
+    title: A failed sync leaves the cached list alone
+    given:
+      - a signed-in singer S
+      - the note cache holds 3 notes
+      - the server is unreachable
+    when:
+      - the singer opens the Notes tab
+    then:
+      - the list painted 3 notes before the sync resolved
+      - singer S has 3 notes
+    maps_to:
+      capability: notes.list
+      invariants: [INV-NOTES-006]
+
+  - id: ACC-NOTES-010
+    interface: storage
+    title: One singer cannot read another's notes
+    given:
+      - a signed-in singer S
+      - a signed-in singer T
+      - singer T has a note N titled "Theirs"
+    when:
+      - singer S calls notes.list on note N
+    then:
+      - singer S has 0 notes
+    maps_to:
+      capability: notes.list
+      invariants: [INV-NOTES-005]
+
+  - id: ACC-NOTES-011
+    interface: storage
+    title: One singer cannot delete another's note
+    given:
+      - a signed-in singer S
+      - a signed-in singer T
+      - singer T has a note N titled "Theirs"
+    when:
+      - singer S calls notes.delete on note N
+    then:
+      - the call is rejected and nothing is changed
+      - singer T has 1 notes
+    maps_to:
+      capability: notes.delete
+      invariants: [INV-NOTES-005]
+
+  - id: ACC-NOTES-012
+    interface: ui
+    title: Deleting a note removes its audio too
+    given:
+      - a signed-in singer S
+      - singer S has a note N titled "Mine"
+    when:
+      - singer S calls notes.delete on note N
+    then:
+      - singer S has 0 notes
+      - the stored audio for note N is absent
+    maps_to:
+      capability: notes.delete
+      invariants: [INV-NOTES-007]
+      interaction: INT-NOTES-003
+
+  - id: ACC-NOTES-013
+    interface: ui
+    title: A note without stored audio offers no playback
+    given:
+      - a signed-in singer S
+      - singer S has a note N with no stored audio
+    when:
+      - singer S calls notes.play on note N
+    then:
+      - the call is rejected and nothing is changed
+    maps_to:
+      capability: notes.play
+      invariants: [INV-NOTES-004]
+      interaction: INT-NOTES-008
+
+  - id: ACC-NOTES-014
+    interface: ui
+    title: A note without stored audio still analyses and exports
+    given:
+      - a signed-in singer S
+      - singer S has a note N with no stored audio
+    when:
+      - singer S calls notes.export_midi on note N
+    then:
+      - the note field exported is true
+    maps_to:
+      capability: notes.export_midi
+      invariants: [INV-NOTES-003, INV-NOTES-004]
+      interaction: INT-NOTES-009
+
+  - id: ACC-NOTES-015
+    interface: storage
+    title: Export reads the melody, never the audio
+    given:
+      - a signed-in singer S
+      - singer S has a note N titled "Mine"
+    when:
+      - singer S calls notes.export_midi on note N
+    then:
+      - the note field exportedFromMelody is true
+      - the note field audioWasRead is false
+    maps_to:
+      capability: notes.export_midi
+      invariants: [INV-NOTES-003]

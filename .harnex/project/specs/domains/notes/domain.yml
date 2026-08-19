@@ -1,0 +1,58 @@
+domain:
+  name: notes
+  version: 0.1.0
+  status: specifying
+  owner: human
+
+  description: >
+    A place to put a sung idea before it is gone. A note is a musical-idea
+    memo: sing it, and the app analyses and keeps it. There is no score
+    gate — every capture is a keeper — and the self-analysis is reframed
+    as description rather than a grade, because grading a half-formed
+    idea discourages the recording of half-formed ideas.
+
+    The symbolic melody is persisted alongside the audio and is the source
+    of truth for every later question. Corpus analysis never re-touches a
+    waveform. On top of the melody sits an editable chord backdrop: the
+    app proposes a harmony, and the singer changes any of it by hand.
+
+  interfaces:
+    - type: ui
+      description: >
+        The Notes tab: capture, the note list, and per-note detail with
+        its melody shape, chord track, playback, and export.
+    - type: storage
+      description: >
+        The notes table and the private notes storage bucket, reached
+        through the Supabase client and guarded by row-level security.
+
+  boundaries:
+    owns:
+      - The capture-analyse-keep loop for a sung idea, with no score gate
+      - Note titling, including the timestamped default
+      - The notes table, its melody_json column, and the notes bucket
+      - Cache-first listing with the server as the authority
+      - Deleting a note, its audio blob, and its cache entry together
+      - The chord track's editing session — which slot a gesture landed
+        on, which slots have been changed, and reverting them
+      - Auditioning a chord and playing a note back
+      - Offering a note as a MIDI file
+    does_not_own:
+      - Capturing audio or detecting pitch (pitch)
+      - Segmentation, key, tempo, grid, chord inference, or the pure chord
+        edits and MIDI bytes (transcription)
+      - Statistics across many notes (insights)
+      - Who the signed-in singer is (account)
+      - Practising against a target melody (practice)
+
+  depends_on:
+    - domain: pitch
+      reason: Captures the take through the audio engine contract
+    - domain: transcription
+      reason: Analyses the take and infers and edits the chord backdrop
+    - domain: account
+      reason: Every note belongs to the signed-in singer
+
+  depended_on_by:
+    - domain: insights
+      reason: The notes corpus is what insights mines

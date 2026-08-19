@@ -1,0 +1,81 @@
+# The chord-track editing session. Split from capabilities.yml to stay
+# inside the 150-line spec-file budget (Axiom 3).
+capabilities:
+  - name: notes.open_chord_track
+    description: >
+      Build the harmonic backdrop for a note's melody and hold it as an
+      editing session, keeping the inferred progression alongside the
+      singer's changes.
+    actor: singer
+    implemented_by: packages/client/src/screens/Notes/useChordTrack.ts
+    parameters:
+      required: [melody]
+      optional: [grid, chordsPerBar]
+    preconditions:
+      - the note belongs to the signed-in singer
+    postconditions:
+      - the progression is inferred from the persisted melody
+      - every slot starts unedited
+      - hasEdits is false on a freshly opened track
+      - an empty melody yields an empty track rather than an error
+    permissions:
+      - role: singer
+        notes: The track is derived from the singer's own note.
+
+  - name: notes.edit_chord
+    description: >
+      Change one chord in the backdrop — nudge it through the key, step
+      its shape, or set it outright — and remember that it was changed.
+    actor: singer
+    implemented_by: packages/client/src/screens/Notes/useChordTrack.ts
+    parameters:
+      required: [index]
+      optional: [degrees, step, rootPc, quality]
+    preconditions:
+      - index names a slot that exists in the track
+    postconditions:
+      - the change is applied by the pure transform in transcription
+      - the changed slot is marked as edited
+      - hasEdits becomes true
+      - no other slot changes
+      - re-inference leaves the changed slot alone
+    permissions:
+      - role: singer
+        notes: Editing is local to the session until the singer keeps it.
+
+  - name: notes.revert_chord
+    description: >
+      Put one slot, or the whole track, back to what the melody implied.
+    actor: singer
+    implemented_by: packages/client/src/screens/Notes/useChordTrack.ts
+    parameters:
+      required: []
+      optional: [index]
+    preconditions:
+      - the track has at least one slot
+    postconditions:
+      - a reverted slot carries the inferred chord and is no longer edited
+      - reverting every slot sets hasEdits false
+      - reverting a slot that was never edited changes nothing
+    permissions:
+      - role: singer
+        notes: Reverting is local to the session.
+
+  - name: notes.audition_chord
+    description: >
+      Sound one chord from the backdrop so the singer can hear it under
+      their line.
+    actor: singer
+    implemented_by: packages/client/src/screens/Notes/useChordTrack.ts
+    parameters:
+      required: [index]
+    preconditions:
+      - index names a slot that exists in the track
+    postconditions:
+      - the chord sounds for the track's audition length
+      - the voicing sits at or above the backdrop's floor so it does not
+        compete with the sung line
+      - auditioning does not mark the slot as edited
+    permissions:
+      - role: singer
+        notes: Local playback only.
