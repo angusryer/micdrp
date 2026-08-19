@@ -1,38 +1,61 @@
 constraints_version: "1.0.0"
 
-runtime:
-  port: 3000
-  language: agent_choice
-  database: agent_choice
-  process_model: single_process
+# micdrp is a React Native app over a Supabase backend. There is no
+# first-party HTTP server: the "backend" is Postgres + Auth + Storage
+# reached through the Supabase client, and every domain's compute runs
+# on-device against the pure-TS `logic` package.
 
+runtime:
+  language: typescript
+  process_model: mobile_client
+  client:
+    framework: react-native
+    packages: [packages/client]
+  compute:
+    location: on_device
+    packages: [packages/logic, packages/shared]
+    native_core: packages/client/cpp/dsp
+  backend:
+    provider: supabase
+    database: postgres
+    auth: supabase_auth
+    storage: supabase_storage
+    schema: supabase/migrations
   build:
-    script: src/build.sh
+    script: scripts/build.sh
   start:
-    script: src/start.sh
+    script: scripts/dev.sh
 
 serialization:
-  rest:
+  postgres:
     case: snake_case
-  graphql:
+  typescript:
     case: camelCase
   timestamps:
-    format: iso8601
-    timezone: UTC
+    format: epoch_millis
+    field_suffix: Ms
+    rationale: >
+      Melodies are timed in milliseconds relative to take start, so
+      every time value in the domain model is a number of milliseconds.
+      Row creation times cross the wire as `createdAtMs`.
+  ids:
+    format: uuid_v4
+    source: postgres
   nulls:
-    rest: "null (JSON null, not absent)"
+    typescript: "null (explicit, not undefined)"
 
 permissions:
+  # micdrp has no multi-tenant role ladder. A person is either signed
+  # out or signed in, and a signed-in singer reaches exactly their own
+  # rows — enforced by Postgres row-level security, not by app code.
   role_hierarchy:
-    - guest
-    - reporter
-    - developer
-    - maintainer
-    - owner
+    - visitor
+    - singer
   role_access_levels:
-    guest: 10
-    reporter: 20
-    developer: 30
-    maintainer: 40
-    owner: 50
+    visitor: 10
+    singer: 20
+  ownership:
+    model: row_level_security
+    predicate: "auth.uid() = user_id"
+    enforced_by: supabase/migrations/0001_init.sql
   permission_matrix: {}

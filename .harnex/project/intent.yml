@@ -1,1 +1,45 @@
-future_domains: []
+# The domain map for micdrp. A domain is a vertical slice: it owns its
+# entities, capabilities, invariants, and every interface it exposes.
+# Domains are registered in _registry.yml as their specs are written, so
+# that spec validation stays green at every commit.
+
+future_domains:
+  - name: transcription
+    priority: high
+    description: >
+      Pitch frames to symbolic music. Owns segmentation into discrete
+      notes, key detection, tempo and beat-grid fitting, quantization
+      against that grid, chord inference and editing, and MIDI export.
+    code: packages/logic/src/{segmentation,key,tempo,quantize,harmony,midi}.ts
+
+  - name: notes
+    priority: high
+    description: >
+      Sung musical-idea memos. Owns the capture-analyse-keep loop, the
+      note list and detail views, the editable chord backdrop, playback,
+      and the notes table plus its storage bucket.
+    code: packages/client/src/screens/Notes, packages/client/src/data/notes*.ts
+
+  - name: practice
+    priority: medium
+    description: >
+      Practising against a target melody. Owns the built-in exercise
+      catalogue, the guided session with reference audio and a scrolling
+      target, scoring a take, and the practice_progress trajectory.
+    code: packages/client/src/screens/{Practice,Results}, packages/logic/src/{melodies,scoring}.ts
+
+  - name: insights
+    priority: medium
+    description: >
+      What a singer's own corpus says about them. Owns interval and
+      fragment mining, chord reflection, the avoidance profile, and the
+      training-trend view over practice progress.
+    code: packages/client/src/screens/Dashboard, packages/logic/src/analysis.ts
+
+  - name: account
+    priority: medium
+    description: >
+      Who the singer is and what is theirs. Owns sign-in and sign-out,
+      secure session storage, the profile row, device settings including
+      the analysis knobs, and account deletion.
+    code: packages/client/src/{auth,screens/Account,screens/Login,lib}

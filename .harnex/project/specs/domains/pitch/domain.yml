@@ -1,0 +1,61 @@
+domain:
+  name: pitch
+  version: 0.1.0
+  status: specifying
+  owner: human
+
+  description: >
+    Turning sound into pitch. This domain owns the microphone capture
+    session and the monophonic pitch detector that runs on it: the
+    McLeod Pitch Method (MPM) over a frame of PCM, the clarity score
+    that falls out of it, the median/clarity smoothing that removes
+    octave blips, and the frequency-to-note arithmetic every other
+    domain reads notes through.
+
+    Detection runs in one of two tiers behind a single TS contract.
+    Tier 1 is the C++ core on the real-time audio thread; Tier 2 is
+    the same algorithm as pure TS inside an audio worklet. PCM never
+    crosses to the JS thread in either tier — only analysed frames do,
+    throttled to a display rate.
+
+  interfaces:
+    - type: module
+      description: >
+        A pure-TS library surface (packages/logic) consumed in-process
+        by every other domain: detectPitch, smoothPitch, frequencyToNote,
+        frequencyToMidi, midiToFrequency.
+    - type: events
+      description: >
+        The native-boundary stream. The engine emits throttled
+        PitchSample frames and coarse EngineState transitions to
+        subscribers for the duration of a capture session.
+
+  boundaries:
+    owns:
+      - Microphone permission request and capture lifecycle
+      - Tier selection between the native C++ engine and the worklet fallback
+      - The engine configuration surface (frame size, hop, frequency bounds,
+        clarity threshold, emit rate)
+      - MPM/NSDF fundamental-frequency detection over a PCM frame
+      - The clarity score and what counts as a confident detection
+      - Per-frame smoothing (median window, clarity gate) and rest insertion
+      - Frequency to MIDI, MIDI to frequency, and nearest-note-plus-cents readings
+      - The PitchSample shape on the native boundary and its equivalence
+        to the logic-side PitchFrame
+    does_not_own:
+      - Grouping frames into discrete sung notes (transcription owns segmentation)
+      - Key, tempo, grid, or chord inference (transcription)
+      - Persisting a take or its melody (notes)
+      - Scoring a take against a target melody (practice)
+      - Drawing the live pitch line (notes and practice own their views)
+      - Playing reference audio back to the singer (practice)
+
+  depends_on: []
+
+  depended_on_by:
+    - domain: transcription
+      reason: Consumes smoothed PitchFrame streams and the note conversions
+    - domain: notes
+      reason: Captures a sung idea through the engine contract
+    - domain: practice
+      reason: Captures a practice take through the same contract

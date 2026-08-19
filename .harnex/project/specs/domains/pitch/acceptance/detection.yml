@@ -1,0 +1,129 @@
+# Detection and conversion — the pure half of the domain.
+acceptance:
+  - id: ACC-PITCH-001
+    interface: module
+    title: A sung tone is detected within one percent
+    given:
+      - a PCM frame A of a 220 Hz sine at 44100 Hz
+    when:
+      - pitch.detect runs on frame A
+    then:
+      - the detected frequency is within 1 percent of 220 Hz
+      - the result field clarity is within 0.85 and 1 inclusive
+    maps_to:
+      capability: pitch.detect
+      invariants: [INV-PITCH-002]
+
+  - id: ACC-PITCH-002
+    interface: module
+    title: Detection holds across the sung range
+    given:
+      - a PCM frame A of a 110 Hz sine at 44100 Hz
+      - a PCM frame B of a 660 Hz sine at 44100 Hz
+    when:
+      - pitch.detect runs on frame A
+      - pitch.detect runs on frame B
+    then:
+      - the detected frequency is within 1 percent of 660 Hz
+      - the result field clarity is within 0.85 and 1 inclusive
+    maps_to:
+      capability: pitch.detect
+      invariants: [INV-PITCH-002]
+
+  - id: ACC-PITCH-003
+    interface: module
+    title: Silence yields no pitch
+    given:
+      - a PCM frame A of silence at 44100 Hz
+    when:
+      - pitch.detect runs on frame A
+    then:
+      - no frequency is returned
+      - the result field clarity is within 0 and 1 inclusive
+    maps_to:
+      capability: pitch.detect
+      invariants: [INV-PITCH-002, INV-PITCH-003]
+
+  - id: ACC-PITCH-004
+    interface: module
+    title: A tone above the ceiling is rejected
+    given:
+      - a PCM frame A of a 440 Hz sine at 44100 Hz
+    when:
+      - pitch.detect runs on frame A with maxFrequency 200
+    then:
+      - no frequency is returned
+      - the result field clarity is within 0 and 1 inclusive
+    maps_to:
+      capability: pitch.detect
+      invariants: [INV-PITCH-005]
+
+  - id: ACC-PITCH-005
+    interface: module
+    title: A tone below the floor is rejected
+    given:
+      - a PCM frame A of a 110 Hz sine at 44100 Hz
+    when:
+      - pitch.detect runs on frame A with minFrequency 200
+    then:
+      - no frequency is returned
+    maps_to:
+      capability: pitch.detect
+      invariants: [INV-PITCH-005]
+
+  - id: ACC-PITCH-006
+    interface: module
+    title: A frame shorter than four samples is rejected
+    given:
+      - a PCM frame A of 3 samples at 44100 Hz
+    when:
+      - pitch.detect runs on frame A
+    then:
+      - no frequency is returned
+      - the result field clarity is 0
+    maps_to:
+      capability: pitch.detect
+
+  - id: ACC-PITCH-007
+    interface: module
+    title: The reference pitch is A4 at 440 Hz
+    given:
+      - no PitchSample exists
+    when:
+      - pitch.read_note runs on 440 Hz
+    then:
+      - the result field midi is 69
+      - the result field name is A
+      - the result field octave is 4
+      - the result field cents is 0
+    maps_to:
+      capability: pitch.read_note
+      invariants: [INV-PITCH-006, INV-PITCH-007]
+
+  - id: ACC-PITCH-008
+    interface: module
+    title: Cents measure distance to the nearest note
+    given:
+      - no PitchSample exists
+    when:
+      - pitch.read_note runs on 450 Hz
+    then:
+      - the result field midi is 69
+      - the result field cents is within -50 and 50 inclusive
+    maps_to:
+      capability: pitch.read_note
+      invariants: [INV-PITCH-007]
+
+  - id: ACC-PITCH-009
+    interface: module
+    title: An octave is exactly twelve MIDI steps and round-trips
+    given:
+      - no PitchSample exists
+    when:
+      - pitch.to_midi round-trips 880 Hz
+    then:
+      - the result field midi is 81
+      - the result field recoveredHz is within 879.99 and 880.01 inclusive
+    maps_to:
+      capability: pitch.to_midi
+      invariants: [INV-PITCH-006]

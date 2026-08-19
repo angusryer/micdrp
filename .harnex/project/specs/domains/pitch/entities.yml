@@ -1,0 +1,95 @@
+entities:
+  - name: PitchSample
+    description: >
+      One analysed frame as it crosses the native boundary. Emitted by
+      both engine tiers and structurally consumable as a PitchFrame.
+      Unvoiced frames carry frequencyHz 0 (the C++/wire representation)
+      while midi and cents go null.
+    properties:
+      - name: timestampMs
+        type: number
+        required: true
+        description: Milliseconds elapsed since capture start.
+        constraints: ["is greater than or equal to 0", "is non-decreasing across a session"]
+      - name: frequencyHz
+        type: number
+        required: true
+        description: Detected fundamental. 0 means unvoiced, never null.
+        constraints: ["is greater than or equal to 0"]
+      - name: clarity
+        type: number
+        required: true
+        description: NSDF peak value at the chosen lag; the confidence score.
+        constraints: ["is within 0 and 1 inclusive"]
+      - name: midi
+        type: number
+        required: false
+        description: Nearest MIDI note number, or null when unvoiced.
+      - name: cents
+        type: number
+        required: false
+        description: Signed deviation from the nearest note, or null when unvoiced.
+        constraints: ["is within -50 and 50 inclusive when not null"]
+
+  - name: PitchFrame
+    description: >
+      The logic-side frame. Identical to PitchSample minus frequencyHz:
+      the pure pipeline reasons in midi and cents, both null when the
+      frame is unvoiced.
+    properties:
+      - name: timestampMs
+        type: number
+        required: true
+        description: Milliseconds elapsed since capture start.
+      - name: midi
+        type: number
+        required: false
+        description: Nearest MIDI note number, or null when unvoiced or gated out.
+      - name: cents
+        type: number
+        required: false
+        description: Signed deviation from the nearest note, or null when unvoiced.
+      - name: clarity
+        type: number
+        required: true
+        description: Detection confidence, carried through smoothing unchanged.
+        constraints: ["is within 0 and 1 inclusive"]
+
+  - name: PitchResult
+    description: The direct output of the detector over one PCM frame.
+    properties:
+      - name: frequency
+        type: number
+        required: false
+        description: >
+          Detected fundamental in Hz, or null when no peak cleared the
+          clarity cutoff or the peak fell outside the frequency bounds.
+      - name: clarity
+        type: number
+        required: true
+        description: >
+          NSDF value at the chosen peak, clamped to 0..1. Reported even
+          when frequency is null, so callers can distinguish a silent
+          frame from a rejected one.
+
+  - name: NoteReading
+    description: A frequency resolved to its nearest chromatic note.
+    properties:
+      - name: midi
+        type: number
+        required: true
+        description: Nearest MIDI note number.
+      - name: name
+        type: string
+        required: true
+        description: Chromatic name of the nearest note.
+        constraints: ["is one of C, C#, D, D#, E, F, F#, G, G#, A, A#, B"]
+      - name: octave
+        type: number
+        required: true
+        description: Scientific-pitch octave, derived as floor(midi / 12) - 1.
+      - name: cents
+        type: number
+        required: true
+        description: Signed cents away from the nearest note.
+        constraints: ["is within -50 and 50 inclusive"]

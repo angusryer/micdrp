@@ -1,0 +1,127 @@
+# The capture session — driven against a fake engine tier.
+acceptance:
+  - id: ACC-PITCH-015
+    interface: events
+    title: A granted microphone permission is reported as granted
+    given:
+      - a capture engine on the native tier with permission granted
+    when:
+      - the singer calls pitch.request_permission
+    then:
+      - the result field granted is true
+    maps_to:
+      capability: pitch.request_permission
+
+  - id: ACC-PITCH-016
+    interface: events
+    title: A denied microphone permission blocks capture
+    given:
+      - a capture engine on the native tier with permission denied
+      - a capture session is idle
+    when:
+      - the singer calls pitch.start_capture
+    then:
+      - the call is rejected and no capture session is running
+    maps_to:
+      capability: pitch.start_capture
+      invariants: [INV-PITCH-010]
+
+  - id: ACC-PITCH-017
+    interface: events
+    title: A partial configuration merges into the current one
+    given:
+      - a capture engine on the native tier with permission granted
+    when:
+      - the singer calls pitch.configure_engine
+    then:
+      - the result field config.clarityThreshold is 0.8
+      - the result field config.sampleRateHz is 44100
+    maps_to:
+      capability: pitch.configure_engine
+
+  - id: ACC-PITCH-018
+    interface: events
+    title: Capture delivers analysed frames and never raw audio
+    given:
+      - a capture engine on the native tier with permission granted
+      - a capture session is idle
+    when:
+      - the singer calls pitch.start_capture
+    then:
+      - no delivered frame carries raw audio samples
+      - frames reach subscribers at no more than 60 per second
+    maps_to:
+      capability: pitch.start_capture
+      invariants: [INV-PITCH-001, INV-PITCH-008]
+
+  - id: ACC-PITCH-019
+    interface: events
+    title: Starting a second session is rejected
+    given:
+      - a capture engine on the native tier with permission granted
+      - a capture session is recording
+    when:
+      - the singer calls pitch.start_capture
+    then:
+      - the call is rejected and no capture session is running
+    maps_to:
+      capability: pitch.start_capture
+      invariants: [INV-PITCH-010]
+
+  - id: ACC-PITCH-020
+    interface: events
+    title: Stopping returns the full-resolution analysis
+    given:
+      - a capture engine on the native tier with permission granted
+      - a capture session is recording
+    when:
+      - the singer calls pitch.stop_capture
+    then:
+      - the returned handle carries more samples than were delivered live
+      - the result field state is idle
+    maps_to:
+      capability: pitch.stop_capture
+      invariants: [INV-PITCH-008]
+
+  - id: ACC-PITCH-021
+    interface: events
+    title: Stopping with no session running is rejected
+    given:
+      - a capture engine on the native tier with permission granted
+      - a capture session is idle
+    when:
+      - the singer calls pitch.stop_capture
+    then:
+      - the call is rejected and no capture session is running
+    maps_to:
+      capability: pitch.stop_capture
+      invariants: [INV-PITCH-010]
+
+  - id: ACC-PITCH-022
+    interface: events
+    title: Subscribing does not start a session and can be undone
+    given:
+      - a capture engine on the native tier with permission granted
+      - a capture session is idle
+    when:
+      - the singer calls pitch.observe_stream
+    then:
+      - the result field state is idle
+      - the result field unsubscribed is true
+    maps_to:
+      capability: pitch.observe_stream
+
+  - id: ACC-PITCH-023
+    interface: events
+    title: The worklet tier satisfies the same contract as the native tier
+    given:
+      - a capture engine on the worklet tier with permission granted
+      - a capture session is idle
+    when:
+      - the singer calls pitch.start_capture
+    then:
+      - no delivered frame carries raw audio samples
+      - frames reach subscribers at no more than 60 per second
+    maps_to:
+      capability: pitch.start_capture
+      invariants: [INV-PITCH-001, INV-PITCH-009]

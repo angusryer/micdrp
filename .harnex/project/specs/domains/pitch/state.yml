@@ -1,0 +1,20 @@
+# Domain Development State — overwrite each meaningful change
+updated_at: "2026-08-18T00:00:00Z"
+updated_by: agent
+phase: specifying
+phase_detail: >
+  Specs written from a crawl of the existing implementation: MPM
+  detection (packages/logic/src/mpm.ts), smoothing, note conversions,
+  and the two-tier capture engine (packages/client/src/audio). 9
+  capabilities, 10 invariants, 23 acceptance tests. Spec validation is
+  green.
+
+  The acceptance tests do not execute yet: the harness needs a project
+  adapter exposing the test-extensions actions over the logic package
+  and a fake engine tier. Until that exists the tests are a contract,
+  not a gate. The existing Jest suites in packages/logic cover the
+  detection and smoothing halves already.
+blockers:
+  - >
+    No verification target. Acceptance tests report SKIP until a direct
+    adapter is wired (test-config.yml direct.adapter_command).

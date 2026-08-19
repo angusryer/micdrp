@@ -1,0 +1,75 @@
+# Capture-session entities. Split from entities.yml to stay inside
+# the 150-line spec-file budget (Axiom 3).
+entities:
+  - name: EngineConfig
+    description: >
+      Tunable capture and detection parameters. Every field has a
+      default; a partial override merges into the current config.
+    properties:
+      - name: sampleRateHz
+        type: number
+        required: true
+        description: Capture sample rate. Default 44100.
+      - name: frameSize
+        type: number
+        required: true
+        description: Analysis window in samples. Default 2048.
+      - name: hopSize
+        type: number
+        required: true
+        description: Samples advanced between analysis windows. Default 1024.
+      - name: minFrequencyHz
+        type: number
+        required: true
+        description: Detections below this are rejected. Default 70.
+      - name: maxFrequencyHz
+        type: number
+        required: true
+        description: Detections above this are rejected. Default 1200.
+      - name: clarityThreshold
+        type: number
+        required: true
+        description: >
+          Fraction of the highest NSDF peak a key maximum must reach to
+          be accepted. Default 0.9.
+        constraints: ["is within 0 and 1 inclusive"]
+      - name: emitRateHz
+        type: number
+        required: true
+        description: Ceiling on frames emitted to JS per second. Default 60.
+
+  - name: RecordingHandle
+    description: >
+      What a finished capture resolves to: the audio on disk plus the
+      full-resolution analysis, unthrottled, ready for transcription.
+    properties:
+      - name: id
+        type: string
+        required: true
+        description: Identifier for this capture.
+      - name: uri
+        type: string
+        required: true
+        description: file:// path to the captured audio.
+      - name: sampleRateHz
+        type: number
+        required: true
+        description: Rate the audio was captured at.
+      - name: durationMs
+        type: number
+        required: true
+        description: Captured length in milliseconds.
+      - name: samples
+        type: array
+        items: PitchSample
+        required: true
+        description: Every analysed frame, not throttled to the emit rate.
+
+  - name: EngineState
+    description: Coarse capture lifecycle state observable by subscribers.
+    properties:
+      - name: value
+        type: string
+        required: true
+        description: The current state.
+        constraints: ["is one of idle, recording, analyzing, error"]

@@ -1,0 +1,87 @@
+# Pure detection and conversion. Every capability here is a pure
+# function over its inputs — no capture session, no I/O.
+capabilities:
+  - name: pitch.detect
+    description: >
+      Estimate the fundamental frequency of one PCM frame using the
+      McLeod Pitch Method, returning the frequency and the NSDF clarity
+      at the chosen peak.
+    actor: system
+    implemented_by: packages/logic/src/mpm.ts
+    parameters:
+      required: [samples, sampleRate]
+      optional: [clarityThreshold, minFrequency, maxFrequency]
+    preconditions:
+      - samples contains at least 4 values
+      - sampleRate is greater than 0
+    postconditions:
+      - clarity is within 0 and 1 inclusive
+      - frequency is null when no key maximum reaches the clarity cutoff
+      - frequency is null when the interpolated peak lies outside
+        minFrequency or maxFrequency
+      - frequency is sampleRate divided by the parabolically interpolated
+        peak lag when a peak is accepted
+    permissions:
+      - role: visitor
+        notes: Pure computation; no account or capture session is involved.
+
+  - name: pitch.smooth
+    description: >
+      Remove single-frame outliers from a pitch stream with a median
+      filter over MIDI values, and turn frames below the clarity gate
+      into rests.
+    actor: system
+    implemented_by: packages/logic/src/smoothing.ts
+    parameters:
+      required: [frames]
+      optional: [windowSize, minClarity]
+    preconditions:
+      - frames is a list of PitchFrame values
+    postconditions:
+      - the output has exactly one frame per input frame
+      - each output frame keeps its input timestampMs and clarity
+      - frames with clarity below minClarity are unvoiced in the output
+      - a frame whose median window contains no voiced value is a rest
+      - cents is preserved only when the frame already sat on the median
+        note, and is 0 otherwise
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: pitch.read_note
+    description: >
+      Resolve a frequency to the nearest chromatic note, its octave, and
+      the signed cents deviation from it.
+    actor: system
+    implemented_by: packages/logic/src/notes.ts
+    parameters:
+      required: [frequencyHz]
+    preconditions:
+      - frequencyHz is greater than 0
+    postconditions:
+      - midi is the nearest integer MIDI note to the frequency
+      - cents is within -50 and 50 inclusive
+      - name is the chromatic name at index midi modulo 12
+      - octave is floor of midi divided by 12, minus 1
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: pitch.to_midi
+    description: >
+      Convert a frequency to a fractional MIDI note number against the
+      A4 = 440 Hz reference, and back.
+    actor: system
+    implemented_by: packages/logic/src/notes.ts
+    parameters:
+      required: [frequencyHz]
+    preconditions:
+      - frequencyHz is greater than 0
+    postconditions:
+      - 440 Hz maps to MIDI 69
+      - doubling the frequency adds exactly 12 to the MIDI value
+      - converting a MIDI value to a frequency and back returns the
+        original value
+    permissions:
+      - role: visitor
+        notes: Pure computation.
