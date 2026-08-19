@@ -93,5 +93,16 @@ target 'micdrp' do
     File.open(release_tests_path, 'a') do |file|
       file.puts "\n#include? \"../../../env.xcconfig\""
     end
+
+    # The C++ DSP core is shared with Android and lives outside ios/, so the
+    # AudioEngineModule bridge needs it on the header path. This has to go in
+    # the pod xcconfig rather than the target's build settings: a target-level
+    # HEADER_SEARCH_PATHS shadows the xcconfig entirely, because $(inherited)
+    # there resolves to the project level, not to the xcconfig underneath it.
+    [debug_path, release_path, debug_tests_path, release_tests_path].each do |path|
+      File.open(path, 'a') do |file|
+        file.puts "\nHEADER_SEARCH_PATHS = $(inherited) \"$(PODS_ROOT)/../../cpp/dsp\""
+      end
+    end
   end
 end

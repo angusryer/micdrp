@@ -5,3 +5,122 @@ exports[`ErrorBoundary component renders children properly when no error is thro
   testID="child"
 />
 `;
+
+exports[`ErrorBoundary component renders when an uncaught error is thrown from within a child component 1`] = `
+<RCTSafeAreaView
+  style={
+    [
+      {
+        "flex": 1,
+      },
+      {
+        "backgroundColor": "#13161C",
+      },
+    ]
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "flex": 1,
+        "gap": 12,
+        "justifyContent": "center",
+        "paddingHorizontal": 32,
+      }
+    }
+  >
+    <Text
+      style={
+        [
+          {
+            "fontSize": 20,
+            "fontWeight": "700",
+            "textAlign": "center",
+          },
+          {
+            "color": "#ECEEF2",
+          },
+        ]
+      }
+    >
+      Something went wrong
+    </Text>
+    <Text
+      style={
+        [
+          {
+            "fontSize": 14,
+            "lineHeight": 20,
+            "textAlign": "center",
+          },
+          {
+            "color": "#9BA1AD",
+          },
+        ]
+      }
+    >
+      The app ran into an unexpected problem. You can try again.
+    </Text>
+    <View
+      accessibilityLabel="Retry"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": undefined,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onClick={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        {
+          "alignItems": "center",
+          "backgroundColor": "#3D7BE0",
+          "borderRadius": 12,
+          "height": 48,
+          "justifyContent": "center",
+          "marginTop": 12,
+          "opacity": 1,
+          "paddingHorizontal": 32,
+        }
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "fontSize": 16,
+              "fontWeight": "700",
+            },
+            {
+              "color": "#FFFFFF",
+            },
+          ]
+        }
+      >
+        Retry
+      </Text>
+    </View>
+  </View>
+</RCTSafeAreaView>
+`;

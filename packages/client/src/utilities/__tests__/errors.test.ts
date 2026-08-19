@@ -1,4 +1,3 @@
-import { AxiosError } from 'axios';
 import AppError, { Errors } from '../errors';
 
 /* eslint-disable @typescript-eslint/no-throw-literal */
@@ -40,14 +39,6 @@ describe('AppError Class', () => {
     }
   });
 
-  it('properly creates an AppError of type AxiosError when an AxiosError is thrown', () => {
-    try {
-      throw new AxiosError();
-    } catch (err) {
-      const newError = new AppError(err);
-      expect(newError.type).toEqual(Errors.AxiosError);
-    }
-  });
 
   it('properly creates an AppError of type UserDefinedError when a custom object is thrown', () => {
     try {

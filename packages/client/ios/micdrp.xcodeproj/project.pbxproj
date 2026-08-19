@@ -8,10 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		00E356F31AD99517003FC87E /* micdrpTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 00E356F21AD99517003FC87E /* micdrpTests.m */; };
+		0730E62C3B640AEB23864E9A /* notes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9562B779ABDCD05E23FEB32B /* notes.cpp */; };
 		0C80B921A6F3F58F76C31292 /* libPods-micdrp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-micdrp.a */; };
 		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
+		1933D748D5F3E4026E5387AA /* mpm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DF912EB0FAD01209D28881AA /* mpm.cpp */; };
+		64FE505DA0AB8147C0E9A420 /* AudioEngineModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = 8AA58FD71262417B94E79C03 /* AudioEngineModule.mm */; };
 		7699B88040F8A987B510C191 /* libPods-micdrp-micdrpTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19F6CBCC0A4E27FBF8BF4A61 /* libPods-micdrp-micdrpTests.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		874E8F2629CCCE4200E04F31 /* env.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 874E8F2529CCCE4200E04F31 /* env.xcconfig */; };
@@ -39,6 +42,7 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = micdrp/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = micdrp/main.m; sourceTree = "<group>"; };
 		19F6CBCC0A4E27FBF8BF4A61 /* libPods-micdrp-micdrpTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-micdrp-micdrpTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		31A3F1DA1B4AD9D5214AEBC3 /* mpm.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = mpm.h; path = ../cpp/dsp/mpm.h; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-micdrp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-micdrp.debug.xcconfig"; path = "Target Support Files/Pods-micdrp/Pods-micdrp.debug.xcconfig"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-micdrp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-micdrp.release.xcconfig"; path = "Target Support Files/Pods-micdrp/Pods-micdrp.release.xcconfig"; sourceTree = "<group>"; };
 		5B7EB9410499542E8C5724F5 /* Pods-micdrp-micdrpTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-micdrp-micdrpTests.debug.xcconfig"; path = "Target Support Files/Pods-micdrp-micdrpTests/Pods-micdrp-micdrpTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -46,6 +50,11 @@
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = micdrp/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		874E8F2529CCCE4200E04F31 /* env.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = env.xcconfig; sourceTree = "<group>"; };
 		89C6BE57DB24E9ADA2F236DE /* Pods-micdrp-micdrpTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-micdrp-micdrpTests.release.xcconfig"; path = "Target Support Files/Pods-micdrp-micdrpTests/Pods-micdrp-micdrpTests.release.xcconfig"; sourceTree = "<group>"; };
+		8AA58FD71262417B94E79C03 /* AudioEngineModule.mm */ = {isa = PBXFileReference; includeInIndex = 1; path = AudioEngineModule.mm; sourceTree = "<group>"; };
+		9562B779ABDCD05E23FEB32B /* notes.cpp */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.cpp; name = notes.cpp; path = ../cpp/dsp/notes.cpp; sourceTree = "<group>"; };
+		C68CB312D3A22CF16FFF453D /* AudioEngineModule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = AudioEngineModule.h; sourceTree = "<group>"; };
+		DCE7820ABC08442729B30AF3 /* notes.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = notes.h; path = ../cpp/dsp/notes.h; sourceTree = "<group>"; };
+		DF912EB0FAD01209D28881AA /* mpm.cpp */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.cpp; name = mpm.cpp; path = ../cpp/dsp/mpm.cpp; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -100,6 +109,19 @@
 			name = micdrp;
 			sourceTree = "<group>";
 		};
+		24C4586DB0EBB6BD23FE34BB /* AudioEngine */ = {
+			isa = PBXGroup;
+			children = (
+				C68CB312D3A22CF16FFF453D /* AudioEngineModule.h */,
+				8AA58FD71262417B94E79C03 /* AudioEngineModule.mm */,
+				DF912EB0FAD01209D28881AA /* mpm.cpp */,
+				31A3F1DA1B4AD9D5214AEBC3 /* mpm.h */,
+				9562B779ABDCD05E23FEB32B /* notes.cpp */,
+				DCE7820ABC08442729B30AF3 /* notes.h */,
+			);
+			name = AudioEngine;
+			sourceTree = SOURCE_ROOT;
+		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -126,6 +148,7 @@
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				BBD78D7AC51CEA395F1C20DB /* Pods */,
+				24C4586DB0EBB6BD23FE34BB /* AudioEngine */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -422,6 +445,9 @@
 			files = (
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
+				64FE505DA0AB8147C0E9A420 /* AudioEngineModule.mm in Sources */,
+				1933D748D5F3E4026E5387AA /* mpm.cpp in Sources */,
+				0730E62C3B640AEB23864E9A /* notes.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,9 +1,7 @@
-import { AxiosError } from 'axios';
 import _ from 'lodash';
 import { Platform } from 'react-native';
 
 export enum Errors {
-  AxiosError = 'AXIOS_ERROR',
   BaseError = 'BASE_ERROR',
   AppError = 'APP_ERROR',
   TextError = 'MSG_ERROR',
@@ -149,23 +147,9 @@ export default class AppError<ErrorType = unknown> extends Error {
       typeof err === 'string'
     ) {
       return Errors.TextError;
-    } else if (
-      err instanceof Error &&
-      !(err instanceof AppError) &&
-      err instanceof AxiosError
-    ) {
-      return Errors.AxiosError;
-    } else if (
-      err instanceof Error &&
-      !(err instanceof AppError) &&
-      !(err instanceof AxiosError)
-    ) {
+    } else if (err instanceof Error && !(err instanceof AppError)) {
       return Errors.BaseError;
-    } else if (
-      err instanceof Error &&
-      err instanceof AppError &&
-      !(err instanceof AxiosError)
-    ) {
+    } else if (err instanceof Error && err instanceof AppError) {
       return Errors.AppError;
     } else if (
       typeof err === 'object' &&

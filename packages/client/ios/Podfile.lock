@@ -443,25 +443,6 @@ PODS:
     - React-jsi (= 0.72.4)
     - React-logger (= 0.72.4)
     - React-perflogger (= 0.72.4)
-  - RNAudioAPI (0.12.2):
-    - RCT-Folly (= 2021.07.22.00)
-    - React-Core
-    - RNAudioAPI/audioapi (= 0.12.2)
-  - RNAudioAPI/audioapi (0.12.2):
-    - RCT-Folly (= 2021.07.22.00)
-    - React-Core
-    - RNAudioAPI/audioapi/audioapi_dsp (= 0.12.2)
-    - RNAudioAPI/audioapi/ios (= 0.12.2)
-    - RNAudioAPI/audioapi/miniaudio_impl (= 0.12.2)
-  - RNAudioAPI/audioapi/audioapi_dsp (0.12.2):
-    - RCT-Folly (= 2021.07.22.00)
-    - React-Core
-  - RNAudioAPI/audioapi/ios (0.12.2):
-    - RCT-Folly (= 2021.07.22.00)
-    - React-Core
-  - RNAudioAPI/audioapi/miniaudio_impl (0.12.2):
-    - RCT-Folly (= 2021.07.22.00)
-    - React-Core
   - RNFS (2.20.0):
     - React-Core
   - RNGestureHandler (2.18.1):
@@ -539,7 +520,6 @@ DEPENDENCIES:
   - React-runtimescheduler (from `../../../node_modules/react-native/ReactCommon/react/renderer/runtimescheduler`)
   - React-utils (from `../../../node_modules/react-native/ReactCommon/react/utils`)
   - ReactCommon/turbomodule/core (from `../../../node_modules/react-native/ReactCommon`)
-  - RNAudioAPI (from `../../../node_modules/react-native-audio-api`)
   - RNFS (from `../../../node_modules/react-native-fs`)
   - RNGestureHandler (from `../../../node_modules/react-native-gesture-handler`)
   - RNKeychain (from `../../../node_modules/react-native-keychain`)
@@ -643,8 +623,6 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/react-native/ReactCommon/react/utils"
   ReactCommon:
     :path: "../../../node_modules/react-native/ReactCommon"
-  RNAudioAPI:
-    :path: "../../../node_modules/react-native-audio-api"
   RNFS:
     :path: "../../../node_modules/react-native-fs"
   RNGestureHandler:
@@ -709,7 +687,6 @@ SPEC CHECKSUMS:
   React-runtimescheduler: 30a5fd3151996a8f2ad13d0b7df65337c36c1e40
   React-utils: 5af1d6c958748398eae8030a2fa08af220f4a2e6
   ReactCommon: 00926ccf1a9b03cc7cfbfb2b838591a0a1b754f1
-  RNAudioAPI: 2966dfbbf0b69b5347d559a43814cc0e9d15923d
   RNFS: 89de7d7f4c0f6bafa05343c578f61118c8282ed8
   RNGestureHandler: aff7256db65faaf624077051f0cee39c1c1e690d
   RNKeychain: bbe2f6d5cc008920324acb49ef86ccc03d3b38e4
@@ -720,6 +697,6 @@ SPEC CHECKSUMS:
   SocketRocket: f32cd54efbe0f095c4d7594881e52619cfe80b17
   Yoga: 3efc43e0d48686ce2e8c60f99d4e6bd349aff981
 
-PODFILE CHECKSUM: 985d86fdca233644f2ce98ca06231023947bc178
+PODFILE CHECKSUM: e15f7c2acd331116f1d2ad9006f550c871a24080
 
 COCOAPODS: 1.16.2
