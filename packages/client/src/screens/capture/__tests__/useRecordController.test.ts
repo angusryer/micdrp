@@ -18,10 +18,15 @@
  * mutable `{ value }` we can read back.
  */
 
-import React from 'react';
+
+import { harnessElement } from '../../../testing/harness';
 import TestRenderer, { act } from 'react-test-renderer';
 
-import type { PitchSample, RecordingHandle } from '../../../audio/contract';
+import type {
+  EngineConfig,
+  PitchSample,
+  RecordingHandle
+} from '../../../audio/contract';
 import type { UseAudioEngine } from '../../../audio/useAudioEngine';
 
 // ---- controllable fake engine ----
@@ -40,13 +45,13 @@ const unsubscribe = jest.fn(() => {
   pitchCb = null;
 });
 
-const engineMock: jest.Mocked<UseAudioEngine> & {
+const mockEngine: jest.Mocked<UseAudioEngine> & {
   __emit(s: PitchSample): void;
 } = {
   state: 'idle',
   start: jest.fn(() => Promise.resolve()),
   stop: jest.fn(() => Promise.resolve(handle)),
-  configure: jest.fn(() => Promise.resolve()),
+  configure: jest.fn((_config: Partial<EngineConfig>) => Promise.resolve()),
   requestPermission: jest.fn(() => Promise.resolve(true)),
   onPitch: jest.fn((cb: PitchCb) => {
     pitchCb = cb;
@@ -59,8 +64,8 @@ const engineMock: jest.Mocked<UseAudioEngine> & {
 
 jest.mock('../../../audio/useAudioEngine', () => ({
   __esModule: true,
-  useAudioEngine: () => engineMock,
-  default: () => engineMock
+  useAudioEngine: () => mockEngine,
+  default: () => mockEngine
 }));
 
 import {
@@ -84,9 +89,10 @@ interface Mounted {
 function mount(): Mounted {
   let latest: RecordController | null = null;
   let tree!: TestRenderer.ReactTestRenderer;
+  // The initial mount is synchronous; only later updates need an awaited act.
   void act(() => {
     tree = TestRenderer.create(
-      React.createElement(Harness, { onReady: (a) => (latest = a) })
+      harnessElement(Harness, { onReady: (a) => (latest = a) })
     );
   });
   return {
@@ -98,7 +104,7 @@ function mount(): Mounted {
 beforeEach(() => {
   jest.clearAllMocks();
   pitchCb = null;
-  engineMock.requestPermission.mockResolvedValue(true);
+  mockEngine.requestPermission.mockResolvedValue(true);
 });
 
 const sample = (over: Partial<PitchSample> = {}): PitchSample => ({
@@ -125,9 +131,9 @@ describe('useRecordController', () => {
       await api().start();
     });
 
-    expect(engineMock.requestPermission).toHaveBeenCalledTimes(1);
-    expect(engineMock.start).toHaveBeenCalledTimes(1);
-    expect(engineMock.onPitch).toHaveBeenCalledTimes(1);
+    expect(mockEngine.requestPermission).toHaveBeenCalledTimes(1);
+    expect(mockEngine.start).toHaveBeenCalledTimes(1);
+    expect(mockEngine.onPitch).toHaveBeenCalledTimes(1);
     expect(api().state).toBe('recording');
     expect(api().isRecording).toBe(true);
   });
@@ -138,8 +144,8 @@ describe('useRecordController', () => {
       await api().start();
     });
 
-    void act(() => {
-      engineMock.__emit(
+    await act(async () => {
+      mockEngine.__emit(
         sample({ frequencyHz: 220, clarity: 0.8, midi: 57, cents: 12 })
       );
     });
@@ -156,8 +162,8 @@ describe('useRecordController', () => {
     await act(async () => {
       await api().start();
     });
-    void act(() => {
-      engineMock.__emit(sample({ frequencyHz: 0, midi: null, cents: null }));
+    await act(async () => {
+      mockEngine.__emit(sample({ frequencyHz: 0, midi: null, cents: null }));
     });
     expect(api().sharedMidi.value).toBe(UNVOICED_MIDI);
     expect(api().sharedCents.value).toBe(0);
@@ -175,7 +181,7 @@ describe('useRecordController', () => {
     });
 
     expect(unsubscribe).toHaveBeenCalledTimes(1);
-    expect(engineMock.stop).toHaveBeenCalledTimes(1);
+    expect(mockEngine.stop).toHaveBeenCalledTimes(1);
     expect(resolved).toEqual(handle);
     expect(api().state).toBe('result');
   });
@@ -189,22 +195,22 @@ describe('useRecordController', () => {
       await api().stop();
     });
     const before = api().sharedFrame.value;
-    void act(() => {
-      engineMock.__emit(sample({ frequencyHz: 999 }));
+    await act(async () => {
+      mockEngine.__emit(sample({ frequencyHz: 999 }));
     });
     expect(api().sharedFrame.value).toBe(before);
   });
 
   it('rejects and does not subscribe when permission is denied', async () => {
-    engineMock.requestPermission.mockResolvedValueOnce(false);
+    mockEngine.requestPermission.mockResolvedValueOnce(false);
     const { api } = mount();
 
     await act(async () => {
       await expect(api().start()).rejects.toThrow(/permission/i);
     });
 
-    expect(engineMock.start).not.toHaveBeenCalled();
-    expect(engineMock.onPitch).not.toHaveBeenCalled();
+    expect(mockEngine.start).not.toHaveBeenCalled();
+    expect(mockEngine.onPitch).not.toHaveBeenCalled();
     expect(api().state).toBe('error');
   });
 
@@ -213,7 +219,7 @@ describe('useRecordController', () => {
     await act(async () => {
       await api().start();
     });
-    void act(() => {
+    await act(async () => {
       tree.unmount();
     });
     expect(unsubscribe).toHaveBeenCalled();

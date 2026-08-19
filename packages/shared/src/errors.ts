@@ -12,9 +12,13 @@ export enum AppErrorCode {
   Auth = 'AUTH'
 }
 
-export interface AppError {
+/**
+ * A real Error, so `instanceof Error` holds, a stack is captured, and test
+ * assertions and crash reporters treat it as an error rather than as a plain
+ * object that happens to have a `message`.
+ */
+export interface AppError extends Error {
   code: AppErrorCode;
-  message: string;
   cause?: unknown;
 }
 
@@ -23,5 +27,11 @@ export function appError(
   message: string,
   cause?: unknown
 ): AppError {
-  return { code, message, cause };
+  const error = new Error(message) as AppError;
+  error.name = 'AppError';
+  error.code = code;
+  if (cause !== undefined) {
+    error.cause = cause;
+  }
+  return error;
 }

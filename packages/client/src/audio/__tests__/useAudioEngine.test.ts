@@ -11,21 +11,17 @@
  * hook-testing library.
  */
 
-import React from 'react';
+
+import { harnessElement } from '../../testing/harness';
 import TestRenderer, { act } from 'react-test-renderer';
 
 // ---- react-native mock WITHOUT the native audio module (forces Tier 2) ----
-jest.mock('react-native', () => {
-  class NativeEventEmitter {
-    addListener() {
-      return { remove: () => undefined };
-    }
-  }
-  return {
-    NativeModules: {}, // no AudioEngineModule => Tier 2
-    NativeEventEmitter
-  };
-});
+// Absent TurboModule => Tier 2. The spec module resolves to null when the
+// native binary carries no such module, which is exactly this case.
+jest.mock('../../specs/NativeAudioEngine', () => ({
+  __esModule: true,
+  default: null
+}));
 
 import audioEngine from '../AudioEngine';
 import { analyzeFrame } from '../worklet/pitchProcessor';
@@ -34,9 +30,7 @@ import { useAudioEngine, UseAudioEngine } from '../useAudioEngine';
 
 describe('AudioEngine (Tier 2 — native absent)', () => {
   it('falls back to the worklet tier when no native module is registered', () => {
-    // @ts-expect-error test-only accessor
     expect(audioEngine.tier).toBe(2);
-    // @ts-expect-error test-only accessor
     expect(audioEngine.isNative).toBe(false);
   });
 
@@ -95,7 +89,7 @@ describe('useAudioEngine hook', () => {
     let api: UseAudioEngine | null = null;
     void act(() => {
       TestRenderer.create(
-        React.createElement(HookHarness, { onReady: (a) => (api = a) })
+        harnessElement(HookHarness, { onReady: (a) => (api = a) })
       );
     });
     expect(api).not.toBeNull();
@@ -113,7 +107,7 @@ describe('useAudioEngine hook', () => {
     let tree: TestRenderer.ReactTestRenderer | null = null;
     void act(() => {
       tree = TestRenderer.create(
-        React.createElement(HookHarness, { onReady: (a) => (api = a) })
+        harnessElement(HookHarness, { onReady: (a) => (api = a) })
       );
     });
 
@@ -129,7 +123,7 @@ describe('useAudioEngine hook', () => {
     let api: UseAudioEngine | null = null;
     void act(() => {
       TestRenderer.create(
-        React.createElement(HookHarness, { onReady: (a) => (api = a) })
+        harnessElement(HookHarness, { onReady: (a) => (api = a) })
       );
     });
     let off: () => void = () => undefined;

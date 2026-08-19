@@ -14,7 +14,8 @@
  * The theme palette is owned by the ThemeProvider now, so its persistence is
  * covered by theme/__tests__/ThemeProvider.test.tsx, not here.
  */
-import React from 'react';
+
+import { harnessElement } from '../../../testing/harness';
 import TestRenderer, { act } from 'react-test-renderer';
 
 import { DEFAULT_ENGINE_CONFIG } from '../../../audio/contract';
@@ -49,7 +50,7 @@ function mount(): Mounted {
   let tree!: TestRenderer.ReactTestRenderer;
   void act(() => {
     tree = TestRenderer.create(
-      React.createElement(Harness, {
+      harnessElement(Harness, {
         onReady: (v: UseSettingsValue) => {
           latest = v;
         }

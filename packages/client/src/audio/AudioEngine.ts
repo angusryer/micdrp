@@ -33,15 +33,10 @@ type StateListener = (state: EngineState) => void;
 
 /**
  * Resolve the TurboModule, or null when it is absent (a stripped build, or
- * Jest). getEnforcing throws rather than returning null, so the absence is
- * caught here and reported as "no Tier 1", which is what selects the fallback.
+ * Jest). Absence is not an error — it is what selects the Tier 2 fallback.
  */
 function getNativeModule(): NativeAudioEngineModule | null {
-  try {
-    return NativeAudioEngine;
-  } catch {
-    return null;
-  }
+  return NativeAudioEngine ?? null;
 }
 
 /**
@@ -71,6 +66,7 @@ class AudioEngineImpl implements AudioEngineContract {
   private readonly stateListeners = new Set<StateListener>();
 
   // Tier-1 native subscriptions (lazily attached while listeners exist).
+  // Codegen event emitters hand back an EventSubscription.
   private nativePitchSub: { remove(): void } | null = null;
   private nativeStateSub: { remove(): void } | null = null;
 

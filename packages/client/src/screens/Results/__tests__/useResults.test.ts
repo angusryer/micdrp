@@ -11,6 +11,8 @@
  * The hook is driven through a tiny harness rendered with `react-test-renderer`.
  */
 import React from 'react';
+
+import { harnessElement } from '../../../testing/harness';
 import TestRenderer, { act } from 'react-test-renderer';
 import { notesToMidi, segmentNotes, smoothPitch } from 'logic';
 import type { PracticeProgressDto } from 'shared';
@@ -225,14 +227,14 @@ describe('useResults (practice-progress persistence)', () => {
 
     let tree: TestRenderer.ReactTestRenderer | null = null;
     await act(async () => {
-      tree = TestRenderer.create(React.createElement(Harness, { tick: 0 }));
+      tree = TestRenderer.create(harnessElement(Harness, { tick: 0 }));
     });
     await act(async () => {
       await Promise.resolve();
     });
     await act(async () => {
       (tree as unknown as TestRenderer.ReactTestRenderer).update(
-        React.createElement(Harness, { tick: 1 })
+        harnessElement(Harness, { tick: 1 })
       );
     });
     await act(async () => {

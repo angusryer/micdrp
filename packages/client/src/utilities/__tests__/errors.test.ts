@@ -1,7 +1,5 @@
 import AppError, { Errors } from '../errors';
 
-/* eslint-disable @typescript-eslint/no-throw-literal */
-
 describe('AppError Class', () => {
   it('properly creates an AppError of type TextError when a text message is thrown', () => {
     try {

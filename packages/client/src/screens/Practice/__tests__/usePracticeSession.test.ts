@@ -6,7 +6,8 @@
  * path (headphones → start recording then play the reference), and cancel.
  * The count-in (speaker) path is timer-driven and covered by inspection.
  */
-import React from 'react';
+
+import { harnessElement } from '../../../testing/harness';
 import TestRenderer, { act } from 'react-test-renderer';
 
 import type { RecordingHandle } from '../../../audio/contract';
@@ -75,7 +76,7 @@ function mount(params: PracticeParams = PARAMS): { api: () => UsePracticeSession
   let latest: UsePracticeSessionValue | null = null;
   void act(() => {
     TestRenderer.create(
-      React.createElement(Harness, {
+      harnessElement(Harness, {
         params,
         onReady: (v) => {
           latest = v;
