@@ -1,0 +1,182 @@
+# Insights test grammar extensions. Corpus questions are pure functions,
+# so tests drive a project adapter over packages/logic with synthesized
+# corpora; the Dashboard cases add a fake cache and guarded client.
+
+given:
+  - id: GX-INS-SINGER
+    pattern: 'a signed-in singer {label}'
+    mode: extension
+    action: ins_signer
+    params: { label: "{label}" }
+    resolution: Register an authenticated singer and make it current.
+
+  - id: GX-INS-CORPUS
+    pattern: 'a corpus {label} of {value}'
+    mode: extension
+    action: ins_corpus_literal
+    params: { label: "{label}", corpus: "{value}" }
+    resolution: >
+      Register a corpus as a JSON array of melodies, each a list of
+      [midi, startMs, durationMs] triples.
+
+  - id: GX-INS-CORPUS-REPEATED
+    pattern: 'a corpus {label} repeating the shape {value} {N} times'
+    mode: extension
+    action: ins_corpus_repeat
+    params: { label: "{label}", intervals: "{value}", times: "{N}" }
+    resolution: >
+      Build a corpus in which the given interval shape recurs {N} times
+      at varying transpositions, separated by rests.
+
+  - id: GX-INS-CORPUS-RESTS
+    pattern: 'a corpus {label} where the shape {value} spans a rest'
+    mode: extension
+    action: ins_corpus_across_rest
+    params: { label: "{label}", intervals: "{value}" }
+    resolution: >
+      Build a corpus in which the shape only appears if n-grams are
+      taken across a rest, so a fragment reported from it is a bug.
+
+  - id: GX-INS-TRANSPOSED
+    pattern: 'corpus {label} transposed by {N} semitones is corpus {label2}'
+    mode: extension
+    action: ins_corpus_transpose
+    params: { source: "{label}", semitones: "{N}", target: "{label2}" }
+    resolution: Register a transposed copy of an existing corpus.
+
+  - id: GX-INS-NOTES
+    pattern: 'singer {label} has {N} notes and {value} practice sessions'
+    mode: extension
+    action: ins_seed_singer_data
+    params: { owner: "{label}", notes: "{N}", sessions: "{value}" }
+    resolution: Seed both sources for the named singer.
+
+  - id: GX-INS-OFFLINE
+    pattern: 'the server is unreachable'
+    mode: extension
+    action: ins_server_offline
+    resolution: Make every request fail with a transient error.
+
+when:
+  - id: WX-INS-CALL
+    pattern: 'insights.{value} runs on corpus {label}'
+    mode: extension
+    action: ins_call
+    params: { capability: "{value}", label: "{label}" }
+    resolution: Invoke the named capability with default options.
+
+  - id: WX-INS-CALL-OPT
+    pattern: 'insights.{value} runs on corpus {label} with {field} {value2}'
+    mode: extension
+    action: ins_call_with_option
+    params: { capability: "{value}", label: "{label}", option: "{field}", value: "{value2}" }
+    resolution: Invoke the named capability with one option override.
+
+  - id: WX-INS-COMPARE
+    pattern: 'insights.{value} runs on corpus {label} and corpus {label2}'
+    mode: extension
+    action: ins_call_both
+    params: { capability: "{value}", a: "{label}", b: "{label2}" }
+    resolution: Invoke the capability on both corpora and keep both results.
+
+  - id: WX-INS-DASHBOARD
+    pattern: 'singer {label} opens the Dashboard'
+    mode: extension
+    action: ins_open_dashboard
+    params: { actor: "{label}" }
+    resolution: >
+      Run the Dashboard flow as {label}, recording what painted before
+      the sync resolved and how many times the corpus was analysed.
+
+  - id: WX-INS-CORPUS-UNCHANGED
+    pattern: 'the Dashboard re-renders with the corpus unchanged'
+    mode: extension
+    action: ins_rerender
+    resolution: Re-render without changing the melodies, counting recomputes.
+
+then:
+  - id: TX-INS-FIELD
+    pattern: 'the result field {field} is {value}'
+    mode: extension
+    action: assert_field
+    params: { field: "{field}", value: "{value}" }
+    resolution: Assert a scalar result field equals {value} exactly.
+
+  - id: TX-INS-RANGE
+    pattern: 'the result field {field} is within {value} and {value2} inclusive'
+    mode: extension
+    action: assert_range
+    params: { field: "{field}", low: "{value}", high: "{value2}" }
+    resolution: Assert a numeric result field falls inside the closed interval.
+
+  - id: TX-INS-COUNT
+    pattern: 'the result contains {N} {value}'
+    mode: extension
+    action: assert_count
+    params: { count: "{N}", collection: "{value}" }
+    resolution: Assert the named result collection has exactly {N} members.
+
+  - id: TX-INS-MOST-AVOIDED
+    pattern: 'the most avoided class is {value}'
+    mode: extension
+    action: assert_most_avoided
+    params: { name: "{value}" }
+    resolution: Assert the first entry of the avoidance profile.
+
+  - id: TX-INS-NOT-AVOIDED
+    pattern: 'the class {value} is not among the {N} most avoided'
+    mode: extension
+    action: assert_not_most_avoided
+    params: { name: "{value}", top: "{N}" }
+    resolution: Assert the named class does not appear in the leading entries.
+
+  - id: TX-INS-CLASS-PRESENT
+    pattern: 'every interval class appears in the profile'
+    mode: extension
+    action: assert_all_classes_present
+    resolution: >
+      Assert all thirteen interval classes are reported, including any
+      with presence 0.
+
+  - id: TX-INS-SAME
+    pattern: 'both results report the same {value}'
+    mode: extension
+    action: assert_results_equal
+    params: { field: "{value}" }
+    resolution: >
+      Assert the named field matches across the two results, used for
+      transposition invariance.
+
+  - id: TX-INS-PLAYABLE
+    pattern: 'every fragment carries a sung realization'
+    mode: extension
+    action: assert_fragments_playable
+    resolution: >
+      Assert each fragment's exampleMidi is non-empty and one note longer
+      than its interval list.
+
+  - id: TX-INS-PAINTED
+    pattern: 'the Dashboard painted from cache before the sync resolved'
+    mode: extension
+    action: assert_paint_before_sync
+    resolution: Assert the first render used cached values only.
+
+  - id: TX-INS-RECOMPUTES
+    pattern: 'the corpus was analysed {N} times'
+    mode: extension
+    action: assert_analysis_count
+    params: { count: "{N}" }
+    resolution: Assert how often the aggregate was recomputed.
+
+  - id: TX-INS-EMPTY-STATE
+    pattern: 'the empty state for {value} is shown'
+    mode: extension
+    action: assert_empty_state
+    params: { which: "{value}" }
+    resolution: Assert the named empty state rendered instead of a chart.
+
+  - id: TX-INS-NO-AUDIO
+    pattern: 'no stored audio was read'
+    mode: extension
+    action: assert_no_audio_read
+    resolution: Assert the fake storage client recorded no object read.

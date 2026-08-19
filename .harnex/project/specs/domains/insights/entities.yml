@@ -1,0 +1,64 @@
+entities:
+  - name: IntervalHistogram
+    description: >
+      How a singer moves. Counted both directionally, where a rising
+      third differs from a falling one, and folded to interval classes,
+      where they are the same colour.
+    properties:
+      - name: total
+        type: number
+        required: true
+        description: Total intervals counted across the corpus.
+      - name: directional
+        type: array
+        items: IntervalCount
+        required: true
+        description: Signed counts, most frequent first.
+      - name: byClass
+        type: array
+        items: IntervalClassCount
+        required: true
+        description: Counts folded over direction and octave, most frequent first.
+
+  - name: IntervalCount
+    description: One signed interval and how often the singer sings it.
+    properties:
+      - name: semitones
+        type: number
+        required: true
+        description: Signed semitones, so direction is preserved.
+      - name: name
+        type: string
+        required: true
+        description: Directional name, for example +M3.
+      - name: count
+        type: number
+        required: true
+        description: How many times it occurs.
+      - name: ratio
+        type: number
+        required: true
+        description: Share of all counted intervals.
+        constraints: ["is within 0 and 1 inclusive"]
+
+  - name: IntervalClassCount
+    description: One octave-folded interval class and its share.
+    properties:
+      - name: ic
+        type: number
+        required: true
+        description: The interval class.
+        constraints: ["is within 0 and 12 inclusive"]
+      - name: name
+        type: string
+        required: true
+        description: Class name, for example M3.
+      - name: count
+        type: number
+        required: true
+        description: How many times the class occurs.
+      - name: ratio
+        type: number
+        required: true
+        description: Share of all counted intervals.
+        constraints: ["is within 0 and 1 inclusive"]

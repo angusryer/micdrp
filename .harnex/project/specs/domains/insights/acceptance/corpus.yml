@@ -1,0 +1,111 @@
+# Interval habits, fragments, and transposition invariance.
+acceptance:
+  - id: ACC-INSIGHT-001
+    interface: ui
+    title: Direction is kept and also folded
+    given:
+      - a corpus C of [[[60,0,400],[64,400,400],[60,800,400]]]
+    when:
+      - insights.interval_histogram runs on corpus C
+    then:
+      - the result field total is 2
+      - the result contains 2 directional
+      - the result contains 1 byClass
+    maps_to:
+      capability: insights.interval_histogram
+      invariants: [INV-INSIGHT-011]
+
+  - id: ACC-INSIGHT-002
+    interface: ui
+    title: An empty corpus counts nothing
+    given:
+      - a corpus C of []
+    when:
+      - insights.interval_histogram runs on corpus C
+    then:
+      - the result field total is 0
+      - the result contains 0 directional
+    maps_to:
+      capability: insights.interval_histogram
+      invariants: [INV-INSIGHT-009]
+
+  - id: ACC-INSIGHT-003
+    interface: ui
+    title: A shape sung repeatedly is reported as a habit
+    given:
+      - a corpus C repeating the shape [2,2,1] 3 times
+    when:
+      - insights.frequent_fragments runs on corpus C
+    then:
+      - the result contains 1 fragments
+      - every fragment carries a sung realization
+    maps_to:
+      capability: insights.frequent_fragments
+      invariants: [INV-INSIGHT-006]
+
+  - id: ACC-INSIGHT-004
+    interface: ui
+    title: A shape sung once is not a habit
+    given:
+      - a corpus C repeating the shape [2,2,1] 1 times
+    when:
+      - insights.frequent_fragments runs on corpus C
+    then:
+      - the result contains 0 fragments
+    maps_to:
+      capability: insights.frequent_fragments
+      invariants: [INV-INSIGHT-004]
+
+  - id: ACC-INSIGHT-005
+    interface: ui
+    title: A shape that only exists across a rest is not a habit
+    given:
+      - a corpus C where the shape [2,2,1] spans a rest
+    when:
+      - insights.frequent_fragments runs on corpus C
+    then:
+      - the result contains 0 fragments
+    maps_to:
+      capability: insights.frequent_fragments
+      invariants: [INV-INSIGHT-003]
+
+  - id: ACC-INSIGHT-006
+    interface: ui
+    title: Habits do not change when the corpus is transposed
+    given:
+      - a corpus C repeating the shape [2,2,1] 3 times
+      - corpus C transposed by 5 semitones is corpus D
+    when:
+      - insights.frequent_fragments runs on corpus C and corpus D
+    then:
+      - both results report the same fragments
+    maps_to:
+      capability: insights.frequent_fragments
+      invariants: [INV-INSIGHT-005]
+
+  - id: ACC-INSIGHT-007
+    interface: ui
+    title: Chord reflection does not change when the corpus is transposed
+    given:
+      - a corpus C repeating the shape [4,3,-7] 3 times
+      - corpus C transposed by 5 semitones is corpus D
+    when:
+      - insights.chord_reflection runs on corpus C and corpus D
+    then:
+      - both results report the same chords
+    maps_to:
+      capability: insights.chord_reflection
+      invariants: [INV-INSIGHT-005]
+
+  - id: ACC-INSIGHT-008
+    interface: ui
+    title: An empty corpus implies no harmony
+    given:
+      - a corpus C of []
+    when:
+      - insights.chord_reflection runs on corpus C
+    then:
+      - the result contains 0 chords
+    maps_to:
+      capability: insights.chord_reflection
+      invariants: [INV-INSIGHT-009]

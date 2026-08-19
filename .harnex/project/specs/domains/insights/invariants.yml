@@ -1,0 +1,90 @@
+invariants:
+  - id: INV-INSIGHT-001
+    description: Avoidance is distance from the centroid, not rarity
+    severity: critical
+    check: >
+      An interval class is ranked by its Euclidean distance from the
+      singer's normalized interval-class distribution, not by its raw
+      count. Verified by a corpus where one melody's long tail contains a
+      class that is common overall — it must not be reported as avoided.
+
+  - id: INV-INSIGHT-002
+    description: A class never sung is the most avoided, not the least present
+    severity: critical
+    check: >
+      avoidance_profile returns every interval class. A class with
+      presence 0 appears with the largest distance rather than being
+      omitted, because what a singer never does is the most useful thing
+      the profile can say.
+
+  - id: INV-INSIGHT-003
+    description: A fragment is a gesture, never a coincidence across a rest
+    severity: critical
+    check: >
+      Interval n-grams are taken within phrases only. No reported
+      fragment spans a rest longer than the phrase threshold, so every
+      fragment is a contour the singer actually performed in one breath.
+
+  - id: INV-INSIGHT-004
+    description: A fragment must recur to be a fragment
+    severity: major
+    check: >
+      No shape occurring fewer times than the minimum recurrence is
+      reported. A shape sung once is a melody, not a habit.
+
+  - id: INV-INSIGHT-005
+    description: Findings survive transposition
+    severity: major
+    check: >
+      Fragments are defined by intervals and chord reflection is
+      expressed relative to the key, so transposing every melody in a
+      corpus by a constant leaves the reported fragments and chord
+      reflection unchanged.
+
+  - id: INV-INSIGHT-006
+    description: Every habit is playable
+    severity: minor
+    check: >
+      Every reported fragment carries an absolute realization drawn from
+      the corpus, so the singer can hear the shape rather than read it
+      as a list of numbers.
+
+  - id: INV-INSIGHT-007
+    description: Insight is computed from melodies, never from audio
+    severity: critical
+    check: >
+      The corpus is the persisted melodies. No path in this domain reads
+      a stored audio blob. This is the insights-side obligation matching
+      INV-NOTES-003.
+
+  - id: INV-INSIGHT-008
+    description: Analysis never runs on the live audio path
+    severity: critical
+    check: >
+      Corpus analysis is recomputed when the melodies change, not while
+      recording. No capture path invokes it, and it adds no per-frame
+      work.
+
+  - id: INV-INSIGHT-009
+    description: An empty corpus is an empty state, not an empty chart
+    severity: major
+    check: >
+      A singer with no notes gets a well-formed aggregate with zero
+      counts, and the Dashboard shows an empty state rather than
+      rendering axes with nothing on them.
+
+  - id: INV-INSIGHT-010
+    description: A singer sees only their own material
+    severity: critical
+    check: >
+      Both sources — the notes corpus and the practice trajectory — are
+      constrained by row-level security to the authenticated user. No
+      aggregate mixes material across singers.
+
+  - id: INV-INSIGHT-011
+    description: Every ratio and presence is a share
+    severity: minor
+    check: >
+      Every ratio on an interval count and every presence on an avoided
+      pattern is within 0 and 1 inclusive, and the directional ratios sum
+      to 1 when the total is non-zero.

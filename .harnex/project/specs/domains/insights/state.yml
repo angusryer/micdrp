@@ -1,0 +1,23 @@
+# Domain Development State — overwrite each meaningful change
+updated_at: "2026-08-18T00:00:00Z"
+updated_by: agent
+phase: specifying
+phase_detail: >
+  Specs written from a crawl of logic/analysis.ts and screens/Dashboard.
+  6 capabilities, 11 invariants, 18 acceptance tests, 1 view, 3
+  interactions.
+
+  The definition that makes the feature worth having is now pinned: what
+  a singer avoids is distance from the centroid of their habits
+  (INV-INSIGHT-001), not the rare tail of one melody, and a class never
+  sung is the MOST avoided rather than absent (INV-INSIGHT-002). Both
+  have acceptance tests that fail under the naive rarity definition.
+blockers:
+  - >
+    No verification target. Acceptance tests report SKIP until an adapter
+    over packages/logic plus a fake cache and guarded client is wired.
+known_conflicts:
+  - >
+    test-extensions.yml is 182 lines, over the 150-line spec-file budget.
+    The framework loads exactly one per domain with no sibling glob, so
+    splitting is impossible without losing the patterns.

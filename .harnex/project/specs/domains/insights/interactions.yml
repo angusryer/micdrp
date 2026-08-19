@@ -1,0 +1,39 @@
+interactions:
+  - id: INT-INSIGHT-001
+    name: See the trend and the habits
+    view: VIEW-INSIGHT-001
+    precondition: The singer is signed in.
+    steps:
+      - Open the Dashboard tab
+    outcome: >
+      The trend and the corpus insights paint from cache immediately,
+      then refresh from the server. A singer with no notes sees the empty
+      state instead of an empty chart.
+    error_handling: >
+      A failed sync leaves the cached figures on screen rather than
+      blanking them.
+    maps_to:
+      capability: insights.view_dashboard
+
+  - id: INT-INSIGHT-002
+    name: Hear a habit
+    view: VIEW-INSIGHT-001
+    precondition: At least one recurring fragment was found.
+    steps:
+      - Tap a fragment
+    outcome: >
+      The shape plays back as it was actually sung, so the singer hears
+      the habit rather than reading it.
+    maps_to:
+      capability: insights.frequent_fragments
+
+  - id: INT-INSIGHT-003
+    name: Notice what is missing
+    view: VIEW-INSIGHT-001
+    steps:
+      - Read the most-avoided list
+    outcome: >
+      The interval colours furthest from the singer's habits are named,
+      including any they have never sung at all.
+    maps_to:
+      capability: insights.avoidance_profile

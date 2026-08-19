@@ -4,14 +4,6 @@
 # that spec validation stays green at every commit.
 
 future_domains:
-  - name: insights
-    priority: medium
-    description: >
-      What a singer's own corpus says about them. Owns interval and
-      fragment mining, chord reflection, the avoidance profile, and the
-      training-trend view over practice progress.
-    code: packages/client/src/screens/Dashboard, packages/logic/src/analysis.ts
-
   - name: account
     priority: medium
     description: >

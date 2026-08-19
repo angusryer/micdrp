@@ -1,0 +1,124 @@
+capabilities:
+  - name: insights.interval_histogram
+    description: >
+      Count how a singer moves, keeping direction separate and also
+      folding to interval classes.
+    actor: system
+    implemented_by: packages/logic/src/analysis.ts
+    parameters:
+      required: [corpus]
+    preconditions:
+      - corpus is a list of melodies
+    postconditions:
+      - directional counts keep rising and falling intervals apart
+      - class counts fold over direction and octave
+      - both lists are ordered most frequent first
+      - every ratio is the count divided by the total
+      - an empty corpus yields a total of 0 and no counts
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: insights.frequent_fragments
+    description: >
+      Find the melodic shapes a singer returns to, as recurring interval
+      sequences taken within phrases and never across a rest.
+    actor: system
+    implemented_by: packages/logic/src/analysis.ts
+    parameters:
+      required: [corpus]
+      optional: [nRange, minCount, top, maxRestMs]
+    preconditions:
+      - corpus is a list of melodies
+    postconditions:
+      - a fragment is never taken across a rest, so it is a contour the
+        singer performed as one gesture
+      - a shape occurring fewer times than the minimum is not reported
+      - fragments are transposition invariant
+      - each fragment carries a real sung realization so it can be played
+      - salience weights recurrence by fragment length
+      - no more than the requested number of fragments is returned
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: insights.chord_reflection
+    description: >
+      Report what a singer's lines keep implying harmonically, expressed
+      relative to the key so the finding survives transposition.
+    actor: system
+    implemented_by: packages/logic/src/analysis.ts
+    parameters:
+      required: [corpus]
+      optional: [settings]
+    preconditions:
+      - corpus is a list of melodies
+    postconditions:
+      - chords are reported relative to the detected key
+      - the inference honours the singer's chord-inference settings
+      - an empty corpus yields no chords rather than an error
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: insights.avoidance_profile
+    description: >
+      Name the colours a singer reaches for least, by distance from the
+      centroid of what they habitually sing.
+    actor: system
+    implemented_by: packages/logic/src/analysis.ts
+    parameters:
+      required: [corpus]
+      optional: [includeUnison, top, maxRestMs]
+    preconditions:
+      - corpus is a list of melodies
+    postconditions:
+      - every interval class is considered, including ones never sung
+      - a class never sung has the largest distance rather than being absent
+      - results are ordered most avoided first
+      - the unison class is excluded unless asked for, because a repeated
+        note is not a melodic interval
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: insights.analyze_corpus
+    description: >
+      Run every corpus question in one call, so the Dashboard reads a
+      single aggregate that can be cached and recomputed as a unit.
+    actor: system
+    implemented_by: packages/logic/src/analysis.ts
+    parameters:
+      required: [corpus]
+      optional: [settings]
+    preconditions:
+      - corpus is a list of melodies
+    postconditions:
+      - melodyCount and noteCount describe the corpus that was analysed
+      - the aggregate contains the histogram, the fragments, the chord
+        reflection, and the avoidance profile
+      - an empty corpus yields a well-formed empty aggregate
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: insights.view_dashboard
+    description: >
+      Show the singer their training trend and what their own material
+      says about them, recomputing only when the underlying data changes.
+    actor: singer
+    implemented_by: packages/client/src/screens/Dashboard/useDashboard.ts
+    parameters:
+      required: []
+    preconditions:
+      - the singer is signed in
+    postconditions:
+      - both the corpus and the trajectory paint from cache before any
+        network call completes
+      - the corpus analysis is recomputed only when the melodies change
+      - the analysis runs on device and never on the live audio path
+      - a singer with no notes sees an empty state rather than an empty chart
+      - only the signed-in singer's notes and progress are read
+    permissions:
+      - role: singer
+        notes: Row-level security restricts both sources to the singer's rows.
