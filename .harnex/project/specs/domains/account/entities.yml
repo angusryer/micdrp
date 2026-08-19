@@ -1,0 +1,90 @@
+entities:
+  - name: Session
+    description: >
+      Proof that the singer is signed in. Held by the auth SDK and
+      persisted through the platform secret store, never in app files.
+    properties:
+      - name: userId
+        type: string
+        required: true
+        description: The authenticated singer's identifier.
+      - name: accessToken
+        type: string
+        required: true
+        description: The short-lived token requests are made with.
+      - name: refreshToken
+        type: string
+        required: true
+        description: >
+          The long-lived token. Stored only in the platform secret store,
+          because it is the credential worth stealing.
+      - name: expiresAtMs
+        type: number
+        required: true
+        description: When the access token stops being accepted.
+    internal_properties:
+      - name: keychainService
+        type: string
+        description: >
+          One secret-store entry per SDK key, so a single key can be
+          cleared on sign-out without disturbing the others.
+
+  - name: Profile
+    description: >
+      The singer's own row, created automatically when they sign up.
+      Deliberately thin — the app knows a name, not a person.
+    properties:
+      - name: id
+        type: string
+        required: true
+        immutable: true
+        description: The authenticated user's identifier, and the row's key.
+      - name: displayName
+        type: string
+        required: false
+        description: What the singer calls themselves, or null.
+      - name: createdAtMs
+        type: number
+        required: true
+        immutable: true
+        description: When the profile was created.
+
+  - name: EngineSettings
+    description: >
+      Device-local overrides for capture and detection. Anything not
+      overridden falls back to the engine default, so the resolved value
+      is always complete.
+    properties:
+      - name: overrides
+        type: object
+        required: true
+        description: >
+          The subset of engine fields the singer has changed. An absent
+          key means the default applies.
+      - name: resolved
+        type: EngineConfig
+        required: true
+        description: The defaults merged with the overrides.
+    internal_properties:
+      - name: storeKey
+        type: string
+        description: >
+          The device store key. Stable by contract — changing it orphans
+          every existing device's settings.
+
+  - name: AnalysisSettings
+    description: >
+      Device-local knobs for chord inference. A monophonic melody only
+      implies harmony, so what counts as an implied chord is tuneable.
+    properties:
+      - name: chordInference
+        type: object
+        required: true
+        description: >
+          Window length, whether sevenths are considered, key-relative
+          labelling, and a confidence floor. Defaults come from the logic
+          package so the screen and the analysis cannot disagree.
+    internal_properties:
+      - name: storeKey
+        type: string
+        description: The device store key. Stable by contract.

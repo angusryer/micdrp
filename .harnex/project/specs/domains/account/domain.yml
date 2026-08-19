@@ -1,0 +1,61 @@
+domain:
+  name: account
+  version: 0.1.0
+  status: specifying
+  owner: human
+
+  description: >
+    Who the singer is, and what is theirs. Sign-in, the session that
+    keeps them signed in, the profile row, the device settings that tune
+    capture and analysis, and leaving for good.
+
+    Two choices shape this domain. The session lives in the platform
+    secret store rather than in app files, because a refresh token in
+    plain storage survives backups and is readable on a compromised
+    device. And every path that reads that store degrades to "no stored
+    session" instead of failing: a Keychain read can fail for reasons
+    that are not the singer's problem, and the right answer to all of
+    them is to ask them to sign in again, never to crash on launch.
+
+    Deleting an account is a hard delete. The auth user goes, the
+    database rows cascade behind it, and the client clears the storage
+    blobs first because objects are not covered by the cascade.
+
+  interfaces:
+    - type: ui
+      description: >
+        Sign-in and sign-up, and the Account and Settings screen reached
+        from the app header.
+    - type: storage
+      description: >
+        Supabase Auth, the profiles table under row-level security, the
+        delete_account routine, and the device-local settings store.
+
+  boundaries:
+    owns:
+      - Sign-in, sign-up, sign-out, and password reset
+      - Where the session is stored and how a failed read degrades
+      - The profile row and its display name
+      - Device settings — the engine configuration overrides and the
+        chord-inference knobs — including that each has one write seam
+      - Account deletion, and the order in which it removes things
+      - The identity every other domain's ownership checks resolve against
+    does_not_own:
+      - The theme palette, which the theme provider owns so a change
+        recolours the live tree
+      - What the engine settings tune (pitch) or what the chord knobs
+        tune (transcription and insights)
+      - Any singer-owned content — notes and practice progress belong to
+        their own domains and are removed here only by cascade
+
+  depends_on: []
+
+  depended_on_by:
+    - domain: notes
+      reason: Every note belongs to the signed-in singer
+    - domain: practice
+      reason: Every progress row belongs to the signed-in singer
+    - domain: insights
+      reason: Reads the singer's chord-inference settings
+    - domain: pitch
+      reason: Reads the persisted engine configuration overrides

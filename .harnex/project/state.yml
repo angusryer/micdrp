@@ -5,26 +5,41 @@ summary: >
   micdrp is a built and merged React Native singing app (Practice,
   Notes, Dashboard) over Supabase, with its DSP core in pure TS plus a
   parity-tested C++ port. The harness was adopted after the fact, so
-  spec-writing is a crawl of working code rather than a green field.
+  spec-writing was a crawl of working code rather than a green field.
 
 domains:
-  registered: [pitch]
-  planned: [transcription, notes, practice, insights, account]
+  registered: [account, insights, notes, pitch, practice, transcription]
+  planned: []
 
 current_work: >
-  Writing specs domain by domain, registering each only once its specs
-  validate, so the registry never contains a half-specified domain.
+  All six domains are specified and validate. Next is either promoting
+  domains to building, or building the verification target that would
+  let the acceptance tests actually run.
 
 known_gaps:
   - >
-    No verification target exists. The harness executes acceptance tests
-    against a URL or a direct adapter; micdrp has neither. A Node adapter
-    over packages/logic would make the pure domains executable.
+    No verification target exists, so every acceptance test reports SKIP.
+    The harness executes against a URL or a direct adapter
+    (test-config.yml direct.adapter_command); micdrp has neither. A Node
+    adapter over packages/logic plus fakes for the engine, the secret
+    store, and a row-level-security-enforcing Supabase client would make
+    all 126 acceptance tests executable.
   - >
-    The naming_alignment release gate indexes Python only and looks under
-    .harnex/framework/<domain>/, so TypeScript capabilities cannot resolve
-    by convention. Every capability declares implemented_by with a path.
+    The naming_alignment release gate indexes Python only, and looks for
+    a domain's code under .harnex/framework/<domain>/. A TypeScript
+    project cannot resolve capabilities by convention, so every
+    capability declares implemented_by with a path. Symbol-level
+    declarations (path::symbol) would fail too — the checker matches
+    Python def/class syntax.
+  - >
+    test-extensions.yml exceeds the 150-line budget in notes (160),
+    insights (182) and account (184). The framework globs siblings for
+    entities, capabilities and invariants but loads exactly one
+    test-extensions.yml per domain, so the file cannot be split.
   - >
     Several logic files exceed the 150-line budget: analysis.ts (839),
     tempo.ts (440), quantize.ts (401), harmony.ts (380), key.ts (197),
     mpm.ts (153).
+  - >
+    The headphone route probe is unimplemented on device, so practice
+    play-along never engages in the real app (Phase V work).

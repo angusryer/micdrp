@@ -1,0 +1,184 @@
+# Account test grammar extensions. Tests drive a project adapter with a
+# fake auth SDK, a scriptable secret store, a fake Supabase client
+# enforcing row-level security, and an in-memory device store.
+
+given:
+  - id: GX-ACCT-REGISTERED
+    pattern: 'a registered singer {label}'
+    mode: extension
+    action: acct_registered
+    params: { label: "{label}" }
+    resolution: Create an auth user and its profile row, signed out.
+
+  - id: GX-ACCT-SIGNED-IN
+    pattern: 'a signed-in singer {label}'
+    mode: extension
+    action: acct_signed_in
+    params: { label: "{label}" }
+    resolution: Create a registered singer and establish a session as them.
+
+  - id: GX-ACCT-STORE
+    pattern: 'the secret store {value}'
+    mode: extension
+    action: acct_secret_store
+    params: { behaviour: "{value}" }
+    resolution: >
+      Script the secret store. {value} is holds_a_valid_session,
+      is_empty, holds_an_expired_session, or raises_on_read.
+
+  - id: GX-ACCT-CONTENT
+    pattern: 'singer {label} has {N} notes and {value} stored objects'
+    mode: extension
+    action: acct_seed_content
+    params: { owner: "{label}", notes: "{N}", objects: "{value}" }
+    resolution: Seed owned rows and storage objects for the named singer.
+
+  - id: GX-ACCT-SETTING
+    pattern: 'the stored {value} settings are {value2}'
+    mode: extension
+    action: acct_seed_settings
+    params: { which: "{value}", json: "{value2}" }
+    resolution: >
+      Seed the device store for engine or analysis settings. The literal
+      corrupt seeds an unparseable value.
+
+when:
+  - id: WX-ACCT-SIGN-IN
+    pattern: 'singer {label} signs in with {value} credentials'
+    mode: extension
+    action: acct_sign_in
+    params: { label: "{label}", credentials: "{value}" }
+    resolution: Attempt sign-in with correct or wrong credentials.
+
+  - id: WX-ACCT-CALL
+    pattern: 'singer {label} calls account.{value}'
+    mode: extension
+    action: acct_call
+    params: { actor: "{label}", capability: "{value}" }
+    resolution: Invoke the named capability as {label}.
+
+  - id: WX-ACCT-CALL-ON
+    pattern: 'singer {label} calls account.{value} on singer {label2}'
+    mode: extension
+    action: acct_call_on
+    params: { actor: "{label}", capability: "{value}", target: "{label2}" }
+    resolution: >
+      Invoke the capability as {label} against {label2}'s row, so
+      cross-account access can be exercised.
+
+  - id: WX-ACCT-LAUNCH
+    pattern: 'the app launches'
+    mode: extension
+    action: acct_launch
+    resolution: >
+      Run the restore-session path and record whether the app reached a
+      rendered state and which gate it landed on.
+
+  - id: WX-ACCT-SIGN-UP
+    pattern: 'a visitor signs up as {label}'
+    mode: extension
+    action: acct_sign_up
+    params: { label: "{label}" }
+    resolution: Create an account through the sign-up path.
+
+  - id: WX-ACCT-RESET
+    pattern: 'a visitor asks to reset {value}'
+    mode: extension
+    action: acct_reset
+    params: { email: "{value}" }
+    resolution: >
+      Request a reset for a registered or unregistered address and record
+      the response.
+
+  - id: WX-ACCT-SETTING
+    pattern: 'the singer sets {value} to {value2}'
+    mode: extension
+    action: acct_set_setting
+    params: { field: "{value}", value: "{value2}" }
+    resolution: Merge one field into the matching settings key.
+
+  - id: WX-ACCT-RESET-SETTINGS
+    pattern: 'the singer resets the analysis settings'
+    mode: extension
+    action: acct_reset_settings
+    resolution: Return the chord-inference knobs to their defaults.
+
+  - id: WX-ACCT-READ-SETTING
+    pattern: 'the {value} settings are resolved'
+    mode: extension
+    action: acct_read_settings
+    params: { which: "{value}" }
+    resolution: Resolve stored overrides over defaults.
+
+then:
+  - id: TX-ACCT-SESSION
+    pattern: 'a session {value}'
+    mode: extension
+    action: assert_session
+    params: { state: "{value}" }
+    resolution: Assert a session exists or does not exist.
+
+  - id: TX-ACCT-GATE
+    pattern: 'the app is at the {value} gate'
+    mode: extension
+    action: assert_gate
+    params: { gate: "{value}" }
+    resolution: Assert the app rendered at the signed-in or sign-in gate.
+
+  - id: TX-ACCT-NO-PLAIN-TOKEN
+    pattern: 'no token is in plain storage'
+    mode: extension
+    action: assert_no_plain_token
+    resolution: >
+      Assert application document storage and the device store contain
+      no access or refresh token.
+
+  - id: TX-ACCT-FIELD
+    pattern: 'the result field {field} is {value}'
+    mode: extension
+    action: assert_field
+    params: { field: "{field}", value: "{value}" }
+    resolution: Assert a scalar result field equals {value} exactly.
+
+  - id: TX-ACCT-REJECTED
+    pattern: 'the call is rejected and nothing is changed'
+    mode: extension
+    action: assert_rejected_unchanged
+    resolution: Assert failure and that no row or stored object differs.
+
+  - id: TX-ACCT-CONTENT
+    pattern: 'singer {label} has {N} notes and {value} stored objects left'
+    mode: extension
+    action: assert_content
+    params: { owner: "{label}", notes: "{N}", objects: "{value}" }
+    resolution: Assert surviving rows and storage objects for the singer.
+
+  - id: TX-ACCT-ORDER
+    pattern: 'storage was cleared before the account was deleted'
+    mode: extension
+    action: assert_delete_order
+    resolution: >
+      Assert every object deletion was recorded before the account
+      routine was called.
+
+  - id: TX-ACCT-PROFILES
+    pattern: 'singer {label} has exactly one profile'
+    mode: extension
+    action: assert_one_profile
+    params: { owner: "{label}" }
+    resolution: Assert exactly one profile row exists for the singer.
+
+  - id: TX-ACCT-SAME-RESPONSE
+    pattern: 'the reset response is the same for both addresses'
+    mode: extension
+    action: assert_reset_indistinguishable
+    resolution: >
+      Assert the recorded responses for the registered and unregistered
+      addresses are identical.
+
+  - id: TX-ACCT-RESOLVED
+    pattern: 'the resolved {value} setting {field} is {value2}'
+    mode: extension
+    action: assert_resolved_setting
+    params: { which: "{value}", field: "{field}", value: "{value2}" }
+    resolution: Assert one field of the resolved settings.

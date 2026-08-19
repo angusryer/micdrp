@@ -1,0 +1,132 @@
+# Signing in, staying signed in, and signing out.
+acceptance:
+  - id: ACC-ACCOUNT-001
+    interface: ui
+    title: Correct credentials sign the singer in
+    given:
+      - a registered singer S
+    when:
+      - singer S signs in with correct credentials
+    then:
+      - a session exists
+      - the app is at the signed-in gate
+      - no token is in plain storage
+    maps_to:
+      capability: account.sign_in
+      invariants: [INV-ACCOUNT-001]
+      interaction: INT-ACCOUNT-001
+      view: VIEW-ACCOUNT-001
+
+  - id: ACC-ACCOUNT-002
+    interface: ui
+    title: Wrong credentials leave no session
+    given:
+      - a registered singer S
+    when:
+      - singer S signs in with wrong credentials
+    then:
+      - a session does not exist
+      - the app is at the sign-in gate
+    maps_to:
+      capability: account.sign_in
+
+  - id: ACC-ACCOUNT-003
+    interface: ui
+    title: Signing up creates the profile with the account
+    given:
+      - the secret store is_empty
+    when:
+      - a visitor signs up as S
+    then:
+      - singer S has exactly one profile
+    maps_to:
+      capability: account.sign_up
+      invariants: [INV-ACCOUNT-007]
+      interaction: INT-ACCOUNT-002
+
+  - id: ACC-ACCOUNT-004
+    interface: ui
+    title: A stored session signs the singer straight in
+    given:
+      - the secret store holds_a_valid_session
+    when:
+      - the app launches
+    then:
+      - a session exists
+      - the app is at the signed-in gate
+    maps_to:
+      capability: account.restore_session
+      interaction: INT-ACCOUNT-004
+
+  - id: ACC-ACCOUNT-005
+    interface: ui
+    title: No stored session opens the gate
+    given:
+      - the secret store is_empty
+    when:
+      - the app launches
+    then:
+      - a session does not exist
+      - the app is at the sign-in gate
+    maps_to:
+      capability: account.restore_session
+      invariants: [INV-ACCOUNT-002]
+
+  - id: ACC-ACCOUNT-006
+    interface: ui
+    title: A secret store that cannot be read still launches
+    given:
+      - the secret store raises_on_read
+    when:
+      - the app launches
+    then:
+      - a session does not exist
+      - the app is at the sign-in gate
+    maps_to:
+      capability: account.restore_session
+      invariants: [INV-ACCOUNT-002]
+
+  - id: ACC-ACCOUNT-007
+    interface: ui
+    title: An expired stored session opens the gate
+    given:
+      - the secret store holds_an_expired_session
+    when:
+      - the app launches
+    then:
+      - the app is at the sign-in gate
+    maps_to:
+      capability: account.restore_session
+      invariants: [INV-ACCOUNT-002]
+
+  - id: ACC-ACCOUNT-008
+    interface: ui
+    title: Signing out keeps everything the singer made
+    given:
+      - a signed-in singer S
+      - singer S has 3 notes and 3 stored objects
+    when:
+      - singer S calls account.sign_out
+    then:
+      - a session does not exist
+      - singer S has 3 notes and 3 stored objects left
+    maps_to:
+      capability: account.sign_out
+      invariants: [INV-ACCOUNT-005]
+      interaction: INT-ACCOUNT-008
+
+  - id: ACC-ACCOUNT-009
+    interface: ui
+    title: A reset request does not reveal who is registered
+    given:
+      - a registered singer S
+    when:
+      - a visitor asks to reset a registered address
+      - a visitor asks to reset an unregistered address
+    then:
+      - the reset response is the same for both addresses
+      - a session does not exist
+    maps_to:
+      capability: account.reset_password
+      invariants: [INV-ACCOUNT-012]
+      interaction: INT-ACCOUNT-003
