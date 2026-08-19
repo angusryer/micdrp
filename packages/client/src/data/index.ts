@@ -2,7 +2,7 @@
  * Data layer barrel.
  *
  * - `store`                — typed MMKV singleton wrapper (id `micdrp`).
- * - `files`                — react-native-fs path helpers + MIDI blob writer.
+ * - `files`                — filesystem path helpers + MIDI blob writer.
  * - `recordingBytes`       — base64 <-> bytes for Storage uploads.
  * - `currentUser`          — the authenticated user's id (shared auth guard).
  * - `notesCache`           — read access over the MMKV notes cache (+ corpus melodies).

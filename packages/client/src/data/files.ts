@@ -4,11 +4,11 @@
  * MMKV holds only the lightweight index (see `recordings.ts`); the heavy bytes —
  * the captured audio and any exported `.mid` — live on disk under the app's
  * document directory, addressed deterministically by recording id. This module is
- * the single seam onto `react-native-fs`.
+ * the single seam onto `@dr.pogodin/react-native-fs`.
  *
  * See docs/NATIVE_BUILD_PLAN.md §3 (WP-PERSIST).
  */
-import RNFS from 'react-native-fs';
+import RNFS from '@dr.pogodin/react-native-fs';
 
 /** Subdirectory (under the document dir) that holds all per-recording artifacts. */
 export const RECORDINGS_SUBDIR = 'recordings';
@@ -41,7 +41,7 @@ export async function ensureDirs(): Promise<void> {
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 /**
- * Encode raw bytes to a base64 string. `react-native-fs` writes strings only, so
+ * Encode raw bytes to a base64 string. `@dr.pogodin/react-native-fs` writes strings only, so
  * binary blobs (MIDI) must be base64-encoded with `encoding: 'base64'`. Kept local
  * and pure (no `Buffer`/`btoa` dependency) so it is testable on any host.
  */
