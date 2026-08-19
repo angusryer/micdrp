@@ -1,9 +1,11 @@
 {
-  "extends": "@tsconfig/react-native/tsconfig.json" /* Recommended React Native TSConfig base */,
+  "extends": "@react-native/typescript-config",
   "compilerOptions": {
-    "types": ["node", "jest"],
+    "types": [
+      "node",
+      "jest"
+    ],
     "isolatedModules": true,
-    "composite": true,
     "allowJs": false,
     "skipLibCheck": true,
     "resolveJsonModule": true,
@@ -12,11 +14,25 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "logic": ["../logic/src/index.ts"],
-      "logic/*": ["../logic/src/*"],
-      "shared": ["../shared/src/index.ts"],
-      "shared/*": ["../shared/src/*"]
+      "logic": [
+        "../logic/src/index.ts"
+      ],
+      "logic/*": [
+        "../logic/src/*"
+      ],
+      "shared": [
+        "../shared/src/index.ts"
+      ],
+      "shared/*": [
+        "../shared/src/*"
+      ]
     }
   },
-  "exclude": [".bundle", "android", "ios", "node_modules", "vendor"]
+  "exclude": [
+    ".bundle",
+    "android",
+    "ios",
+    "node_modules",
+    "vendor"
+  ]
 }

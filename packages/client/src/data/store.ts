@@ -8,7 +8,7 @@
  *
  * See docs/NATIVE_BUILD_PLAN.md §3 (WP-PERSIST).
  */
-import { MMKV } from 'react-native-mmkv';
+import { createMMKV, type MMKV } from 'react-native-mmkv';
 
 /** The single backing store id; keep stable — changing it orphans existing data. */
 export const STORE_ID = 'micdrp';
@@ -18,7 +18,8 @@ let instance: MMKV | null = null;
 
 function mmkv(): MMKV {
   if (instance === null) {
-    instance = new MMKV({ id: STORE_ID });
+    // v4 replaced the MMKV class with a factory; MMKV is a type now.
+    instance = createMMKV({ id: STORE_ID });
   }
   return instance;
 }
@@ -56,7 +57,9 @@ export function setJSON<T>(key: string, value: T): void {
 
 /** Delete a key. No-op if absent. */
 export function remove(key: string): void {
-  mmkv().delete(key);
+  // v4 renamed delete() to remove(); it returns whether the key was present,
+  // which this seam deliberately does not surface.
+  mmkv().remove(key);
 }
 
 /** Whether a key is present. */

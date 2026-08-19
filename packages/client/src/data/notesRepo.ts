@@ -17,7 +17,7 @@
 import { STORAGE_BUCKET, TABLES, AppErrorCode, appError } from 'shared';
 import type { CreateNoteInput, NoteDto, NoteEventDto } from 'shared';
 
-import { supabase } from '../lib/supabase';
+import { type Json, supabase } from '../lib/supabase';
 import type { Database } from '../lib/supabase';
 import { requireUserId } from './currentUser';
 import { base64ToBytes } from './recordingBytes';
@@ -114,7 +114,10 @@ export const notesRepo = {
         duration_ms: input.durationMs,
         sample_rate_hz: input.sampleRateHz,
         audio_path: null,
-        melody_json: input.melody,
+        // NoteEventDto is an interface, so it lacks the implicit index
+        // signature the Json type requires. The shape is plain data and this is
+        // the boundary where it becomes a jsonb column.
+        melody_json: input.melody as unknown as Json,
         key: input.key ?? null,
         tempo_bpm: input.tempoBpm ?? null,
         in_tune_ratio: input.inTuneRatio ?? null,

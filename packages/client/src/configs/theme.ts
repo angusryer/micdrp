@@ -1,4 +1,3 @@
-import { ColorValue } from 'react-native';
 import {
   DeviceScheme,
   EThemeKeys,
@@ -353,7 +352,7 @@ export const effects = {
   }
 };
 
-export const alpha = (color: ColorValue | string, alpha: number) => {
+export const alpha = (color: string, alpha: number) => {
   const opacity = Math.round(Math.min(Math.max(alpha || 1, 0), 1) * 255);
   return color.toString() + opacity.toString(16).toUpperCase();
 };
