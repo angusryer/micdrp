@@ -121,4 +121,4 @@ capabilities:
       - only the signed-in singer's notes and progress are read
     permissions:
       - role: singer
-        notes: Row-level security restricts both sources to the singer's rows.
+        notes: Backend access rules restrict both sources to the singer's rows.

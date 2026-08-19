@@ -40,7 +40,8 @@ invariants:
     check: >
       Every read, update and delete against the notes table and the notes
       bucket is constrained to rows where user_id matches the
-      authenticated user. Enforced by row-level security in the migration,
+      authenticated user. Enforced by backend access rules declared in the
+      schema,
       not by client code. Verified by attempting a read and a delete
       against another singer's note and asserting both fail.
 

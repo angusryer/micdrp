@@ -60,7 +60,7 @@ capabilities:
       - only the signed-in singer's notes are returned
     permissions:
       - role: singer
-        notes: Row-level security restricts the query to the singer's own rows.
+        notes: Backend access rules restrict the query to the singer's own rows.
 
   - name: notes.delete
     description: >
@@ -79,7 +79,7 @@ capabilities:
       - a note belonging to someone else is not deleted
     permissions:
       - role: singer
-        notes: Row-level security rejects a delete against another singer's row.
+        notes: Backend access rules reject a delete against another singer's row.
 
   - name: notes.play
     description: Play a note's captured audio back to the singer.

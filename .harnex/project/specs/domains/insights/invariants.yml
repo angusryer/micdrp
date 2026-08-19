@@ -78,7 +78,7 @@ invariants:
     severity: critical
     check: >
       Both sources — the notes corpus and the practice trajectory — are
-      constrained by row-level security to the authenticated user. No
+      constrained by backend access rules to the authenticated user. No
       aggregate mixes material across singers.
 
   - id: INV-INSIGHT-011

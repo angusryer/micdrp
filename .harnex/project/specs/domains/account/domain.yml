@@ -28,7 +28,8 @@ domain:
         from the app header.
     - type: storage
       description: >
-        Supabase Auth, the profiles table under row-level security, the
+        The backend's auth service, the profiles collection under backend
+        access rules, the
         delete_account routine, and the device-local settings store.
 
   boundaries:
