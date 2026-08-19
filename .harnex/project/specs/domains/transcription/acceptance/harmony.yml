@@ -1,0 +1,44 @@
+# Chord inference, editing, voicing, and MIDI export.
+acceptance:
+  - id: ACC-TRANS-013
+    interface: module
+    title: A progression is laid out one chord per bar
+    given:
+      - a melody M of 16 onsets at 120 bpm starting 0 ms late
+      - a grid G at 120 bpm in 4/4
+    when:
+      - transcription.harmonize_to_grid runs on M
+    then:
+      - the result contains 2 slots
+      - chord slot 0 is C and edited false
+    maps_to:
+      capability: transcription.harmonize_to_grid
+      invariants: [INV-TRANS-006]
+
+  - id: ACC-TRANS-014
+    interface: module
+    title: An empty melody yields no chords
+    given:
+      - a melody M of []
+      - a grid G at 120 bpm in 4/4
+    when:
+      - transcription.harmonize_to_grid runs on M
+    then:
+      - the result contains 0 slots
+    maps_to:
+      capability: transcription.harmonize_to_grid
+      invariants: [INV-TRANS-010]
+
+  - id: ACC-TRANS-015
+    interface: module
+    title: A grid with no tempo yields no chords
+    given:
+      - a melody M of [[60,0,400],[64,400,400]]
+      - a grid G at 0 bpm in 4/4
+    when:
+      - transcription.harmonize_to_grid runs on M
+    then:
+      - the result contains 0 slots
+    maps_to:
+      capability: transcription.harmonize_to_grid
+      invariants: [INV-TRANS-010]

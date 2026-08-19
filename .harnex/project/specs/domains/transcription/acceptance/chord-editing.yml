@@ -1,0 +1,120 @@
+# The pure chord-editing operations behind the editable backdrop.
+acceptance:
+  - id: ACC-TRANS-016
+    interface: module
+    title: Dragging a chord up one degree stays in the key
+    given:
+      - chord slot A is C in the key of C major
+    when:
+      - the singer moves chord A by 1 degrees
+    then:
+      - chord slot A is Dm and edited true
+      - the result field confidence is 0
+    maps_to:
+      capability: transcription.transpose_chord
+      invariants: [INV-TRANS-005, INV-TRANS-006]
+
+  - id: ACC-TRANS-017
+    interface: module
+    title: A chromatic move keeps the chord's shape
+    given:
+      - chord slot A is C in the key of C major
+    when:
+      - the singer moves chord A by 1 semitones
+    then:
+      - chord slot A is C# and edited true
+    maps_to:
+      capability: transcription.transpose_chord
+      invariants: [INV-TRANS-006]
+
+  - id: ACC-TRANS-018
+    interface: module
+    title: A move of zero changes nothing
+    given:
+      - chord slot A is C in the key of C major
+    when:
+      - the singer moves chord A by 0 degrees
+    then:
+      - chord slot A is unchanged
+    maps_to:
+      capability: transcription.transpose_chord
+
+  - id: ACC-TRANS-019
+    interface: module
+    title: Setting a chord outright marks it as chosen
+    given:
+      - chord slot A is C in the key of C major
+    when:
+      - the singer sets chord A to G7
+    then:
+      - chord slot A is G7 and edited true
+      - the result field confidence is 0
+    maps_to:
+      capability: transcription.set_chord
+      invariants: [INV-TRANS-005, INV-TRANS-006]
+
+  - id: ACC-TRANS-020
+    interface: module
+    title: Reverting restores what the melody implied
+    given:
+      - chord slot A is C in the key of C major
+    when:
+      - the singer sets chord A to G7
+      - the singer reverts chord A
+    then:
+      - chord slot A is C and edited false
+    maps_to:
+      capability: transcription.revert_slot
+
+  - id: ACC-TRANS-021
+    interface: module
+    title: Re-running inference leaves a chosen chord alone
+    given:
+      - chord slot A is C in the key of C major
+    when:
+      - the singer sets chord A to G7
+      - harmonization runs again over A
+    then:
+      - chord slot A is G7 and edited true
+    maps_to:
+      capability: transcription.harmonize_to_grid
+      invariants: [INV-TRANS-004]
+
+  - id: ACC-TRANS-022
+    interface: module
+    title: A voicing sits at or above its floor
+    given:
+      - chord slot A is C in the key of C major
+    when:
+      - transcription.voice_chord runs on A with bottomMidi 48
+    then:
+      - the result contains 3 notes
+      - the result field notes.0 is within 48 and 127 inclusive
+    maps_to:
+      capability: transcription.voice_chord
+
+  - id: ACC-TRANS-023
+    interface: module
+    title: A melody exports as a playable MIDI file
+    given:
+      - a melody M of [[60,0,400],[62,400,400],[64,800,400]]
+    when:
+      - transcription.notes_to_midi runs on M
+    then:
+      - the result field headerChunk is MThd
+      - the result contains 6 events
+    maps_to:
+      capability: transcription.notes_to_midi
+
+  - id: ACC-TRANS-024
+    interface: module
+    title: An empty melody still exports a valid file
+    given:
+      - a melody M of []
+    when:
+      - transcription.notes_to_midi runs on M
+    then:
+      - the result field headerChunk is MThd
+      - the result contains 0 events
+    maps_to:
+      capability: transcription.notes_to_midi

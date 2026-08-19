@@ -1,0 +1,139 @@
+# Grid and harmony entities. Split from entities.yml to stay inside the
+# 150-line spec-file budget (Axiom 3).
+entities:
+  - name: MusicalGrid
+    description: >
+      The metrical frame fitted to a take: a tempo, a phase, a bar
+      length, and how confident each of those is. Metre is a much weaker
+      inference than tempo, so it carries its own confidence and a flag
+      saying whether it was measured at all.
+    properties:
+      - name: bpm
+        type: number
+        required: true
+        description: Beats per minute of the fitted grid.
+      - name: offsetMs
+        type: number
+        required: true
+        description: Time of the first bar line.
+      - name: beatsPerBar
+        type: number
+        required: true
+        description: Bar length in beats.
+        constraints: ["is one of 2, 3, 4"]
+      - name: isCompound
+        type: boolean
+        required: true
+        description: True when each beat divides into three rather than two.
+      - name: stepsPerBeat
+        type: number
+        required: true
+        description: >
+          Grid steps per beat used when snapping. 4 in simple metre and 6
+          in compound, so both the three-way division and its halves land
+          on the grid.
+        constraints: ["is 4 when isCompound is false", "is 6 when isCompound is true"]
+      - name: timeSignature
+        type: string
+        required: true
+        description: The rendered signature, for example 4/4, 3/4, or 6/8.
+      - name: confidence
+        type: number
+        required: true
+        description: How well the onsets support this tempo and phase.
+        constraints: ["is within 0 and 1 inclusive"]
+      - name: meterConfidence
+        type: number
+        required: true
+        description: How well the onsets support the time signature specifically.
+        constraints: ["is within 0 and 1 inclusive"]
+      - name: meterIsStated
+        type: boolean
+        required: true
+        description: >
+          False when the time signature is the 4/4 default rather than
+          something measured. An interface must present an unstated metre
+          as an assumption open to correction, not as a finding.
+
+  - name: QuantizedNote
+    description: >
+      A NoteEvent placed on the grid. It keeps every performed value and
+      adds notated ones, so performance and notation are both readable
+      and their disagreement is explicit.
+    properties:
+      - name: gridStartMs
+        type: number
+        required: true
+        description: Onset snapped to the grid.
+      - name: gridDurationMs
+        type: number
+        required: true
+        description: Duration in grid steps, always at least one step.
+      - name: deviationMs
+        type: number
+        required: true
+        description: >
+          Signed milliseconds the singer was early (negative) or late
+          (positive) against the grid.
+      - name: bar
+        type: number
+        required: true
+        description: 1-based bar the note starts in.
+      - name: beat
+        type: number
+        required: true
+        description: 1-based fractional beat within the bar.
+      - name: durationBeats
+        type: number
+        required: true
+        description: Notated length in beats.
+      - name: durationLabel
+        type: string
+        required: true
+        description: Rhythmic name, for example quarter or dotted eighth.
+
+  - name: ChordSlot
+    description: >
+      One editable chord in the harmonic backdrop, spanning a bar or a
+      fraction of one. A slot records whether its chord was inferred or
+      chosen, so inference never overwrites a person's decision.
+    properties:
+      - name: bar
+        type: number
+        required: true
+        description: 1-based bar this slot begins in.
+      - name: startMs
+        type: number
+        required: true
+        description: Slot start on the grid.
+      - name: endMs
+        type: number
+        required: true
+        description: Slot end on the grid.
+      - name: rootPc
+        type: number
+        required: true
+        description: Chord root pitch class.
+        constraints: ["is within 0 and 11 inclusive"]
+      - name: quality
+        type: string
+        required: true
+        description: The chord shape.
+        constraints: ["is one of maj, min, dim, aug, maj7, dom7, min7, m7b5, dim7"]
+      - name: label
+        type: string
+        required: true
+        description: Absolute label, for example C or Am7.
+      - name: roman
+        type: string
+        required: true
+        description: Roman-numeral label relative to the key, for example V7.
+      - name: confidence
+        type: number
+        required: true
+        description: Support from the melody. Zero once a person has chosen the chord.
+        constraints: ["is within 0 and 1 inclusive"]
+      - name: isEdited
+        type: boolean
+        required: true
+        description: True once a person has changed this slot.

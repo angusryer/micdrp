@@ -1,0 +1,93 @@
+invariants:
+  - id: INV-TRANS-001
+    description: Quantization changes the notation, never the performance
+    severity: critical
+    check: >
+      Every QuantizedNote carries the startMs, endMs, durationMs, cents
+      and clarity of the NoteEvent it came from, unmodified. Grid values
+      are added alongside. Verified by comparing each quantized note to
+      its source note field by field.
+
+  - id: INV-TRANS-002
+    description: The grid's phase is fitted, never assumed
+    severity: critical
+    check: >
+      A take whose first onset does not fall on a beat is not reported at
+      a multiple of its true tempo. Verified by generating onsets at a
+      known bpm with a non-zero start offset and asserting the reported
+      bpm matches the generating bpm rather than double it.
+
+  - id: INV-TRANS-003
+    description: An assumed time signature is never presented as a measured one
+    severity: critical
+    check: >
+      meterIsStated is false whenever the 4/4 default was used rather
+      than a signature the onsets supported. No interface renders a
+      signature as a finding while meterIsStated is false.
+
+  - id: INV-TRANS-004
+    description: Inference never overwrites a hand-chosen chord
+    severity: critical
+    check: >
+      Re-running harmonization over a progression that contains slots
+      with isEdited true leaves those slots' rootPc and quality
+      unchanged. Only slots with isEdited false are recomputed.
+
+  - id: INV-TRANS-005
+    description: An edited chord reports no melodic support
+    severity: major
+    check: >
+      Every chord-editing capability returns a slot with isEdited true,
+      and a slot with isEdited true has confidence 0. Confidence measures
+      what the melody implied, so it is meaningless once a person has
+      overridden the inference.
+
+  - id: INV-TRANS-006
+    description: A chord's labels always match its root and quality
+    severity: major
+    check: >
+      After every editing operation, label is the absolute name of
+      (rootPc, quality) and roman is that chord's numeral in the current
+      key. No operation returns a slot whose labels describe its previous
+      chord.
+
+  - id: INV-TRANS-007
+    description: Tempo stays inside a humanly plausible range
+    severity: major
+    check: >
+      Any non-zero bpm reported by estimate_tempo or carried on a
+      MusicalGrid is within 40 and 240 inclusive. Zero means there was
+      too little evidence, and is reported with confidence 0.
+
+  - id: INV-TRANS-008
+    description: Segmentation preserves the timeline
+    severity: critical
+    check: >
+      Notes are returned in ascending startMs order, no two notes
+      overlap, and every note's endMs is at or after its startMs. No note
+      is emitted with a duration below the configured minimum.
+
+  - id: INV-TRANS-009
+    description: Every confidence is a probability
+    severity: major
+    check: >
+      confidence on KeyEstimate, TempoEstimate, ChordSlot, and both
+      confidences on MusicalGrid are within 0 and 1 inclusive, including
+      on the empty-input paths that report zero.
+
+  - id: INV-TRANS-010
+    description: Silence resolves to a stated default, not a guess
+    severity: major
+    check: >
+      Empty or silent input yields C major with confidence 0 from
+      detect_key, bpm 0 with confidence 0 from estimate_tempo, and no
+      chord slots from harmonize_to_grid. None of these paths invents a
+      confident answer from no evidence.
+
+  - id: INV-TRANS-011
+    description: A quantized note is never shortened to nothing
+    severity: major
+    check: >
+      gridDurationMs is at least one grid step for every note, so a note
+      shorter than a step is notated as the shortest available value
+      rather than disappearing from the score.

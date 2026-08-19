@@ -4,14 +4,6 @@
 # that spec validation stays green at every commit.
 
 future_domains:
-  - name: transcription
-    priority: high
-    description: >
-      Pitch frames to symbolic music. Owns segmentation into discrete
-      notes, key detection, tempo and beat-grid fitting, quantization
-      against that grid, chord inference and editing, and MIDI export.
-    code: packages/logic/src/{segmentation,key,tempo,quantize,harmony,midi}.ts
-
   - name: notes
     priority: high
     description: >

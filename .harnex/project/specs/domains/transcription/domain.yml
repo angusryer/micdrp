@@ -1,0 +1,60 @@
+domain:
+  name: transcription
+  version: 0.1.0
+  status: specifying
+  owner: human
+
+  description: >
+    Turning pitch into music. This domain takes the frame stream that
+    pitch produces and answers the questions that make a take notatable:
+    where does one note end and the next begin, what key is this in, what
+    is the pulse and where does it start, how do the onsets sit on a bar
+    grid, what harmony does the line imply, and how is all of that
+    written to a MIDI file.
+
+    One rule governs the whole domain: analysis describes the take, it
+    does not rewrite it. A quantized note keeps the milliseconds it was
+    actually sung with and gains grid-relative values alongside them, so
+    the deviation between performance and notation stays visible instead
+    of being silently absorbed.
+
+  interfaces:
+    - type: module
+      description: >
+        A pure-TS library surface (packages/logic) consumed in-process:
+        segmentNotes, detectKey, estimateTempo, fitGrid, quantize,
+        harmonizeToGrid and the chord-editing operations, notesToMidi.
+
+  boundaries:
+    owns:
+      - Grouping pitch frames into discrete NoteEvents, including how long
+        a gap may be before a note ends
+      - Krumhansl-Schmuckler key detection and its confidence
+      - Pulse fitting by circular statistics, the tempo prior, and the
+        beat grid's phase
+      - Metre inference, the bar grid, and snapping notes to it
+      - The distinction between a stated and an assumed time signature
+      - Chord inference over grid slots and the pure chord-editing
+        operations (diatonic and chromatic transposition, quality cycling,
+        setting outright, reverting to what was inferred)
+      - Chord voicing into playable MIDI notes
+      - Standard MIDI File byte assembly
+    does_not_own:
+      - Detecting pitch or smoothing frames (pitch)
+      - Deciding when to run analysis, or persisting its result (notes)
+      - Scoring a take against a target melody (practice)
+      - Statistics across many takes (insights owns the corpus questions)
+      - Drawing a chord track or a piano roll (notes owns those views)
+      - Writing bytes to disk (notes owns export)
+
+  depends_on:
+    - domain: pitch
+      reason: Consumes PitchFrame streams and the MIDI/frequency conversions
+
+  depended_on_by:
+    - domain: notes
+      reason: Analyses a captured take and harmonizes it for the chord track
+    - domain: practice
+      reason: Segments a practice take before scoring it
+    - domain: insights
+      reason: Mines the melodies this domain produced

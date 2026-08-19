@@ -1,0 +1,102 @@
+entities:
+  - name: NoteEvent
+    description: >
+      One discrete sung note, the unit every downstream domain reasons
+      in. Produced by segmentation and persisted verbatim as a note's
+      melody, so this shape is a storage contract as well as a compute one.
+    properties:
+      - name: midi
+        type: number
+        required: true
+        description: The note that was sung, as an integer MIDI number.
+      - name: startMs
+        type: number
+        required: true
+        description: Onset in milliseconds from take start.
+      - name: endMs
+        type: number
+        required: true
+        description: Offset in milliseconds from take start.
+        constraints: ["is greater than or equal to startMs"]
+      - name: durationMs
+        type: number
+        required: true
+        description: endMs minus startMs.
+        constraints: ["is greater than or equal to the configured minimum duration"]
+      - name: cents
+        type: number
+        required: true
+        description: Mean cents deviation across the frames of this note.
+      - name: clarity
+        type: number
+        required: true
+        description: Mean detection confidence across the frames of this note.
+        constraints: ["is within 0 and 1 inclusive"]
+
+  - name: KeyEstimate
+    description: >
+      The most likely key of a passage, with a confidence that reports
+      how far the winning profile separated from the runner-up rather
+      than how correct it is.
+    properties:
+      - name: tonic
+        type: number
+        required: true
+        description: Tonic pitch class.
+        constraints: ["is within 0 and 11 inclusive"]
+      - name: tonicName
+        type: string
+        required: true
+        description: Chromatic name of the tonic.
+      - name: mode
+        type: string
+        required: true
+        description: The detected mode.
+        constraints: ["is one of major, minor"]
+      - name: confidence
+        type: number
+        required: true
+        description: Half the correlation gap to the runner-up, clamped.
+        constraints: ["is within 0 and 1 inclusive"]
+
+  - name: TempoEstimate
+    description: >
+      The beat the take was sung to, including where the first beat line
+      falls. Phase is fitted, never assumed to be zero.
+    properties:
+      - name: bpm
+        type: number
+        required: true
+        description: Beats per minute, or 0 when there was too little evidence.
+        constraints: ["is 0 or is within 40 and 240 inclusive"]
+      - name: confidence
+        type: number
+        required: true
+        description: How tightly onsets cluster on the chosen beat grid.
+        constraints: ["is within 0 and 1 inclusive"]
+      - name: offsetMs
+        type: number
+        required: true
+        description: >
+          Time of the first beat line, reported modulo one beat so it
+          names a position within the beat rather than an absolute time.
+        constraints: ["is greater than or equal to 0", "is less than one beat"]
+
+  - name: PulseFit
+    description: >
+      The finest regular pulse the onsets sit on, before the tempo prior
+      decides which multiple of it a person would tap along to.
+    properties:
+      - name: periodMs
+        type: number
+        required: true
+        description: The pulse period in milliseconds.
+      - name: offsetMs
+        type: number
+        required: true
+        description: Time of the first pulse line.
+      - name: strength
+        type: number
+        required: true
+        description: Circular-resultant clustering strength at that period.
+        constraints: ["is within 0 and 1 inclusive"]
