@@ -48,7 +48,9 @@ function detectLocale(): string {
 // inline resources and no backend, init already completes synchronously, so the
 // provider is ready before the first render.
 
-i18n
+// init resolves synchronously with inline resources; the promise is
+// deliberately not awaited.
+void i18n
   .use(initReactI18next)
   .init({
     resources,

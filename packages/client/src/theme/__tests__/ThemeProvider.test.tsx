@@ -7,6 +7,8 @@
  * used, so these exercise the full persistence round-trip.
  */
 import React from 'react';
+
+import { harnessElement } from '../../testing/harness';
 import TestRenderer, { act } from 'react-test-renderer';
 
 import { ETheme } from '../../configs/theme';
@@ -36,7 +38,7 @@ function mount(): Mounted {
       React.createElement(
         ThemeProvider,
         null,
-        React.createElement(Probe, {
+        harnessElement(Probe, {
           onReady: (v: ThemeValue) => {
             latest = v;
           }
@@ -104,15 +106,16 @@ describe('ThemeProvider palette', () => {
     let latest: ThemeValue | null = null;
     void act(() => {
       TestRenderer.create(
-        React.createElement(
-          ThemeProvider,
-          { initialPalette: ETheme.Green },
-          React.createElement(Probe, {
+        React.createElement(ThemeProvider, {
+          initialPalette: ETheme.Green,
+          // ThemeProviderProps declares children as required, so it belongs in
+          // the props object rather than as a createElement vararg.
+          children: harnessElement(Probe, {
             onReady: (v: ThemeValue) => {
               latest = v;
             }
           })
-        )
+        })
       );
     });
     expect(latest).not.toBeNull();

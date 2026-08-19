@@ -5,7 +5,8 @@
  * react-test-renderer harness and assert the load -> edit -> save flow, the
  * dirty flag, sign-out, and delete-account delegation.
  */
-import React from 'react';
+
+import { harnessElement } from '../../../testing/harness';
 import TestRenderer, { act } from 'react-test-renderer';
 
 const mockGet = jest.fn();
@@ -50,7 +51,7 @@ async function mount(): Promise<Mounted> {
   let tree!: TestRenderer.ReactTestRenderer;
   await act(async () => {
     tree = TestRenderer.create(
-      React.createElement(Harness, {
+      harnessElement(Harness, {
         onReady: (v: UseProfileValue) => {
           latest = v;
         }

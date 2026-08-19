@@ -28,7 +28,7 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { DEFAULT_ENGINE_CONFIG, type EngineConfig } from '../../audio/contract';
+import { type EngineConfig } from '../../audio/contract';
 import { ETheme } from '../../configs/theme';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
@@ -71,7 +71,6 @@ function Section({
 
 function StepperRow({
   label,
-  value,
   display,
   atMin,
   atMax,

@@ -61,4 +61,10 @@ export interface Spec extends TurboModule {
   readonly onState: EventEmitter<string>;
 }
 
-export default TurboModuleRegistry.getEnforcing<Spec>('AudioEngineModule');
+/**
+ * `get` rather than `getEnforcing`: this module is optional by design. When the
+ * native engine is absent — a stripped build, or Jest — AudioEngine.ts falls
+ * back to the Tier 2 worklet. getEnforcing throws at module scope, before any
+ * caller can catch it, which would take the whole app down instead.
+ */
+export default TurboModuleRegistry.get<Spec>('AudioEngineModule');

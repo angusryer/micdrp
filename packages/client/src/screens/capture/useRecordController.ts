@@ -118,7 +118,7 @@ export function useRecordController(): RecordController {
 
   // Reset the per-frame surface whenever we leave the recording state so a new
   // session starts from a clean line.
-  const stateValue = snapshot.value as RecordingStateValue;
+  const stateValue: RecordingStateValue = snapshot.value;
   useEffect(() => {
     if (stateValue === 'idle') {
       sharedPitch.value = 0;

@@ -18,8 +18,21 @@ function emit(event: string, payload: unknown): void {
   bus[event]?.forEach((h) => h(payload));
 }
 
-const nativeMock = {
-  configure: jest.fn(() => Promise.resolve()),
+/** Mirrors a codegen event emitter: subscribe, get an EventSubscription back. */
+function mockSubscribe(event: string, handler: Handler): { remove(): void } {
+  addListenerCalls.push(event);
+  if (!bus[event]) bus[event] = new Set();
+  bus[event].add(handler);
+  return {
+    remove: () => {
+      removeCalls.push(event);
+      bus[event].delete(handler);
+    }
+  };
+}
+
+const mockNative = {
+  configure: jest.fn((_config?: unknown) => Promise.resolve()),
   start: jest.fn(() => Promise.resolve()),
   stop: jest.fn(() =>
     Promise.resolve({
@@ -39,25 +52,20 @@ const nativeMock = {
 };
 
 // Set BEFORE importing the module under test so getNativeModule() sees it.
-jest.mock('react-native', () => {
-  class NativeEventEmitter {
-    addListener(event: string, handler: Handler): { remove(): void } {
-      addListenerCalls.push(event);
-      if (!bus[event]) bus[event] = new Set();
-      bus[event].add(handler);
-      return {
-        remove: () => {
-          removeCalls.push(event);
-          bus[event].delete(handler);
-        }
-      };
-    }
+// The engine is a TurboModule now, so the seam is the codegen spec module
+// rather than NativeModules + NativeEventEmitter. Its event emitters take a
+// listener and return an unsubscribe function.
+jest.mock('../../specs/NativeAudioEngine', () => ({
+  __esModule: true,
+  default: {
+    configure: (config: unknown) => mockNative.configure(config),
+    start: () => mockNative.start(),
+    stop: () => mockNative.stop(),
+    requestPermission: () => mockNative.requestPermission(),
+    onPitch: (handler: Handler) => mockSubscribe('pitch', handler),
+    onState: (handler: Handler) => mockSubscribe('state', handler)
   }
-  return {
-    NativeModules: { AudioEngineModule: nativeMock },
-    NativeEventEmitter
-  };
-});
+}));
 
 // Import AFTER the mock is registered. The module instantiates its singleton at
 // import time using the mocked NativeModules.
@@ -76,9 +84,7 @@ describe('AudioEngine (Tier 1 — native present)', () => {
   });
 
   it('selects Tier 1 when the native module is present', () => {
-    // @ts-expect-error access test-only accessor
     expect(audioEngine.tier).toBe(1);
-    // @ts-expect-error access test-only accessor
     expect(audioEngine.isNative).toBe(true);
   });
 
@@ -86,7 +92,7 @@ describe('AudioEngine (Tier 1 — native present)', () => {
     const received: unknown[] = [];
     const off = audioEngine.onPitch((s) => received.push(s));
 
-    emit('AudioEnginePitch', {
+    emit('pitch', {
       timestampMs: 5,
       frequencyHz: 220,
       clarity: 0.95,
@@ -104,7 +110,7 @@ describe('AudioEngine (Tier 1 — native present)', () => {
     const received: Array<{ midi: number | null; cents: number | null }> = [];
     const off = audioEngine.onPitch((s) => received.push(s));
 
-    emit('AudioEnginePitch', {
+    emit('pitch', {
       timestampMs: 7,
       frequencyHz: 0,
       clarity: 0.2,
@@ -123,7 +129,7 @@ describe('AudioEngine (Tier 1 — native present)', () => {
     // First call replays the current coarse state.
     expect(states[0]).toBe('idle');
 
-    emit('AudioEngineState', 'recording');
+    emit('state', 'recording');
     expect(states).toContain('recording');
     off();
   });
@@ -132,22 +138,22 @@ describe('AudioEngine (Tier 1 — native present)', () => {
     const offA = audioEngine.onPitch(() => undefined);
     const offB = audioEngine.onPitch(() => undefined);
     // One native addListener per event channel, shared across JS subscribers.
-    expect(addListenerCalls.filter((e) => e === 'AudioEnginePitch')).toHaveLength(1);
+    expect(addListenerCalls.filter((e) => e === 'pitch')).toHaveLength(1);
 
     offA();
     expect(removeCalls).toHaveLength(0); // still one JS listener alive
 
     offB();
     // Now both pitch + state channels are torn down.
-    expect(removeCalls).toContain('AudioEnginePitch');
+    expect(removeCalls).toContain('pitch');
   });
 
   it('proxies configure/start/requestPermission to the native module', async () => {
     await audioEngine.configure({ emitRateHz: 30 });
-    expect(nativeMock.configure).toHaveBeenCalledWith({ emitRateHz: 30 });
+    expect(mockNative.configure).toHaveBeenCalledWith({ emitRateHz: 30 });
 
     await audioEngine.start();
-    expect(nativeMock.start).toHaveBeenCalled();
+    expect(mockNative.start).toHaveBeenCalled();
 
     await expect(audioEngine.requestPermission()).resolves.toBe(true);
   });

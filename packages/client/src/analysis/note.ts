@@ -20,7 +20,7 @@ import {
   type NoteEvent,
   type TargetNote
 } from 'logic';
-import type { CreateNoteInput, NoteEventDto } from 'shared';
+import type { CreateNoteInput } from 'shared';
 
 import type { RecordingHandle } from '../audio/contract';
 
@@ -76,7 +76,7 @@ export function analyzeCapture(handle: RecordingHandle): CaptureAnalysis {
       durationMs: handle.durationMs,
       sampleRateHz: handle.sampleRateHz,
       // NoteEvent is structurally identical to NoteEventDto.
-      melody: notes as NoteEventDto[],
+      melody: notes,
       key: keyLabel,
       tempoBpm,
       inTuneRatio: hasNotes ? score.inTuneRatio : null,

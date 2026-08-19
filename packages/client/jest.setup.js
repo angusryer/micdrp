@@ -8,7 +8,18 @@ require('react-native-gesture-handler/jestSetup');
 // `/mock` subpath, so we provide the small surface our UI actually uses.)
 jest.mock('react-native-reanimated', () => {
   const RN = require('react-native');
+  const React = require('react');
+  // The real useSharedValue is ref-stable across renders. Returning a fresh
+  // object each render left callbacks holding a stale one, so a frame written
+  // after a re-render landed on an object nobody was reading.
   const shared = (init) => ({ value: init });
+  const useShared = (init) => {
+    const ref = React.useRef(null);
+    if (ref.current === null) {
+      ref.current = shared(init);
+    }
+    return ref.current;
+  };
   return {
     __esModule: true,
     default: {
@@ -18,8 +29,8 @@ jest.mock('react-native-reanimated', () => {
       ScrollView: RN.ScrollView,
       createAnimatedComponent: (c) => c
     },
-    useSharedValue: (v) => shared(v),
-    useDerivedValue: (fn) => shared(typeof fn === 'function' ? fn() : undefined),
+    useSharedValue: useShared,
+    useDerivedValue: (fn) => useShared(typeof fn === 'function' ? fn() : undefined),
     useAnimatedStyle: (fn) => (typeof fn === 'function' ? fn() : {}),
     useAnimatedProps: (fn) => (typeof fn === 'function' ? fn() : {}),
     useAnimatedReaction: () => {},
@@ -38,43 +49,33 @@ jest.mock('react-native-reanimated', () => {
 }, { virtual: true });
 
 // react-native-mmkv: in-memory backing store.
+// v4 replaced the MMKV class with a createMMKV() factory and renamed delete()
+// to remove(), so the mock mirrors that shape.
 jest.mock('react-native-mmkv', () => {
   const stores = new Map();
-  class MMKV {
-    constructor(opts) {
-      const id = (opts && opts.id) || 'default';
-      if (!stores.has(id)) stores.set(id, new Map());
-      this._m = stores.get(id);
-    }
-    set(k, v) {
-      this._m.set(k, v);
-    }
-    getString(k) {
-      const v = this._m.get(k);
-      return typeof v === 'string' ? v : undefined;
-    }
-    getNumber(k) {
-      const v = this._m.get(k);
-      return typeof v === 'number' ? v : undefined;
-    }
-    getBoolean(k) {
-      const v = this._m.get(k);
-      return typeof v === 'boolean' ? v : undefined;
-    }
-    contains(k) {
-      return this._m.has(k);
-    }
-    delete(k) {
-      this._m.delete(k);
-    }
-    getAllKeys() {
-      return Array.from(this._m.keys());
-    }
-    clearAll() {
-      this._m.clear();
-    }
-  }
-  return { MMKV };
+  const createMMKV = (opts) => {
+    const id = (opts && opts.id) || 'default';
+    if (!stores.has(id)) stores.set(id, new Map());
+    const m = stores.get(id);
+    return {
+      set: (k, v) => m.set(k, v),
+      getString: (k) => (typeof m.get(k) === 'string' ? m.get(k) : undefined),
+      getNumber: (k) => (typeof m.get(k) === 'number' ? m.get(k) : undefined),
+      getBoolean: (k) => (typeof m.get(k) === 'boolean' ? m.get(k) : undefined),
+      getBuffer: (k) => m.get(k),
+      contains: (k) => m.has(k),
+      remove: (k) => m.delete(k),
+      getAllKeys: () => Array.from(m.keys()),
+      clearAll: () => m.clear(),
+      recrypt: () => undefined,
+      trim: () => undefined
+    };
+  };
+  return {
+    createMMKV,
+    existsMMKV: (id) => stores.has(id),
+    deleteMMKV: (id) => stores.delete(id)
+  };
 }, { virtual: true });
 
 // @shopify/react-native-skia: render children, stub drawing primitives.
