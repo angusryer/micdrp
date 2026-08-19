@@ -4,14 +4,6 @@
 # that spec validation stays green at every commit.
 
 future_domains:
-  - name: notes
-    priority: high
-    description: >
-      Sung musical-idea memos. Owns the capture-analyse-keep loop, the
-      note list and detail views, the editable chord backdrop, playback,
-      and the notes table plus its storage bucket.
-    code: packages/client/src/screens/Notes, packages/client/src/data/notes*.ts
-
   - name: practice
     priority: medium
     description: >

@@ -1,0 +1,129 @@
+# The editable chord backdrop.
+acceptance:
+  - id: ACC-NOTES-016
+    interface: ui
+    title: A fresh track is entirely inferred
+    given:
+      - a signed-in singer S
+      - singer S has a note N titled "Mine"
+      - the chord track for note N is open
+    when:
+      - the singer taps chord 0
+    then:
+      - the track reports edits false
+      - chord 0 is C and edited false
+    maps_to:
+      capability: notes.open_chord_track
+      invariants: [INV-NOTES-008]
+      interaction: INT-NOTES-004
+      view: VIEW-NOTES-002
+
+  - id: ACC-NOTES-017
+    interface: ui
+    title: Nudging a chord marks it as chosen
+    given:
+      - a signed-in singer S
+      - singer S has a note N titled "Mine"
+      - the chord track for note N is open
+    when:
+      - the singer nudges chord 0 by 1 degrees
+    then:
+      - chord 0 is Dm and edited true
+      - the track reports edits true
+    maps_to:
+      capability: notes.edit_chord
+      invariants: [INV-NOTES-008]
+      interaction: INT-NOTES-005
+
+  - id: ACC-NOTES-018
+    interface: ui
+    title: Editing one chord leaves the others alone
+    given:
+      - a signed-in singer S
+      - singer S has a note N titled "Mine"
+      - the chord track for note N is open
+    when:
+      - the singer nudges chord 0 by 1 degrees
+    then:
+      - chord 1 is unchanged
+    maps_to:
+      capability: notes.edit_chord
+
+  - id: ACC-NOTES-019
+    interface: ui
+    title: Re-inference leaves a chosen chord alone
+    given:
+      - a signed-in singer S
+      - singer S has a note N titled "Mine"
+      - the chord track for note N is open
+    when:
+      - the singer nudges chord 0 by 1 degrees
+      - the chord track is rebuilt
+    then:
+      - chord 0 is Dm and edited true
+    maps_to:
+      capability: notes.open_chord_track
+      invariants: [INV-NOTES-008]
+
+  - id: ACC-NOTES-020
+    interface: ui
+    title: Reverting a chord restores what the melody implied
+    given:
+      - a signed-in singer S
+      - singer S has a note N titled "Mine"
+      - the chord track for note N is open
+    when:
+      - the singer nudges chord 0 by 1 degrees
+      - the singer reverts chord 0
+    then:
+      - chord 0 is C and edited false
+      - the track reports edits false
+    maps_to:
+      capability: notes.revert_chord
+      interaction: INT-NOTES-006
+
+  - id: ACC-NOTES-021
+    interface: ui
+    title: Reverting an untouched chord changes nothing
+    given:
+      - a signed-in singer S
+      - singer S has a note N titled "Mine"
+      - the chord track for note N is open
+    when:
+      - the singer reverts chord 1
+    then:
+      - chord 1 is unchanged
+      - the track reports edits false
+    maps_to:
+      capability: notes.revert_chord
+
+  - id: ACC-NOTES-022
+    interface: ui
+    title: A tapped chord sounds below the sung line
+    given:
+      - a signed-in singer S
+      - singer S has a note N titled "Mine"
+      - the chord track for note N is open
+    when:
+      - the singer taps chord 0
+    then:
+      - every audition note is at or above midi 48
+      - chord 0 is C and edited false
+    maps_to:
+      capability: notes.audition_chord
+      invariants: [INV-NOTES-009]
+      interaction: INT-NOTES-007
+
+  - id: ACC-NOTES-023
+    interface: ui
+    title: A note with no melody opens an empty track
+    given:
+      - a signed-in singer S
+      - singer S has a note N with no stored audio
+      - the chord track for note N is open
+    when:
+      - the singer taps chord 0
+    then:
+      - the track reports edits false
+    maps_to:
+      capability: notes.open_chord_track

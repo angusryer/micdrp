@@ -1,0 +1,115 @@
+interactions:
+  - id: INT-NOTES-001
+    name: Sing an idea and keep it
+    view: VIEW-NOTES-001
+    precondition: The singer is signed in and the microphone permission is granted.
+    steps:
+      - Press record
+      - Sing
+      - Press stop
+    outcome: >
+      The capture is analysed and saved as a note, which appears at the
+      top of the list. No quality threshold is applied.
+    error_handling: >
+      A denied microphone permission surfaces as a prompt to grant it and
+      leaves no note behind. A failed save reports the failure and keeps
+      the capture available to retry.
+    maps_to:
+      capability: notes.capture
+
+  - id: INT-NOTES-002
+    name: Browse kept ideas
+    view: VIEW-NOTES-001
+    steps:
+      - Open the Notes tab
+    outcome: >
+      The cached list paints immediately, then the server's list replaces
+      it. Nothing kept yet shows the empty state instead.
+    error_handling: >
+      A failed sync leaves the cached list on screen rather than blanking it.
+    maps_to:
+      capability: notes.list
+
+  - id: INT-NOTES-003
+    name: Delete an idea
+    view: VIEW-NOTES-001
+    precondition: The note belongs to the signed-in singer.
+    steps:
+      - Choose delete on a note card
+      - Confirm
+    outcome: >
+      The row and its stored audio are removed and the note leaves the list.
+    error_handling: >
+      A failed delete leaves the note in place and reports the failure.
+    maps_to:
+      capability: notes.delete
+
+  - id: INT-NOTES-004
+    name: Look at an idea's shape
+    view: VIEW-NOTES-002
+    steps:
+      - Open a note from the list
+    outcome: >
+      The melody is drawn over time and pitch with bar lines and a time
+      signature, and the descriptive analysis is shown beside it.
+    maps_to:
+      capability: notes.open_chord_track
+
+  - id: INT-NOTES-005
+    name: Change a chord in the backdrop
+    view: VIEW-NOTES-002
+    precondition: The note's chord track has at least one slot.
+    steps:
+      - Drag a chord slot up or down to move it through the key
+      - Or step its shape to change the chord quality
+    outcome: >
+      The slot takes the new chord, is marked as chosen, and later
+      inference leaves it alone.
+    maps_to:
+      capability: notes.edit_chord
+
+  - id: INT-NOTES-006
+    name: Put a chord back
+    view: VIEW-NOTES-002
+    precondition: At least one slot has been changed.
+    steps:
+      - Choose revert on a slot, or revert everything
+    outcome: >
+      The slot returns to what the melody implied and is no longer marked
+      as chosen. Reverting everything hides the revert-all control.
+    maps_to:
+      capability: notes.revert_chord
+
+  - id: INT-NOTES-007
+    name: Hear a chord under the line
+    view: VIEW-NOTES-002
+    steps:
+      - Tap a chord slot
+    outcome: >
+      The chord sounds briefly, voiced below the sung line, and the slot
+      is not marked as chosen.
+    maps_to:
+      capability: notes.audition_chord
+
+  - id: INT-NOTES-008
+    name: Play the take back
+    view: VIEW-NOTES-002
+    precondition: The note has stored audio.
+    steps:
+      - Press play
+    outcome: The capture plays and its position is shown while it runs.
+    error_handling: >
+      A note whose upload never completed shows no playback bar at all.
+    maps_to:
+      capability: notes.play
+
+  - id: INT-NOTES-009
+    name: Take the idea elsewhere
+    view: VIEW-NOTES-002
+    steps:
+      - Choose export
+    outcome: >
+      A MIDI file is produced from the persisted melody and offered to
+      the singer.
+    maps_to:
+      capability: notes.export_midi

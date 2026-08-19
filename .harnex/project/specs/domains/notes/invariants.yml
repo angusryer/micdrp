@@ -1,0 +1,95 @@
+invariants:
+  - id: INV-NOTES-001
+    description: Every capture is kept
+    severity: critical
+    check: >
+      No path in notes.capture discards a take for being too short, too
+      quiet, too out of tune, or too anything. The only outcomes are a
+      saved note or a reported failure. Verified by capturing a
+      deliberately poor take and asserting a note row exists.
+
+  - id: INV-NOTES-002
+    description: A note is described, never graded
+    severity: critical
+    check: >
+      Neither the Note entity nor any Notes view carries a headline
+      score. The analysis surfaces key, tempo, range and steadiness as
+      description. Verified by asserting no score field on the row and no
+      score element in VIEW-NOTES-002.
+
+  - id: INV-NOTES-003
+    description: The melody is the source of truth, not the audio
+    severity: critical
+    check: >
+      Every question asked of a note after capture — its shape, its
+      chords, its export, its contribution to the corpus — is answered
+      from melody_json. No path re-reads the stored audio to compute
+      anything. Verified by deleting the audio blob and asserting every
+      analysis still resolves.
+
+  - id: INV-NOTES-004
+    description: A note without audio is still a note
+    severity: major
+    check: >
+      audioPath is nullable and a null value degrades only playback. The
+      note lists, opens, analyses, and exports with audioPath null.
+
+  - id: INV-NOTES-005
+    description: A singer reaches only their own notes
+    severity: critical
+    check: >
+      Every read, update and delete against the notes table and the notes
+      bucket is constrained to rows where user_id matches the
+      authenticated user. Enforced by row-level security in the migration,
+      not by client code. Verified by attempting a read and a delete
+      against another singer's note and asserting both fail.
+
+  - id: INV-NOTES-006
+    description: The server is the authority and the cache is a hint
+    severity: major
+    check: >
+      A completed sync replaces the cached list outright rather than
+      merging into it. A failed sync leaves the previous cache intact.
+      The cache is never written from a source other than a server
+      response.
+
+  - id: INV-NOTES-007
+    description: Deleting a note leaves nothing behind
+    severity: critical
+    check: >
+      A successful delete removes the row, the audio blob in the notes
+      bucket, and the cache entry. Verified by listing the bucket prefix
+      after a delete and asserting the object is gone.
+
+  - id: INV-NOTES-008
+    description: A hand-chosen chord survives re-inference
+    severity: critical
+    check: >
+      Re-opening or recomputing a chord track preserves the root and
+      quality of every slot the singer edited. Only unedited slots are
+      recomputed. This is the notes-side obligation matching INV-TRANS-004.
+
+  - id: INV-NOTES-009
+    description: The chord backdrop sits below the sung line
+    severity: minor
+    check: >
+      Every audition voicing is placed at or above the backdrop's floor
+      note, so the harmony supports the melody rather than competing
+      with it.
+
+  - id: INV-NOTES-010
+    description: Analysis never runs on the live audio path
+    severity: critical
+    check: >
+      notes.analyze_capture is invoked only after the engine has stopped,
+      and adds no per-frame work while recording. The live pitch stream
+      reaches the view through shared values on the UI thread and is not
+      routed through analysis.
+
+  - id: INV-NOTES-011
+    description: A weak detection is reported as absent, not as a guess
+    severity: major
+    check: >
+      key is null when the key confidence is below the floor and tempoBpm
+      is null when the tempo confidence is below the floor. No view
+      renders a detected value that the analysis declined to assert.

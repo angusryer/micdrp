@@ -1,0 +1,107 @@
+# Capturing and keeping an idea.
+acceptance:
+  - id: ACC-NOTES-001
+    interface: ui
+    title: A sung idea is analysed and kept
+    given:
+      - a signed-in singer S
+      - a capture of a clean take is ready
+    when:
+      - the singer records and stops
+    then:
+      - singer S has 1 notes
+      - the note field noteCount is 4
+      - the note carries no score
+    maps_to:
+      capability: notes.capture
+      invariants: [INV-NOTES-001, INV-NOTES-002]
+      interaction: INT-NOTES-001
+      view: VIEW-NOTES-001
+
+  - id: ACC-NOTES-002
+    interface: ui
+    title: A poor take is kept just the same
+    given:
+      - a signed-in singer S
+      - a capture of a poor take is ready
+    when:
+      - the singer records and stops
+    then:
+      - singer S has 1 notes
+      - the note carries no score
+    maps_to:
+      capability: notes.capture
+      invariants: [INV-NOTES-001, INV-NOTES-002]
+
+  - id: ACC-NOTES-003
+    interface: ui
+    title: An untitled capture gets a timestamped name
+    given:
+      - a signed-in singer S
+      - a capture of a clean take is ready
+    when:
+      - the singer records and stops
+    then:
+      - singer S has 1 notes
+      - the note field titleIsDefault is true
+    maps_to:
+      capability: notes.capture
+
+  - id: ACC-NOTES-004
+    interface: ui
+    title: A supplied title is kept as given
+    given:
+      - a signed-in singer S
+      - a capture of a clean take is ready
+    when:
+      - the singer records and stops with the title "Bridge idea"
+    then:
+      - the note field title is "Bridge idea"
+    maps_to:
+      capability: notes.capture
+
+  - id: ACC-NOTES-005
+    interface: ui
+    title: A weak key detection is reported as absent
+    given:
+      - a signed-in singer S
+      - a capture of a silent take is ready
+    when:
+      - the singer records and stops
+    then:
+      - singer S has 1 notes
+      - the note field key is null
+      - the note field tempoBpm is null
+    maps_to:
+      capability: notes.analyze_capture
+      invariants: [INV-NOTES-011]
+
+  - id: ACC-NOTES-006
+    interface: ui
+    title: An empty take has no range
+    given:
+      - a signed-in singer S
+      - a capture of an empty take is ready
+    when:
+      - the singer records and stops
+    then:
+      - the note field rangeLowMidi is null
+      - the note field rangeHighMidi is null
+      - the note field noteCount is 0
+    maps_to:
+      capability: notes.analyze_capture
+      invariants: [INV-NOTES-001]
+
+  - id: ACC-NOTES-007
+    interface: ui
+    title: Analysis waits for the engine to stop
+    given:
+      - a signed-in singer S
+      - a capture of a clean take is ready
+    when:
+      - the singer records and stops
+    then:
+      - the note field analysisRanWhileRecording is false
+    maps_to:
+      capability: notes.analyze_capture
+      invariants: [INV-NOTES-010]
