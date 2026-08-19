@@ -1,107 +1,66 @@
-require_relative '../../../node_modules/react-native/scripts/react_native_pods'
-require_relative '../../../node_modules/@react-native-community/cli-platform-ios/native_modules'
-# pod 'react-native-config', :path => '../node_modules/react-native-config/react-native-config.podspec' <-- causes duplicate reactcore/accessibilty package error
+# Resolve react_native_pods.rb with node so hoisting is handled for us — this
+# repo is a Yarn workspace and node_modules lives at the repo root, not here.
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "react-native/scripts/react_native_pods.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
 
-# May need this to read env and generate proper build locations before
-# `react_native_post_install` sets up the RN-specific build tasks.
-# *** Do this after a complete clean of the project (including derived data, deleting node_modules, etc...) ***
-# require_relative '../../../node_modules/react-native-config/ios/ReactNativeConfig/ReadDotEnv';
+platform :ios, min_ios_version_supported
+prepare_react_native_project!
 
-platform :ios, '14.0'
-install! 'cocoapods', :deterministic_uuids => false
+linkage = ENV['USE_FRAMEWORKS']
+if linkage != nil
+  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
+  use_frameworks! :linkage => linkage.to_sym
+end
 
 target 'micdrp' do
   config = use_native_modules!
 
-  # Flags change depending on the env values.
-  flags = get_default_flags()
-
   use_react_native!(
     :path => config[:reactNativePath],
-    # Hermes is now enabled by default. Disable by setting this flag to false.
-    # Upcoming versions of React Native may rely on get_default_flags(), but
-    # we make it explicit here to aid in the React Native upgrade process.
-    :hermes_enabled => true,
-    :fabric_enabled => flags[:fabric_enabled],
-    # Flipper is a debug-only inspector that has no business in a release
-    # build, and its vendored sources no longer compile: FlipperTransportTypes.h
-    # uses std::function without including <functional>, which newer libc++
-    # headers no longer provide transitively. RN deprecated it after 0.73.
-    :flipper_configuration => FlipperConfiguration.disabled,
-    # An absolute path to your application root.
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
   target 'micdrpTests' do
     inherit! :complete
-    # Pods for testing
   end
 
   post_install do |installer|
     react_native_post_install(
       installer,
-      # Set `mac_catalyst_enabled` to `true` in order to apply patches
-      # necessary for Mac Catalyst builds
+      config[:reactNativePath],
       :mac_catalyst_enabled => false
     )
-    __apply_Xcode_12_5_M1_post_install_workaround(installer)
 
-    # Xcode 26's clang rejects the literal-operator spelling Yoga uses in
-    # RN 0.72 (`operator"" _pt`) under -Wdeprecated-literal-operator, and the
-    # React pods compile with -Werror. The syntax is deprecated, not wrong, and
-    # the header ships inside react-native — so silence that one diagnostic for
-    # pod targets rather than patching a vendored header.
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
-
-        # react-native-audio-api's C++ uses std::span, std::numbers,
-        # std::assume_aligned and concepts. RN 0.72's post-install pins every
-        # pod to c++17, so raise just this one target to c++20 rather than
-        # moving RN's own sources off the standard they were written for.
-        if target.name == 'RNAudioAPI'
-          config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
-        end
-        flags = config.build_settings['OTHER_CPLUSPLUSFLAGS'] || ['$(inherited)']
-        flags = [flags] if flags.is_a?(String)
-        unless flags.include?('-Wno-deprecated-literal-operator')
-          flags << '-Wno-deprecated-literal-operator'
-        end
-        config.build_settings['OTHER_CPLUSPLUSFLAGS'] = flags
-      end
-    end
-    
-    
-    # Set up references to the ENV file we use globally
-    debug_path = "Pods/Target Support Files/Pods-micdrp/Pods-micdrp.debug.xcconfig"
-    release_path = "Pods/Target Support Files/Pods-micdrp/Pods-micdrp.release.xcconfig"
-    debug_tests_path = "Pods/Target Support Files/Pods-micdrp-micdrpTests/Pods-micdrp-micdrpTests.debug.xcconfig"
-    release_tests_path = "Pods/Target Support Files/Pods-micdrp-micdrpTests/Pods-micdrp-micdrpTests.release.xcconfig"
-    
-    File.open(debug_path, 'a') do |file|
-      file.puts "\n#include? \"../../../env.xcconfig\""
-    end
-
-    File.open(release_path, 'a') do |file|
-      file.puts "\n#include? \"../../../env.xcconfig\""
-    end
-
-    File.open(debug_tests_path, 'a') do |file|
-      file.puts "\n#include? \"../../../env.xcconfig\""
-    end
-
-    File.open(release_tests_path, 'a') do |file|
-      file.puts "\n#include? \"../../../env.xcconfig\""
-    end
-
-    # The C++ DSP core is shared with Android and lives outside ios/, so the
-    # AudioEngineModule bridge needs it on the header path. This has to go in
-    # the pod xcconfig rather than the target's build settings: a target-level
-    # HEADER_SEARCH_PATHS shadows the xcconfig entirely, because $(inherited)
-    # there resolves to the project level, not to the xcconfig underneath it.
-    [debug_path, release_path, debug_tests_path, release_tests_path].each do |path|
+    # react-native-config writes the generated env into tmp.xcconfig, which
+    # env.xcconfig includes. Both have to reach every build configuration.
+    %w[
+      Pods/Target\ Support\ Files/Pods-micdrp/Pods-micdrp.debug.xcconfig
+      Pods/Target\ Support\ Files/Pods-micdrp/Pods-micdrp.release.xcconfig
+      Pods/Target\ Support\ Files/Pods-micdrp-micdrpTests/Pods-micdrp-micdrpTests.debug.xcconfig
+      Pods/Target\ Support\ Files/Pods-micdrp-micdrpTests/Pods-micdrp-micdrpTests.release.xcconfig
+    ].each do |path|
+      next unless File.exist?(path)
       File.open(path, 'a') do |file|
-        file.puts "\nHEADER_SEARCH_PATHS = $(inherited) \"$(PODS_ROOT)/../../cpp/dsp\""
+        file.puts "\n#include? \"../../../env.xcconfig\""
+        # The C++ DSP core is shared with Android and lives outside ios/, so the
+        # AudioEngineModule bridge needs it on the header path. This belongs in
+        # the pod xcconfig rather than the target's build settings: a
+        # target-level HEADER_SEARCH_PATHS shadows the xcconfig entirely,
+        # because $(inherited) there resolves to the project level.
+        file.puts "HEADER_SEARCH_PATHS = $(inherited) \"$(PODS_ROOT)/../../cpp/dsp\""
+
+        # React Native applies folly's configuration flags to its own pod
+        # targets only. The stock template sidesteps that by making AppDelegate
+        # Swift, so nothing in the app target ever parses a folly header. This
+        # app's AppDelegate is Objective-C++ and does, and without
+        # FOLLY_CFG_NO_COROUTINES folly reaches for <folly/coro/Coroutine.h>,
+        # which the prebuilt dependencies do not ship. Mirror RN's own flags.
+        file.puts "OTHER_CPLUSPLUSFLAGS = $(inherited) -DFOLLY_MOBILE=1 " \
+                  "-DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 " \
+                  "-DFOLLY_HAVE_CLOCK_GETTIME=1"
       end
     end
   end
