@@ -1,0 +1,58 @@
+domain:
+  name: insights
+  version: 0.1.0
+  status: specifying
+  owner: human
+
+  description: >
+    What a singer's own material says about them. Given the melodies
+    they have kept, this domain answers questions no single take can:
+    which intervals they reach for, which shapes recur across ideas,
+    what harmony their lines keep implying, and — the useful inverse —
+    which colours they almost never sing.
+
+    Avoidance is measured as distance from the centroid of what the
+    singer habitually sings, not as a rare-item tail. That distinction
+    matters: the long tail of one melody is noise, whereas a class far
+    from the centroid across the whole corpus is a real habit worth
+    naming. Every interval class is reported, so a class never sung
+    appears with the largest distance rather than vanishing.
+
+    Alongside the corpus sits the training trend, drawn from practice
+    sessions. All of it is computed on device from persisted melodies
+    and rows, recomputed when they change, and never on the live audio
+    path.
+
+  interfaces:
+    - type: ui
+      description: >
+        The Dashboard tab — the training trend, the singer's most common
+        patterns, and their most avoided ones.
+
+  boundaries:
+    owns:
+      - Interval histograms, directional and folded to interval classes
+      - Recurring melodic fragments, taken within phrases and paired with
+        a real sung realization so a habit is playable
+      - Chord reflection — what the corpus implies harmonically, expressed
+        relative to the key
+      - The avoidance profile and its centroid-distance definition
+      - The aggregate the Dashboard reads and when it is recomputed
+      - The training trend over practice sessions
+    does_not_own:
+      - Producing melodies (notes owns capture, transcription owns analysis)
+      - Chord inference over one take's grid (transcription)
+      - Scoring or running a practice session (practice)
+      - The chord-inference tuning knobs, which live in settings (account)
+
+  depends_on:
+    - domain: notes
+      reason: The corpus is the singer's kept melodies
+    - domain: practice
+      reason: The training trend is drawn from practice_progress rows
+    - domain: transcription
+      reason: Reuses implied-harmony inference and the interval vocabulary
+    - domain: account
+      reason: Reads the singer's chord-inference settings
+
+  depended_on_by: []

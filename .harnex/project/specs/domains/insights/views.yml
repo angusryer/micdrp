@@ -1,0 +1,22 @@
+views:
+  - id: VIEW-INSIGHT-001
+    name: Dashboard
+    route: Dashboard
+    description: >
+      What the singer has been doing and what their material says about
+      them. The trend answers "am I improving"; the patterns answer "what
+      do I actually sing", and the avoidance list answers the more useful
+      question of what they never do.
+    requires_auth: true
+    min_role: singer
+    data_sources:
+      - insights.view_dashboard
+      - insights.analyze_corpus
+    elements:
+      - A training trend over finished practice sessions, oldest first
+      - The intervals the singer uses most, as a ranked list
+      - The melodic shapes that recur across their ideas, each playable
+      - The chord changes their lines keep implying, relative to the key
+      - The interval colours they most avoid, most avoided first
+      - An empty state shown when the singer has kept no notes yet
+      - A separate empty state when they have notes but no practice sessions

@@ -1,0 +1,146 @@
+# What the singer never does, and how the Dashboard reads it.
+acceptance:
+  - id: ACC-INSIGHT-009
+    interface: ui
+    title: A colour never sung is the most avoided
+    given:
+      - a corpus C of [[[60,0,400],[62,400,400],[64,800,400],[65,1200,400]]]
+    when:
+      - insights.avoidance_profile runs on corpus C
+    then:
+      - every interval class appears in the profile
+      - the result field avoided.0.presence is 0
+    maps_to:
+      capability: insights.avoidance_profile
+      invariants: [INV-INSIGHT-002]
+      interaction: INT-INSIGHT-003
+      view: VIEW-INSIGHT-001
+
+  - id: ACC-INSIGHT-010
+    interface: ui
+    title: A common colour is not called avoided because one melody is long
+    given:
+      - a corpus C repeating the shape [2,2,1] 3 times
+    when:
+      - insights.avoidance_profile runs on corpus C
+    then:
+      - the class M2 is not among the 3 most avoided
+    maps_to:
+      capability: insights.avoidance_profile
+      invariants: [INV-INSIGHT-001]
+
+  - id: ACC-INSIGHT-011
+    interface: ui
+    title: A repeated note is not counted as a melodic interval
+    given:
+      - a corpus C of [[[60,0,400],[60,400,400],[62,800,400]]]
+    when:
+      - insights.avoidance_profile runs on corpus C
+    then:
+      - every interval class appears in the profile
+      - the result field unisonRanked is false
+    maps_to:
+      capability: insights.avoidance_profile
+
+  - id: ACC-INSIGHT-012
+    interface: ui
+    title: The aggregate describes the corpus it analysed
+    given:
+      - a corpus C repeating the shape [2,2,1] 3 times
+    when:
+      - insights.analyze_corpus runs on corpus C
+    then:
+      - the result field melodyCount is 3
+      - the result field noteCount is 12
+    maps_to:
+      capability: insights.analyze_corpus
+
+  - id: ACC-INSIGHT-013
+    interface: ui
+    title: An empty corpus yields a well-formed empty aggregate
+    given:
+      - a corpus C of []
+    when:
+      - insights.analyze_corpus runs on corpus C
+    then:
+      - the result field melodyCount is 0
+      - the result field noteCount is 0
+      - the result contains 0 fragments
+    maps_to:
+      capability: insights.analyze_corpus
+      invariants: [INV-INSIGHT-009]
+
+  - id: ACC-INSIGHT-014
+    interface: ui
+    title: The Dashboard paints from cache before the server answers
+    given:
+      - a signed-in singer S
+      - singer S has 4 notes and 6 practice sessions
+    when:
+      - singer S opens the Dashboard
+    then:
+      - the Dashboard painted from cache before the sync resolved
+      - no stored audio was read
+    maps_to:
+      capability: insights.view_dashboard
+      invariants: [INV-INSIGHT-007]
+      interaction: INT-INSIGHT-001
+
+  - id: ACC-INSIGHT-015
+    interface: ui
+    title: The corpus is not re-analysed when nothing changed
+    given:
+      - a signed-in singer S
+      - singer S has 4 notes and 6 practice sessions
+    when:
+      - singer S opens the Dashboard
+      - the Dashboard re-renders with the corpus unchanged
+    then:
+      - the corpus was analysed 1 times
+    maps_to:
+      capability: insights.view_dashboard
+      invariants: [INV-INSIGHT-008]
+
+  - id: ACC-INSIGHT-016
+    interface: ui
+    title: A singer with nothing kept sees an empty state
+    given:
+      - a signed-in singer S
+      - singer S has 0 notes and 0 practice sessions
+    when:
+      - singer S opens the Dashboard
+    then:
+      - the empty state for corpus is shown
+    maps_to:
+      capability: insights.view_dashboard
+      invariants: [INV-INSIGHT-009]
+
+  - id: ACC-INSIGHT-017
+    interface: ui
+    title: Notes without practice still show their habits
+    given:
+      - a signed-in singer S
+      - singer S has 4 notes and 0 practice sessions
+    when:
+      - singer S opens the Dashboard
+    then:
+      - the empty state for trend is shown
+    maps_to:
+      capability: insights.view_dashboard
+      invariants: [INV-INSIGHT-009]
+
+  - id: ACC-INSIGHT-018
+    interface: ui
+    title: One singer's Dashboard never mixes in another's material
+    given:
+      - a signed-in singer S
+      - a signed-in singer T
+      - singer T has 9 notes and 9 practice sessions
+      - singer S has 0 notes and 0 practice sessions
+    when:
+      - singer S opens the Dashboard
+    then:
+      - the empty state for corpus is shown
+    maps_to:
+      capability: insights.view_dashboard
+      invariants: [INV-INSIGHT-010]

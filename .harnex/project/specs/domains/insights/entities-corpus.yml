@@ -1,0 +1,93 @@
+# Corpus-level entities. Split from entities.yml to stay inside the
+# 150-line spec-file budget (Axiom 3).
+entities:
+  - name: Fragment
+    description: >
+      A melodic shape the singer returns to. Defined by its intervals, so
+      it is the same shape wherever it is sung, and carried with a real
+      sung realization so the habit can be played back.
+    properties:
+      - name: intervals
+        type: array
+        required: true
+        description: The signed semitone deltas that define the shape.
+      - name: noteCount
+        type: number
+        required: true
+        description: Notes in the fragment, one more than its interval count.
+      - name: count
+        type: number
+        required: true
+        description: How many times the shape recurs across the corpus.
+        constraints: ["is greater than or equal to the minimum recurrence"]
+      - name: salience
+        type: number
+        required: true
+        description: >
+          Recurrence weighted by length, so a long shape sung twice
+          outranks a short one sung twice.
+      - name: exampleMidi
+        type: array
+        required: true
+        description: >
+          An actual sung realization in absolute notes — the first time
+          the shape occurred — so the fragment is playable.
+
+  - name: AvoidedPattern
+    description: >
+      An interval class the singer reaches for least, ranked by distance
+      from the centroid of what they habitually sing rather than by
+      rarity within a single melody.
+    properties:
+      - name: ic
+        type: number
+        required: true
+        description: The interval class.
+        constraints: ["is within 0 and 12 inclusive"]
+      - name: name
+        type: string
+        required: true
+        description: Class name, for example TT.
+      - name: presence
+        type: number
+        required: true
+        description: Share of the singer's intervals that are this class.
+        constraints: ["is within 0 and 1 inclusive"]
+      - name: distance
+        type: number
+        required: true
+        description: >
+          Euclidean distance of this class from the singer's
+          common-pattern centroid. Larger means more avoided.
+
+  - name: CorpusAnalysis
+    description: >
+      Everything the Dashboard reads about the corpus, computed in one
+      call so the aggregate can be cached and recomputed as a unit.
+    properties:
+      - name: melodyCount
+        type: number
+        required: true
+        description: How many melodies were analysed.
+      - name: noteCount
+        type: number
+        required: true
+        description: How many notes across them.
+      - name: intervals
+        type: IntervalHistogram
+        required: true
+        description: How the singer moves.
+      - name: fragments
+        type: array
+        items: Fragment
+        required: true
+        description: The shapes they return to.
+      - name: chords
+        type: ChordReflection
+        required: true
+        description: What their lines imply harmonically, relative to the key.
+      - name: avoided
+        type: array
+        items: AvoidedPattern
+        required: true
+        description: The colours they reach for least, most avoided first.

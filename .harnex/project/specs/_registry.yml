@@ -1,4 +1,9 @@
 domains:
+  insights:
+    description: Corpus insight over a singer's own notes plus their training trend
+    path: .harnex/project/specs/domains/insights
+    priority: medium
+    status: specifying
   notes:
     description: 'Sung musical-idea memos: capture, analyse, persist, browse, chord backdrop, export'
     path: .harnex/project/specs/domains/notes
