@@ -1,13 +1,13 @@
-# Appfile — all identity values come from CI/environment secrets.
-# Never hard-code Apple IDs, team IDs, package names, or any credentials here.
+# Appfile — identity values come from the active .env file via EnvConfig.
+# Never hard-code Apple IDs, team IDs, package names, or credentials here.
+#
+# fastlane `eval`s this file, so `require_relative` has no basepath to infer
+# and raises LoadError. It does chdir into this directory first, so an
+# absolute path built from Dir.pwd is the reliable form.
+require File.expand_path("env_config", Dir.pwd)
 
-# iOS / App Store Connect
-app_identifier(ENV["IOS_BUNDLE_ID"] || "io.ryer.micdrp")
-apple_id(ENV["APPLE_ID"])
-itc_team_id(ENV["ITC_TEAM_ID"])   # App Store Connect Team ID
-team_id(ENV["APPLE_TEAM_ID"])     # Developer Portal Team ID (J3RCPBZHWM in exportOptions)
+# iOS / App Store Connect. The API key carries the team, so no team ids here.
+app_identifier(EnvConfig.bundle_id)
 
-# Android
-# package_name is consumed by supply (Play Store) — keep separate from ios app_identifier
-# supply reads SUPPLY_PACKAGE_NAME from env; we also set it explicitly for clarity.
-json_key_file("")   # Not used here — set SUPPLY_JSON_KEY_DATA or pass via lane argument
+# Android — supply reads SUPPLY_PACKAGE_NAME / SUPPLY_JSON_KEY_DATA from env.
+json_key_file("")

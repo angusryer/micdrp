@@ -47,7 +47,7 @@ bundle exec fastlane match init
 MATCH_GIT_URL=<your-private-repo-url> \
 APPLE_ID=<your-apple-id> \
 APPLE_TEAM_ID=<your-team-id> \
-IOS_BUNDLE_ID=io.ryer.micdrp \
+IOS_BUNDLE_ID=io.greenlyre.micdrp \
   bundle exec fastlane match appstore
 
 # After this, CI uses readonly: true and never regenerates.
@@ -99,7 +99,7 @@ variable causes the lane to fail immediately with a descriptive error.
 | `APPLE_ID` | Apple ID email for App Store Connect / Developer Portal authentication |
 | `APPLE_TEAM_ID` | 10-character Apple Developer Portal Team ID |
 | `ITC_TEAM_ID` | Numeric App Store Connect Team ID |
-| `IOS_BUNDLE_ID` | iOS bundle identifier (e.g. `io.ryer.micdrp`) |
+| `IOS_BUNDLE_ID` | iOS bundle identifier (e.g. `io.greenlyre.micdrp`) |
 | `MATCH_GIT_URL` | HTTPS or SSH URL of the private git repo storing Match certs/profiles |
 | `MATCH_PASSWORD` | Passphrase Match uses to encrypt/decrypt certificates |
 | `MATCH_KEYCHAIN_PASSWORD` | macOS keychain password Match uses on CI to install certs |

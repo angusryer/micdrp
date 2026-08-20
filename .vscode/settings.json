@@ -6,9 +6,9 @@
   "editor.tabSize": 2,
   "editor.formatOnSaveMode": "file",
   "editor.codeActionsOnSave": {
-    "source.organizeImports": true,
-    "source.sortMembers": true,
-    "source.fixAll": true
+    "source.organizeImports": "explicit",
+    "source.sortMembers": "explicit",
+    "source.fixAll": "explicit"
   },
   "files.autoSave": "onFocusChange",
   "eslint.validate": ["javascript", "typescript", "typescriptreact"],

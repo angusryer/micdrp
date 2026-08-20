@@ -124,3 +124,90 @@ Babel (7), Jest (29), ESLint (9) and TypeScript (5.x) are likewise pinned to
 what RN 0.86 supports, not to `latest`. Each was tried at `latest` and each
 broke in its own way. Before bumping any of them, check what React Native's own
 template pins.
+
+## iOS signing — read this before debugging a signing failure
+
+Signing runs from a **dedicated keychain**, never the login keychain
+(`packages/client/fastlane/keychain.rb`). This is not a preference: signing
+from the login keychain stops the build on a GUI dialog ("codesign wants to
+sign using key ... in your keychain"), and a build that waits for a click
+cannot be triggered from a phone — it hangs until someone clicks, with no
+error and no timeout. The fix that matters is `security set-key-partition-list`;
+granting `-T /usr/bin/codesign` at import time is *not* sufficient on modern
+macOS.
+
+Symptom of a regression: the build stops progressing, `pgrep -x SecurityAgent`
+shows a process, and `/usr/bin/codesign` has an `etime` in the minutes.
+
+### Values Apple owns — never hardcode these
+
+Three values are decided by Apple, not by this repo, and every one of them was
+wrong at some point because it had been written down by hand:
+
+| Value | Where it really comes from |
+|---|---|
+| Team ID | `TeamIdentifier` in the `.mobileprovision` |
+| Profile name | Apple generates it (`io.greenlyre.micdrp AppStore`) |
+| Signing identity | `Apple Distribution` — the pre-Xcode-11 spelling `iPhone Distribution` silently fails |
+
+`fastlane/signing.rb` reads the first two back out of the profile fastlane just
+downloaded. A wrong team id surfaces as *"No profile for team X matching Y
+found"*, which reads like a missing profile rather than the mismatch it is.
+
+### Never put a build secret in `.env`
+
+`react-native-config` compiles `.env` into `ios/tmp.xcconfig`, and
+`env.xcconfig` is in the app's **Resources build phase** — so anything in
+`.env` ships inside the IPA and is readable from JS via `Config`. Signing
+secrets live in `fastlane/signing/signing.env`, which nothing bundles.
+
+### Where the signing material lives
+
+```
+fastlane/signing/micdrp-distribution.p12   cert + private key   (git-secret)
+fastlane/signing/signing.env               keychain password    (git-secret)
+fastlane/certs/                            scratch, gitignored
+```
+
+`cert` writes the private key to `fastlane/certs/<ID>.p12` **unencrypted** —
+that file is a PEM key despite the extension. `fastlane/certs/` is gitignored
+for that reason. Do not un-ignore it.
+
+## Build numbers are derived, not typed
+
+`ios_beta` asks TestFlight for the latest build number and adds one, then
+writes it back to the active `.env` (the only route to `Info.plist`, via
+`tmp.xcconfig`). TestFlight rejects a duplicate build number, so nothing needs
+to remember to bump — which is what makes repeat remote deploys safe.
+Override with `BUILD_NUMBER=<n>` when you need a specific one.
+
+## Identity
+
+Bundle id is `io.greenlyre.micdrp`, written once in the `.env` files and
+derived everywhere else through `fastlane/env_config.rb`. The App Store Connect
+record already exists ("From the shower to the stage"). The API key must be a
+**Team key** — Individual keys cannot call the provisioning endpoints, so
+`cert` and `sigh` fail against one.
+
+## Known-broken: `bundle exec`
+
+`Gemfile.lock` pins a bundler from rbenv 3.2.2 while fastlane runs under
+Homebrew ruby 4.x, so `bundle exec fastlane` fails. `release-ios.sh` detects
+this and falls back to the `fastlane` on PATH. Use plain `fastlane`.
+
+## App Store validation gates (fail *after* a successful build)
+
+These reject at upload, not at build, so a green archive proves nothing about
+them. Checked and satisfied as of the first TestFlight submission:
+
+| Requirement | Where |
+|---|---|
+| `CFBundleIconName` + a real icon in the asset catalog | `ios/micdrp/Images.xcassets/AppIcon.appiconset` |
+| `PrivacyInfo.xcprivacy` in the Resources build phase | `ios/micdrp/PrivacyInfo.xcprivacy` |
+| `ITSAppUsesNonExemptEncryption` | `Info.plist` — absent means a manual prompt per build |
+| `NSMicrophoneUsageDescription` | `Info.plist` |
+
+The icon is a **placeholder** generated with ImageMagick (mic over a drop) —
+the repo had no brand assets. One 1024x1024 opaque PNG in the modern
+single-slot `Contents.json`; Xcode derives the rest. App Store artwork must
+have no alpha channel, so keep `-alpha remove -alpha off` if regenerating.
