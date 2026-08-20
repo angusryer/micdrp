@@ -17,6 +17,7 @@
 require_relative "env_config"
 require_relative "signing"
 require_relative "keychain"
+require_relative "artifacts"
 require "shellwords"
 
 default_platform(:ios)
@@ -61,4 +62,5 @@ end
 # ---------------------------------------------------------------------------
 
 import "lanes/ios.rb"
+import "lanes/ios-release.rb"
 import "lanes/android.rb"

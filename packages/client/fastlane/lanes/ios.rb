@@ -1,4 +1,4 @@
-# ios.rb — App Store Connect lanes. Imported by the Fastfile; the shared
+# ios.rb — the TestFlight beta lane. Imported by the Fastfile; the shared
 # helpers and requires live there.
 
 platform :ios do
@@ -98,7 +98,7 @@ platform :ios do
       },
       xcargs:               "OTHER_CODE_SIGN_FLAGS='--keychain #{keychain_path}'",
       output_directory:     "build/ios",
-      output_name:          "micdrp-beta-#{version}-#{build}.ipa",
+      output_name:          ipa_name = "micdrp-beta-#{version}-#{build}.ipa",
       # Incremental by default. A beta exists to be iterated on, and most
       # iterations change only JS, where a clean archive spends minutes
       # recompiling identical native code. Force a clean one with
@@ -122,28 +122,13 @@ platform :ios do
       skip_waiting_for_build_processing: ENV["RELEASE_NOTES"].nil?,
       changelog:            ENV["RELEASE_NOTES"],
     )
-  end
 
-  # -------------------------------------------------------------------------
-  # ios_release — promote a TestFlight build to App Store production
-  # -------------------------------------------------------------------------
-  desc "Submit an approved TestFlight build to App Store production review"
-  lane :ios_release do
-    version = EnvConfig.version
-    build   = EnvConfig.build
-
-    deliver(
-      api_key:               asc_api_key,
-      app_identifier:        EnvConfig.bundle_id,
-      submit_for_review:     true,
-      automatic_release:     false,
-      force:                 true,           # skip HTML report
-      skip_binary_upload:    true,           # binary already on TestFlight
-      build_number:          build,
-      app_version:           version,
-      submission_information: {
-        add_id_info_uses_idfa: false,
-      },
+    # The build is on TestFlight; nothing local is read again (INV-UPD-012).
+    Artifacts.after_upload(
+      archive:     lane_context[SharedValues::XCODEBUILD_ARCHIVE],
+      output_dir:  File.expand_path("build/ios"),
+      output_name: ipa_name
     )
   end
+
 end

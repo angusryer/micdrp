@@ -1,0 +1,29 @@
+# What must hold of the native release lane, as distinct from an
+# over-the-air publish. Split from invariants.yml by concern.
+invariants:
+  - id: INV-UPD-012
+    description: A release cleans up after itself
+    severity: high
+    check: >
+      A release that reaches TestFlight leaves behind no archive, and no
+      more than the configured number of past artefacts. Verified by
+      releasing twice and asserting the archive directory is empty and
+      the artefact directory holds only the retained builds.
+
+      Incremental build state is deliberately kept — the lane archives
+      incrementally on purpose, and clearing it would make every release
+      a full native rebuild. What is deleted is output only: the
+      .xcarchive, and artefacts older than the retained window.
+
+      Nine releases accumulated nine archives, nine IPAs and nine dSYM
+      bundles, filled the disk, and stopped the scheduled loop dead — no
+      command could run because nothing could open a file to write to.
+      An unbounded output directory is a slow outage with a long fuse.
+
+  - id: INV-UPD-013
+    description: The most recent artefact is always kept
+    severity: medium
+    check: >
+      Pruning never removes the artefact for the build just produced,
+      whatever the retention window is set to. Verified by pruning with
+      a window of zero and asserting the newest build survives.
