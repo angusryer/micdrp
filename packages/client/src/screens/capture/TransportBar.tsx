@@ -40,15 +40,14 @@ export function TransportBar({
 
   const onPress = isRecording ? onStop : onStart;
 
+  // Red in both states: this is a record control, not an accent. `error` is the
+  // palette's only red and already carried the recording state.
   const buttonStyle = useMemo(
     () => [
       styles.button,
-      {
-        backgroundColor: isRecording ? colors.error : colors.primary500,
-        opacity: isBusy ? 0.6 : 1
-      }
+      { backgroundColor: colors.error, opacity: isBusy ? 0.6 : 1 }
     ],
-    [isRecording, isBusy, colors.error, colors.primary500]
+    [isBusy, colors.error]
   );
 
   const label = isRecording ? t('record.stop') : t('record.record');
@@ -67,17 +66,20 @@ export function TransportBar({
         onPress={onPress}
         style={buttonStyle}
       >
+        {/*
+          Idle carries no inner glyph on purpose: a light dot inside the disc
+          reads as a hole against the cream canvas, which made the button look
+          like a stroked ring rather than a filled circle. The label below
+          already names the state, and recording still shows a stop square.
+        */}
         {isBusy ? (
           <ActivityIndicator color={colors.neutral50} />
-        ) : (
+        ) : isRecording ? (
           <View
-            style={[
-              styles.glyph,
-              isRecording ? styles.stopGlyph : styles.recordGlyph,
-              { backgroundColor: colors.neutral50 }
-            ]}
+            testID="transport-stop-glyph"
+            style={[styles.stopGlyph, { backgroundColor: colors.neutral50 }]}
           />
-        )}
+        ) : null}
       </Pressable>
       <Text style={[styles.label, { color: colors.typography }]}>{label}</Text>
     </View>
@@ -87,15 +89,13 @@ export function TransportBar({
 const styles = StyleSheet.create({
   container: { alignItems: 'center', justifyContent: 'center' },
   button: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center'
   },
-  glyph: {},
-  recordGlyph: { width: 28, height: 28, borderRadius: 14 },
-  stopGlyph: { width: 26, height: 26, borderRadius: 4 },
+  stopGlyph: { width: 20, height: 20, borderRadius: 4 },
   label: { marginTop: 8, fontSize: 14, fontWeight: '600' }
 });
 

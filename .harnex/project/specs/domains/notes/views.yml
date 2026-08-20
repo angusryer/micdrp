@@ -11,7 +11,9 @@ views:
     data_sources:
       - notes.list
     elements:
-      - A record control that starts and stops a capture
+      - A record control that starts and stops a capture — a compact
+        circle filled solid in the palette's red, reading as a disc and
+        not as a ring, showing a stop glyph while a capture is running
       - A live pitch line while recording, drawn off the JS thread
       - A list of note cards, newest first
       - A melody shape on each card, drawn from the persisted melody
