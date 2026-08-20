@@ -13,7 +13,8 @@ import { promisify } from 'node:util';
 import { unlinkSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { guardedRun, isHalted } from './loop.ts';
+import { guardedRun } from './loop.ts';
+import { isHalted } from './guard.ts';
 import {
   install,
   isScheduled,

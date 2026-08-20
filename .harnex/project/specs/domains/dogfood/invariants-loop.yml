@@ -72,3 +72,20 @@ invariants:
       then invisible. Whether a clip is abandoned is a question about
       its claim, not about how far it happened to get.
 
+
+  - id: INV-DOG-020
+    description: A run holds its lock for as long as it actually runs
+    severity: critical
+    check: >
+      A second run never begins while the first is alive, however long
+      the first takes, and a lock left by a dead run is always taken.
+      Verified by holding the lock from a live process and asserting a
+      second run declines, then killing it and asserting the next run
+      proceeds.
+
+      The first version called a lock stale after thirty minutes. A clip
+      carrying four requests takes about half an hour, so a healthy run
+      began outliving its own lock and the next tick was free to start a
+      second one on the same checkout. Any elapsed-time threshold is a
+      guess at how long work may legitimately take; asking whether the
+      holder is still alive needs no guess.

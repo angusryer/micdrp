@@ -1,96 +1,23 @@
 /**
  * The agent loop: claim a clip, hear it, read it, build what is safe, ship it.
  *
- * The most important thing in this file is the halt (INV-DOG-010). An
- * automated process that keeps going after repeated failure does more damage
- * than one that stops and says so — especially this one, which commits to main
- * and publishes to a phone.
+ * What keeps it from doing damage unattended — the lock, the failure count,
+ * the halt — lives in guard.ts. This file is the work.
  *
  * Spec: .harnex/project/specs/domains/dogfood/commands.yml
  */
-import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
-import { join } from 'node:path';
 // Imported by file rather than through the `shared` barrel: Node's ESM
 // loader needs explicit extensions, and the barrel's own imports are
 // extensionless for Metro's benefit. This is the only file the loop needs.
 import { gateRequest, type ChangeRequestDto } from '../../packages/shared/src/dto/dogfood.ts';
 
+import { halt, isHalted, readFailures, releaseLock, takeLock, writeFailures, HALT_AFTER } from './guard.ts';
 import { audioUrl, claimOldest, connect, markDelivered, signIn, storeRequests, storeTranscript } from './clips.ts';
 import { deliverBatch } from './deliver.ts';
 import { executeRequest } from './execute.ts';
 import { installDeps, prepareWorktree } from './worktree.ts';
 import { interpret } from './interpret.ts';
 import { transcribe } from './transcribe.ts';
-
-const REPO = new URL('../..', import.meta.url).pathname;
-const HALT_FILE = join(REPO, '.dogfood-halt');
-const LOCK_FILE = join(REPO, '.dogfood-lock');
-
-/** A run older than this is assumed dead and its lock ignored. */
-const STALE_LOCK_MS = 30 * 60 * 1000;
-
-/**
- * Take the run lock, or report that another run holds it.
- *
- * launchd starts a run on its interval whether or not the previous one has
- * finished, and a run can take many minutes — it builds and runs preflight.
- * Two concurrent runs would fight over the working tree, which is the one
- * thing INV-DOG-009 promises will not happen.
- */
-function takeLock(): boolean {
-  if (existsSync(LOCK_FILE)) {
-    const startedAt = Number(readFileSync(LOCK_FILE, 'utf8')) || 0;
-    if (Date.now() - startedAt < STALE_LOCK_MS) {
-      return false;
-    }
-    // A run that died leaves its lock behind; do not strand the loop forever.
-  }
-  writeFileSync(LOCK_FILE, String(Date.now()));
-  return true;
-}
-
-function releaseLock(): void {
-  try {
-    unlinkSync(LOCK_FILE);
-  } catch {
-    // Already gone. Nothing to do.
-  }
-}
-
-/** How many failed runs in a row before the loop stops itself. */
-const HALT_AFTER = 3;
-
-/**
- * The failure count lives on disk, not in memory.
- *
- * Scheduled runs are separate processes: launchd starts a fresh one each
- * interval, so an in-memory counter resets every time and the halt after
- * repeated failure would never fire — the loop would fail forever, quietly,
- * which is precisely what INV-DOG-010 exists to prevent.
- */
-const FAILURES_FILE = join(REPO, '.dogfood-failures');
-
-function readFailures(): number {
-  try {
-    return Number(readFileSync(FAILURES_FILE, 'utf8')) || 0;
-  } catch {
-    return 0;
-  }
-}
-
-function writeFailures(count: number): void {
-  writeFileSync(FAILURES_FILE, String(count));
-}
-
-export function isHalted(): string | null {
-  return existsSync(HALT_FILE) ? readFileSync(HALT_FILE, 'utf8').trim() : null;
-}
-
-export function halt(reason: string): void {
-  writeFileSync(HALT_FILE, reason);
-  console.error(`dogfood: halted — ${reason}`);
-  console.error('dogfood: run `yarn dogfood resume` once it is understood.');
-}
 
 type Options = { dryRun: boolean; noDeliver: boolean };
 
