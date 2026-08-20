@@ -4,6 +4,14 @@
 # environment variables injected by the CI system (GitHub Actions secrets).
 # No secrets, keystore passwords, API keys, or hostnames are ever written here.
 #
+# iOS authenticates with ONE credential: an App Store Connect API key. That key
+# both signs (sigh/cert create and fetch the certificate and profile on demand)
+# and uploads (pilot/deliver). The previous setup used match, which additionally
+# needed an Apple ID, a team id, a private git repo to hold the certificates,
+# the passphrase encrypting them, and a keychain password — five secrets to
+# provision and rotate, and a 2FA prompt whenever the Apple ID was challenged.
+# An API key has none of those properties: it is non-interactive by design.
+#
 # Required environment variables are documented in fastlane/README.md.
 
 default_platform(:ios)
@@ -16,6 +24,24 @@ default_platform(:ios)
 # (fastlane is invoked from packages/client, so __dir__ points one level in).
 CLIENT_DIR = File.expand_path("..", __dir__).freeze
 REPO_ROOT   = File.expand_path("../..", CLIENT_DIR).freeze
+
+# The one iOS credential. Accepts either the key's three parts as separate
+# variables, or a path to the JSON fastlane also understands — whichever the
+# operator finds easier to keep in a secret store.
+def asc_api_key
+  if ENV["ASC_API_KEY_PATH"] && File.exist?(ENV["ASC_API_KEY_PATH"])
+    return Fastlane::Actions::AppStoreConnectApiKeyAction.run(
+      key_filepath: ENV["ASC_API_KEY_PATH"], in_house: false
+    )
+  end
+  Fastlane::Actions::AppStoreConnectApiKeyAction.run(
+    key_id:      ENV.fetch("ASC_KEY_ID"),
+    issuer_id:   ENV.fetch("ASC_ISSUER_ID"),
+    key_content: ENV.fetch("ASC_KEY_CONTENT"),
+    is_key_content_base64: ENV["ASC_KEY_CONTENT_BASE64"] == "1",
+    in_house:    false
+  )
+end
 
 # Read VERSION_NUMBER and BUILD_NUMBER from the currently active .env file.
 # The CI workflow sets ENVFILE before invoking fastlane.
@@ -51,17 +77,13 @@ platform :ios do
     version  = ENV.fetch("VERSION_NUMBER", env_vars["VERSION_NUMBER"] || "1.0.0")
     build    = ENV.fetch("BUILD_NUMBER",   env_vars["BUILD_NUMBER"]   || "1")
 
-    # Sync certificates and provisioning profiles via match (appstore type
-    # covers both TestFlight and App Store uploads).
-    match(
-      type:         "appstore",
-      readonly:     true,    # CI should never regenerate; regenerate locally then push
-      git_url:      ENV.fetch("MATCH_GIT_URL"),
-      app_identifier: ENV.fetch("IOS_BUNDLE_ID", "io.ryer.micdrp"),
-      team_id:      ENV.fetch("APPLE_TEAM_ID"),
-      username:     ENV.fetch("APPLE_ID"),
-      keychain_password: ENV.fetch("MATCH_KEYCHAIN_PASSWORD"),
-    )
+    key = asc_api_key
+    bundle_id = ENV.fetch("IOS_BUNDLE_ID", "io.ryer.micdrp")
+
+    # Fetch (creating if absent) the distribution certificate and App Store
+    # profile using the same API key. No match repo, no Apple ID, no 2FA.
+    cert(api_key: key, output_path: "fastlane/certs")
+    sigh(api_key: key, app_identifier: bundle_id, output_path: "fastlane/certs")
 
     # Build the iOS archive using the production scheme (micdrp).
     gym(
@@ -69,7 +91,6 @@ platform :ios do
       scheme:               "micdrp",
       configuration:        "Release",
       export_method:        "app-store",
-      export_options:       "ios/micdrp/exportOptions.plist",
       output_directory:     "build/ios",
       output_name:          "micdrp-beta-#{version}-#{build}.ipa",
       clean:                true,
@@ -79,8 +100,8 @@ platform :ios do
 
     # Upload to TestFlight (internal testers only by default).
     pilot(
-      api_key_path:         ENV.fetch("ASC_API_KEY_PATH"),  # path to App Store Connect API key JSON
-      app_identifier:       ENV.fetch("IOS_BUNDLE_ID", "io.ryer.micdrp"),
+      api_key:              key,
+      app_identifier:       bundle_id,
       distribute_external:  false,
       notify_external_testers: false,
       skip_waiting_for_build_processing: true,
@@ -98,7 +119,7 @@ platform :ios do
     build    = ENV.fetch("BUILD_NUMBER",   env_vars["BUILD_NUMBER"]   || "1")
 
     deliver(
-      api_key_path:          ENV.fetch("ASC_API_KEY_PATH"),
+      api_key:               asc_api_key,
       app_identifier:        ENV.fetch("IOS_BUNDLE_ID", "io.ryer.micdrp"),
       submit_for_review:     true,
       automatic_release:     false,

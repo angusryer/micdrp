@@ -8,16 +8,26 @@
     ]
   },
   "scripts": {
-    "lint": "eslint packages",
-    "test": "./scripts/test.sh",
+    "backend": "./backend/dev.sh",
+    "backend:deploy": "cd backend && fly deploy --app micdrp-backend --ha=false",
+    "backend:logs": "fly logs --app micdrp-backend",
+    "backend:verify": "node backend/verify-rules.mjs",
     "build": "./scripts/build.sh",
     "client": "./scripts/run.sh",
-    "submit": "./scripts/submit.sh",
-    "typecheck": "tsc --noEmit",
     "env": "npx dotenv-vault@latest pull",
     "env-push": "npx dotenv-vault@latest push",
+    "ios": "cd packages/client/ios && xcodebuild -workspace micdrp.xcworkspace -scheme micdrp -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO -quiet build",
     "license": "license-checker --production --summary",
-    "owasp": "dependency-check --project micdrp --scan . --failOnCVSS 7 --suppression ./owasp.suppression.xml || true"
+    "lint": "eslint packages",
+    "owasp": "dependency-check --project micdrp --scan . --failOnCVSS 7 --suppression ./owasp.suppression.xml || true",
+    "pods": "cd packages/client/ios && pod install",
+    "preflight": "./scripts/preflight.sh",
+    "preflight:build": "./scripts/preflight.sh --build",
+    "release": "./scripts/release.sh",
+    "release:check": "./scripts/release.sh --check",
+    "submit": "./scripts/submit.sh",
+    "test": "./scripts/test.sh",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",

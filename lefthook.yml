@@ -11,6 +11,13 @@ pre-commit:
       files: git diff --name-only @{push}
       glob: '*.{js,ts, jsx, tsx}'
       run: npx tsc --noEmit
+pre-push:
+  commands:
+    preflight:
+      # The same checks a release runs. Skip with `git push --no-verify`
+      # or PREFLIGHT_SKIP=1.
+      run: ./scripts/preflight.sh
+
 commit-msg:
   parallel: true
   commands:
