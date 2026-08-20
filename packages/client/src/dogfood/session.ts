@@ -195,7 +195,22 @@ export class DogfoodSession {
       return null;
     }
     const durationMs = this.elapsedMs();
-    const result = await this.recorder.stop();
+
+    // A throw here loses the clip silently: the caller is fire-and-forget, so
+    // the rejection goes nowhere, the queue stays empty, and nothing is
+    // recorded to explain it. Only the `status: 'error'` case was handled.
+    let result;
+    try {
+      result = await this.recorder.stop();
+    } catch (error) {
+      lastStartError = `stop threw: ${String(error)}`;
+      this.recorder = null;
+      this.state = 'idle';
+      this.accumulatedMs = 0;
+      this.trail.reset();
+      return null;
+    }
+
     const trail = this.trail.entries();
     this.recorder = null;
     this.state = 'idle';

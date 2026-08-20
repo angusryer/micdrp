@@ -43,7 +43,10 @@ export default function DogfoodControl(): React.ReactElement | null {
 
   /** Finish and queue. Used by the stop control and by the cap alike. */
   const finish = useCallback(async () => {
-    const clip = await session.stop();
+    const clip = await session.stop().catch((error: unknown) => {
+      console.warn('[dogfood] stop failed', error);
+      return null;
+    });
     refresh();
     if (!clip) {
       return;
@@ -141,7 +144,7 @@ export default function DogfoodControl(): React.ReactElement | null {
           accessibilityLabel={t('dogfood.stop')}
           onPress={() => void finish()}
           style={styles.target}>
-          <View style={[styles.stop, { borderColor: colors.gray300 }]} />
+          <View style={[styles.stop, { backgroundColor: colors.gray300 }]} />
         </Pressable>
       ) : null}
     </View>
@@ -166,8 +169,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
-  time: { fontVariant: ['tabular-nums'], fontSize: 13, marginRight: 8 },
+  time: {
+    fontVariant: ['tabular-nums'],
+    fontSize: 13,
+    // Fixed so the row cannot grow into the header title as the count rises.
+    width: 40,
+    textAlign: 'right',
+    marginRight: 4
+  },
   dot: { width: 16, height: 16, borderRadius: 8 },
   recording: { borderRadius: 3 },
-  stop: { width: 14, height: 14, borderWidth: 2, borderRadius: 2, marginLeft: 10 }
+  stop: { width: 14, height: 14, borderRadius: 2 }
 });
