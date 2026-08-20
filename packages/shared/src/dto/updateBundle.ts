@@ -49,6 +49,14 @@ export interface UpdateClientDto {
   buildNumber: number;
   /** What it is running now; NIL_BUNDLE_ID for the binary's own bundle. */
   bundleId: string;
+  /**
+   * The bundle compiled into the binary at build time.
+   *
+   * Without it, a fresh install reports no running bundle and every
+   * published bundle looks newer than nothing — including ones published
+   * before the binary was built (INV-UPD-010).
+   */
+  minBundleId?: string;
 }
 
 /** What the install must do. */
@@ -102,9 +110,17 @@ export function decideUpdate(
     return { ...NOTHING, decision: 'rollback' };
   }
 
+  // Newer than what is running, and newer than what the binary shipped
+  // with. The second test is what stops a new build being handed
+  // JavaScript published before it existed (INV-UPD-010).
+  const floor =
+    client.minBundleId && client.minBundleId > client.bundleId
+      ? client.minBundleId
+      : client.bundleId;
+
   const newest = bundles
     .filter((b) => isRunnableBy(b, client))
-    .filter((b) => b.bundleId > client.bundleId)
+    .filter((b) => b.bundleId > floor)
     .sort((a, b) => (a.bundleId < b.bundleId ? 1 : -1))[0];
 
   if (!newest) {

@@ -34,6 +34,8 @@ type CheckRequest = {
   appVersion: string;
   buildNumber: number;
   bundleId: string;
+  /** What the binary shipped with, so it is never handed older JS. */
+  minBundleId: string;
 };
 
 const requestBody = (params: ResolverCheckUpdateParams): CheckRequest => {
@@ -43,7 +45,8 @@ const requestBody = (params: ResolverCheckUpdateParams): CheckRequest => {
     channel: config.channel,
     appVersion: config.appVersion,
     buildNumber: config.buildNumber,
-    bundleId: params.bundleId
+    bundleId: params.bundleId,
+    minBundleId: params.minBundleId
   };
 };
 

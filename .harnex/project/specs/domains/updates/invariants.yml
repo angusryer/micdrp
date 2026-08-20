@@ -108,3 +108,21 @@ invariants:
       screen came from package.json, which is not what the build was
       stamped with, and neither the build number nor the running bundle
       appeared at all.
+
+  - id: INV-UPD-010
+    description: A bundle older than the binary's own is never offered
+    severity: critical
+    check: >
+      No install is offered a bundle whose id does not sort after the
+      bundle compiled into the binary. Verified by publishing a bundle,
+      then a binary built after it, and asserting the binary is offered
+      nothing.
+
+      Every guard until now asked whether a binary could run a bundle.
+      None asked whether the bundle was actually newer than what the
+      binary already had. A fresh install reports no running bundle, so
+      any published bundle looked newer than nothing — and build 7, which
+      shipped the fix for INV-UPD-001, would have been handed JavaScript
+      published before that fix existed. It would have downgraded itself
+      into being unable to ask for updates at all, and the only route out
+      would have been another build.

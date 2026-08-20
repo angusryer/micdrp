@@ -137,6 +137,45 @@ describe('decideUpdate', () => {
   });
 });
 
+describe('bundles older than the binary — INV-UPD-010', () => {
+  it('refuses a bundle published before the binary was built', () => {
+    // The regression: a fresh install reports no running bundle, so every
+    // published bundle looked newer than nothing — including ones that
+    // predate the binary and would downgrade it.
+    const older = bundle({ bundleId: 'b1' });
+    expect(
+      decideUpdate([older], client({ bundleId: NIL_BUNDLE_ID, minBundleId: 'b5' }))
+    ).toMatchObject({ decision: 'none' });
+  });
+
+  it('offers one published after the binary was built', () => {
+    const newer = bundle({ bundleId: 'b9' });
+    expect(
+      decideUpdate([newer], client({ bundleId: NIL_BUNDLE_ID, minBundleId: 'b5' }))
+    ).toMatchObject({ decision: 'update', bundleId: 'b9' });
+  });
+
+  it('the embedded bundle is a floor, not a target', () => {
+    const same = bundle({ bundleId: 'b5' });
+    expect(
+      decideUpdate([same], client({ bundleId: NIL_BUNDLE_ID, minBundleId: 'b5' }))
+    ).toMatchObject({ decision: 'none' });
+  });
+
+  it('still respects the running bundle when it is newer than the embedded one', () => {
+    const older = bundle({ bundleId: 'b6' });
+    expect(
+      decideUpdate([older], client({ bundleId: 'b7', minBundleId: 'b5' }))
+    ).toMatchObject({ decision: 'none' });
+  });
+
+  it('behaves as before when the binary reports no embedded bundle', () => {
+    expect(decideUpdate([bundle()], client())).toMatchObject({
+      decision: 'update'
+    });
+  });
+});
+
 describe('r2ObjectKey', () => {
   it('drops the scheme and the bucket, which is not part of the key', () => {
     // The regression: stripping only "r2://" left the bucket glued on and

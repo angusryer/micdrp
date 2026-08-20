@@ -175,7 +175,8 @@ async function handleCheck(request: Request, env: Env): Promise<Response> {
     channel: body.channel,
     appVersion: body.appVersion,
     buildNumber: Number(body.buildNumber) || 0,
-    bundleId: body.bundleId ?? NIL_BUNDLE_ID
+    bundleId: body.bundleId ?? NIL_BUNDLE_ID,
+    minBundleId: body.minBundleId
   };
 
   const origin = new URL(request.url).origin;
