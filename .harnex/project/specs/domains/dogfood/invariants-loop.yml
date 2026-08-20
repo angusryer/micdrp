@@ -1,0 +1,137 @@
+# What must hold of the agent loop, and of what it is allowed to ship.
+invariants:
+  - id: INV-DOG-005
+    description: How a change is delivered follows from what it touches
+    severity: critical
+    check: >
+      A javascript request is delivered as an over-the-air bundle. A
+      native request is delivered as a TestFlight build and reported as
+      needing installation. An infrastructural or unknown request is
+      filed. Verified by gating a request of each kind and asserting the
+      delivery route each takes.
+
+      The first version filed everything but javascript, on the reasoning
+      that only javascript can be taken back. That confused two things.
+      Building a native change is no more dangerous than building any
+      other — what differs is the ending: it cannot reach a device over
+      the air, so it ends at TestFlight with the maintainer installing
+      it. And its recovery is manual, because the automatic rollback in
+      INV-UPD-003 protects a bundle that will not boot, not a binary.
+      Neither is a reason to refuse to make the change; both are reasons
+      to say clearly which route it took.
+
+  - id: INV-DOG-006
+    description: Credentials and the delivery pipeline are never edited unattended
+    severity: critical
+    check: >
+      A request touching signing material, secrets, env files, CI, the
+      release or publish scripts, or the update server is filed
+      regardless of its confidence or blast radius. Verified by proposing
+      such a request and asserting it is filed with a reason.
+
+      The guard is on credentials and on the pipeline, not on native
+      source. An earlier list protected packages/client/ios and android
+      wholesale — which is where every native change lives — so allowing
+      native changes and blocking those directories cancelled out, and
+      nothing native could ever have been built. What must not break is
+      the app's ability to ship at all, because that is the one failure
+      the loop cannot deliver its own fix for.
+
+  - id: INV-DOG-007
+    description: An uncertain reading is filed, never guessed at
+    severity: critical
+    check: >
+      A request below the confidence floor is filed with its reason and
+      the transcript span it came from, and is not built. Verified by
+      interpreting a deliberately vague remark and asserting nothing was
+      built. A transcript is a lossy record of a spoken thought; acting
+      confidently on a poor reading is how an automated loop does damage.
+
+  - id: INV-DOG-008
+    description: Nothing ships that the harness has not passed
+    severity: critical
+    check: >
+      Preflight passes on each change and again on the assembled batch
+      before anything is committed or published. Verified by making a
+      change that fails preflight and asserting it is abandoned rather
+      than delivered. The batch is checked as a whole because two changes
+      that each pass alone can fail together.
+
+  - id: INV-DOG-009
+    description: A failed attempt leaves nothing behind
+    severity: critical
+    check: >
+      An abandoned request leaves the working tree exactly as it was
+      found, with no partial edit and no stray branch. Verified by
+      abandoning mid-change and asserting a clean tree. A loop that runs
+      unattended must never leave the repository in a state the next run
+      inherits.
+
+  - id: INV-DOG-010
+    description: A loop that is failing stops itself
+    severity: critical
+    check: >
+      Consecutive failed runs, or a delivered bundle that rolled back,
+      halt the loop until a human restarts it. Verified by failing runs
+      to the threshold and asserting no further clip is claimed. An
+      automated process that keeps going after repeated failure does more
+      damage than one that stops and says so.
+
+  - id: INV-DOG-011
+    description: A bundle is never offered to a binary that predates it
+    severity: critical
+    check: >
+      A bundle the loop publishes carries the running build as its
+      minimum, never lower. Verified by delivering and asserting the
+      published minimum equals the build the changes were made against.
+      This is INV-UPD-002 restated at the point where a machine, rather
+      than a person, chooses the number.
+
+  - id: INV-DOG-012
+    description: A clip is worked on by one run at a time
+    severity: high
+    check: >
+      A claimed clip is never returned to a second run, and a claim left
+      by a run that died becomes reclaimable after the stale threshold.
+      Verified by claiming twice concurrently and asserting the second
+      claim returns nothing.
+
+  - id: INV-DOG-013
+    description: Audio is transcribed once
+    severity: high
+    check: >
+      A clip already carrying a transcript is not sent for transcription
+      again, including across runs and restarts. Verified by running the
+      loop twice over the same clip and asserting one transcription call.
+
+  - id: INV-DOG-015
+    description: The loop never works in the maintainer's checkout
+    severity: critical
+    check: >
+      Every change is made in a worktree of its own, reset from
+      origin/main before the run begins. Verified by dirtying the primary
+      checkout and asserting a run still builds and delivers, leaving
+      that checkout untouched.
+
+      Two earlier attempts got this wrong in opposite directions. The
+      first abandoned real requests whenever someone was editing, which
+      discarded work that was never given a chance. The second deferred
+      instead, which loses nothing but means the loop only runs when the
+      maintainer happens to have committed — and the whole point is that
+      it runs while they are elsewhere. A separate worktree removes the
+      question: their checkout is never read and never written.
+
+  - id: INV-DOG-016
+    description: A clip is never stranded partway through the loop
+    severity: critical
+    check: >
+      A clip left in any state short of a conclusion becomes reclaimable
+      once its claim goes stale, whatever state it stopped in. Verified
+      by leaving a clip in each intermediate state with an old claim and
+      asserting the next run picks every one of them up.
+
+      The first version reclaimed only clips still in state claimed. A
+      run that died after transcribing left its clip in interpreted,
+      which nothing looked for again — the work was done, paid for, and
+      then invisible. Whether a clip is abandoned is a question about
+      its claim, not about how far it happened to get.

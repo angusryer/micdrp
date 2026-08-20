@@ -13,8 +13,11 @@ capabilities:
     postconditions:
       - the oldest unclaimed clip is claimed, and moves to state claimed
       - a clip already claimed is never returned to a second run
-      - a claim older than the stale threshold is reclaimable, so a run
-        that died does not strand its clip forever
+      - a claim older than the stale threshold is reclaimable whatever
+        state the clip reached, so a run that died does not strand its
+        clip forever
+      - a reclaimed clip resumes from where it stopped rather than
+        repeating work already paid for
 
   - name: dogfood.transcribe_clip
     description: >

@@ -86,6 +86,18 @@ entities:
       - from: uploaded
         to: claimed
         trigger: dogfood.claim_clip
+      - from: claimed
+        to: interpreted
+        trigger: dogfood.interpret_clip
+      - from: interpreted
+        to: delivered
+        trigger: dogfood.deliver_batch
+      - from: claimed, or interpreted
+        to: claimed
+        trigger: >
+          dogfood.claim_clip, once the claim on it has gone stale. A run
+          that stops partway leaves the clip wherever it got to; the next
+          run takes it from there rather than leaving it there.
 
   - name: ScreenVisit
     description: One screen, and when during the clip it was on show.

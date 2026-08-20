@@ -5,20 +5,28 @@
  * (INV-DOG-012), and a run that dies must not strand its clip forever — so a
  * claim carries the time it was made and becomes reclaimable once stale.
  */
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import PocketBase from 'pocketbase';
 // Imported by file rather than through the `shared` barrel: Node's ESM
 // loader needs explicit extensions, and the barrel's own imports are
 // extensionless for Metro's benefit. This is the only file the loop needs.
-import type { ScreenVisit } from '../../packages/shared/src/dto/dogfood.ts';
+import type { ChangeRequestDto, ScreenVisit } from '../../packages/shared/src/dto/dogfood.ts';
 
-const run = promisify(execFile);
+export { connect, signIn } from './auth.ts';
 
 const COLLECTION = 'dogfood_clips';
 
 /** How long before a claim is assumed abandoned. Longer than any real run. */
 export const STALE_CLAIM_MS = 30 * 60 * 1000;
+
+/**
+ * States a clip can stop in with work still owing (INV-DOG-016).
+ *
+ * A run that dies leaves its clip wherever it got to, not necessarily in
+ * `claimed` — one that died after interpreting left it in `interpreted`,
+ * which nothing looked for again. Whether a clip is abandoned is a question
+ * about its claim, not about how far it happened to get.
+ */
+export const RESUMABLE_STATES = ['claimed', 'interpreted'] as const;
 
 export interface Clip {
   id: string;
@@ -29,52 +37,8 @@ export interface Clip {
   build_number: number;
   bundle_id: string | null;
   transcript: string | null;
+  requests: ChangeRequestDto[] | null;
   state: string;
-}
-
-export function connect(): PocketBase {
-  const url = process.env.BACKEND_URL;
-  if (!url) {
-    throw new Error('BACKEND_URL is not set');
-  }
-  return new PocketBase(url);
-}
-
-/** The 1Password item holding the app login the clips belong to. */
-const OP_ITEM = 'op://micdrp/wi5e4xd6dl6zn6wyx7u4e5m3ra';
-
-/**
- * Read one field out of 1Password.
- *
- * Credentials come from the vault rather than the environment so there is no
- * plaintext password sitting in a shell profile. The AI_MICDRP_RW service
- * account is scoped to the micdrp vault and nothing else.
- */
-async function fromVault(field: string): Promise<string> {
-  const token = process.env.AI_MICDRP_RW ?? process.env.OP_SERVICE_ACCOUNT_TOKEN;
-  if (!token) {
-    throw new Error('AI_MICDRP_RW is not set — cannot read the app login');
-  }
-  const { stdout } = await run('op', ['read', `${OP_ITEM}/${field}`], {
-    env: { ...process.env, OP_SERVICE_ACCOUNT_TOKEN: token }
-  });
-  return stdout.trim();
-}
-
-/**
- * Sign in as the account the clips belong to.
- *
- * Clips are owner-scoped server-side, so the loop reads them as their owner
- * rather than as an administrator — it sees exactly what the maintainer sees
- * and nothing more.
- */
-export async function signIn(pb: PocketBase): Promise<void> {
-  // The environment first, and `op` only as an interactive fallback. Reading
-  // 1Password's container makes macOS prompt "node would like to access data
-  // from other apps", and a scheduled run has nobody to answer it.
-  const email = process.env.DOGFOOD_EMAIL ?? (await fromVault('username'));
-  const password = process.env.DOGFOOD_PASSWORD ?? (await fromVault('password'));
-  await pb.collection('users').authWithPassword(email, password);
 }
 
 /**
@@ -90,8 +54,10 @@ export async function claimOldest(
   runId: string
 ): Promise<Clip | null> {
   const staleBefore = Date.now() - STALE_CLAIM_MS;
-  const filter =
-    `state = "uploaded" || (state = "claimed" && claimed_at_ms < ${staleBefore})`;
+  const stale = RESUMABLE_STATES.map(
+    (state) => `(state = "${state}" && claimed_at_ms < ${staleBefore})`
+  ).join(' || ');
+  const filter = `state = "uploaded" || ${stale}`;
 
   const found = await pb
     .collection(COLLECTION)
@@ -103,8 +69,11 @@ export async function claimOldest(
     return null;
   }
 
+  // Reclaiming keeps the state it reached, so the transcript and requests
+  // already stored are not thrown away and paid for twice.
+  const resumed = clip.state === 'uploaded' ? 'claimed' : clip.state;
   await pb.collection(COLLECTION).update(clip.id, {
-    state: 'claimed',
+    state: resumed,
     claimed_at_ms: Date.now(),
     claimed_by: runId
   });

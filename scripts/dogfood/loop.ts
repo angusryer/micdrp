@@ -128,13 +128,17 @@ export async function runOnce(options: Options): Promise<boolean> {
     await storeTranscript(pb, clip.id, heard.text, heard.confidence);
   }
 
-  const interpreted = await interpret(transcript, clip.screen_trail ?? []);
-  const requests: ChangeRequestDto[] = interpreted.map((r, i) => ({
-    ...r,
-    id: `${clip.id}-${i}`,
-    clipId: clip.id,
-    state: 'proposed'
-  }));
+  // Reading it is paid for once too (INV-DOG-016). A run reclaimed after it
+  // died mid-build already has its requests; re-reading the same words would
+  // cost again and could land on a different split of them.
+  const requests: ChangeRequestDto[] = clip.requests?.length
+    ? clip.requests.map((r) => ({ ...r, state: 'proposed' }))
+    : (await interpret(transcript, clip.screen_trail ?? [])).map((r, i) => ({
+        ...r,
+        id: `${clip.id}-${i}`,
+        clipId: clip.id,
+        state: 'proposed'
+      }));
   await storeRequests(pb, clip.id, requests);
 
   const buildable = requests.filter((r) => gateRequest(r).mayBuild);
