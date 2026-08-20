@@ -14,11 +14,15 @@ invariants:
     description: A failed attempt leaves nothing behind
     severity: critical
     check: >
-      An abandoned request leaves the working tree exactly as it was
-      found, with no partial edit and no stray branch. Verified by
-      abandoning mid-change and asserting a clean tree. A loop that runs
-      unattended must never leave the repository in a state the next run
-      inherits.
+      An abandoned request leaves the working tree as it was found, with
+      no partial edit and no stray branch, and costs only itself: work
+      already built in the same run survives. Verified by building one
+      request, abandoning the next, and asserting the first is intact.
+
+      Each built request is checkpointed for this reason. Without one,
+      restoring after a failure discarded everything the run had built,
+      and the check for a clean tree — correct for the first request —
+      refused every request after a success.
 
   - id: INV-DOG-010
     description: A loop that is failing stops itself

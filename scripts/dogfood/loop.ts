@@ -14,7 +14,7 @@ import { gateRequest, type ChangeRequestDto } from '../../packages/shared/src/dt
 import { halt, isHalted, readFailures, releaseLock, takeLock, writeFailures, HALT_AFTER } from './guard.ts';
 import { audioUrl, claimOldest, connect, markDelivered, signIn, storeRequests, storeTranscript } from './clips.ts';
 import { deliverBatch } from './deliver.ts';
-import { executeRequest } from './execute.ts';
+import { checkpoint, executeRequest } from './execute.ts';
 import { installDeps, prepareWorktree } from './worktree.ts';
 import { interpret } from './interpret.ts';
 import { transcribe } from './transcribe.ts';
@@ -97,6 +97,10 @@ export async function runOnce(options: Options): Promise<boolean> {
     }
     request.state = 'built';
     built.push(request);
+    // Kept now so the next request starts clean and a later failure cannot
+    // reset this one away (INV-DOG-009).
+    // eslint-disable-next-line no-await-in-loop -- one change at a time, by design
+    await checkpoint(request.summary);
   }
 
   await storeRequests(pb, clip.id, requests);

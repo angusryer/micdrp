@@ -87,6 +87,31 @@ export async function changedPaths(): Promise<string[]> {
     .filter(Boolean);
 }
 
+/** Repo-relative paths this run has changed, committed or not. */
+export async function changedSince(ref: string): Promise<string[]> {
+  const { stdout } = await git(['diff', '--name-only', `${ref}...HEAD`]);
+  const committed = stdout.split('\n').filter(Boolean);
+  return [...new Set([...committed, ...(await changedPaths())])];
+}
+
+/**
+ * Keep what a request built, so a later failure cannot take it away.
+ *
+ * Restoring the tree is how an abandoned request leaves nothing behind
+ * (INV-DOG-009), but a reset discards everything uncommitted — including
+ * requests that already succeeded. A checkpoint per request makes the two
+ * compatible: the reset lands on the last good state rather than on the
+ * start of the run. It also leaves a clean tree, which is what the next
+ * request's precondition asks for.
+ *
+ * These commits are local to the checkout and squashed at delivery; the
+ * maintainer sees one commit per batch, not one per request.
+ */
+export async function checkpoint(summary: string): Promise<void> {
+  await git(['add', '-A']);
+  await git(['commit', '-m', `checkpoint: ${summary}`, '--no-verify']);
+}
+
 export interface ExecuteOutcome {
   built: boolean;
   reason: string | null;

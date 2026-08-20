@@ -82,3 +82,17 @@ invariants:
       maintainer's. A link is a way out: the agent edits with no path
       restriction, and a write through it lands in the maintainer's own
       files while appearing in no diff the gate can inspect.
+
+  - id: INV-DOG-022
+    description: The loop's checkout has what delivery needs, not only what building does
+    severity: critical
+    check: >
+      Everything the release and publish steps read is present in the
+      loop's checkout before a batch is delivered. Verified by delivering
+      from a fresh checkout and asserting nothing is missing.
+
+      A change was built, verified, committed and pushed, and only then
+      failed — on a revealed secret the checkout never had. Discovering
+      at the last step that delivery cannot finish is the worst moment to
+      discover it: the commit is already public and the run is recorded
+      as failed for something that was never about the change.

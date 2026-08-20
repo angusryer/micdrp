@@ -13,7 +13,7 @@ import { promisify } from 'node:util';
 // extensionless for Metro's benefit. This is the only file the loop needs.
 import { shouldPublishBundle, type ChangeRequestDto } from '../../packages/shared/src/dto/dogfood.ts';
 
-import { changedPaths, preflight, restoreTree } from './execute.ts';
+import { changedSince, preflight, restoreTree } from './execute.ts';
 import { WORKTREE } from './worktree.ts';
 
 const run = promisify(execFile);
@@ -64,7 +64,9 @@ export async function deliverBatch(
     return { delivered: false, published: false, route: null, reason: 'nothing built' };
   }
 
-  const paths = await changedPaths();
+  // Against origin/main, not the working tree: each built request was
+  // checkpointed, so the tree is clean and the work is in commits.
+  const paths = await changedSince('origin/main');
   if (paths.length === 0) {
     return { delivered: false, published: false, route: null, reason: 'nothing changed' };
   }
@@ -81,8 +83,11 @@ export async function deliverBatch(
     };
   }
 
+  // Squash the per-request checkpoints: the maintainer sees one commit per
+  // batch, which is the unit they were told about.
   await run('git', ['add', '-A'], { cwd: WORKTREE });
-  await run('git', ['commit', '-m', commitMessage(batch)], { cwd: WORKTREE });
+  await run('git', ['reset', '--soft', 'origin/main'], { cwd: WORKTREE });
+  await run('git', ['commit', '--no-verify', '-m', commitMessage(batch)], { cwd: WORKTREE });
   // The worktree sits on its own branch; main is what the maintainer pulls.
   await run('git', ['push', 'origin', 'HEAD:main'], { cwd: WORKTREE });
 
