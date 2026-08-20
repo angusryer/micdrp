@@ -85,12 +85,13 @@ capabilities:
   - name: notes.play
     description: Play a note's captured audio back to the singer.
     actor: singer
-    implemented_by: packages/client/src/screens/Notes/PlaybackBar.tsx
+    implemented_by: packages/client/src/screens/Notes/usePlayback.ts
     parameters:
       required: [id]
     preconditions:
       - the note has an audio path
     postconditions:
+      - the press that asks for playback is the press that starts it
       - playback position is reported while it runs
       - a note whose upload never completed offers no playback
     permissions:

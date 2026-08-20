@@ -1,27 +1,25 @@
 /**
  * NoteCard — a single row in the Notes list.
  *
- * Reframed from the old Library card: a note is a musical-idea memo, not a graded
- * take, so there is no score badge. Instead the row surfaces the descriptive
- * analysis a singer cares about — detected key and vocal range — plus inline
- * playback. Tapping the body opens the note's detail/analysis; Delete is
- * delegated to the parent.
+ * The card frame and what it composes: NoteCardMeta for the title and the
+ * descriptive line, an optional melody shape, the playback bar, and
+ * NoteCardActions for the take's length and the button row. Tapping the body
+ * opens the note's detail/analysis; Delete is delegated to the parent.
+ *
+ * Pressing Play opens the playback bar already playing (INT-NOTES-010) — one
+ * press to hear the take, not two.
  */
 import React, { useCallback, useState } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View
-} from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { MelodyView } from '../../components/MelodyView';
-import { midiToLabel } from '../Results/NoteList';
 import type { NoteMeta } from '../../data/notesCache';
 import { PlaybackBar } from './PlaybackBar';
+import { NoteCardActions } from './NoteCardActions';
+import { NoteCardMeta } from './NoteCardMeta';
+import { formatDuration } from './noteCardFormat';
 import { notesRepo } from '../../data/notesRepo';
 
 /** Horizontal space consumed by the list padding (16) + card padding (14) each side. */
@@ -32,25 +30,6 @@ export interface NoteCardProps {
   /** Open the note's detail/analysis. */
   onOpen(id: string): void;
   onDelete(id: string): void;
-}
-
-/** Format ms duration as M:SS. */
-function formatDuration(ms: number): string {
-  const totalSec = Math.round(ms / 1000);
-  const min = Math.floor(totalSec / 60);
-  const sec = totalSec % 60;
-  return `${min}:${sec.toString().padStart(2, '0')}`;
-}
-
-/** Format a ms epoch timestamp as a short date. */
-function formatDate(ms: number): string {
-  return new Date(ms).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
 }
 
 export function NoteCard({ note, onOpen, onDelete }: NoteCardProps) {
@@ -66,18 +45,19 @@ export function NoteCard({ note, onOpen, onDelete }: NoteCardProps) {
     [note.id, note.audioPath]
   );
 
-
+  // Press play → the bar mounts already playing. Press again → it unmounts,
+  // and its cleanup stops the audio.
   const handleTogglePlay = useCallback((): void => setExpanded((v) => !v), []);
-  const handleOpen = useCallback((): void => onOpen(note.id), [onOpen, note.id]);
+  const handleOpen = useCallback(
+    (): void => onOpen(note.id),
+    [onOpen, note.id]
+  );
   const handleDelete = useCallback(
     (): void => onDelete(note.id),
     [onDelete, note.id]
   );
 
-  const range =
-    note.rangeLowMidi != null && note.rangeHighMidi != null
-      ? `${midiToLabel(note.rangeLowMidi)}–${midiToLabel(note.rangeHighMidi)}`
-      : null;
+  const canPlay = note.audioPath != null;
 
   return (
     <View
@@ -88,50 +68,12 @@ export function NoteCard({ note, onOpen, onDelete }: NoteCardProps) {
           borderColor: colors.neutral500,
           borderRadius: dimensions.radii[10]
         }
-      ]}
-    >
+      ]}>
       <Pressable
-        accessibilityRole="button"
+        accessibilityRole='button'
         accessibilityLabel={t('notes.openNote', { title: note.title })}
-        onPress={handleOpen}
-      >
-        <Text
-          style={[styles.title, { color: colors.typography }]}
-          numberOfLines={1}
-          ellipsizeMode="tail"
-        >
-          {note.title}
-        </Text>
-
-        <View style={styles.meta}>
-          <Text style={[styles.metaText, { color: colors.gray300 }]}>
-            {formatDate(note.createdAtMs)}
-          </Text>
-          <Text style={[styles.metaDot, { color: colors.gray100 }]}>{' · '}</Text>
-          <Text style={[styles.metaText, { color: colors.gray300 }]}>
-            {formatDuration(note.durationMs)}
-          </Text>
-          {note.key != null ? (
-            <>
-              <Text style={[styles.metaDot, { color: colors.gray100 }]}>
-                {' · '}
-              </Text>
-              <Text style={[styles.metaText, { color: colors.gray300 }]}>
-                {note.key}
-              </Text>
-            </>
-          ) : null}
-          {range != null ? (
-            <>
-              <Text style={[styles.metaDot, { color: colors.gray100 }]}>
-                {' · '}
-              </Text>
-              <Text style={[styles.metaText, { color: colors.gray300 }]}>
-                {range}
-              </Text>
-            </>
-          ) : null}
-        </View>
+        onPress={handleOpen}>
+        <NoteCardMeta note={note} />
 
         {note.melody.length > 0 ? (
           <View style={styles.melodyWrap}>
@@ -144,59 +86,21 @@ export function NoteCard({ note, onOpen, onDelete }: NoteCardProps) {
         ) : null}
       </Pressable>
 
-      {expanded && note.audioPath ? (
+      {expanded && canPlay ? (
         <View style={styles.playbackWrap}>
-          <PlaybackBar
-            resolveAudioUri={resolveAudio}
-            durationLabel={formatDuration(note.durationMs)}
-          />
+          {/* No durationLabel: the length is shown once, above the play button. */}
+          <PlaybackBar resolveAudioUri={resolveAudio} shouldAutoPlay />
         </View>
       ) : null}
 
-      <View style={styles.actions}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            expanded ? t('notes.closePlayer') : t('notes.playNote')
-          }
-          onPress={handleTogglePlay}
-          style={[
-            styles.actionButton,
-            { backgroundColor: expanded ? colors.neutral300 : colors.primary500 }
-          ]}
-        >
-          <Text
-            style={[
-              styles.actionLabel,
-              { color: expanded ? colors.typography : colors.white }
-            ]}
-          >
-            {expanded ? t('common.close') : t('common.play')}
-          </Text>
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('notes.openAnalysis')}
-          onPress={handleOpen}
-          style={[styles.actionButton, { backgroundColor: colors.neutral300 }]}
-        >
-          <Text style={[styles.actionLabel, { color: colors.typography }]}>
-            {t('notes.analysis')}
-          </Text>
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('notes.deleteNote')}
-          onPress={handleDelete}
-          style={[styles.actionButton, styles.deleteButton]}
-        >
-          <Text style={[styles.actionLabel, { color: colors.error }]}>
-            {t('common.delete')}
-          </Text>
-        </Pressable>
-      </View>
+      <NoteCardActions
+        isPlayerOpen={expanded}
+        canPlay={canPlay}
+        durationLabel={formatDuration(note.durationMs)}
+        onTogglePlay={handleTogglePlay}
+        onOpen={handleOpen}
+        onDelete={handleDelete}
+      />
     </View>
   );
 }
@@ -209,41 +113,6 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 8
   },
-  title: {
-    fontSize: 15,
-    fontWeight: '600'
-  },
-  meta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    marginTop: 4
-  },
-  metaText: { fontSize: 12 },
-  metaDot: { fontSize: 12 },
   melodyWrap: { marginTop: 10 },
-  playbackWrap: { paddingVertical: 4 },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 4
-  },
-  actionButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  // Tertiary, destructive: pushed to the end with no fill so it doesn't read as
-  // a peer of the primary Play / Analysis actions.
-  deleteButton: {
-    marginLeft: 'auto',
-    backgroundColor: 'transparent'
-  },
-  actionLabel: {
-    fontSize: 13,
-    fontWeight: '600'
-  }
+  playbackWrap: { paddingVertical: 4 }
 });

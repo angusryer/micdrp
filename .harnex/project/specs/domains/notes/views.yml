@@ -14,8 +14,15 @@ views:
       - A record control that starts and stops a capture — a compact
         circle filled solid in the palette's red, reading as a disc and
         not as a ring, showing a stop glyph while a capture is running
-      - A live pitch line while recording, drawn off the JS thread
+      - A live pitch line while recording, drawn off the JS thread — a
+        slim band, kept short enough that the note list below it stays
+        the larger half of the screen
       - A list of note cards, newest first
+      - A play control on each card that starts the capture playing on
+        the press itself, shown only on a card whose audio is stored
+      - The take's length on each card, sitting on its own line directly
+        above the play control rather than among the facts at the top,
+        and shown once — the open playback bar does not repeat it
       - A melody shape on each card, drawn from the persisted melody
       - A pull-to-refresh that re-syncs from the server
       - An empty state shown when the singer has kept nothing yet

@@ -1,11 +1,19 @@
 # Domain Development State — overwrite each meaningful change
-updated_at: "2026-08-18T00:00:00Z"
+updated_at: "2026-08-20T00:00:00Z"
 updated_by: agent
 phase: specifying
 phase_detail: >
   Specs written from a crawl of screens/Notes, analysis/note.ts, the
   data layer, and the notes table in migration 0001. 10 capabilities,
-  11 invariants, 23 acceptance tests, 2 views, 9 interactions.
+  14 invariants, 28 acceptance tests, 2 views, 10 interactions.
+
+  The list card's play button now starts playback on the press itself
+  (INT-NOTES-010): it opens a PlaybackBar mounted with shouldAutoPlay
+  rather than a silent bar awaiting a second press. A card whose note
+  has no audioPath shows no play button at all, which is what the
+  capability already promised. NoteCard and PlaybackBar were split —
+  NoteCardMeta, NoteCardActions, noteCardFormat, usePlayback, audioApi
+  — to bring both back under the 150-line budget.
 
   Three product commitments that were previously only prose in the
   design doc are now invariants: every capture is kept with no score

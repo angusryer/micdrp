@@ -113,3 +113,18 @@ interactions:
       the singer.
     maps_to:
       capability: notes.export_midi
+
+  - id: INT-NOTES-010
+    name: Play a kept idea from the list
+    view: VIEW-NOTES-001
+    precondition: The note has stored audio.
+    steps:
+      - Press play on the note's card
+    outcome: >
+      That press starts the capture playing. The singer is not asked to
+      press a second control to make sound.
+    error_handling: >
+      A note whose upload never completed shows no play control at all,
+      so there is no press that does nothing.
+    maps_to:
+      capability: notes.play

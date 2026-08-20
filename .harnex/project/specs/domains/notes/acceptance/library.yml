@@ -154,3 +154,33 @@ acceptance:
     maps_to:
       capability: notes.play
       invariants: [INV-NOTES-014]
+
+  - id: ACC-NOTES-027
+    interface: ui
+    title: The list's play control starts playback on the press itself
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio
+    when:
+      - singer S presses play on note N's card in the list
+    then:
+      - the note field playbackStarted is true
+      - the note field pressesToStartPlayback is 1
+    maps_to:
+      capability: notes.play
+      interaction: INT-NOTES-010
+
+  - id: ACC-NOTES-028
+    interface: ui
+    title: A card with no stored audio shows no play control
+    given:
+      - a signed-in singer S
+      - singer S has a note N with no stored audio
+    when:
+      - singer S views note N's card in the list
+    then:
+      - the note field playControlShown is false
+    maps_to:
+      capability: notes.play
+      invariants: [INV-NOTES-004]
+      interaction: INT-NOTES-010

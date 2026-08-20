@@ -10,14 +10,12 @@
  */
 import React, { useCallback } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   RefreshControl,
   SafeAreaView,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -31,10 +29,8 @@ import type {
   MainTabParamList,
   RootStackParamList
 } from '../../navigation/types';
-import { PitchLine } from '../capture/PitchLine';
-import { NoteRibbon } from '../capture/NoteRibbon';
-import { TransportBar } from '../capture/TransportBar';
 import type { NoteMeta } from '../../data/notesCache';
+import { CaptureSection } from './CaptureSection';
 import { NoteCard } from './NoteCard';
 import { useNoteCapture } from './useNoteCapture';
 import { useNotes } from './useNotes';
@@ -46,13 +42,9 @@ export type NotesScreenProps = CompositeScreenProps<
 
 type NotesNavigation = NotesScreenProps['navigation'];
 
-const PITCH_LINE_HEIGHT = 132;
-const PITCH_LINE_MARGIN = 16;
-
 export function NotesScreen(): React.JSX.Element {
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const { width } = useWindowDimensions();
   const navigation = useNavigation<NotesNavigation>();
 
   const { notes, loading, refresh, remove } = useNotes();
@@ -106,41 +98,16 @@ export function NotesScreen(): React.JSX.Element {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.neutral300 }]}>
-      {/* Capture section */}
-      <View style={styles.capture}>
-        <View style={styles.captureHeader}>
-          <Text style={[styles.title, { color: colors.typography }]}>
-            {isRecording ? t('notes.recording') : t('notes.capture')}
-          </Text>
-          {saveStatus === 'saving' ? (
-            <ActivityIndicator size="small" color={colors.primary500} />
-          ) : null}
-        </View>
-
-        <NoteRibbon sharedMidi={sharedMidi} sharedCents={sharedCents} />
-
-        <View
-          style={[
-            styles.pitchWrap,
-            { backgroundColor: colors.neutral50, borderColor: colors.neutral500 }
-          ]}
-        >
-          <PitchLine
-            sharedMidi={sharedMidi}
-            sharedFrame={sharedFrame}
-            width={width - 2 * PITCH_LINE_MARGIN}
-            height={PITCH_LINE_HEIGHT}
-          />
-        </View>
-
-        <TransportBar state={state} onStart={start} onStop={handleStop} />
-
-        {saveStatus === 'error' ? (
-          <Text style={[styles.error, { color: colors.error }]}>
-            {t('notes.saveError')}
-          </Text>
-        ) : null}
-      </View>
+      <CaptureSection
+        sharedMidi={sharedMidi}
+        sharedCents={sharedCents}
+        sharedFrame={sharedFrame}
+        state={state}
+        isRecording={isRecording}
+        saveStatus={saveStatus}
+        onStart={start}
+        onStop={handleStop}
+      />
 
       {/* Saved notes */}
       <FlatList
@@ -174,26 +141,6 @@ export function NotesScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  capture: {
-    paddingTop: 12,
-    paddingBottom: 8,
-    gap: 8
-  },
-  captureHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10
-  },
-  title: { fontSize: 18, fontWeight: '700' },
-  pitchWrap: {
-    marginHorizontal: PITCH_LINE_MARGIN,
-    height: PITCH_LINE_HEIGHT,
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden'
-  },
-  error: { textAlign: 'center', fontSize: 13 },
   list: { padding: 16, gap: 12 },
   empty: { alignItems: 'center', paddingTop: 40, gap: 6 },
   emptyTitle: { fontSize: 16, fontWeight: '600' },
