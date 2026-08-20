@@ -167,3 +167,52 @@ describe('recordingMachine', () => {
     actor.stop();
   });
 });
+
+describe('recording a second time — INV-NOTES-013 / ACC-NOTES-025', () => {
+  const throughOneCapture: RecordingEvent[] = [
+    { type: 'REQUEST_PERMISSION' },
+    { type: 'PERMISSION_GRANTED' },
+    { type: 'STOP' },
+    { type: 'ANALYZED', data: handle }
+  ];
+
+  it('parks in result, which by itself cannot start another capture', () => {
+    // This is the shape of the bug: the state reached after a capture ignores
+    // the events the record control sends.
+    const after = snapshotAfter(...throughOneCapture, {
+      type: 'REQUEST_PERMISSION'
+    });
+    expect(after.value).toBe('result');
+  });
+
+  it('accepts a new capture once reset, which is what start() now sends', () => {
+    const after = snapshotAfter(
+      ...throughOneCapture,
+      { type: 'RESET' },
+      { type: 'REQUEST_PERMISSION' },
+      { type: 'PERMISSION_GRANTED' }
+    );
+    expect(after.value).toBe('recording');
+  });
+
+  it('recovers from a failed capture the same way', () => {
+    const after = snapshotAfter(
+      { type: 'REQUEST_PERMISSION' },
+      { type: 'PERMISSION_DENIED' },
+      { type: 'RESET' },
+      { type: 'REQUEST_PERMISSION' },
+      { type: 'PERMISSION_GRANTED' }
+    );
+    expect(after.value).toBe('recording');
+  });
+
+  it('ignores a reset from idle, so the first capture is unaffected', () => {
+    const after = snapshotAfter(
+      { type: 'RESET' },
+      { type: 'REQUEST_PERMISSION' },
+      { type: 'PERMISSION_GRANTED' }
+    );
+    expect(after.value).toBe('recording');
+  });
+});
+

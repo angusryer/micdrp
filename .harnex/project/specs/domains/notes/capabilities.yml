@@ -19,6 +19,7 @@ capabilities:
       - no minimum quality is required for the note to be kept
       - the title defaults to a timestamped name when none is given
       - a denied microphone permission leaves no note behind
+      - the transport returns to a state that accepts another capture
     permissions:
       - role: singer
         notes: A note is always created under the signed-in singer.

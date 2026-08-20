@@ -52,7 +52,12 @@ export type RecordingHandleResult = {
 export interface Spec extends TurboModule {
   configure(config: EngineConfigInput): Promise<void>;
   requestPermission(): Promise<boolean>;
-  start(): Promise<void>;
+  /**
+   * Begin capturing into `captureDir`, an absolute directory path the caller
+   * owns. Passing it keeps the location defined once, in files.ts, rather
+   * than once here and again in native code (INV-PITCH-011).
+   */
+  start(captureDir: string): Promise<void>;
   stop(): Promise<RecordingHandleResult>;
 
   /** Throttled live frames for the duration of a capture. */

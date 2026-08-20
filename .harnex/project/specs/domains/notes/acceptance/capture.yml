@@ -105,3 +105,19 @@ acceptance:
     maps_to:
       capability: notes.analyze_capture
       invariants: [INV-NOTES-010]
+
+  - id: ACC-NOTES-025
+    interface: ui
+    title: A singer records a second note without restarting the app
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio
+    when:
+      - singer S calls notes.capture
+    then:
+      - the call succeeds
+    maps_to:
+      capability: notes.capture
+      invariants: [INV-NOTES-013]
+      interaction: INT-NOTES-001
+

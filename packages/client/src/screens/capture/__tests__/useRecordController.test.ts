@@ -225,3 +225,57 @@ describe('useRecordController', () => {
     expect(unsubscribe).toHaveBeenCalled();
   });
 });
+
+describe('recording more than once — INV-NOTES-013 / ACC-NOTES-025', () => {
+  it('starts a second capture after the first completes', async () => {
+    const { api } = mount();
+
+    await act(async () => {
+      await api().start();
+    });
+    await act(async () => {
+      await api().stop();
+    });
+    // The machine parks in `result` here. Before start() sent RESET, this is
+    // where the record control went dead for the rest of the session.
+    expect(api().state).toBe('result');
+
+    await act(async () => {
+      await api().start();
+    });
+
+    expect(api().state).toBe('recording');
+    expect(api().isRecording).toBe(true);
+    expect(mockEngine.start).toHaveBeenCalledTimes(2);
+  });
+
+  it('starts a capture after a denied permission is retried', async () => {
+    const { api } = mount();
+    mockEngine.requestPermission.mockResolvedValueOnce(false);
+    await act(async () => {
+      await expect(api().start()).rejects.toThrow(/permission/i);
+    });
+    expect(api().state).toBe('error');
+
+    mockEngine.requestPermission.mockResolvedValueOnce(true);
+    await act(async () => {
+      await api().start();
+    });
+    expect(api().state).toBe('recording');
+  });
+
+  it('reset() returns to idle without recording', async () => {
+    const { api } = mount();
+    await act(async () => {
+      await api().start();
+    });
+    await act(async () => {
+      await api().stop();
+    });
+    await act(() => {
+      api().reset();
+    });
+    expect(api().state).toBe('idle');
+  });
+});
+

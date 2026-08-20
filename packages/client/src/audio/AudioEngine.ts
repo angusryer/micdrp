@@ -27,6 +27,7 @@ import {
   RecordingHandle
 } from './contract';
 import { createWorkletPitchEngine, WorkletPitchEngine } from './worklet/pitchProcessor';
+import { ensureDirs, recordingsDir } from '../data/files';
 
 type PitchListener = (sample: PitchSample) => void;
 type StateListener = (state: EngineState) => void;
@@ -107,7 +108,11 @@ class AudioEngineImpl implements AudioEngineContract {
   async start(): Promise<void> {
     if (this.native) {
       this.attachNative();
-      await this.native.start();
+      // The capture directory is owned by files.ts and handed to native, so a
+      // capture lands somewhere durable rather than in a temporary directory
+      // the system may reclaim while the note still points at it.
+      await ensureDirs();
+      await this.native.start(recordingsDir());
       return;
     }
     const w = this.ensureWorklet();

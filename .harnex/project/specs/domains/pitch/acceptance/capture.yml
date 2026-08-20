@@ -125,3 +125,18 @@ acceptance:
     maps_to:
       capability: pitch.start_capture
       invariants: [INV-PITCH-001, INV-PITCH-009]
+
+  - id: ACC-PITCH-024
+    interface: internal
+    title: A stopped capture resolves with a file under the recordings directory
+    given:
+      - a signed-in singer S
+      - a capture session is running
+    when:
+      - singer S calls pitch.stop_capture
+    then:
+      - the call succeeds
+    maps_to:
+      capability: pitch.stop_capture
+      invariants: [INV-PITCH-011]
+

@@ -38,6 +38,12 @@ export interface RecordController {
   start(): Promise<void>;
   /** Stop the engine, run the machine through `analyzing`, resolve the handle. */
   stop(): Promise<RecordingHandle>;
+  /**
+   * Return to `idle` from a terminal state without recording. `start` does
+   * this itself, so this is for a screen that wants to clear a result or an
+   * error on its own (INV-NOTES-013).
+   */
+  reset(): void;
   /** Latest detected fundamental in Hz (0 when unvoiced). UI thread. */
   sharedPitch: SharedValue<number>;
   /** Latest NSDF clarity, 0..1. UI thread. */
@@ -133,6 +139,12 @@ export function useRecordController(): RecordController {
   useEffect(() => detach, [detach]);
 
   const start = useCallback(async (): Promise<void> => {
+    // Leave any terminal state first. After a capture the machine sits in
+    // `result`, and after a failure in `error`; neither accepts
+    // REQUEST_PERMISSION, so without this the record control does nothing for
+    // the rest of the session and only a relaunch clears it (INV-NOTES-013).
+    // RESET is ignored from `idle`, so this is safe on the first capture too.
+    send({ type: 'RESET' });
     // Enter the permission gate so a denial lands the machine in `error`.
     send({ type: 'REQUEST_PERMISSION' });
     const granted = await engineRef.current.requestPermission();
@@ -154,9 +166,14 @@ export function useRecordController(): RecordController {
     return handle;
   }, [send]);
 
+  const reset = useCallback((): void => {
+    send({ type: 'RESET' });
+  }, [send]);
+
   return {
     start,
     stop,
+    reset,
     sharedPitch,
     sharedClarity,
     sharedMidi,

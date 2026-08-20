@@ -207,7 +207,8 @@ static double NowMs() {
   }];
 }
 
-- (void)start:(RCTPromiseResolveBlock)resolve
+- (void)start:(NSString *)captureDir
+      resolve:(RCTPromiseResolveBlock)resolve
        reject:(RCTPromiseRejectBlock)reject {
   if (_running.load()) {
     resolve(nil);
@@ -245,10 +246,19 @@ static double NowMs() {
   }
 
   // Capture file for the RecordingHandle uri.
+  //
+  // The directory comes from the caller (files.ts) rather than being chosen
+  // here. NSTemporaryDirectory() was the previous home, and the system is free
+  // to reclaim it — which would leave a saved note pointing at audio that had
+  // silently vanished. INV-PITCH-011.
   _recordingId = [[NSUUID UUID] UUIDString];
-  NSString *dir = NSTemporaryDirectory();
+  NSString *dir = captureDir.length > 0 ? captureDir : NSTemporaryDirectory();
+  [[NSFileManager defaultManager] createDirectoryAtPath:dir
+                            withIntermediateDirectories:YES
+                                             attributes:nil
+                                                  error:nil];
   NSString *path = [dir stringByAppendingPathComponent:
-                    [NSString stringWithFormat:@"micdrp-%@.caf", _recordingId]];
+                    [NSString stringWithFormat:@"%@.caf", _recordingId]];
   _captureURL = [NSURL fileURLWithPath:path];
   NSError *fileErr = nil;
   _captureFile = [[AVAudioFile alloc] initForWriting:_captureURL

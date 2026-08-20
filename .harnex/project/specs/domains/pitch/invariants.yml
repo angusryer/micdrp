@@ -84,3 +84,16 @@ invariants:
       pitch.start_capture rejects while a session is already running, and
       pitch.stop_capture rejects when no session is running. There is at
       most one microphone session per process at any time.
+
+  - id: INV-PITCH-011
+    description: A capture is written where the operating system cannot reclaim it
+    severity: major
+    check: >
+      The audio file a capture resolves with is written under the app's own
+      recordings directory, which persists until the app deletes it. It must
+      not be written to a temporary or cache location: the system may reclaim
+      those at any point, which would leave a saved note pointing at audio
+      that has silently disappeared. The directory is chosen by the caller and
+      passed to the engine, so the path is defined in one place rather than
+      once in JavaScript and again in native code.
+
