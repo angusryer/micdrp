@@ -25,16 +25,28 @@ import {
 import { join } from 'node:path';
 
 /**
- * Machine-local paths the harness needs, relative to the repository root.
+ * Machine-local paths the checkout needs, relative to the repository root.
  *
- * Kept to what verification actually reads. Memory and discovery are left
- * out: memory lives outside the project, and discovery is regenerated.
+ * Kept to what the run actually reads. Memory and discovery are left out:
+ * memory lives outside the project, and discovery is regenerated.
  */
 const COPIED_PATHS = [
   '.harnex/framework',
   '.harnex/config.yml',
   '.harnex/version',
-  '.harnex/local'
+  '.harnex/local',
+  // Delivery reads this, not building — and a change was once built,
+  // verified, committed and pushed before failing on its absence, which is
+  // the worst moment to find out (INV-DOG-022).
+  //
+  // Revealed by git-secret in the maintainer's checkout and copied here at
+  // the maintainer's explicit direction: revealing it per run needs a GPG
+  // passphrase nobody is present to give, and stopping before publish means
+  // the loop no longer finishes on its own, which is the point of it. The
+  // copy stays on the same machine under the same user, .gitignore covers
+  // it so it cannot be committed, and the gate refuses any request that
+  // would touch a .env at all.
+  'packages/client/.env.production'
 ] as const;
 
 /** The CLI entry point, a link into the framework beside it. */
