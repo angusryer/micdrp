@@ -37,10 +37,17 @@ module EnvConfig
       .find { |f| File.exist?(f) }
   end
 
-  # An env var always wins over the file, so CI can override without editing.
+  # The file wins over the process environment. That is the opposite of the
+  # usual convention, and deliberate: fastlane auto-loads the *dev* .env via
+  # dotenv, so BUILD_NUMBER and BACKEND_URL arrive in ENV already set to
+  # development values. Letting ENV win meant ENVFILE=.env.production was
+  # silently ignored and a release could be built against localhost.
+  #
+  # Select a different file with ENVFILE. Override a single value with
+  # OVERRIDE_<KEY>, which dotenv cannot forge because no .env defines it.
   def self.fetch(key)
-    value = ENV[key] || values[key]
-    raise "#{key} is not set in the environment or #{default_env_file}" if value.to_s.empty?
+    value = ENV["OVERRIDE_#{key}"] || values[key] || ENV[key]
+    raise "#{key} is not set in #{env_path} (nor as OVERRIDE_#{key})" if value.to_s.empty?
     value
   end
 

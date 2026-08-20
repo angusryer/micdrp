@@ -41,6 +41,8 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>micdrp asks for photo library access only if you choose to save or share a recording to your device. It never reads your photos.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>micdrp uses the microphone to capture your singing for real-time pitch analysis.</string>
 	<key>RCTNewArchEnabled</key>

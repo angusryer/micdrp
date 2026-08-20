@@ -27,7 +27,9 @@
     "release:check": "./scripts/release.sh --check",
     "submit": "./scripts/submit.sh",
     "test": "./scripts/test.sh",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "testflight": "./scripts/testflight-status.py",
+    "testflight:watch": "./scripts/testflight-status.py --watch"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",

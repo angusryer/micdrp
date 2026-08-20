@@ -211,3 +211,52 @@ The icon is a **placeholder** generated with ImageMagick (mic over a drop) —
 the repo had no brand assets. One 1024x1024 opaque PNG in the modern
 single-slot `Contents.json`; Xcode derives the rest. App Store artwork must
 have no alpha channel, so keep `-alpha remove -alpha off` if regenerating.
+
+## "Uploaded successfully" does not mean accepted
+
+Apple accepts the binary, then processes it, then may reject it — by email,
+minutes later. A rejected build leaves **zero** trace in the API:
+
+```
+0 build(s) — no preReleaseVersions, no builds
+```
+
+which looks identical to "still processing". If a build has not appeared
+after ~15 minutes, read the email; do not assume it is slow. Rejections seen
+here:
+
+- **ITMS-90683** — missing `NSPhotoLibraryUsageDescription`. Required because
+  `@dr.pogodin/react-native-fs` and `react-native-share` link photo library
+  APIs, whether or not the app calls them.
+- **ITMS-90068** — `MinimumOSVersion` too low. The project was pinned at 14.0
+  while RN 0.86 itself requires 15.1 (`Helpers::Constants.min_ios_version_supported`).
+
+`fastlane pilot builds` cannot report this — it requests a `buildDeliveries`
+relationship Apple removed. Query `api.appstoreconnect.apple.com/v1/builds`
+directly instead.
+
+## Two fastlane behaviours that hang an unattended run
+
+1. **`skip_waiting_for_build_processing` is ignored when `changelog` is set**,
+   because release notes need the processed build. Passing a changelog
+   unconditionally makes the lane poll for up to an hour — and forever if the
+   build is rejected. The lane now sets notes only when `RELEASE_NOTES` is
+   given.
+2. **Build numbers cannot come from TestFlight alone.** Apple registers a
+   build minutes after accepting it and reports nothing meanwhile, so
+   `latest + 1` returns the same number twice when you deploy in quick
+   succession. The lane takes `max(local, remote) + 1`, with the local
+   counter in the `.env` always advancing.
+
+## Measured timings (so a regression is visible)
+
+| Step | Time |
+|---|---|
+| `gym` clean archive | ~226s |
+| `gym` with `clean: false` | ~234s — **no gain** |
+| upload to App Store Connect | ~75s |
+
+`clean: false` did not help, most likely because `update_code_signing_settings`
+rewrites `project.pbxproj` every run and invalidates Xcode's incremental
+state. The lane now skips that write when settings already match
+(`Signing.settings_current?`), but the speedup is **unverified**.
