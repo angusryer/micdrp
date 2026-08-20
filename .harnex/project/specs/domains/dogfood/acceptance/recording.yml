@@ -121,3 +121,18 @@ acceptance:
     maps_to:
       capability: dogfood.expire_clip
       invariants: [INV-DOG-003]
+
+  - id: ACC-DOG-029
+    interface: ui
+    title: A recording outlives the control that started it
+    given:
+      - the maintainer is on the Notes screen
+    when:
+      - the maintainer taps record
+      - the maintainer navigates to Practice
+    then:
+      - the clip is in state recording
+      - the trail is Notes,Practice
+    maps_to:
+      capability: dogfood.start_clip
+      invariants: [INV-DOG-014]

@@ -1,11 +1,22 @@
 views:
   - id: VIEW-DOG-001
     name: Feedback control
-    route: overlay/DogfoodControl
+    route: header/DogfoodControl
     description: >
-      A record control fixed in the top-right, over every screen. It is
-      not part of any screen's header: it has to survive navigation,
-      because walking through the app while describing it is the point.
+      A record control in the header, immediately left of the account
+      control, on every screen that has a header — which is every screen
+      where feedback can be given. The headerless ones are the login
+      screen, the splash, and a running practice session, where the
+      control would be unavailable anyway because the take holds the
+      microphone.
+
+      It was first built as an overlay above the navigator, on the
+      reasoning that a recording must survive navigating away. That
+      reasoning was right; the placement was wrong. Sitting outside every
+      screen's tree also put it outside every screen's safe area, so on a
+      device it rendered beneath the status bar and could not be tapped
+      at all. The recording survives navigation because the session is
+      held outside the component, not because the component is.
 
       Idle, it is a single unobtrusive control. Recording, it shows the
       elapsed time and offers pause and stop. In the last stretch before
@@ -32,6 +43,7 @@ views:
       - A disabled appearance while the microphone is otherwise in use
       - A brief confirmation that a clip was sent
     absent_elements:
+      - Any placement outside the safe area, where it cannot be tapped
       - Any separate send action, because stopping is the instruction to send
       - Any transcript or playback, because the clip is not for reading back
       - Any list of past clips, because they are the agent loop's business

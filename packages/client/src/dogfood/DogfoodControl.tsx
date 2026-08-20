@@ -1,9 +1,12 @@
 /**
- * The record control, fixed top-right over every screen.
+ * The record control, in the header beside the account control.
  *
- * It is deliberately not part of any screen's header. It has to survive
- * navigation, because walking through the app while describing it is the whole
- * point — a header button would unmount and take the recording with it.
+ * It remounts on every navigation, which is fine: the session it drives lives
+ * in `activeSession` rather than in this component, so a recording survives
+ * being navigated away from. Survival and placement are separate concerns —
+ * conflating them is what produced the first version, an overlay above the
+ * navigator that survived navigation and landed under the status bar where it
+ * could not be pressed at all (INV-DOG-014).
  *
  * The countdown appears only in the last stretch (INV-DOG-003 pairs with it):
  * a timer running the whole time invites watching the clock instead of talking.
@@ -11,14 +14,14 @@
  * While a take holds the microphone the control is visibly unavailable rather
  * than hidden. Hiding it would read as a bug; disabled says the app is busy.
  */
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { subscribeToBusy } from '../app/activity';
 import { useTheme } from '../theme';
 import { useTranslation } from '../i18n';
 import { TICK_MS, readClipOrigin } from './config';
-import { DogfoodSession } from './session';
+import { activeSession } from './activeSession';
 import { enqueue, flushPending } from './upload';
 import { IDLE_SESSION, type RecordingSession } from './types';
 import { currentRoute, subscribeToRoute } from './route';
@@ -33,7 +36,7 @@ const seconds = (ms: number): string => {
 export default function DogfoodControl(): React.ReactElement | null {
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const session = useRef(new DogfoodSession()).current;
+  const session = activeSession();
   const [view, setView] = useState<RecordingSession>(IDLE_SESSION);
 
   const refresh = useCallback(() => setView(session.snapshot()), [session]);
@@ -104,56 +107,49 @@ export default function DogfoodControl(): React.ReactElement | null {
       : t('dogfood.resume');
 
   return (
-    <View pointerEvents="box-none" style={styles.host}>
-      <View style={styles.row}>
-        {!idle ? (
-          <Text
-            style={[
-              styles.time,
-              { color: view.isCountingDown ? colors.error : colors.gray300 }
-            ]}>
-            {seconds(view.isCountingDown ? view.remainingMs : view.elapsedMs)}
-          </Text>
-        ) : null}
+    <View style={styles.row}>
+      {!idle ? (
+        <Text
+          style={[
+            styles.time,
+            { color: view.isCountingDown ? colors.error : colors.gray300 }
+          ]}>
+          {seconds(view.isCountingDown ? view.remainingMs : view.elapsedMs)}
+        </Text>
+      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ disabled: !view.canRecord }}
+        disabled={!view.canRecord}
+        hitSlop={12}
+        onPress={() => void onPress()}
+        style={[
+          styles.dot,
+          {
+            backgroundColor: view.canRecord ? colors.error : colors.gray100,
+            opacity: view.canRecord ? 1 : 0.4
+          },
+          view.state === 'recording' ? styles.recording : null
+        ]}
+      />
+      {!idle ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={label}
-          accessibilityState={{ disabled: !view.canRecord }}
-          disabled={!view.canRecord}
+          accessibilityLabel={t('dogfood.stop')}
           hitSlop={12}
-          onPress={() => void onPress()}
-          style={[
-            styles.dot,
-            {
-              backgroundColor: view.canRecord ? colors.error : colors.gray100,
-              opacity: view.canRecord ? 1 : 0.4
-            },
-            view.state === 'recording' ? styles.recording : null
-          ]}
+          onPress={() => void finish()}
+          style={[styles.stop, { borderColor: colors.gray300 }]}
         />
-        {!idle ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('dogfood.stop')}
-            hitSlop={12}
-            onPress={() => void finish()}
-            style={[styles.stop, { borderColor: colors.gray300 }]}
-          />
-        ) : null}
-      </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  host: { position: 'absolute', top: 0, right: 0, left: 0 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-end',
-    paddingHorizontal: 16,
-    paddingTop: 8
-  },
+  // Laid out by the header, which already accounts for the safe area. No
+  // absolute positioning here — that is what put it under the status bar.
+  row: { flexDirection: 'row', alignItems: 'center' },
   time: { fontVariant: ['tabular-nums'], fontSize: 13, marginRight: 8 },
   dot: { width: 16, height: 16, borderRadius: 8 },
   recording: { borderRadius: 3 },

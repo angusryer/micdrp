@@ -11,6 +11,7 @@
 export { default as DogfoodControl } from './DogfoodControl';
 export { publishRoute, currentRoute, subscribeToRoute } from './route';
 export { DogfoodSession, type FinishedClip } from './session';
+export { activeSession } from './activeSession';
 export { ScreenTrail } from './trail';
 export { enqueue, listPending, uploadOne, flushPending } from './upload';
 export { CLIP_CAP_MS, COUNTDOWN_AT_MS, readClipOrigin } from './config';

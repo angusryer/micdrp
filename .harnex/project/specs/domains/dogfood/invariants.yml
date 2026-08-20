@@ -128,3 +128,24 @@ invariants:
       A clip already carrying a transcript is not sent for transcription
       again, including across runs and restarts. Verified by running the
       loop twice over the same clip and asserting one transcription call.
+
+  - id: INV-DOG-014
+    description: The control is somewhere it can actually be pressed
+    severity: critical
+    check: >
+      The record control renders inside the safe area, within a header
+      the navigator lays out, and never as an overlay positioned from the
+      top of the window. Verified by asserting it is rendered by the
+      navigator's headerRight rather than by the app root.
+
+      The first version placed it absolutely at the top of the window so
+      that a recording would survive navigating away. It did survive —
+      and landed under the status bar, where it could not be tapped, so
+      no recording could be started in the first place. Every screen in
+      this app already renders inside a SafeAreaView; the control was the
+      one thing that did not, because it deliberately sat outside them
+      all.
+
+      A recording survives navigation because the session is module
+      state, not because the control avoids unmounting. Those are
+      separate concerns and conflating them is what caused this.

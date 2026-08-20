@@ -5,10 +5,10 @@ import {
 } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React, { useCallback } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useAuth } from '../auth';
-import { publishRoute } from '../dogfood';
+import { DogfoodControl, publishRoute } from '../dogfood';
 import { useTheme } from '../theme';
 import { useTranslation } from '../i18n';
 import { Icon, type IconName } from '../components/Icon';
@@ -40,6 +40,25 @@ function getFocusedRouteName(state: {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
+
+/**
+ * The header's right-hand controls: record feedback, then account.
+ *
+ * The feedback control sits here rather than as an overlay above the
+ * navigator. An overlay survived navigation but landed outside every screen's
+ * safe area, under the status bar, where it could not be pressed
+ * (INV-DOG-014). The header is laid out with the safe area already accounted
+ * for, and the recording survives navigating because the session lives in
+ * module state, not in the control.
+ */
+function HeaderControls() {
+  return (
+    <View style={styles.headerControls}>
+      <DogfoodControl />
+      <AccountHeaderButton />
+    </View>
+  );
+}
 
 /** Header button (top-right of every tab) that opens Account & Settings. */
 function AccountHeaderButton() {
@@ -81,7 +100,7 @@ function MainTabs() {
         headerStyle: { backgroundColor: colors.neutral300 },
         headerTitleStyle: { color: colors.typography },
         headerShadowVisible: false,
-        headerRight: () => <AccountHeaderButton />,
+        headerRight: () => <HeaderControls />,
         tabBarActiveTintColor: colors.primary500,
         tabBarInactiveTintColor: colors.gray300,
         tabBarStyle: { backgroundColor: colors.neutral100 },
@@ -144,13 +163,18 @@ export default function RootNavigator() {
             options={{
               headerShown: true,
               title: t('results.title'),
+              headerRight: () => <HeaderControls />,
               presentation: 'modal'
             }}
           />
           <Stack.Screen
             name="NoteDetail"
             component={NoteDetailScreen}
-            options={{ headerShown: true, title: t('notes.detailTitle') }}
+            options={{
+              headerShown: true,
+              title: t('notes.detailTitle'),
+              headerRight: () => <HeaderControls />
+            }}
           />
           <Stack.Screen
             name="Account"
@@ -158,6 +182,7 @@ export default function RootNavigator() {
             options={{
               headerShown: true,
               title: t('account.title'),
+              headerRight: () => <HeaderControls />,
               presentation: 'modal'
             }}
           />
@@ -172,5 +197,6 @@ export default function RootNavigator() {
 }
 
 const styles = StyleSheet.create({
-  headerButton: { paddingHorizontal: 16 }
+  headerButton: { paddingHorizontal: 16 },
+  headerControls: { flexDirection: 'row', alignItems: 'center' }
 });
