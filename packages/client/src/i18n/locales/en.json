@@ -227,7 +227,8 @@
       "bundleEmbedded": "Built in",
       "updates": "Updates",
       "feedbackQueue": "Feedback queued",
-      "feedbackError": "Last upload"
+      "feedbackError": "Last upload",
+      "feedbackRecording": "Last recording"
     }
   },
   "updates": {

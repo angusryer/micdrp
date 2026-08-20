@@ -536,6 +536,18 @@ export default function AccountScreen(_props: Props): React.JSX.Element {
               {install ? String(install.queuedClips) : '—'}
             </Text>
           </View>
+          {install?.lastRecordingError ? (
+            <View style={[styles.row, { borderBottomColor: 'transparent' }]}>
+              <Text style={[styles.rowLabel, { color: colors.typography }]}>
+                {t('settings.about.feedbackRecording')}
+              </Text>
+              <Text
+                numberOfLines={3}
+                style={[styles.rowValue, { color: colors.error, flexShrink: 1 }]}>
+                {install.lastRecordingError}
+              </Text>
+            </View>
+          ) : null}
           {install?.lastUploadError ? (
             <View style={[styles.row, { borderBottomColor: 'transparent' }]}>
               <Text style={[styles.rowLabel, { color: colors.typography }]}>

@@ -13,6 +13,7 @@ import { readUpdatesConfig } from './config';
 import { resolveEligibility } from './eligibility';
 import { runningBundle } from './bundle';
 import { lastUploadError, listPending } from '../dogfood/upload';
+import { lastRecordingError } from '../dogfood/session';
 import type { InstallDescription } from './types';
 
 export async function describeInstall(): Promise<InstallDescription> {
@@ -23,6 +24,7 @@ export async function describeInstall(): Promise<InstallDescription> {
     bundleId: runningBundle(),
     eligibility: await resolveEligibility(),
     queuedClips: listPending().length,
-    lastUploadError: lastUploadError()
+    lastUploadError: lastUploadError(),
+    lastRecordingError: lastRecordingError()
   };
 }

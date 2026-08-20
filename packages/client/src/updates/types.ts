@@ -43,6 +43,8 @@ export type InstallDescription = {
   queuedClips: number;
   /** Why the last clip upload failed, if it did. */
   lastUploadError: string | null;
+  /** Why the last attempt to start recording failed, if it did. */
+  lastRecordingError: string | null;
 };
 
 /** Where a downloaded bundle sits in the install lifecycle. */

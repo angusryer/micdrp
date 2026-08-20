@@ -28,6 +28,19 @@ export type FinishedClip = {
   trail: ReturnType<ScreenTrail['entries']>;
 };
 
+/**
+ * Why the last attempt to start recording failed.
+ *
+ * A refused start currently shows nothing at all: the control returns to idle
+ * and looks like a dead button. Settings reads this so the reason is visible
+ * on the device.
+ */
+let lastStartError: string | null = null;
+
+export function lastRecordingError(): string | null {
+  return lastStartError;
+}
+
 export class DogfoodSession {
   private readonly trail = new ScreenTrail();
   private recorder: AudioRecorder | null = null;
@@ -64,7 +77,12 @@ export class DogfoodSession {
    * serves one at a time and a take cannot be sung again (INV-DOG-001).
    */
   async start(route: string): Promise<boolean> {
-    if (this.state !== 'idle' || isBusy()) {
+    if (this.state !== 'idle') {
+      lastStartError = `already ${this.state}`;
+      return false;
+    }
+    if (isBusy()) {
+      lastStartError = 'microphone busy with a take';
       return false;
     }
 
@@ -72,7 +90,13 @@ export class DogfoodSession {
     // asking fails, the state falls back to idle, and the control shows
     // nothing — which reads as a dead button rather than as a prompt being
     // answered.
-    if (!(await audioEngine.requestPermission())) {
+    try {
+      if (!(await audioEngine.requestPermission())) {
+        lastStartError = 'microphone permission refused';
+        return false;
+      }
+    } catch (error) {
+      lastStartError = `permission check failed: ${String(error)}`;
       return false;
     }
 
@@ -85,10 +109,18 @@ export class DogfoodSession {
       subDirectory: CLIP_SUBDIRECTORY,
       channelCount: 1
     });
-    const started = await recorder.start();
-    if (started.status === 'error') {
+    let started;
+    try {
+      started = await recorder.start();
+    } catch (error) {
+      lastStartError = `recorder threw: ${String(error)}`;
       return false;
     }
+    if (started.status === 'error') {
+      lastStartError = `recorder refused: ${started.message}`;
+      return false;
+    }
+    lastStartError = null;
     this.recorder = recorder;
     this.state = 'recording';
     this.accumulatedMs = 0;
@@ -147,7 +179,15 @@ export class DogfoodSession {
     this.trail.reset();
 
     const audioPath = result.status === 'success' ? result.paths[0] : undefined;
-    if (!audioPath || durationMs <= 0) {
+    if (!audioPath) {
+      lastStartError =
+        result.status === 'error'
+          ? `stop failed: ${result.message}`
+          : 'stop produced no file';
+      return null;
+    }
+    if (durationMs <= 0) {
+      lastStartError = 'clip had no duration';
       return null;
     }
     return { audioPath, durationMs, trail };
