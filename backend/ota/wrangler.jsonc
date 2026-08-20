@@ -1,13 +1,13 @@
 {
   // The update server for the `updates` domain. See worker.ts.
   //
-  // The two ids below are filled in by `scripts/ota-provision.sh`, which
-  // creates the D1 database and the R2 bucket and writes what Cloudflare
-  // assigns back here. They are account-specific, so they are not guessable
-  // and not worth writing by hand.
+  // account_id is pinned so a deploy cannot land in the wrong Cloudflare
+  // account. There is more than one on this machine, and the ambient
+  // CLOUDFLARE_API_TOKEN belongs to a different project — see the README.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "micdrp-ota",
   "main": "worker.ts",
+  "account_id": "de2dda27b551c02cc87ab317a7e5611e",
   "compatibility_date": "2026-08-01",
 
   "observability": {
@@ -18,7 +18,7 @@
     {
       "binding": "DB",
       "database_name": "micdrp-ota",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+      "database_id": "b4617106-8d65-4a4f-858e-cf2bf92a5ee6"
     }
   ],
 
