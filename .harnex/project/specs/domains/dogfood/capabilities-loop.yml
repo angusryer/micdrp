@@ -85,7 +85,7 @@ capabilities:
         it that are installed per machine rather than committed
     postconditions:
       - the agent is given the access it needs to read, edit and verify
-        within the worktree, and nothing beyond it
+        within its checkout, and nothing beyond it
       - the spec is updated before the code, as for any other change
       - preflight passes, or the request is abandoned
       - an abandoned request leaves the working tree as it was found

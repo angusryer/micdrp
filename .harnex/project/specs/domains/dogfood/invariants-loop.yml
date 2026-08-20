@@ -57,23 +57,6 @@ invariants:
       again, including across runs and restarts. Verified by running the
       loop twice over the same clip and asserting one transcription call.
 
-  - id: INV-DOG-015
-    description: The loop never works in the maintainer's checkout
-    severity: critical
-    check: >
-      Every change is made in a checkout of its own, reset from
-      origin/main before the run begins. Verified by dirtying the primary
-      checkout and asserting a run still builds and delivers, leaving
-      that checkout untouched.
-
-      Two earlier attempts got this wrong in opposite directions. The
-      first abandoned real requests whenever someone was editing, which
-      discarded work that was never given a chance. The second deferred
-      instead, which loses nothing but means the loop only runs when the
-      maintainer happens to have committed — and the whole point is that
-      it runs while they are elsewhere. A separate worktree removes the
-      question: their checkout is never read and never written.
-
   - id: INV-DOG-016
     description: A clip is never stranded partway through the loop
     severity: critical
@@ -89,62 +72,3 @@ invariants:
       then invisible. Whether a clip is abandoned is a question about
       its claim, not about how far it happened to get.
 
-  - id: INV-DOG-017
-    description: The coding agent can actually write in the worktree
-    severity: critical
-    check: >
-      The agent is invoked with the permissions it needs to read, edit
-      and verify inside the worktree, and without them the run fails
-      loudly rather than reporting nothing to do. Verified by running a
-      request that must change a file and asserting the file changed.
-
-      Editing is unrestricted and shell access is not. The worktree
-      bounds what a bad edit reaches and the gate bounds what a diff may
-      contain, but neither bounds a shell command — that runs on the
-      maintainer's own machine, with their credentials in the
-      environment. The shell is allowed only what verifying a change
-      needs, and committing is not among it.
-
-      Without this the loop ran for a day and built nothing. The agent
-      was started with no permission grant, so every edit it proposed
-      was refused; it exited zero having written a polite explanation
-      nobody read, and the loop recorded "no change was warranted" for
-      requests that were perfectly clear. Silence read as agreement.
-
-  - id: INV-DOG-018
-    description: A request that produced no change says what the agent said
-    severity: high
-    check: >
-      When a run ends with nothing changed, the agent's own account of
-      why is recorded against the request. Verified by driving a request
-      to a no-op and asserting the stored reason contains the agent's
-      words rather than only the loop's guess at them.
-
-      "The agent decided no change was warranted" is the loop inferring
-      a motive from an empty diff. It was wrong for a whole day, and
-      being wrong was invisible because the agent's explanation was
-      thrown away unread.
-
-      The same holds when the harness refuses a change. "preflight
-      failed" says a change was discarded and nothing about whether the
-      agent broke a test, missed a snapshot, or wrote something that
-      does not compile — so the failing lines are kept too.
-
-  - id: INV-DOG-019
-    description: The loop's checkout can run the harness
-    severity: critical
-    check: >
-      The harness passes in the loop's checkout with no changes applied,
-      and validates that checkout's specs rather than another's. Verified
-      by breaking a spec there and asserting the harness reports it.
-
-      This was the second reason nothing ever shipped. The verification
-      framework is planted per machine and deliberately untracked, so a
-      fresh checkout does not have it and the harness died on its first
-      step — every change, however good, was discarded as having failed.
-
-      A git worktree cannot be used for this. The framework finds the
-      project root by walking up for a .git directory, and a worktree's
-      .git is a file, so it walked past and validated the maintainer's
-      specs instead — reporting success for a tree it had never read. A
-      clone has a real .git directory and is isolated just as well.

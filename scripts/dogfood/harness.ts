@@ -7,10 +7,21 @@
  * preflight dies on its first step. Every change the loop made, however good,
  * was discarded as having failed the harness (INV-DOG-019).
  *
- * Linked rather than copied so an upgrade on the maintainer's machine is
- * picked up without anything here needing to know.
+ * Copied, not linked. A symlink would be a way out of the isolated checkout:
+ * the agent edits with no path restriction, and a write through the link
+ * would land in the maintainer's own files while showing up in no diff the
+ * gate could inspect. Twenty megabytes a run is a small price for the
+ * isolation INV-DOG-015 promises actually being true.
  */
-import { lstatSync, symlinkSync, existsSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  lstatSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync
+} from 'node:fs';
 import { join } from 'node:path';
 
 /**
@@ -19,30 +30,43 @@ import { join } from 'node:path';
  * Kept to what verification actually reads. Memory and discovery are left
  * out: memory lives outside the project, and discovery is regenerated.
  */
-const LOCAL_PATHS = [
+const COPIED_PATHS = [
   '.harnex/framework',
   '.harnex/config.yml',
   '.harnex/version',
-  '.harnex/local',
-  'harnex'
+  '.harnex/local'
 ] as const;
 
-/** Point the checkout at the maintainer's installed harness. */
+/** The CLI entry point, a link into the framework beside it. */
+const CLI_LINK = 'harnex';
+const CLI_TARGET = '.harnex/framework/harness/harnex';
+
+/** Every path this plants, for the exclude rules below. */
+const PLANTED = [...COPIED_PATHS, CLI_LINK];
+
+/** Give the checkout its own copy of the maintainer's installed harness. */
 export async function linkLocalHarness(
   repo: string,
   checkout: string
 ): Promise<void> {
-  for (const path of LOCAL_PATHS) {
+  for (const path of COPIED_PATHS) {
     const source = join(repo, path);
     if (!existsSync(source)) {
       continue;
     }
-    // Replace rather than skip: a previous run may have linked a path that
-    // has since moved, and a dangling link is worse than none.
+    // Replaced rather than merged: a stale file from an older version left
+    // behind is harder to diagnose than a slow copy.
     clear(join(checkout, path));
-    symlinkSync(source, join(checkout, path));
+    cpSync(source, join(checkout, path), { recursive: true, dereference: true });
   }
-  ignoreLocalHarness(checkout);
+
+  // Relative, so it resolves to the copy in this checkout and never escapes.
+  clear(join(checkout, CLI_LINK));
+  if (existsSync(join(checkout, CLI_TARGET))) {
+    symlinkSync(CLI_TARGET, join(checkout, CLI_LINK));
+  }
+
+  ignorePlanted(checkout);
 }
 
 /**
@@ -69,14 +93,14 @@ function clear(target: string): void {
  * Hide what was just planted from git.
  *
  * The maintainer's checkout excludes these in .git/info/exclude, which git
- * clone does not copy — so without this every link shows as untracked, the
- * tree is never clean, and each request is abandoned before it starts. That
- * is a whole run wasted on files the loop itself put there.
+ * clone does not copy — so without this every planted path shows as
+ * untracked, the tree is never clean, and each request is abandoned before
+ * it starts. That is a whole run spent refusing to touch files the loop
+ * itself had just put there.
  */
-function ignoreLocalHarness(checkout: string): void {
-  const rules = LOCAL_PATHS.map((path) => `/${path}`).join('\n');
+function ignorePlanted(checkout: string): void {
   writeFileSync(
     join(checkout, '.git', 'info', 'exclude'),
-    `# Planted by the dogfood loop; see scripts/dogfood/harness.ts\n${rules}\n`
+    `# Planted by the dogfood loop; see scripts/dogfood/harness.ts\n${PLANTED.map((p) => `/${p}`).join('\n')}\n`
   );
 }
