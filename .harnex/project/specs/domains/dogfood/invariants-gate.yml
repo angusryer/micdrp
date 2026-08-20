@@ -1,0 +1,50 @@
+# What the gate must refuse. Split from invariants-loop.yml: deciding
+# whether a change may be made unattended is its own concern.
+invariants:
+  - id: INV-DOG-005
+    description: How a change is delivered follows from what it touches
+    severity: critical
+    check: >
+      A javascript request is delivered as an over-the-air bundle. A
+      native request is delivered as a TestFlight build and reported as
+      needing installation. An infrastructural or unknown request is
+      filed. Verified by gating a request of each kind and asserting the
+      delivery route each takes.
+
+      The first version filed everything but javascript, on the reasoning
+      that only javascript can be taken back. That confused two things.
+      Building a native change is no more dangerous than building any
+      other — what differs is the ending: it cannot reach a device over
+      the air, so it ends at TestFlight with the maintainer installing
+      it. And its recovery is manual, because the automatic rollback in
+      INV-UPD-003 protects a bundle that will not boot, not a binary.
+      Neither is a reason to refuse to make the change; both are reasons
+      to say clearly which route it took.
+
+  - id: INV-DOG-006
+    description: Credentials and the delivery pipeline are never edited unattended
+    severity: critical
+    check: >
+      A request touching signing material, secrets, env files, CI, the
+      release or publish scripts, or the update server is filed
+      regardless of its confidence or blast radius. Verified by proposing
+      such a request and asserting it is filed with a reason.
+
+      The guard is on credentials and on the pipeline, not on native
+      source. An earlier list protected packages/client/ios and android
+      wholesale — which is where every native change lives — so allowing
+      native changes and blocking those directories cancelled out, and
+      nothing native could ever have been built. What must not break is
+      the app's ability to ship at all, because that is the one failure
+      the loop cannot deliver its own fix for.
+
+  - id: INV-DOG-007
+    description: An uncertain reading is filed, never guessed at
+    severity: critical
+    check: >
+      A request below the confidence floor is filed with its reason and
+      the transcript span it came from, and is not built. Verified by
+      interpreting a deliberately vague remark and asserting nothing was
+      built. A transcript is a lossy record of a spoken thought; acting
+      confidently on a poor reading is how an automated loop does damage.
+

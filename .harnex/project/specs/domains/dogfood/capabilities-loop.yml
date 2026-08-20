@@ -82,10 +82,14 @@ capabilities:
       - the request is in state building
       - the working tree is clean
     postconditions:
+      - the agent is given the access it needs to read, edit and verify
+        within the worktree, and nothing beyond it
       - the spec is updated before the code, as for any other change
       - preflight passes, or the request is abandoned
       - an abandoned request leaves the working tree as it was found
       - preflight failing twice abandons rather than retrying forever
+      - a request that changed nothing records what the agent said about
+        why, not an inference drawn from the empty diff
 
   - name: dogfood.deliver_batch
     description: >

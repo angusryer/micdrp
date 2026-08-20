@@ -1,52 +1,5 @@
-# What must hold of the agent loop, and of what it is allowed to ship.
+# What must hold of the agent loop while it runs.
 invariants:
-  - id: INV-DOG-005
-    description: How a change is delivered follows from what it touches
-    severity: critical
-    check: >
-      A javascript request is delivered as an over-the-air bundle. A
-      native request is delivered as a TestFlight build and reported as
-      needing installation. An infrastructural or unknown request is
-      filed. Verified by gating a request of each kind and asserting the
-      delivery route each takes.
-
-      The first version filed everything but javascript, on the reasoning
-      that only javascript can be taken back. That confused two things.
-      Building a native change is no more dangerous than building any
-      other — what differs is the ending: it cannot reach a device over
-      the air, so it ends at TestFlight with the maintainer installing
-      it. And its recovery is manual, because the automatic rollback in
-      INV-UPD-003 protects a bundle that will not boot, not a binary.
-      Neither is a reason to refuse to make the change; both are reasons
-      to say clearly which route it took.
-
-  - id: INV-DOG-006
-    description: Credentials and the delivery pipeline are never edited unattended
-    severity: critical
-    check: >
-      A request touching signing material, secrets, env files, CI, the
-      release or publish scripts, or the update server is filed
-      regardless of its confidence or blast radius. Verified by proposing
-      such a request and asserting it is filed with a reason.
-
-      The guard is on credentials and on the pipeline, not on native
-      source. An earlier list protected packages/client/ios and android
-      wholesale — which is where every native change lives — so allowing
-      native changes and blocking those directories cancelled out, and
-      nothing native could ever have been built. What must not break is
-      the app's ability to ship at all, because that is the one failure
-      the loop cannot deliver its own fix for.
-
-  - id: INV-DOG-007
-    description: An uncertain reading is filed, never guessed at
-    severity: critical
-    check: >
-      A request below the confidence floor is filed with its reason and
-      the transcript span it came from, and is not built. Verified by
-      interpreting a deliberately vague remark and asserting nothing was
-      built. A transcript is a lossy record of a spoken thought; acting
-      confidently on a poor reading is how an automated loop does damage.
-
   - id: INV-DOG-008
     description: Nothing ships that the harness has not passed
     severity: critical
@@ -135,3 +88,39 @@ invariants:
       which nothing looked for again — the work was done, paid for, and
       then invisible. Whether a clip is abandoned is a question about
       its claim, not about how far it happened to get.
+
+  - id: INV-DOG-017
+    description: The coding agent can actually write in the worktree
+    severity: critical
+    check: >
+      The agent is invoked with the permissions it needs to read, edit
+      and verify inside the worktree, and without them the run fails
+      loudly rather than reporting nothing to do. Verified by running a
+      request that must change a file and asserting the file changed.
+
+      Editing is unrestricted and shell access is not. The worktree
+      bounds what a bad edit reaches and the gate bounds what a diff may
+      contain, but neither bounds a shell command — that runs on the
+      maintainer's own machine, with their credentials in the
+      environment. The shell is allowed only what verifying a change
+      needs, and committing is not among it.
+
+      Without this the loop ran for a day and built nothing. The agent
+      was started with no permission grant, so every edit it proposed
+      was refused; it exited zero having written a polite explanation
+      nobody read, and the loop recorded "no change was warranted" for
+      requests that were perfectly clear. Silence read as agreement.
+
+  - id: INV-DOG-018
+    description: A request that produced no change says what the agent said
+    severity: high
+    check: >
+      When a run ends with nothing changed, the agent's own account of
+      why is recorded against the request. Verified by driving a request
+      to a no-op and asserting the stored reason contains the agent's
+      words rather than only the loop's guess at them.
+
+      "The agent decided no change was warranted" is the loop inferring
+      a motive from an empty diff. It was wrong for a whole day, and
+      being wrong was invisible because the agent's explanation was
+      thrown away unread.

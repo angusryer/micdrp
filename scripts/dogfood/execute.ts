@@ -12,6 +12,7 @@ import { promisify } from 'node:util';
 // loader needs explicit extensions, and the barrel's own imports are
 // extensionless for Metro's benefit. This is the only file the loop needs.
 import type { ChangeRequestDto } from '../../packages/shared/src/dto/dogfood.ts';
+import { AGENT_ARGS, agentPrompt, lastWords } from './agent.ts';
 import { WORKTREE } from './worktree.ts';
 
 const run = promisify(execFile);
@@ -70,30 +71,22 @@ export async function executeRequest(
     return { built: false, reason: 'working tree was not clean' };
   }
 
-  const prompt =
-    `A spoken change request from the maintainer of this repository.\n\n` +
-    `What they asked for: ${request.summary}\n` +
-    `Their exact words: "${request.quote}"\n` +
-    (request.route ? `The screen they were looking at: ${request.route}\n` : '') +
-    `\nMake this change. Follow the repository's axioms: update the spec ` +
-    `before the code, keep files under 150 lines, and run the harness. ` +
-    `Do not touch signing material, secrets, CI, or the release scripts — ` +
-    `if the change would need any of those, make no change at all and say ` +
-    `why. Native code is fine to change; it simply ships as a build rather ` +
-    `than over the air.`;
-
+  let said = '';
   try {
-    await run('claude', ['-p', prompt], {
+    const { stdout } = await run('claude', [...AGENT_ARGS, '-p', agentPrompt(request)], {
       cwd: WORKTREE,
-      timeout: 20 * 60 * 1000
+      timeout: 20 * 60 * 1000,
+      maxBuffer: 32 * 1024 * 1024
     });
-  } catch {
+    said = lastWords(stdout);
+  } catch (error) {
     await restoreTree();
-    return { built: false, reason: 'the agent could not make the change' };
+    return { built: false, reason: `the agent could not make the change: ${String(error).slice(0, 200)}` };
   }
 
+  // Report what it said, not what an empty diff seems to mean (INV-DOG-018).
   if ((await changedPaths()).length === 0) {
-    return { built: false, reason: 'the agent decided no change was warranted' };
+    return { built: false, reason: `nothing changed — the agent said: ${said}` };
   }
 
   if (!(await preflightPasses())) {
