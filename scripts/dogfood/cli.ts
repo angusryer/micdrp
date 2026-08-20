@@ -66,6 +66,12 @@ async function main(): Promise<void> {
     const reason = isHalted();
     console.log(reason ? `halted: ${reason}` : 'running');
     console.log(isScheduled() ? `scheduled — log: ${LOG}` : 'not scheduled');
+    try {
+      const { stdout } = await run('tail', ['-n', '1', LOG]);
+      console.log(`last: ${stdout.trim() || '(no runs yet)'}`);
+    } catch {
+      console.log('last: (no log yet)');
+    }
     return;
   }
 

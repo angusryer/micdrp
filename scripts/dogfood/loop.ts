@@ -112,8 +112,13 @@ export async function runOnce(options: Options): Promise<boolean> {
   const runId = `run-${Date.now()}`;
   const clip = await claimOldest(pb, runId);
   if (!clip) {
+    // One line even when idle. A silent log is indistinguishable from a loop
+    // that has stopped, and the whole value of this running unattended is
+    // being able to trust that it is.
+    console.log(`${new Date().toISOString()} dogfood: nothing waiting`);
     return false;
   }
+  console.log(`${new Date().toISOString()} dogfood: working on ${clip.id}`);
 
   // Transcribe once and keep it: a re-run must not pay again (INV-DOG-013).
   let transcript = clip.transcript;
