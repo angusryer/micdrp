@@ -33,13 +33,36 @@ export async function restoreTree(): Promise<void> {
   await git(['clean', '-fd']);
 }
 
-export async function preflightPasses(): Promise<boolean> {
+/**
+ * Run the harness, and keep what it said when it refuses.
+ *
+ * A bare true/false here repeats the mistake that hid the permission bug for
+ * a day: an outcome with the reason thrown away. "preflight failed" tells the
+ * maintainer a change was discarded and nothing about whether the agent broke
+ * a test, missed a snapshot, or wrote something that does not compile.
+ */
+export async function preflight(): Promise<{ passed: boolean; output: string }> {
   try {
-    await run('yarn', ['preflight'], { cwd: WORKTREE, timeout: 10 * 60 * 1000 });
-    return true;
-  } catch {
-    return false;
+    await run('yarn', ['preflight'], {
+      cwd: WORKTREE,
+      timeout: 10 * 60 * 1000,
+      maxBuffer: 32 * 1024 * 1024
+    });
+    return { passed: true, output: '' };
+  } catch (error) {
+    const e = error as { stdout?: string; stderr?: string };
+    return { passed: false, output: failingLines(`${e.stdout ?? ''}\n${e.stderr ?? ''}`) };
   }
+}
+
+/** The lines a human would look for first in a failed harness run. */
+function failingLines(output: string): string {
+  const interesting = output
+    .split('\n')
+    .filter((line) => /✕|✗|FAIL|error TS|Error:|✖/.test(line))
+    .slice(0, 6)
+    .join('; ');
+  return interesting.slice(0, 400) || 'no failing line found in the output';
 }
 
 /** Repo-relative paths currently modified. */
@@ -89,9 +112,10 @@ export async function executeRequest(
     return { built: false, reason: `nothing changed — the agent said: ${said}` };
   }
 
-  if (!(await preflightPasses())) {
+  const harness = await preflight();
+  if (!harness.passed) {
     await restoreTree();
-    return { built: false, reason: 'preflight failed' };
+    return { built: false, reason: `preflight failed: ${harness.output}` };
   }
 
   return { built: true, reason: null };

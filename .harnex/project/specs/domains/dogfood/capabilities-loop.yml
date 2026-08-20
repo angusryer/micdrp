@@ -81,6 +81,8 @@ capabilities:
     preconditions:
       - the request is in state building
       - the working tree is clean
+      - the loop's checkout can run the harness, including the parts of
+        it that are installed per machine rather than committed
     postconditions:
       - the agent is given the access it needs to read, edit and verify
         within the worktree, and nothing beyond it

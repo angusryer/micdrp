@@ -61,7 +61,7 @@ invariants:
     description: The loop never works in the maintainer's checkout
     severity: critical
     check: >
-      Every change is made in a worktree of its own, reset from
+      Every change is made in a checkout of its own, reset from
       origin/main before the run begins. Verified by dirtying the primary
       checkout and asserting a run still builds and delivers, leaving
       that checkout untouched.
@@ -124,3 +124,27 @@ invariants:
       a motive from an empty diff. It was wrong for a whole day, and
       being wrong was invisible because the agent's explanation was
       thrown away unread.
+
+      The same holds when the harness refuses a change. "preflight
+      failed" says a change was discarded and nothing about whether the
+      agent broke a test, missed a snapshot, or wrote something that
+      does not compile — so the failing lines are kept too.
+
+  - id: INV-DOG-019
+    description: The loop's checkout can run the harness
+    severity: critical
+    check: >
+      The harness passes in the loop's checkout with no changes applied,
+      and validates that checkout's specs rather than another's. Verified
+      by breaking a spec there and asserting the harness reports it.
+
+      This was the second reason nothing ever shipped. The verification
+      framework is planted per machine and deliberately untracked, so a
+      fresh checkout does not have it and the harness died on its first
+      step — every change, however good, was discarded as having failed.
+
+      A git worktree cannot be used for this. The framework finds the
+      project root by walking up for a .git directory, and a worktree's
+      .git is a file, so it walked past and validated the maintainer's
+      specs instead — reporting success for a tree it had never read. A
+      clone has a real .git directory and is isolated just as well.

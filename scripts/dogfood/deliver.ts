@@ -13,7 +13,7 @@ import { promisify } from 'node:util';
 // extensionless for Metro's benefit. This is the only file the loop needs.
 import { shouldPublishBundle, type ChangeRequestDto } from '../../packages/shared/src/dto/dogfood.ts';
 
-import { changedPaths, preflightPasses, restoreTree } from './execute.ts';
+import { changedPaths, preflight, restoreTree } from './execute.ts';
 import { WORKTREE } from './worktree.ts';
 
 const run = promisify(execFile);
@@ -70,13 +70,14 @@ export async function deliverBatch(
   }
 
   // The whole batch, together, before anything is written to history.
-  if (!(await preflightPasses())) {
+  const harness = await preflight();
+  if (!harness.passed) {
     await restoreTree();
     return {
       delivered: false,
       published: false,
       route: null,
-      reason: 'batch preflight failed'
+      reason: `batch preflight failed: ${harness.output}`
     };
   }
 
