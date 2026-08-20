@@ -13,6 +13,7 @@
  */
 import { AudioRecorder, FileDirectory, FileFormat } from 'react-native-audio-api';
 
+import { audioEngine } from '../audio/AudioEngine';
 import { isBusy } from '../app/activity';
 import { CLIP_CAP_MS, CLIP_SUBDIRECTORY, COUNTDOWN_AT_MS } from './config';
 import { ScreenTrail } from './trail';
@@ -66,6 +67,15 @@ export class DogfoodSession {
     if (this.state !== 'idle' || isBusy()) {
       return false;
     }
+
+    // Settle the permission first. Starting the recorder while iOS is still
+    // asking fails, the state falls back to idle, and the control shows
+    // nothing — which reads as a dead button rather than as a prompt being
+    // answered.
+    if (!(await audioEngine.requestPermission())) {
+      return false;
+    }
+
     const recorder = new AudioRecorder();
     // Speech, not pitch: the engine's Measurement mode disables the input
     // processing that makes a voice transcribable.

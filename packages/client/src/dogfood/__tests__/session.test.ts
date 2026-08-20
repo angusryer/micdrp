@@ -2,7 +2,17 @@
  * The recording session — INV-DOG-001 (singing wins) and INV-DOG-003
  * (stopping and running out of time are the same thing).
  */
+import { audioEngine } from '../../audio/AudioEngine';
 import { markBusy, resetBusyForTests } from '../../app/activity';
+
+// The session asks the engine for the microphone before recording. Mocked
+// here rather than globally: AudioEngine has its own tests needing the real
+// module.
+jest.mock('../../audio/AudioEngine', () => ({
+  __esModule: true,
+  audioEngine: { requestPermission: jest.fn(() => Promise.resolve(true)) }
+}));
+
 import { DogfoodSession } from '../session';
 import { CLIP_CAP_MS, COUNTDOWN_AT_MS } from '../config';
 
@@ -12,7 +22,12 @@ const clockAt = (start: number) => {
   return { now: () => now, advance: (ms: number) => (now += ms) };
 };
 
-beforeEach(() => resetBusyForTests());
+const permissionMock = jest.mocked(audioEngine.requestPermission);
+
+beforeEach(() => {
+  resetBusyForTests();
+  permissionMock.mockReset().mockResolvedValue(true);
+});
 
 describe('DogfoodSession', () => {
   it('starts recording and opens the trail on the current screen', async () => {
@@ -130,5 +145,21 @@ describe('DogfoodSession', () => {
   it('stopping when nothing is recording does nothing', async () => {
     const session = new DogfoodSession(() => 1000);
     expect(await session.stop()).toBeNull();
+  });
+
+  it('settles the microphone permission before starting', async () => {
+    // The first tap on a fresh install raised the iOS prompt mid-start, the
+    // recorder failed while it was still showing, and the control fell back
+    // to idle — indistinguishable from a dead button.
+    const session = new DogfoodSession(() => 1000);
+    await session.start('Notes');
+    expect(permissionMock).toHaveBeenCalled();
+  });
+
+  it('does not record when the permission is refused', async () => {
+    permissionMock.mockResolvedValue(false);
+    const session = new DogfoodSession(() => 1000);
+    expect(await session.start('Notes')).toBe(false);
+    expect(session.snapshot().state).toBe('idle');
   });
 });

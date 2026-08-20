@@ -9,6 +9,15 @@
 import { resetBusyForTests } from '../../app/activity';
 import { activeSession, resetActiveSessionForTests } from '../activeSession';
 
+// The session asks the engine for the microphone before recording. Mocked
+// here rather than globally: AudioEngine has its own tests that need the real
+// module.
+jest.mock('../../audio/AudioEngine', () => ({
+  __esModule: true,
+  audioEngine: { requestPermission: jest.fn(() => Promise.resolve(true)) }
+}));
+
+
 beforeEach(() => {
   resetBusyForTests();
   resetActiveSessionForTests();
