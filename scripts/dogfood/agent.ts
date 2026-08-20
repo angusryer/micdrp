@@ -8,42 +8,10 @@
 // loader needs explicit extensions, and the barrel's own imports are
 // extensionless for Metro's benefit.
 import type { ChangeRequestDto } from '../../packages/shared/src/dto/dogfood.ts';
+import { agentPermissionArgs } from '../../packages/shared/src/dto/dogfoodAgent.ts';
 
-/**
- * What the coding agent is allowed to do (INV-DOG-017).
- *
- * Without a grant it cannot write at all: every edit is refused, it exits
- * zero having explained itself, and an empty diff comes back looking like a
- * considered decision to change nothing. The loop ran a full day on that
- * misreading and built nothing.
- *
- * Editing is unrestricted; shell access is not. The worktree bounds what a
- * bad edit can reach, and the gate bounds what a diff may contain — but
- * neither bounds a shell command, which runs on the maintainer's own machine
- * with their credentials in the environment. So the shell is allowed only
- * the commands verifying a change actually needs.
- *
- * Committing is deliberately absent. Delivery is the loop's job, and an
- * agent that commits leaves a clean tree that reads as having done nothing.
- */
-const AGENT_TOOLS = [
-  'Read',
-  'Edit',
-  'Write',
-  'Glob',
-  'Grep',
-  'Bash(yarn *)',
-  'Bash(npx *)',
-  'Bash(node *)',
-  'Bash(sh scripts/*)',
-  'Bash(./.harnex/*)',
-  'Bash(harnex *)',
-  'Bash(git status*)',
-  'Bash(git diff*)',
-  'Bash(git log*)'
-].join(',');
-
-export const AGENT_ARGS = ['--permission-mode', 'acceptEdits', '--allowedTools', AGENT_TOOLS];
+/** What the agent may do (INV-DOG-017). Policy lives beside the gate. */
+export const AGENT_ARGS = agentPermissionArgs();
 
 /** Keep the agent's own account of a run; the loop must not guess at it. */
 export function lastWords(output: string): string {
