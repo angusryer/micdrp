@@ -1,0 +1,20 @@
+{
+  // The agent loop runs on Node, not React Native, and it is the riskiest
+  // code in the repository — it commits to main and publishes to a phone
+  // unattended. It gets its own project so preflight actually checks it;
+  // without this it sat outside every tsconfig and was never compiled.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": true,
+    "paths": { "shared": ["../../packages/shared/src/index.ts"] }
+  },
+  "include": ["*.ts"]
+}

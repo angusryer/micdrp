@@ -16,13 +16,11 @@ export type ClipState =
   | 'pending_upload'
   | 'uploaded';
 
-/** One screen, and when during the clip it was on show. */
-export type ScreenVisit = {
-  /** The navigator route name, not a human title. */
-  route: string;
-  /** Offset from the start of the clip, excluding time spent paused. */
-  atMs: number;
-};
+// ScreenVisit lives in `shared`: the client writes it, the server stores it,
+// and the agent loop reads it, so it cannot be defined here.
+import type { ScreenVisit } from 'shared';
+
+export type { ScreenVisit };
 
 /**
  * A finished recording waiting to go up.

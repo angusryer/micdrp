@@ -87,7 +87,8 @@ export async function uploadOne(clip: PendingClip): Promise<boolean> {
 export async function flushPending(): Promise<number> {
   let sent = 0;
   for (const clip of readQueue()) {
-    // eslint-disable-next-line no-await-in-loop -- ordered, and stops on failure
+    // Sequential on purpose: ordered oldest-first, and stops at the first
+    // failure rather than hammering a dead connection with the whole backlog.
     if (!(await uploadOne(clip))) {
       break;
     }

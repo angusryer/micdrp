@@ -41,6 +41,11 @@ step "specs validate (axiom 1 — the specs are the contract)"
 
 step "typecheck"
 (cd packages/client && npx tsc --noEmit)
+# The dogfood loop and the update Worker run outside the client's tsconfig.
+# Both are unattended machinery — the loop commits to main and publishes to a
+# phone — so they are checked here rather than trusted.
+npx tsc --noEmit -p scripts/dogfood/tsconfig.json
+npx tsc --noEmit -p backend/ota/tsconfig.json
 
 step "lint"
 yarn lint

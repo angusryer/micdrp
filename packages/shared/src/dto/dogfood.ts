@@ -12,6 +12,19 @@
  * Spec: .harnex/project/specs/domains/dogfood/
  */
 
+/**
+ * One screen, and when during a clip it was on show.
+ *
+ * Offsets exclude time spent paused, so a trail offset and a transcript
+ * timestamp refer to the same moment — which is what lets an interpretation
+ * resolve a request to the screen it was about (INV-DOG-002).
+ */
+export interface ScreenVisit {
+  /** The navigator route name, not a human title. */
+  route: string;
+  atMs: number;
+}
+
 /** What acting on a request would have to touch. */
 export type BlastRadius = 'javascript' | 'native' | 'infrastructure' | 'unknown';
 
