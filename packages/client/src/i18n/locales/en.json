@@ -221,7 +221,11 @@
     "about": {
       "appVersion": "App version",
       "platform": "Platform",
-      "defaultSampleRate": "Default sample rate"
+      "defaultSampleRate": "Default sample rate",
+      "buildNumber": "Build",
+      "bundle": "JS bundle",
+      "bundleEmbedded": "Built in",
+      "updates": "Updates"
     }
   },
   "updates": {

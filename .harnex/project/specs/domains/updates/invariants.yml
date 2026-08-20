@@ -12,6 +12,13 @@ invariants:
       same binary TestFlight ran, carrying the same baked-in values, so
       no environment flag can tell them apart.
 
+      The receipt lives in the app's DATA container, beside Documents —
+      not in the app bundle. Looking for it in the bundle finds nothing,
+      resolves every install to unknown, and silently disables updates
+      everywhere: the app never asks, so no bundle can ever reach it,
+      including the one that would fix the check. Build 6 shipped with
+      exactly that fault and needed build 7 to recover.
+
   - id: INV-UPD-002
     description: A bundle is never offered to a binary that cannot run it
     severity: critical
@@ -85,3 +92,19 @@ invariants:
       singer. Verified by driving each failure and asserting no visible
       error and no state change. The update path is not a feature the
       singer asked for, so its failures are not the singer's problem.
+
+  - id: INV-UPD-009
+    description: The app can say what it is running
+    severity: high
+    check: >
+      Settings shows the version and build number the binary was built
+      with, the over-the-air bundle in use, and whether this install is
+      eligible for updates with the reason. Verified by asserting each is
+      rendered from the runtime source rather than from package.json.
+
+      Without this, diagnosing why an update did not arrive means
+      guessing from the outside. Build 6 was unreachable by any bundle
+      and there was no way to tell from the device — the version on
+      screen came from package.json, which is not what the build was
+      stamped with, and neither the build number nor the running bundle
+      appeared at all.

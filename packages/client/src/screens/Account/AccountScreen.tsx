@@ -13,7 +13,7 @@
  * Presentational over three hooks (`useProfile`, `useSettings`,
  * `useAnalysisSettings`) + the ThemeProvider. No audio-path work.
  */
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -34,6 +34,7 @@ import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import type { RootStackParamList } from '../../navigation/types';
 import { version as PACKAGE_VERSION } from '../../../package.json';
+import { describeInstall, type InstallDescription } from '../../updates';
 import { useProfile } from './useProfile';
 import { useSettings } from './useSettings';
 import { useAnalysisSettings } from './useAnalysisSettings';
@@ -164,6 +165,21 @@ function clamp(value: number, min: number, max: number): number {
 export default function AccountScreen(_props: Props): React.JSX.Element {
   const { colors, palette, setPalette } = useTheme();
   const { t } = useTranslation();
+
+  // What this install actually is. Read here rather than shown from
+  // package.json, which is not what the build was stamped with (INV-UPD-009).
+  const [install, setInstall] = useState<InstallDescription | null>(null);
+  useEffect(() => {
+    let live = true;
+    void describeInstall().then((described) => {
+      if (live) {
+        setInstall(described);
+      }
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   const {
     email,
@@ -477,7 +493,33 @@ export default function AccountScreen(_props: Props): React.JSX.Element {
               {t('settings.about.appVersion')}
             </Text>
             <Text style={[styles.rowValue, { color: colors.gray300 }]}>
-              {PACKAGE_VERSION}
+              {install?.appVersion || PACKAGE_VERSION}
+            </Text>
+          </View>
+          <View style={[styles.row, { borderBottomColor: 'transparent' }]}>
+            <Text style={[styles.rowLabel, { color: colors.typography }]}>
+              {t('settings.about.buildNumber')}
+            </Text>
+            <Text style={[styles.rowValue, { color: colors.gray300 }]}>
+              {install ? String(install.buildNumber) : '—'}
+            </Text>
+          </View>
+          <View style={[styles.row, { borderBottomColor: 'transparent' }]}>
+            <Text style={[styles.rowLabel, { color: colors.typography }]}>
+              {t('settings.about.bundle')}
+            </Text>
+            <Text style={[styles.rowValue, { color: colors.gray300 }]}>
+              {install?.bundleId
+                ? install.bundleId.slice(0, 8)
+                : t('settings.about.bundleEmbedded')}
+            </Text>
+          </View>
+          <View style={[styles.row, { borderBottomColor: 'transparent' }]}>
+            <Text style={[styles.rowLabel, { color: colors.typography }]}>
+              {t('settings.about.updates')}
+            </Text>
+            <Text style={[styles.rowValue, { color: colors.gray300 }]}>
+              {install?.eligibility.reason ?? '—'}
             </Text>
           </View>
           <View style={[styles.row, { borderBottomColor: 'transparent' }]}>

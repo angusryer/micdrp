@@ -53,7 +53,11 @@ describe('updatesResolver.checkUpdate', () => {
       VERSION_NUMBER: '1.0.0',
       BUILD_NUMBER: '4'
     });
-    eligibilityMock.mockResolvedValue({ isEligible: true, reason: 'testflight' });
+    eligibilityMock.mockResolvedValue({
+      isEligible: true,
+      reason: 'testflight',
+      receiptPath: '/data/StoreKit/sandboxReceipt'
+    });
   });
 
   it('ACC-UPD-001: an eligible install asks, and reports what it is told', async () => {
@@ -72,7 +76,11 @@ describe('updatesResolver.checkUpdate', () => {
   });
 
   it('ACC-UPD-002: an ineligible install issues no request at all', async () => {
-    eligibilityMock.mockResolvedValue({ isEligible: false, reason: 'app_store' });
+    eligibilityMock.mockResolvedValue({
+      isEligible: false,
+      reason: 'app_store',
+      receiptPath: '/data/StoreKit/receipt'
+    });
     await expect(check()).resolves.toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
   });

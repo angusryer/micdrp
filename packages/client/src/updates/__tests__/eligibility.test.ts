@@ -12,10 +12,18 @@ import { resolveEligibility } from '../eligibility';
 
 const existsMock = exists as jest.MockedFunction<typeof exists>;
 
-/** Present exactly one receipt, as StoreKit would. */
-const withReceipt = (name: 'sandboxReceipt' | 'receipt' | null): void => {
+/**
+ * Present exactly one receipt, in the data container where iOS actually puts
+ * it — beside Documents, not inside the app bundle. Looking in the bundle is
+ * what shipped in build 6 and disabled updates everywhere.
+ */
+const withReceipt = (
+  name: 'sandboxReceipt' | 'receipt' | null,
+  where: 'data' | 'bundle' = 'data'
+): void => {
+  const root = where === 'data' ? '/tmp/micdrp' : '/tmp/micdrp/micdrp.app';
   existsMock.mockImplementation((path: string) =>
-    Promise.resolve(name !== null && path.endsWith(`StoreKit/${name}`))
+    Promise.resolve(name !== null && path === `${root}/StoreKit/${name}`)
   );
 };
 
@@ -37,7 +45,7 @@ describe('resolveEligibility', () => {
 
   it('ACC-UPD-001: a sandbox receipt means TestFlight, and is eligible', async () => {
     withReceipt('sandboxReceipt');
-    await expect(resolveEligibility()).resolves.toEqual({
+    await expect(resolveEligibility()).resolves.toMatchObject({
       isEligible: true,
       reason: 'testflight'
     });
@@ -45,7 +53,7 @@ describe('resolveEligibility', () => {
 
   it('ACC-UPD-002: a store receipt means App Store, and is not eligible', async () => {
     withReceipt('receipt');
-    await expect(resolveEligibility()).resolves.toEqual({
+    await expect(resolveEligibility()).resolves.toMatchObject({
       isEligible: false,
       reason: 'app_store'
     });
@@ -54,7 +62,7 @@ describe('resolveEligibility', () => {
   it('ACC-UPD-003: a development build is not eligible', async () => {
     dev.__DEV__ = true;
     withReceipt('sandboxReceipt');
-    await expect(resolveEligibility()).resolves.toEqual({
+    await expect(resolveEligibility()).resolves.toMatchObject({
       isEligible: false,
       reason: 'development'
     });
@@ -64,7 +72,7 @@ describe('resolveEligibility', () => {
 
   it('ACC-UPD-004: no readable receipt is not eligible', async () => {
     withReceipt(null);
-    await expect(resolveEligibility()).resolves.toEqual({
+    await expect(resolveEligibility()).resolves.toMatchObject({
       isEligible: false,
       reason: 'unknown'
     });
@@ -72,7 +80,7 @@ describe('resolveEligibility', () => {
 
   it('fails closed when the bundle directory cannot be read', async () => {
     existsMock.mockRejectedValue(new Error('EACCES'));
-    await expect(resolveEligibility()).resolves.toEqual({
+    await expect(resolveEligibility()).resolves.toMatchObject({
       isEligible: false,
       reason: 'unknown'
     });
@@ -81,9 +89,47 @@ describe('resolveEligibility', () => {
   it('is not eligible on Android, which has no equivalent signal', async () => {
     Platform.OS = 'android';
     withReceipt('sandboxReceipt');
-    await expect(resolveEligibility()).resolves.toEqual({
+    await expect(resolveEligibility()).resolves.toMatchObject({
       isEligible: false,
       reason: 'unknown'
     });
+  });
+});
+
+describe('where the receipt is looked for — INV-UPD-001', () => {
+  const dev = globalThis as unknown as { __DEV__: boolean };
+
+  beforeEach(() => {
+    existsMock.mockReset();
+    dev.__DEV__ = false;
+    Platform.OS = 'ios';
+  });
+
+  it('ACC-UPD-030: finds it in the data container, beside Documents', async () => {
+    // This is the regression. Build 6 looked only in the app bundle, found
+    // nothing, and so never asked for an update at all.
+    withReceipt('sandboxReceipt', 'data');
+    await expect(resolveEligibility()).resolves.toMatchObject({
+      isEligible: true,
+      reason: 'testflight'
+    });
+  });
+
+  it('still finds it in the bundle, if that is where it turns up', async () => {
+    withReceipt('sandboxReceipt', 'bundle');
+    await expect(resolveEligibility()).resolves.toMatchObject({
+      reason: 'testflight'
+    });
+  });
+
+  it('reports which receipt decided it', async () => {
+    withReceipt('sandboxReceipt', 'data');
+    const verdict = await resolveEligibility();
+    expect(verdict.receiptPath).toBe('/tmp/micdrp/StoreKit/sandboxReceipt');
+  });
+
+  it('reports no receipt when none was found', async () => {
+    withReceipt(null);
+    expect((await resolveEligibility()).receiptPath).toBeNull();
   });
 });

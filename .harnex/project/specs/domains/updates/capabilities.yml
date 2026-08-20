@@ -145,3 +145,21 @@ capabilities:
       - the failed bundle moves to state rolled_back
       - the app loads the last bundle with bootSucceeded true
       - the rolled-back bundleId is never offered to this install again
+
+  - name: updates.describe_install
+    description: >
+      Report what this install is: the version and build it was built
+      with, the bundle running on top, and whether it may take updates.
+      Read by settings so the question can be answered from the device
+      rather than inferred from outside it.
+    actor: singer
+    implemented_by: packages/client/src/updates/describe.ts
+    parameters:
+      required: []
+    preconditions: []
+    postconditions:
+      - the version and build come from the values compiled into the
+        binary, never from package.json
+      - the bundle is reported as embedded when the binary's own is running
+      - the eligibility verdict is reported with its reason
+      - nothing here performs a network request

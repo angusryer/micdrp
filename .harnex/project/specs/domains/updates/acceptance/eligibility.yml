@@ -62,3 +62,31 @@ acceptance:
     maps_to:
       capability: updates.resolve_eligibility
       invariants: [INV-UPD-001]
+
+  - id: ACC-UPD-030
+    interface: module
+    title: The receipt is looked for where iOS actually puts it
+    given:
+      - the install is a testflight install
+      - the binary is version 1.0.0 build 7
+    when:
+      - the app checks for an update
+    then:
+      - the decision is none
+    maps_to:
+      capability: updates.resolve_eligibility
+      invariants: [INV-UPD-001]
+
+  - id: ACC-UPD-031
+    interface: ui
+    title: The app reports the build and bundle it is running
+    given:
+      - the install is a testflight install
+      - the binary is version 1.0.0 build 7
+    when:
+      - the app checks for an update
+    then:
+      - the decision is none
+    maps_to:
+      capability: updates.describe_install
+      invariants: [INV-UPD-009]
