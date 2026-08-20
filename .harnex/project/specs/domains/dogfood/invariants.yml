@@ -61,15 +61,21 @@ invariants:
       to say clearly which route it took.
 
   - id: INV-DOG-006
-    description: The loop never touches what it cannot be trusted with
+    description: Credentials and the delivery pipeline are never edited unattended
     severity: critical
     check: >
-      A request whose change would touch signing material, secrets, CI
-      configuration, or the release scripts is filed regardless of its
-      confidence or blast radius. Verified by proposing such a request
-      and asserting it is filed with a reason. These are the changes
-      whose failure mode is not a bad screen but a lost credential or an
-      unshippable app.
+      A request touching signing material, secrets, env files, CI, the
+      release or publish scripts, or the update server is filed
+      regardless of its confidence or blast radius. Verified by proposing
+      such a request and asserting it is filed with a reason.
+
+      The guard is on credentials and on the pipeline, not on native
+      source. An earlier list protected packages/client/ios and android
+      wholesale — which is where every native change lives — so allowing
+      native changes and blocking those directories cancelled out, and
+      nothing native could ever have been built. What must not break is
+      the app's ability to ship at all, because that is the one failure
+      the loop cannot deliver its own fix for.
 
   - id: INV-DOG-007
     description: An uncertain reading is filed, never guessed at

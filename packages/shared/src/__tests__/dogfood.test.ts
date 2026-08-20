@@ -80,7 +80,6 @@ describe('gateRequest', () => {
     ['scripts/release.sh'],
     ['scripts/ota.sh'],
     ['.github/workflows/release-ios.yml'],
-    ['packages/client/ios/micdrp/AppDelegate.mm'],
     ['packages/client/.env.production'],
     ['backend/ota/worker.ts']
   ])('INV-DOG-006: files a change to %s at any confidence', (path) => {
@@ -110,15 +109,34 @@ describe('gateRequest', () => {
     expect(verdict.reason).toBe('protected path');
   });
 
-  it('a native change is still refused when it touches signing', () => {
+  it('a native source file is buildable, and goes to TestFlight', () => {
+    // An earlier list protected packages/client/ios wholesale, which is where
+    // every native change lives — so enabling native changes and blocking
+    // that directory cancelled out.
     const verdict = gateRequest(
       request({
         blastRadius: 'native',
-        paths: ['packages/client/ios/micdrp/AppDelegate.mm'],
+        paths: ['packages/client/ios/micdrp/AppDelegate.mm']
+      })
+    );
+    expect(verdict).toMatchObject({ mayBuild: true, route: 'testflight' });
+  });
+
+  it('signing material is refused even inside a native change', () => {
+    const verdict = gateRequest(
+      request({
+        blastRadius: 'native',
+        paths: ['packages/client/fastlane/signing/signing.env'],
         confidence: 1
       })
     );
-    expect(verdict.mayBuild).toBe(false);
+    expect(verdict).toMatchObject({ reason: 'protected path' });
+  });
+
+  it('a keystore is refused wherever it lives', () => {
+    expect(
+      gateRequest(request({ paths: ['packages/client/android/app/micdrp.keystore'] }))
+    ).toMatchObject({ reason: 'protected path' });
   });
 });
 

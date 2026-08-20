@@ -90,22 +90,33 @@ export const CONFIDENCE_FLOOR = 0.8;
 /**
  * Paths no unattended run may touch, at any confidence.
  *
- * These are not risky because they are hard — they are risky because their
- * failure mode is not a bad screen. A broken signing credential or release
- * script means the app cannot ship at all, which is precisely the state that
- * would prevent the loop from delivering its own fix.
+ * Not because they are hard, but because their failure mode is not a bad
+ * screen: a broken credential or release script means the app cannot ship at
+ * all, which is precisely the state that would stop the loop delivering its
+ * own fix.
+ *
+ * Native source is deliberately NOT here. An earlier version protected
+ * packages/client/ios and android wholesale, which is where every native
+ * change lives — so allowing native changes and then blocking those two
+ * directories cancelled out, and nothing native could ever be built. What
+ * needs guarding is the credentials and the pipeline, not the code.
  */
 export const PROTECTED_PATHS = [
+  // Signing material and the lanes that use it.
   'packages/client/fastlane/',
-  'packages/client/ios/',
-  'packages/client/android/',
-  'backend/ota/',
+  '.p12',
+  '.keystore',
+  '.mobileprovision',
+  // Secrets, and the env files compiled into the binary.
+  '.gitsecret/',
+  '.env',
+  // The pipeline that ships and verifies. Breaking any of these is how the
+  // loop would lose the ability to deliver its own fix.
   'scripts/release',
   'scripts/ota',
   'scripts/preflight',
   '.github/',
-  '.gitsecret/',
-  '.env'
+  'backend/ota/'
 ] as const;
 
 /** Does this path fall inside something the loop must not touch? */
