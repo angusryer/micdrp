@@ -29,6 +29,9 @@ capabilities:
       start and whenever the app returns to the foreground.
     actor: system
     implemented_by: packages/client/src/updates/check.ts
+    # The matching rules themselves live in packages/shared
+    # (dto/updateBundle.ts, decideUpdate) so the update server and the tests
+    # read the same source. check.ts asks and translates; it does not decide.
     parameters:
       required: [channel, appVersion, buildNumber, currentBundleId]
     preconditions:

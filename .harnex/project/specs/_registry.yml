@@ -35,6 +35,7 @@ domains:
     status: specifying
   updates:
     path: .harnex/project/specs/domains/updates
-    status: specifying
+    status: building
     priority: medium
-    description: Over-the-air JavaScript bundle delivery to TestFlight builds, with prompted apply and automatic rollback
+    description: Over-the-air JavaScript bundle delivery to TestFlight builds, with
+      prompted apply and automatic rollback

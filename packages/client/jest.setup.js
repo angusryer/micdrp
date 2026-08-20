@@ -117,6 +117,9 @@ jest.mock(
   '@dr.pogodin/react-native-fs',
   () => ({
     DocumentDirectoryPath: '/tmp/micdrp',
+    // The app bundle root. `updates/eligibility` looks for the StoreKit
+    // receipt beneath it to tell a TestFlight install from an App Store one.
+    MainBundlePath: '/tmp/micdrp/micdrp.app',
     writeFile: jest.fn(() => Promise.resolve()),
     readFile: jest.fn(() => Promise.resolve('')),
     unlink: jest.fn(() => Promise.resolve()),
@@ -162,6 +165,28 @@ jest.mock(
       { languageCode: 'en', countryCode: 'US', languageTag: 'en-US', isRTL: false }
     ],
     findBestLanguageTag: () => ({ languageTag: 'en', isRTL: false })
+  }),
+  { virtual: true }
+);
+
+// @hot-updater/react-native reaches for a TurboModule at import time, which
+// throws on the host. The `updates` domain owns the policy around these calls,
+// not the calls themselves, so every test stubs the whole surface and asserts
+// on what was asked of it. Individual tests override the return values.
+jest.mock(
+  '@hot-updater/react-native',
+  () => ({
+    __esModule: true,
+    HotUpdater: {
+      init: jest.fn(),
+      reload: jest.fn(() => Promise.resolve()),
+      checkForUpdate: jest.fn(() => Promise.resolve(null)),
+      updateBundle: jest.fn(() => Promise.resolve(true)),
+      getCrashHistory: jest.fn(() => []),
+      getBundleId: jest.fn(() => '00000000-0000-0000-0000-000000000000'),
+      getAppVersion: jest.fn(() => '1.0.0'),
+      getChannel: jest.fn(() => 'beta')
+    }
   }),
   { virtual: true }
 );

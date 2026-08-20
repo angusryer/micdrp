@@ -29,7 +29,9 @@
     "test": "./scripts/test.sh",
     "typecheck": "tsc --noEmit",
     "testflight": "./scripts/testflight-status.py",
-    "testflight:watch": "./scripts/testflight-status.py --watch"
+    "testflight:watch": "./scripts/testflight-status.py --watch",
+    "ota": "./scripts/ota.sh",
+    "ota:deploy": "npx wrangler deploy --config backend/ota/wrangler.jsonc"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
@@ -37,6 +39,7 @@
     "@babel/preset-react": "^7.29.7",
     "@babel/preset-typescript": "^7.29.7",
     "@babel/runtime": "^7.29.7",
+    "@cloudflare/workers-types": "^5.20260820.1",
     "@commitlint/config-conventional": "^21.2.2",
     "@eslint/js": "^9.39.0",
     "@evilmartians/lefthook": "^2.1.10",

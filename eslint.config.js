@@ -37,6 +37,21 @@ module.exports = [
   prettierConfig,
 
   {
+    // The update Worker runs on workerd with its own ambient globals, so it
+    // carries its own tsconfig (backend/ota/tsconfig.json). Without this entry
+    // the type-aware rules run against no project and error out.
+    files: ['backend/**/*.ts'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: __dirname
+      }
+    }
+  },
+
+  {
     files: ['packages/**/*.{js,jsx,ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2022,

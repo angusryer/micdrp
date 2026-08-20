@@ -1,5 +1,6 @@
 #import "AppDelegate.h"
 
+#import <HotUpdater/HotUpdater.h>
 #import <React/RCTBundleURLProvider.h>
 #import <ReactAppDependencyProvider/RCTAppDependencyProvider.h>
 
@@ -18,13 +19,20 @@
   return [super application:application didFinishLaunchingWithOptions:launchOptions];
 }
 
-/// Where the JS comes from: Metro while debugging, the bundled file otherwise.
+/// Where the JS comes from: Metro while debugging, otherwise whichever bundle
+/// the updater considers current.
+///
+/// `+[HotUpdater bundleURL]` falls back to the `main.jsbundle` compiled into
+/// the app whenever no over-the-air bundle has been applied, or when the last
+/// one failed to boot and was rolled back — so this is the same answer as
+/// before on a fresh install, and the only place the swap can happen. See the
+/// `updates` domain spec; INV-UPD-005 depends on nothing else here changing.
 - (NSURL *)bundleURL
 {
 #if DEBUG
   return [RCTBundleURLProvider.sharedSettings jsBundleURLForBundleRoot:@"index"];
 #else
-  return [NSBundle.mainBundle URLForResource:@"main" withExtension:@"jsbundle"];
+  return [HotUpdater bundleURL];
 #endif
 }
 

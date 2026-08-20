@@ -6,7 +6,7 @@ capabilities:
       Build the JavaScript bundle and publish it to a channel, stamped
       with the binary constraints that decide who may take it.
     actor: maintainer
-    implemented_by: scripts/ota-publish.sh
+    implemented_by: scripts/ota.sh
     parameters:
       required: [channel, targetAppVersion, minBuildNumber]
       optional: [message]
@@ -33,7 +33,7 @@ capabilities:
       already running it are told to go back on their next check, and no
       further install is offered it.
     actor: maintainer
-    implemented_by: scripts/ota-publish.sh
+    implemented_by: scripts/ota.sh
     parameters:
       required: [bundleId]
     preconditions:
@@ -53,7 +53,7 @@ capabilities:
       Show what has been published to a channel and which bundle an
       install on a given version and build number would be offered.
     actor: maintainer
-    implemented_by: scripts/ota-publish.sh
+    implemented_by: scripts/ota.sh
     parameters:
       required: [channel]
       optional: [appVersion, buildNumber]

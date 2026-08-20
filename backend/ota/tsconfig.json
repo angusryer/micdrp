@@ -1,0 +1,23 @@
+{
+  // The Worker runs on workerd, not on React Native or Node, so it needs its
+  // own project: `D1Database`, `R2Bucket` and `ExportedHandler` are ambient
+  // there and nowhere else in this repo. Without this the file would be
+  // linted with type-aware rules against no project at all, which fails, and
+  // typechecked against the wrong globals, which would pass for the wrong
+  // reason.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "types": ["@cloudflare/workers-types"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "paths": {
+      "shared": ["../../packages/shared/src/index.ts"]
+    }
+  },
+  "include": ["worker.ts"]
+}

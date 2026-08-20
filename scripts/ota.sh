@@ -1,325 +1,108 @@
 #!/bin/bash
+set -euo pipefail
 
-# NOTES:
-# I'm not sure what the `clear` command does since the release history is immutable.
-# Clear release history: appcenter codepush deployment clear -a ILiv/<appName> <deploymentName> ($env)
-# 
-# ROLLING BACK:
-# NOTE: We cannot roll back to a different app version number (ie. 1.1.7 to 1.1.6). In this case, we would
-# have to revert our local git changes to a working status, and release that as a new OTA update.
+# ota.sh — publish, withdraw, and list over-the-air bundles.
 #
-# Rolling back to the previous release:
-# appcenter codepush rollback -a ILiv/iOS production
+# Building the archive and uploading it is hot-updater's CLI; this script adds
+# the two things it has no flag for:
 #
-# Rolling back to a target release version. The version name must match one of the previous releases _exactly_
-# appcenter codepush rollback -a ILiv/Android staging --target-release v2
+#   1. `min_build_number`, stamped into the row's metadata after the deploy.
+#      It is the guard that stops a bundle depending on a native change being
+#      handed to a binary that predates it — a crash, not a downgrade
+#      (INV-UPD-002). hot-updater expresses the same idea as `minBundleId`;
+#      BUILD_NUMBER is the value this project already reasons in.
 #
-# PROMOTING:
-# Because OTA updates consist entirely of JS code (and static assets) that do not contain static references to
-# deployment keys, we are able to promote OTA releases from staging to production since the devices that have
-# these build variants installed will have the target deployment key built into the native code. This means
-# they'll receive the promoted OTA updates immediately.
+#   2. Refusing to publish anything the release pipeline would not accept:
+#      beta only, a version that exists, a build number that is a number.
 #
-# appcenter codepush promote -a <ownerName>/<appName> -s <sourceDeploymentName> -d <destDeploymentName> -t <targetBinaryVersion> --description <description>
+# Commands are specified in
+# .harnex/project/specs/domains/updates/commands.yml.
 
-# TODO Implement command switches to identify which rollback strategy to employ,
-# + to make rollbacks and promotions create an entry in the releases.csv file.
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CLIENT_DIR="${REPO_ROOT}/packages/client"
+OTA_DIR="${REPO_ROOT}/backend/ota"
+D1_NAME="micdrp-ota"
 
-#########################################
-#                                       #
-#   Function and variable definitions   #
-#                                       #
-#########################################
+die() { printf 'error: %s\n' "$1" >&2; exit 1; }
+info() { printf '%s\n' "$1"; }
 
-target='' # semver compliant string, e.g. 1.0.0
-build= # integer
-env='' # staging, production
-envFile=''
-isProduction=0
-isStaging=0
-shouldUpdateAndroid=0
-androidAppName='micdrp/android'
-iosAppName='micdrp/ios'
-shouldUpdateIos=0
-mandatory=0 # "" or "-m"
-build=0
-updateLocation=''
-checkOnly=0
-
-version=
-buildNumber=
-releaseVariant=
-androidRelease=0
-iOSRelease=0
-
-storedAndroidOtaStr=''
-nextAndroidOtaStr=''
-
-storedIosOtaStr=''
-nextIosOtaStr=''
-
-history=
-storedOtaStr=''
-storedOtaNum=0
-nextOtaStr=''
-nextOtaNum=0
-
-releasesCsv="./releases.csv"
-
-red='\033[0;31m'
-grn='\033[0;32m'
-yel='\033[0;93m'
-blu='\033[0;94m'
-nc='\033[0m' # No Color
-
-startDir="clients/react-native"
-
-function help () {
-   printf "Usage: ./ota.sh -ps -ai [-b] [-m] [-t <version>]\n"
-   printf "Example: push a mandatory OTA update to the latest production version of Android: ./ota.sh -pam\n"
-   printf "  -b  Run \`yarn build\` prior to building the client bundle\n"
-   printf "  -c  Display the latest version to target\n"
-   printf "  -p  Point to production (use .env.prod)\n"
-   printf "  -s  Point to staging (use .env.staging)\n"
-   printf "  -a  Push update to Android devices\n"
-   printf "  -i  Push update to iOS devices\n"
-   printf "  -m  Set whether this is a mandatory update\n"
-   printf "  -t  Version number of devices to push update to/target (defaults to latest version from releases.csv)\n"
-   printf "  -h  This help screen\n"
-   exit 0;
+d1() {
+  npx --yes wrangler d1 execute "${D1_NAME}" --remote \
+    --config "${OTA_DIR}/wrangler.jsonc" --command "$1"
 }
 
-function die () {
-  printf "\n${red}ERROR:${nc} %s\n\n" "$*"
-  exit 1;
+# Read a key out of the active env file. The same values the binary was built
+# with, so a publish cannot claim a version no build ever had.
+env_value() {
+  local key="$1" file="${CLIENT_DIR}/.env.production"
+  [ -f "$file" ] || die "no .env.production — run 'git secret reveal' first"
+  grep -E "^${key}=" "$file" | head -1 | cut -d= -f2-
 }
 
-function checkEnvironment() {
-  if [ "$isProduction" -eq 1 ] && [ "$isStaging" -eq 1 ]; then die "Cannot specify both -p and -s"; fi
-  if [ "$isProduction" -eq 0 ] && [ "$isStaging" -eq 0 ]; then die "Must specify one of -p or -s"; fi
-  if [ "$runAndroid" -eq 0 ] && [ "$runIos" -eq 0 ]; then die "Must specify one or both of -a or -i"; fi
-}
+cmd_publish() {
+  local channel="${1:-}"; shift || true
+  local target_version="" min_build="" message="" dry_run=0
 
-function displayTargetInfo() {
-  local platformString=''
-  [ "$shouldUpdateAndroid" -eq 1 ] && platformString+='Android '
-  [ "$shouldUpdateIos" -eq 1 ] && platformString+='iOS '
-  printf "\nPlatform: $platformString\n"
-  printf "Environment: "$env"\n"
-  printf "Targeting devices running version: "$target"\n\n"
-}
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --target-version) target_version="$2"; shift 2 ;;
+      --min-build)      min_build="$2";      shift 2 ;;
+      --message)        message="$2";        shift 2 ;;
+      --dry-run)        dry_run=1;           shift ;;
+      *) die "unknown flag: $1" ;;
+    esac
+  done
 
-function loadVersionFromCsv() {
-  if [ ! -f "$releasesCsv" ]; then
-    # The file does not exist, so create it with headers
-    echo "Version,Build,Variant,AndroidRelease,iOSRelease,OtaAndroid,OtaIos,Date,Time" > "$releasesCsv"
-  fi
-  local latestRow=$(awk -F ',' -v env="$env" '$3 == env {latest=$0}END{print latest}' "$releasesCsv")
-  version=$(echo "$latestRow" | awk -F',' '{print $1}')
-  buildNumber=$(echo "$latestRow" | awk -F',' '{print $2}')
-  releaseVariant=$(echo "$latestRow" | awk -F',' '{print $3}')
-  androidRelease=$(echo "$latestRow" | awk -F',' '{print $4}')
-  iOSRelease=$(echo "$latestRow" | awk -F',' '{print $5}')
-  storedAndroidOtaStr=$(echo "$latestRow" | awk -F',' '{print $6}')
-  storedIosOtaStr=$(echo "$latestRow" | awk -F',' '{print $7}')
-  dateStamp=$(echo "$latestRow" | awk -F',' '{print $8}')
-  timeStamp=$(echo "$latestRow" | awk -F',' '{print $9}')
-}
+  [ "$channel" = "beta" ] || die "beta is the only channel that exists"
+  [ -n "$target_version" ] || target_version="$(env_value VERSION_NUMBER)"
+  [ -n "$min_build" ] || min_build="$(env_value BUILD_NUMBER)"
+  [[ "$min_build" =~ ^[0-9]+$ ]] || die "--min-build must be a number"
 
-# Stores the version, build, variant and OTA version information to our CSV file
-function saveVersionsToFile() {
-  echo "$version,$buildNumber,$env,$androidRelease,$iOSRelease,$nextAndroidOtaStr,$nextIosOtaStr,$(date +%Y-%m-%d),$(date +%H:%M:%S)" >> "$releasesCsv"
-}
-
-function displayHistoryAndVerifyOtaVersion() {
-  # Ready initial variables for possible user modification
-  if [[ "$1" = "Android" ]]; then
-    storedOtaStr="$storedAndroidOtaStr"
-    storedOtaNum=$(echo "$storedAndroidOtaStr" | tr -d 'v') # remove the 'v'
+  info "Bundle for ${target_version}, runnable on build >=${min_build}"
+  if [ "$dry_run" = "1" ]; then
+    info "Would publish to ${channel}. Stopping before the upload."
+    return 0
   fi
 
-  if [[ "$1" = "iOS" ]]; then
-    storedOtaStr="$storedIosOtaStr"
-    storedOtaNum=$(echo "$storedIosOtaStr" | tr -d 'v') # remove the 'v'
-  fi
+  # hot-updater builds, uploads to R2 and inserts the row.
+  ( cd "$CLIENT_DIR" && npx hot-updater deploy \
+      --platform ios --channel "$channel" \
+      --target-app-version "$target_version" \
+      ${message:+--message "$message"} )
 
-  if [[ "$storedOtaStr" = '' ]]; then
-    storedOtaStr='n/a'
-    storedOtaNum=0 # if blank, replace with 0
-  fi
-  
-  nextOtaNum=$(($storedOtaNum+1)) # create initial nextOtaNum
-  nextOtaStr="v$nextOtaNum" # create initial nextOtaStr
+  # Stamp the one constraint their schema has no column for, onto the row the
+  # deploy just created — the newest on the channel.
+  d1 "UPDATE bundles
+         SET metadata = json_set(COALESCE(metadata, '{}'),
+                                 '\$.min_build_number', ${min_build})
+       WHERE id = (SELECT id FROM bundles
+                    WHERE channel = '${channel}' AND platform = 'ios'
+                    ORDER BY id DESC LIMIT 1)"
 
-  # Display the table that App Center sends back to us and ask the user to double check
-  printf "\n\n${blu}$1 OTA history:${nc}\n"
-  echo "$history"
-  printf "\n\n${blu}Double check that the HIGHEST version (v##) listed at the bottom of the list above is the same as the one suggested below${nc}.\n"
-  printf "${blu}Suggested latest OTA version: $storedOtaStr${nc}.\n\n"
-  
-  read -p "Hit 'enter' to accept $storedOtaStr, or type in the latest: " input
-
-  [[ "$input" = '' ]] && input="$storedOtaNum" # User hit ENTER, so use the initial value set above
-  [[ ! "$input" = '' ]] && input="${input//[^[:digit:]]/}" # User typed something in, so remove letters and use their number
-  
-  if [[ "$1" = 'Android' ]]; then
-    nextAndroidOtaStr="v$((input))"
-  elif [[ "$1" = 'iOS' ]]; then
-    nextIosOtaStr="v$((input))"
-  fi
+  info "Published to ${channel} for ${target_version} build >=${min_build}."
 }
 
-function computeNextAndroidVersion() {
-  history=$(appcenter codepush deployment history -a "$androidAppName" "$env")
-  displayHistoryAndVerifyOtaVersion 'Android'
+cmd_disable() {
+  local bundle_id="${1:-}"
+  [ -n "$bundle_id" ] || die "usage: yarn ota disable <bundleId>"
+
+  d1 "UPDATE bundles SET enabled = 0 WHERE id = '${bundle_id}'"
+  info "Disabled ${bundle_id}. Installs running it roll back on their next check."
 }
 
-function computeNextIosVersion() {
-  history=$(appcenter codepush deployment history -a "$iosAppName" "$env")
-  displayHistoryAndVerifyOtaVersion 'iOS'
+cmd_list() {
+  local channel="${1:-beta}"
+  d1 "SELECT id, target_app_version,
+             json_extract(metadata, '\$.min_build_number') AS min_build,
+             enabled
+        FROM bundles
+       WHERE channel = '${channel}' AND platform = 'ios'
+       ORDER BY id DESC"
 }
 
-function displayCurrentVersion() {
-  local otaAndroidString="$storedAndroidOtaStr"
-  local otaIosString="$storedIosOtaStr"
-  [[ "$storedAndroidOtaStr" = "" ]] && otaAndroidString='No Android OTA updates'
-  [[ "$storedIosOtaStr" = "" ]] && otaIosString='No iOS OTA updates'
-  printf "Latest version: $version ($buildNumber), $releaseVariant, Android: $otaAndroidString, iOS: $otaIosString\n"
-}
-
-function buildProject() {
-  pushd ../../ > /dev/null
-    yarn build
-  popd > /dev/null
-}
-
-function prepareIos() {
-  updateLocation="$(pwd)/ios/ota"
-  eval "$cleanCommand"
-  mkdir "$updateLocation" > /dev/null
-  ENVFILE=$envFile npx react-native bundle --platform ios --dev false --entry-file index.js --bundle-output "$updateLocation/main.jsbundle" --assets-dest "$updateLocation"
-  [ $? -ne 0 ] && die "iOS update preparation failed"
-}
-
-function prepareAndroid() {
-  updateLocation="$(pwd)/android/ota"
-  mkdir -p "$updateLocation/assets" > /dev/null
-  eval "$cleanCommand,android"
-  cd android
-    ./gradlew clean
-  cd ..
-  ENVFILE=$envFile npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output "$updateLocation/index.android.bundle" --assets-dest "$updateLocation"
-  [ $? -ne 0 ] &&  die "Failed to prepare Android bundle"
-}
-
-function releaseAndroidUpdate() {
-  if [ "$shouldUpdateAndroid" -eq 1 ]; then
-    local commandString="appcenter codepush release -a "$androidAppName" -t "$target" -d "$env" -c "$updateLocation""
-    if [ "$mandatory" -eq 1 ]; then
-      eval "$commandString -m"
-    else
-      eval "$commandString"
-    fi
-    [ $? -ne 0 ] && die "Android upload failed" 
-    printf "${grn}SUCCESS updating Android!${nc}\n"
-  fi
-}
-
-function releaseIosUpdate() {
-  if [ "$shouldUpdateIos" -eq 1 ]; then
-    local commandString="appcenter codepush release -a "$iosAppName" -t "$target" -d "$env" -c "$updateLocation""
-    if [ "$mandatory" -eq 1 ]; then
-      eval "$commandString -m"
-    else
-      eval "$commandString"
-    fi
-    [ $? -ne 0 ] && die "iOS upload failed"
-    printf "${grn}SUCCESS updating iOS!${nc}\n"
-  fi
-}
-
-
-
-
-
-#################################
-#                               #
-#      OTA Update procedure     #
-#                               #
-#################################
-
-if [ ! -d "$startDir" ]; then
-  printf "Please run from the root 'Best_Life' folder.\n"
-  exit 0;
-fi
-
-cd "$startDir"
-
-while getopts ':cpsaimbt:h' option; do
-  case $option in
-    p)
-      isProduction=1
-      env='production'
-      ;;
-    s)
-      isStaging=1
-      env='staging'
-      ;;
-    a) shouldUpdateAndroid=1;;
-    i) shouldUpdateIos=1;;
-    c) checkOnly=1;;
-    m) mandatory=1;;
-    b) build=1;;
-    t) target=$OPTARG;;
-    h) help;;
-    \?) die "Invalid option(s) passed"
-  esac
-done
-
-checkEnvironment
-export ENVFILE=".env.$env"
-source "$ENVFILE"
-loadVersionFromCsv
-
-if [ "$build" -eq 1 ] && [ "$checkOnly" -ne 1 ]; then buildProject; fi
-cleanCommand="npx react-native clean --include metro,yarn,watchman"
-
-if [ "$shouldUpdateAndroid" -eq 0 ] && [ "$shouldUpdateIos" -eq 0 ]; then
-  die "No platform was specified"
-fi
-
-[[ "$target" = "" ]] && target="$version"
-displayCurrentVersion
-displayTargetInfo
-
-if [ "$shouldUpdateAndroid" -eq 1 ]; then
-  if [ "$checkOnly" -ne 1 ]; then
-    prepareAndroid
-    releaseAndroidUpdate
-    rm -rdf $updateLocation > /dev/null
-  fi
-fi
-
-if [ "$shouldUpdateIos" -eq 1 ]; then
-  if [ "$checkOnly" -ne 1 ]; then
-    prepareIos 
-    releaseIosUpdate
-    rm -rdf $updateLocation > /dev/null
-  fi
-fi
-
-# Update the releases.csv file with the latest OTA versions
-if [ "$shouldUpdateAndroid" -eq 1 ]; then
-  computeNextAndroidVersion
-fi
-if [ "$shouldUpdateIos" -eq 1 ]; then
-  computeNextIosVersion
-fi
-if [ "$checkOnly" -ne 1 ]; then saveVersionsToFile; fi
-[ $? -ne 0 ] && die "Failed to process the releases file."
-
-printf "\n---------------------------"
-printf "\n\t${grn}SUCCESS!${nc}"
-printf "\n---------------------------\n"
-
-exit 0;
+case "${1:-}" in
+  publish) shift; cmd_publish "$@" ;;
+  disable) shift; cmd_disable "$@" ;;
+  list)    shift; cmd_list "$@" ;;
+  *) die "usage: yarn ota {publish <channel>|disable <bundleId>|list [channel]}" ;;
+esac

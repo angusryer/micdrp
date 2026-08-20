@@ -32,6 +32,7 @@ import {
   recordingMachine,
   type RecordingStateValue
 } from '../../state/recordingMachine';
+import { markBusy } from '../../updates';
 
 export interface RecordController {
   /** Request permission (if needed), start the engine, enter `recording`. */
@@ -137,6 +138,17 @@ export function useRecordController(): RecordController {
 
   // Defensive cleanup on unmount — never leak a native subscription.
   useEffect(() => detach, [detach]);
+
+  // Hold back the update prompt for as long as a take is running (INV-UPD-004).
+  // A modal over a live take costs the take, and unlike an update, a take
+  // cannot be redone identically. Analysis counts as running too: the capture
+  // is not yet a note, so a reload would lose it.
+  useEffect(() => {
+    if (stateValue !== 'recording' && stateValue !== 'analyzing') {
+      return undefined;
+    }
+    return markBusy('capture');
+  }, [stateValue]);
 
   const start = useCallback(async (): Promise<void> => {
     // Leave any terminal state first. After a capture the machine sits in

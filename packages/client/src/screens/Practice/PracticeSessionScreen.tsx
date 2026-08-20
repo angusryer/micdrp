@@ -27,6 +27,7 @@ import { useTranslation } from '../../i18n';
 import type { RootStackParamList } from '../../navigation/types';
 import { usePracticeSession } from './usePracticeSession';
 import { PracticePitchView } from './PracticePitchView';
+import { markBusy } from '../../updates';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PracticeSession'>;
 
@@ -100,6 +101,12 @@ export default function PracticeSessionScreen({
     const timer = setTimeout(finishAndGo, durationMs);
     return () => clearTimeout(timer);
   }, [phase, durationMs, finishAndGo]);
+
+  // Hold back the update prompt for the whole guided session, not just the
+  // recording phase (INV-UPD-004). The count-in is the singer preparing to
+  // sing; interrupting it wastes the attempt as surely as interrupting the
+  // take does. Unmounting the screen ends it.
+  useEffect(() => markBusy('practice session'), []);
 
   const isPreparing = phase === 'preparing' || phase === 'countIn';
 

@@ -223,5 +223,10 @@
       "platform": "Platform",
       "defaultSampleRate": "Default sample rate"
     }
+  },
+  "updates": {
+    "ready": "An update is ready.",
+    "restartNow": "Restart now",
+    "later": "Later"
   }
 }
