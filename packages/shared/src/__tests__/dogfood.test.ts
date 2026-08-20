@@ -28,21 +28,39 @@ const request = (over: Partial<ChangeRequestDto> = {}): ChangeRequestDto => ({
 });
 
 describe('gateRequest', () => {
-  it('clears a confident JavaScript change', () => {
-    expect(gateRequest(request())).toEqual({ mayBuild: true, reason: null });
+  it('clears a confident JavaScript change, delivered as a bundle', () => {
+    expect(gateRequest(request())).toEqual({
+      mayBuild: true,
+      reason: null,
+      route: 'bundle'
+    });
   });
 
-  it.each<BlastRadius>(['native', 'infrastructure', 'unknown'])(
+  it('INV-DOG-005: a native change builds, and goes to TestFlight', () => {
+    // Building it is no more dangerous than any other change. What differs
+    // is the ending: it cannot reach a device over the air.
+    expect(gateRequest(request({ blastRadius: 'native' }))).toEqual({
+      mayBuild: true,
+      reason: null,
+      route: 'testflight'
+    });
+  });
+
+  it.each<BlastRadius>(['infrastructure', 'unknown'])(
     'INV-DOG-005: files a %s change however confident',
     (blastRadius) => {
       const verdict = gateRequest(request({ blastRadius, confidence: 0.99 }));
-      expect(verdict).toEqual({ mayBuild: false, reason: 'not javascript' });
+      expect(verdict).toMatchObject({
+        mayBuild: false,
+        reason: 'unclear blast radius'
+      });
     }
   );
 
   it('INV-DOG-007: files a reading it is unsure of', () => {
     const verdict = gateRequest(request({ confidence: CONFIDENCE_FLOOR - 0.01 }));
-    expect(verdict).toEqual({ mayBuild: false, reason: 'low confidence' });
+    expect(verdict).toMatchObject({
+      mayBuild: false, reason: 'low confidence' });
   });
 
   it('the confidence floor is inclusive', () => {
@@ -53,7 +71,8 @@ describe('gateRequest', () => {
 
   it('files a request that names no concrete change', () => {
     const verdict = gateRequest(request({ summary: '   ' }));
-    expect(verdict).toEqual({ mayBuild: false, reason: 'no concrete change' });
+    expect(verdict).toMatchObject({
+      mayBuild: false, reason: 'no concrete change' });
   });
 
   it.each([
@@ -66,7 +85,8 @@ describe('gateRequest', () => {
     ['backend/ota/worker.ts']
   ])('INV-DOG-006: files a change to %s at any confidence', (path) => {
     const verdict = gateRequest(request({ paths: [path], confidence: 1 }));
-    expect(verdict).toEqual({ mayBuild: false, reason: 'protected path' });
+    expect(verdict).toMatchObject({
+      mayBuild: false, reason: 'protected path' });
   });
 
   it('one protected path in a set poisons the whole request', () => {
@@ -81,13 +101,24 @@ describe('gateRequest', () => {
     expect(verdict.mayBuild).toBe(false);
   });
 
-  it('reports the protected path even when it would fail on radius too', () => {
+  it('reports the protected path even when it would otherwise build', () => {
     // The most useful thing to tell a human is the worst reason, not the
     // first one that happens to match.
     const verdict = gateRequest(
       request({ paths: ['scripts/release.sh'], blastRadius: 'native' })
     );
     expect(verdict.reason).toBe('protected path');
+  });
+
+  it('a native change is still refused when it touches signing', () => {
+    const verdict = gateRequest(
+      request({
+        blastRadius: 'native',
+        paths: ['packages/client/ios/micdrp/AppDelegate.mm'],
+        confidence: 1
+      })
+    );
+    expect(verdict.mayBuild).toBe(false);
   });
 });
 

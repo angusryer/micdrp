@@ -192,3 +192,5 @@ packages/client/ios/release.xcconfig
 # Scheduled-loop state: machine state, not history.
 .dogfood-lock
 .dogfood-failures
+
+# The agent loop works in its own worktree, outside this checkout.

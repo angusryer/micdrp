@@ -41,15 +41,24 @@ invariants:
       until the server has accepted it.
 
   - id: INV-DOG-005
-    description: The loop changes only what can be taken back
+    description: How a change is delivered follows from what it touches
     severity: critical
     check: >
-      No request is built unattended unless its blastRadius is
-      javascript. Anything native, infrastructural, or unknown is filed.
-      Verified by gating a request of each kind and asserting only the
-      javascript one builds. JavaScript is the only thing that ships over
-      the air, and the only thing that rolls itself back when it fails to
-      boot; everything else needs a build, a human, and a decision.
+      A javascript request is delivered as an over-the-air bundle. A
+      native request is delivered as a TestFlight build and reported as
+      needing installation. An infrastructural or unknown request is
+      filed. Verified by gating a request of each kind and asserting the
+      delivery route each takes.
+
+      The first version filed everything but javascript, on the reasoning
+      that only javascript can be taken back. That confused two things.
+      Building a native change is no more dangerous than building any
+      other — what differs is the ending: it cannot reach a device over
+      the air, so it ends at TestFlight with the maintainer installing
+      it. And its recovery is manual, because the automatic rollback in
+      INV-UPD-003 protects a bundle that will not boot, not a binary.
+      Neither is a reason to refuse to make the change; both are reasons
+      to say clearly which route it took.
 
   - id: INV-DOG-006
     description: The loop never touches what it cannot be trusted with
@@ -158,14 +167,18 @@ invariants:
       instead of starting a recording.
 
   - id: INV-DOG-015
-    description: Work in progress defers the loop, it does not lose requests
+    description: The loop never works in the maintainer's checkout
     severity: critical
     check: >
-      A run finding an unclean working tree stops without claiming, and
-      the clip stays available for the next run. Verified by dirtying the
-      tree and asserting nothing is claimed and nothing is abandoned.
+      Every change is made in a worktree of its own, reset from
+      origin/main before the run begins. Verified by dirtying the primary
+      checkout and asserting a run still builds and delivers, leaving
+      that checkout untouched.
 
-      The first scheduled run abandoned two real requests because someone
-      was editing at the time. Abandoning is for a change that was tried
-      and could not be made; a tree that is busy means the run should not
-      have started, and the request deserves the attempt it never got.
+      Two earlier attempts got this wrong in opposite directions. The
+      first abandoned real requests whenever someone was editing, which
+      discarded work that was never given a chance. The second deferred
+      instead, which loses nothing but means the loop only runs when the
+      maintainer happens to have committed — and the whole point is that
+      it runs while they are elsewhere. A separate worktree removes the
+      question: their checkout is never read and never written.

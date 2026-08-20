@@ -57,13 +57,25 @@ export interface ChangeRequestDto {
 /** Why a request was filed instead of built. */
 export type FiledReason =
   | 'low confidence'
-  | 'not javascript'
+  | 'unclear blast radius'
   | 'protected path'
   | 'no concrete change';
+
+/** How a built change reaches the device. */
+export type DeliveryRoute = 'bundle' | 'testflight';
 
 export interface GateVerdict {
   mayBuild: boolean;
   reason: FiledReason | null;
+  /**
+   * How it would be delivered, when it may be built.
+   *
+   * A bundle reaches a device on its own and rolls itself back if it will
+   * not boot. A TestFlight build needs the maintainer to install it, and
+   * recovering from a bad one is manual. Same build, different ending —
+   * which is worth saying rather than refusing to build the second kind.
+   */
+  route: DeliveryRoute | null;
 }
 
 /**
@@ -112,19 +124,35 @@ export function isProtectedPath(path: string): boolean {
  * are worst, and reporting it is the most useful thing to tell a human.
  */
 export function gateRequest(request: ChangeRequestDto): GateVerdict {
+  const filed = (reason: FiledReason): GateVerdict => ({
+    mayBuild: false,
+    reason,
+    route: null
+  });
+
   if (request.paths.some(isProtectedPath)) {
-    return { mayBuild: false, reason: 'protected path' };
+    return filed('protected path');
   }
-  if (request.blastRadius !== 'javascript') {
-    return { mayBuild: false, reason: 'not javascript' };
+  // Infrastructure and unknown stay filed. Not because they are hard, but
+  // because their failure mode is an app that cannot ship at all — which is
+  // the one state that would stop the loop delivering its own fix.
+  if (
+    request.blastRadius !== 'javascript' &&
+    request.blastRadius !== 'native'
+  ) {
+    return filed('unclear blast radius');
   }
   if (request.confidence < CONFIDENCE_FLOOR) {
-    return { mayBuild: false, reason: 'low confidence' };
+    return filed('low confidence');
   }
   if (request.summary.trim().length === 0) {
-    return { mayBuild: false, reason: 'no concrete change' };
+    return filed('no concrete change');
   }
-  return { mayBuild: true, reason: null };
+  return {
+    mayBuild: true,
+    reason: null,
+    route: request.blastRadius === 'javascript' ? 'bundle' : 'testflight'
+  };
 }
 
 /** Does a set of changed paths warrant an over-the-air bundle? */

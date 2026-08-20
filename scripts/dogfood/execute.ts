@@ -12,13 +12,15 @@ import { promisify } from 'node:util';
 // loader needs explicit extensions, and the barrel's own imports are
 // extensionless for Metro's benefit. This is the only file the loop needs.
 import type { ChangeRequestDto } from '../../packages/shared/src/dto/dogfood.ts';
+import { WORKTREE } from './worktree.ts';
 
 const run = promisify(execFile);
-const REPO = new URL('../..', import.meta.url).pathname;
 
-const git = (args: string[]) => run('git', args, { cwd: REPO });
+// Everything happens in the worktree, never the maintainer's checkout
+// (INV-DOG-015). The two are different directories on the same repository.
+const git = (args: string[]) => run('git', args, { cwd: WORKTREE });
 
-/** Refuse to start from a dirty tree — we could not tell our mess from theirs. */
+/** The worktree is reset before each run, so anything here is this run's. */
 export async function treeIsClean(): Promise<boolean> {
   const { stdout } = await git(['status', '--porcelain']);
   return stdout.trim().length === 0;
@@ -32,7 +34,7 @@ export async function restoreTree(): Promise<void> {
 
 export async function preflightPasses(): Promise<boolean> {
   try {
-    await run('yarn', ['preflight'], { cwd: REPO, timeout: 10 * 60 * 1000 });
+    await run('yarn', ['preflight'], { cwd: WORKTREE, timeout: 10 * 60 * 1000 });
     return true;
   } catch {
     return false;
@@ -75,12 +77,16 @@ export async function executeRequest(
     (request.route ? `The screen they were looking at: ${request.route}\n` : '') +
     `\nMake this change. Follow the repository's axioms: update the spec ` +
     `before the code, keep files under 150 lines, and run the harness. ` +
-    `Do not touch signing material, secrets, CI, the release scripts, or ` +
-    `native code — if the change would need any of those, make no change at ` +
-    `all and say why.`;
+    `Do not touch signing material, secrets, CI, or the release scripts — ` +
+    `if the change would need any of those, make no change at all and say ` +
+    `why. Native code is fine to change; it simply ships as a build rather ` +
+    `than over the air.`;
 
   try {
-    await run('claude', ['-p', prompt], { cwd: REPO, timeout: 20 * 60 * 1000 });
+    await run('claude', ['-p', prompt], {
+      cwd: WORKTREE,
+      timeout: 20 * 60 * 1000
+    });
   } catch {
     await restoreTree();
     return { built: false, reason: 'the agent could not make the change' };

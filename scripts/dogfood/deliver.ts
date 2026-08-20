@@ -14,9 +14,9 @@ import { promisify } from 'node:util';
 import { shouldPublishBundle, type ChangeRequestDto } from '../../packages/shared/src/dto/dogfood.ts';
 
 import { changedPaths, preflightPasses, restoreTree } from './execute.ts';
+import { WORKTREE } from './worktree.ts';
 
 const run = promisify(execFile);
-const REPO = new URL('../..', import.meta.url).pathname;
 
 /** The build the changes were made against — the floor for any bundle. */
 export function runningBuildNumber(clipBuild: number): number {
@@ -45,6 +45,8 @@ function commitMessage(batch: ChangeRequestDto[]): string {
 export interface DeliveryOutcome {
   delivered: boolean;
   published: boolean;
+  /** How it went out, when it did. */
+  route: 'bundle' | 'testflight' | null;
   reason: string | null;
 }
 
@@ -59,26 +61,43 @@ export async function deliverBatch(
   minBuild: number
 ): Promise<DeliveryOutcome> {
   if (batch.length === 0) {
-    return { delivered: false, published: false, reason: 'nothing built' };
+    return { delivered: false, published: false, route: null, reason: 'nothing built' };
   }
 
   const paths = await changedPaths();
   if (paths.length === 0) {
-    return { delivered: false, published: false, reason: 'nothing changed' };
+    return { delivered: false, published: false, route: null, reason: 'nothing changed' };
   }
 
   // The whole batch, together, before anything is written to history.
   if (!(await preflightPasses())) {
     await restoreTree();
-    return { delivered: false, published: false, reason: 'batch preflight failed' };
+    return {
+      delivered: false,
+      published: false,
+      route: null,
+      reason: 'batch preflight failed'
+    };
   }
 
-  await run('git', ['add', '-A'], { cwd: REPO });
-  await run('git', ['commit', '-m', commitMessage(batch)], { cwd: REPO });
-  await run('git', ['push', 'origin', 'main'], { cwd: REPO });
+  await run('git', ['add', '-A'], { cwd: WORKTREE });
+  await run('git', ['commit', '-m', commitMessage(batch)], { cwd: WORKTREE });
+  // The worktree sits on its own branch; main is what the maintainer pulls.
+  await run('git', ['push', 'origin', 'HEAD:main'], { cwd: WORKTREE });
+
+  // Native changes cannot reach a device over the air, so they go out as a
+  // build. TestFlight emails the maintainer; installing is their step
+  // (INV-DOG-005).
+  if (batch.some((r) => r.blastRadius === 'native')) {
+    await run('./scripts/release.sh', ['1.0.0'], {
+      cwd: WORKTREE,
+      timeout: 30 * 60 * 1000
+    });
+    return { delivered: true, published: false, route: 'testflight', reason: null };
+  }
 
   if (!shouldPublishBundle(paths)) {
-    return { delivered: true, published: false, reason: null };
+    return { delivered: true, published: false, route: null, reason: null };
   }
 
   await run('./scripts/ota.sh', [
@@ -88,7 +107,7 @@ export async function deliverBatch(
     String(minBuild),
     '--message',
     batch.map((r) => r.summary).join('; ')
-  ], { cwd: REPO, timeout: 15 * 60 * 1000 });
+  ], { cwd: WORKTREE, timeout: 15 * 60 * 1000 });
 
-  return { delivered: true, published: true, reason: null };
+  return { delivered: true, published: true, route: 'bundle', reason: null };
 }

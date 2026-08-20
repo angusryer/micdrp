@@ -17,7 +17,8 @@ import { gateRequest, type ChangeRequestDto } from '../../packages/shared/src/dt
 
 import { audioUrl, claimOldest, connect, markDelivered, signIn, storeRequests, storeTranscript } from './clips.ts';
 import { deliverBatch } from './deliver.ts';
-import { executeRequest, treeIsClean } from './execute.ts';
+import { executeRequest } from './execute.ts';
+import { installDeps, prepareWorktree } from './worktree.ts';
 import { interpret } from './interpret.ts';
 import { transcribe } from './transcribe.ts';
 
@@ -106,14 +107,6 @@ export async function runOnce(options: Options): Promise<boolean> {
     return false;
   }
 
-  // A dirty tree is somebody else's work in progress, not a fault. Deferring
-  // leaves the clip unclaimed for the next run; abandoning would discard
-  // requests that were never given a chance, which is what the first
-  // scheduled run did to two of them.
-  if (!(await treeIsClean())) {
-    return false;
-  }
-
   const pb = connect();
   await signIn(pb);
   const runId = `run-${Date.now()}`;
@@ -139,6 +132,14 @@ export async function runOnce(options: Options): Promise<boolean> {
   }));
   await storeRequests(pb, clip.id, requests);
 
+  const buildable = requests.filter((r) => gateRequest(r).mayBuild);
+
+  // Only pay for the worktree when there is something to build in it.
+  if (buildable.length > 0 && !options.dryRun) {
+    await prepareWorktree();
+    await installDeps();
+  }
+
   const built: ChangeRequestDto[] = [];
   for (const request of requests) {
     const verdict = gateRequest(request);
@@ -148,7 +149,7 @@ export async function runOnce(options: Options): Promise<boolean> {
       continue;
     }
     if (options.dryRun) {
-      console.log(`  would build: ${request.summary}`);
+      console.log(`  would build (${verdict.route}): ${request.summary}`);
       continue;
     }
     // eslint-disable-next-line no-await-in-loop -- one change at a time, by design
@@ -177,7 +178,11 @@ export async function runOnce(options: Options): Promise<boolean> {
   await markDelivered(pb, clip.id);
   console.log(
     `dogfood: ${requests.length} request(s), ${built.length} built, ` +
-      `delivered${outcome.published ? ' and published' : ''}`
+      (outcome.route === 'testflight'
+        ? 'shipped to TestFlight — install it when the email arrives'
+        : outcome.published
+          ? 'published over the air'
+          : 'committed, nothing to publish')
   );
   return true;
 }
