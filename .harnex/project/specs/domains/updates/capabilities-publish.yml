@@ -16,6 +16,8 @@ capabilities:
       - targetAppVersion matches the VERSION_NUMBER of a build already
         accepted by TestFlight
     postconditions:
+      - the update server is deployed before the bundle is published, so the
+        rules applied to it are the ones in the repository
       - the archive is uploaded and its hash is published with it
       - the bundle is created with isEnabled true
       - the bundle's bundleId sorts after every bundle already in the channel

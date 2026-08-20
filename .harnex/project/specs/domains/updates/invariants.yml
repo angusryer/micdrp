@@ -126,3 +126,17 @@ invariants:
       published before that fix existed. It would have downgraded itself
       into being unable to ask for updates at all, and the only route out
       would have been another build.
+
+  - id: INV-UPD-011
+    description: Published bundles are judged by the rules in the repository
+    severity: critical
+    check: >
+      Publishing deploys the update server first. Verified by asserting a
+      publish cannot complete without a deploy having run.
+
+      The rules deciding who may take a bundle live in the Worker, so a
+      publish against a stale Worker enforces stale rules — and nothing
+      about the repository shows it. The recency rule was once changed,
+      committed, tested and not deployed; a bundle built from build 7 was
+      then handed to build 9, which reverted itself to older JavaScript
+      and lost the fixes that build existed to deliver.

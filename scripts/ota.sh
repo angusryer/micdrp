@@ -97,6 +97,17 @@ cmd_publish() {
     return 0
   fi
 
+  # Deploy the Worker first, every time.
+  #
+  # The rules that decide who may take a bundle live in the Worker, and a
+  # publish against a stale Worker enforces stale rules. That is exactly what
+  # happened once: the recency rule was changed and committed but not
+  # deployed, so a build-7 bundle was handed to build 9 and silently reverted
+  # it. Deploying is idempotent and takes a second; drifting is not worth the
+  # second saved.
+  info "Deploying the update server first, so the published rules are current"
+  cmd_deploy >/dev/null
+
   # hot-updater builds, uploads to R2 and inserts the row.
   ( cd "$CLIENT_DIR" && \
     CLOUDFLARE_API_TOKEN="${MICDRP_CLOUDFLARE_API_TOKEN}" \
