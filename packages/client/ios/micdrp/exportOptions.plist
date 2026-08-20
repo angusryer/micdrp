@@ -5,15 +5,15 @@
     <key>method</key>
     <string>app-store</string>
     <key>teamID</key>
-    <string>J3RCPBZHWM</string>
+    <string>898Q7NSW89</string>
     <key>uploadSymbols</key>
     <true/>
     <key>uploadBitcode</key>
     <false/>
     <key>provisioningProfiles</key>
     <dict>
-      <key>io.ryer.micdrp</key>
-      <string>micdrp-provisioning</string>
+      <key>io.greenlyre.micdrp</key>
+      <string>io.greenlyre.micdrp AppStore</string>
     </dict>
   </dict>
 </plist>

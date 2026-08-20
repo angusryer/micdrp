@@ -89,9 +89,18 @@ export ENVFILE="${ENVFILE:-${CLIENT_DIR}/.env.production}"
 # Run fastlane
 # ---------------------------------------------------------------------------
 echo ""
-echo "Running: bundle exec fastlane ios ios_${LANE}"
+echo "Running: fastlane ios ios_${LANE}"
 echo "Working directory: ${CLIENT_DIR}"
 echo ""
 
 cd "${CLIENT_DIR}"
-bundle exec fastlane ios "ios_${LANE}"
+
+# Prefer the bundle when it actually resolves. A Gemfile.lock pinning a
+# bundler from one ruby (rbenv) while fastlane runs under another (homebrew)
+# leaves `bundle exec` broken, and the standalone binary is the working path.
+if bundle exec fastlane --version >/dev/null 2>&1; then
+  bundle exec fastlane ios "ios_${LANE}"
+else
+  echo "note: bundle exec unavailable, using the fastlane on PATH" >&2
+  fastlane ios "ios_${LANE}"
+fi

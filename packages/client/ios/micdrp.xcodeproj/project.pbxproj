@@ -472,7 +472,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = J3RCPBZHWM;
+				DEVELOPMENT_TEAM = 898Q7NSW89;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
@@ -507,7 +507,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = J3RCPBZHWM;
+				DEVELOPMENT_TEAM = 898Q7NSW89;
 				INFOPLIST_FILE = micdrpTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -536,11 +536,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
-				CODE_SIGN_STYLE = Manual;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = J3RCPBZHWM;
+				DEVELOPMENT_TEAM = 898Q7NSW89;
+				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 898Q7NSW89;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = micdrp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = micdrp;
@@ -555,10 +555,10 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = io.ryer.micdrp;
+				PRODUCT_BUNDLE_IDENTIFIER = io.greenlyre.micdrp;
 				PRODUCT_NAME = micdrp;
-				PROVISIONING_PROFILE_SPECIFIER = "micdrp-provisioning";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "micdrp-provisioning";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -571,12 +571,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
+				CODE_SIGN_IDENTITY = "Apple Distribution";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = J3RCPBZHWM;
+				DEVELOPMENT_TEAM = 898Q7NSW89;
+				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 898Q7NSW89;
 				INFOPLIST_FILE = micdrp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = micdrp;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
@@ -590,10 +590,10 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = io.ryer.micdrp;
+				PRODUCT_BUNDLE_IDENTIFIER = io.greenlyre.micdrp;
 				PRODUCT_NAME = micdrp;
-				PROVISIONING_PROFILE_SPECIFIER = "micdrp-provisioning";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "micdrp-provisioning";
+				PROVISIONING_PROFILE_SPECIFIER = "io.greenlyre.micdrp AppStore";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "io.greenlyre.micdrp AppStore";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};

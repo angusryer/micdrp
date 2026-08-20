@@ -66,3 +66,14 @@ android/app/src/main/assets/index.android.bundle
 
 # testing
 /coverage
+
+# Signing material. `cert` writes the distribution private key here in the
+# clear (the file it calls .p12 is an unencrypted PEM key), so this directory
+# must never be stageable. The portable copy lives encrypted via git-secret at
+# fastlane/signing/micdrp-distribution.p12.
+**/fastlane/certs/
+*.mobileprovision
+*.certSigningRequest
+*.keychain-db
+fastlane/signing/*.p12
+!fastlane/signing/*.p12.secret
