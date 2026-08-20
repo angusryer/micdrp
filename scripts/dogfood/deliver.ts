@@ -8,9 +8,12 @@
  */
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { shouldPublishBundle, type ChangeRequestDto } from 'shared';
+// Imported by file rather than through the `shared` barrel: Node's ESM
+// loader needs explicit extensions, and the barrel's own imports are
+// extensionless for Metro's benefit. This is the only file the loop needs.
+import { shouldPublishBundle, type ChangeRequestDto } from '../../packages/shared/src/dto/dogfood.ts';
 
-import { changedPaths, preflightPasses, restoreTree } from './execute';
+import { changedPaths, preflightPasses, restoreTree } from './execute.ts';
 
 const run = promisify(execFile);
 const REPO = new URL('../..', import.meta.url).pathname;

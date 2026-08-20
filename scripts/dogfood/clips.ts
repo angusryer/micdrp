@@ -5,8 +5,15 @@
  * (INV-DOG-012), and a run that dies must not strand its clip forever — so a
  * claim carries the time it was made and becomes reclaimable once stale.
  */
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import PocketBase from 'pocketbase';
-import type { ScreenVisit } from 'shared';
+// Imported by file rather than through the `shared` barrel: Node's ESM
+// loader needs explicit extensions, and the barrel's own imports are
+// extensionless for Metro's benefit. This is the only file the loop needs.
+import type { ScreenVisit } from '../../packages/shared/src/dto/dogfood.ts';
+
+const run = promisify(execFile);
 
 const COLLECTION = 'dogfood_clips';
 
@@ -33,12 +40,37 @@ export function connect(): PocketBase {
   return new PocketBase(url);
 }
 
-export async function signIn(pb: PocketBase): Promise<void> {
-  const email = process.env.DOGFOOD_EMAIL;
-  const password = process.env.DOGFOOD_PASSWORD;
-  if (!email || !password) {
-    throw new Error('DOGFOOD_EMAIL and DOGFOOD_PASSWORD must be set');
+/** The 1Password item holding the app login the clips belong to. */
+const OP_ITEM = 'op://micdrp/wi5e4xd6dl6zn6wyx7u4e5m3ra';
+
+/**
+ * Read one field out of 1Password.
+ *
+ * Credentials come from the vault rather than the environment so there is no
+ * plaintext password sitting in a shell profile. The AI_MICDRP_RW service
+ * account is scoped to the micdrp vault and nothing else.
+ */
+async function fromVault(field: string): Promise<string> {
+  const token = process.env.AI_MICDRP_RW ?? process.env.OP_SERVICE_ACCOUNT_TOKEN;
+  if (!token) {
+    throw new Error('AI_MICDRP_RW is not set — cannot read the app login');
   }
+  const { stdout } = await run('op', ['read', `${OP_ITEM}/${field}`], {
+    env: { ...process.env, OP_SERVICE_ACCOUNT_TOKEN: token }
+  });
+  return stdout.trim();
+}
+
+/**
+ * Sign in as the account the clips belong to.
+ *
+ * Clips are owner-scoped server-side, so the loop reads them as their owner
+ * rather than as an administrator — it sees exactly what the maintainer sees
+ * and nothing more.
+ */
+export async function signIn(pb: PocketBase): Promise<void> {
+  const email = process.env.DOGFOOD_EMAIL ?? (await fromVault('username'));
+  const password = process.env.DOGFOOD_PASSWORD ?? (await fromVault('password'));
   await pb.collection('users').authWithPassword(email, password);
 }
 

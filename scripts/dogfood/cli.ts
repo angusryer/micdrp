@@ -11,7 +11,7 @@
 import { unlinkSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { guardedRun, isHalted } from './loop';
+import { guardedRun, isHalted } from './loop.ts';
 
 const REPO = new URL('../..', import.meta.url).pathname;
 const HALT_FILE = join(REPO, '.dogfood-halt');
