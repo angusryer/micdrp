@@ -39,6 +39,10 @@ export type InstallDescription = {
   /** The over-the-air bundle in use, or null for the binary's own. */
   bundleId: string | null;
   eligibility: Eligibility;
+  /** Feedback clips recorded but not yet accepted by the server. */
+  queuedClips: number;
+  /** Why the last clip upload failed, if it did. */
+  lastUploadError: string | null;
 };
 
 /** Where a downloaded bundle sits in the install lifecycle. */

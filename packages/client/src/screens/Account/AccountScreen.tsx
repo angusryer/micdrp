@@ -530,6 +530,26 @@ export default function AccountScreen(_props: Props): React.JSX.Element {
           </View>
           <View style={[styles.row, { borderBottomColor: 'transparent' }]}>
             <Text style={[styles.rowLabel, { color: colors.typography }]}>
+              {t('settings.about.feedbackQueue')}
+            </Text>
+            <Text style={[styles.rowValue, { color: colors.gray300 }]}>
+              {install ? String(install.queuedClips) : '—'}
+            </Text>
+          </View>
+          {install?.lastUploadError ? (
+            <View style={[styles.row, { borderBottomColor: 'transparent' }]}>
+              <Text style={[styles.rowLabel, { color: colors.typography }]}>
+                {t('settings.about.feedbackError')}
+              </Text>
+              <Text
+                numberOfLines={3}
+                style={[styles.rowValue, { color: colors.error, flexShrink: 1 }]}>
+                {install.lastUploadError}
+              </Text>
+            </View>
+          ) : null}
+          <View style={[styles.row, { borderBottomColor: 'transparent' }]}>
+            <Text style={[styles.rowLabel, { color: colors.typography }]}>
               {t('settings.about.platform')}
             </Text>
             <Text style={[styles.rowValue, { color: colors.gray300 }]}>

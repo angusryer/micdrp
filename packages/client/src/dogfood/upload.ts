@@ -16,6 +16,19 @@ import type { PendingClip } from './types';
 /** MMKV key for the queue. */
 const QUEUE_KEY = 'dogfood.pending';
 
+/**
+ * Why the last upload failed, if it did.
+ *
+ * A queue that will not drain is invisible from the outside: the clip is on
+ * the device, the server has nothing, and neither end can say why. Settings
+ * reads this.
+ */
+let lastError: string | null = null;
+
+export function lastUploadError(): string | null {
+  return lastError;
+}
+
 /** The collection clips land in. Keep in step with backend/migrations. */
 const CLIPS_COLLECTION = 'dogfood_clips';
 
@@ -68,10 +81,12 @@ async function post(clip: PendingClip): Promise<void> {
 export async function uploadOne(clip: PendingClip): Promise<boolean> {
   try {
     await post(clip);
-  } catch {
+    lastError = null;
+  } catch (error) {
     // Offline, signed out, or the server is unhappy. Keep it queued; the next
-    // flush tries again. Nothing is surfaced: the maintainer did not ask to
-    // be told about the transport.
+    // flush tries again. Nothing interrupts the maintainer, but the reason is
+    // kept so settings can show why a queue is stuck.
+    lastError = error instanceof Error ? error.message : String(error);
     return false;
   }
 

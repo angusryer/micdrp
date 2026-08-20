@@ -225,7 +225,9 @@
       "buildNumber": "Build",
       "bundle": "JS bundle",
       "bundleEmbedded": "Built in",
-      "updates": "Updates"
+      "updates": "Updates",
+      "feedbackQueue": "Feedback queued",
+      "feedbackError": "Last upload"
     }
   },
   "updates": {
