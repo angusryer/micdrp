@@ -29,8 +29,6 @@ import {
 export interface Env {
   DB: D1Database;
   BUNDLES: R2Bucket;
-  /** Public origin the bundle archives are served from. */
-  BUNDLE_BASE_URL: string;
 }
 
 /**
@@ -80,13 +78,20 @@ const json = (body: unknown, status = 200): Response =>
     headers: { 'Content-Type': 'application/json' }
   });
 
-const toDto = (row: BundleRow, publicBase: string): UpdateBundleDto => ({
+/** The R2 object key behind a row's storage_uri. */
+const objectKey = (storageUri: string): string =>
+  storageUri.replace(/^r2:\/\//, '').replace(/^\/+/, '');
+
+const toDto = (row: BundleRow, origin: string): UpdateBundleDto => ({
   bundleId: row.id,
   channel: row.channel,
   targetAppVersion: row.target_app_version ?? '',
   minBuildNumber: minBuildNumber(row),
-  // storage_uri is an r2:// address; the client needs something it can fetch.
-  fileUrl: `${publicBase}/${row.storage_uri.replace(/^r2:\/\//, '')}`,
+  // Archives are served back through this Worker rather than from a public
+  // bucket. The bucket stays private, there is no r2.dev origin or custom
+  // domain to configure, and the download URL is the same host the client
+  // already asked — one fewer value to get wrong.
+  fileUrl: `${origin}/bundle/${objectKey(row.storage_uri)}`,
   fileHash: row.file_hash,
   isEnabled: row.enabled === 1
 });
@@ -100,7 +105,8 @@ const toDto = (row: BundleRow, publicBase: string): UpdateBundleDto => ({
  */
 async function channelBundles(
   env: Env,
-  channel: string
+  channel: string,
+  origin: string
 ): Promise<UpdateBundleDto[]> {
   const { results } = await env.DB.prepare(
     `SELECT id, channel, target_app_version, file_hash, storage_uri,
@@ -111,8 +117,7 @@ async function channelBundles(
     .bind(channel)
     .all<BundleRow>();
 
-  const base = env.BUNDLE_BASE_URL.replace(/\/$/, '');
-  return (results ?? []).map((row) => toDto(row, base));
+  return (results ?? []).map((row) => toDto(row, origin));
 }
 
 function toUpdateInfo(
@@ -130,6 +135,29 @@ function toUpdateInfo(
     shouldForceUpdate: false,
     message: null
   };
+}
+
+/**
+ * Stream a bundle archive out of the private bucket.
+ *
+ * Unauthenticated on purpose: the archive is the same JavaScript already
+ * inside the app, its integrity is established by the hash the client verifies
+ * natively, and requiring a credential here would mean shipping one in the
+ * binary — where it could be read straight back out.
+ */
+async function handleBundle(key: string, env: Env): Promise<Response> {
+  const object = await env.BUNDLES.get(key);
+  if (!object) {
+    return json({ error: 'not found' }, 404);
+  }
+  return new Response(object.body, {
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      // Bundle ids are immutable, so the archive behind one never changes.
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      etag: object.httpEtag
+    }
+  });
 }
 
 async function handleCheck(request: Request, env: Env): Promise<Response> {
@@ -153,7 +181,8 @@ async function handleCheck(request: Request, env: Env): Promise<Response> {
     bundleId: body.bundleId ?? NIL_BUNDLE_ID
   };
 
-  const bundles = await channelBundles(env, client.channel);
+  const origin = new URL(request.url).origin;
+  const bundles = await channelBundles(env, client.channel, origin);
   return json(toUpdateInfo(decideUpdate(bundles, client)));
 }
 
@@ -163,6 +192,13 @@ export default {
 
     if (request.method === 'POST' && url.pathname === '/check') {
       return handleCheck(request, env);
+    }
+
+    if (request.method === 'GET' && url.pathname.startsWith('/bundle/')) {
+      return handleBundle(
+        decodeURIComponent(url.pathname.slice('/bundle/'.length)),
+        env
+      );
     }
 
     return json({ error: 'not found' }, 404);

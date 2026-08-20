@@ -54,8 +54,10 @@ npx wrangler d1 execute micdrp-ota --remote \
 yarn ota:deploy
 ```
 
-`BUNDLE_BASE_URL` must then be set to the bucket's public origin, and
-`OTA_UPDATE_URL` in `.env.production` to the deployed Worker.
+Then set `OTA_UPDATE_URL` in `.env.production` to the deployed Worker and
+`git secret hide`. There is nothing else to configure: archives are served
+back through the Worker's own `/bundle/<key>` route, so the bucket stays
+private and there is no r2.dev origin or custom domain in the picture.
 
 ## Day to day
 
@@ -71,6 +73,18 @@ yarn ota disable <bundleId>                # withdraw; installs roll back on nex
 `BUILD_NUMBER`, which is right for a pure JavaScript fix. Raise it whenever the
 bundle calls something that only exists in a newer binary — a bundle handed to
 a binary without the native module it calls crashes rather than degrading.
+
+## Routes
+
+| | |
+|---|---|
+| `POST /check` | What should this install do next: update, rollback, or nothing. |
+| `GET /bundle/<key>` | Streams an archive out of the private bucket. |
+
+`/bundle` is unauthenticated by design. The archive is the same JavaScript
+already inside the app, its integrity is established by the hash the client
+verifies natively, and any credential guarding it would have to ship in the
+binary — where it could be read straight back out.
 
 ## Scope
 
