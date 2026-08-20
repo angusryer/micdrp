@@ -1,0 +1,38 @@
+views:
+  - id: VIEW-DOG-001
+    name: Feedback control
+    route: overlay/DogfoodControl
+    description: >
+      A record control fixed in the top-right, over every screen. It is
+      not part of any screen's header: it has to survive navigation,
+      because walking through the app while describing it is the point.
+
+      Idle, it is a single unobtrusive control. Recording, it shows the
+      elapsed time and offers pause and stop. In the last stretch before
+      the cap it shows a countdown instead of elapsed time — visible only
+      then, because a timer running the whole time invites watching the
+      clock rather than talking.
+
+      While a capture or practice session holds the microphone it is
+      visibly unavailable rather than hidden. Hiding it would read as a
+      bug; showing it disabled says the app is busy with something else.
+    requires_auth: true
+    min_role: maintainer
+    data_sources:
+      - dogfood.start_clip
+      - dogfood.pause_clip
+      - dogfood.resume_clip
+      - dogfood.stop_clip
+    elements:
+      - A record control, present on every screen
+      - Elapsed time while recording
+      - A countdown, shown only once the cap is close
+      - A pause control while recording, and resume while paused
+      - A stop control that ends and sends in one action
+      - A disabled appearance while the microphone is otherwise in use
+      - A brief confirmation that a clip was sent
+    absent_elements:
+      - Any separate send action, because stopping is the instruction to send
+      - Any transcript or playback, because the clip is not for reading back
+      - Any list of past clips, because they are the agent loop's business
+      - A running timer before the countdown threshold

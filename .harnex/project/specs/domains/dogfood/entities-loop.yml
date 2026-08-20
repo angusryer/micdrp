@@ -1,0 +1,124 @@
+# The agent side: what a clip becomes once a loop run picks it up.
+entities:
+  - name: ClipTranscript
+    description: >
+      What was said, as text. Produced once and stored, because
+      transcription costs money and a re-run must not pay it twice.
+    properties:
+      - name: clipId
+        type: string
+        required: true
+      - name: text
+        type: string
+        required: true
+      - name: confidence
+        type: number
+        required: false
+        description: >
+          The recogniser's own confidence, 0..1, when it reports one. Low
+          confidence is a reason to file rather than build.
+        constraints: ["is within 0 and 1 inclusive"]
+
+  - name: ChangeRequest
+    description: >
+      One thing the maintainer asked for, split out of a transcript. A
+      single clip usually holds several, and they are independent: one
+      being unsafe to act on must not hold up the others.
+    properties:
+      - name: id
+        type: string
+        required: true
+      - name: clipId
+        type: string
+        required: true
+      - name: summary
+        type: string
+        required: true
+        description: An imperative sentence, in the maintainer's own terms.
+      - name: quote
+        type: string
+        required: true
+        description: >
+          The span of transcript this came from, verbatim. Kept so a
+          wrong reading is visible as a wrong reading rather than
+          disappearing into a paraphrase.
+      - name: route
+        type: string
+        required: false
+        description: >
+          The screen it concerns, resolved from the trail against when it
+          was said. Null when the request is not about a screen.
+      - name: confidence
+        type: number
+        required: true
+        description: >
+          How sure the interpretation is that this is what was meant.
+        constraints: ["is within 0 and 1 inclusive"]
+      - name: blastRadius
+        type: string
+        required: true
+        description: What acting on this would have to touch.
+        constraints: ["is one of: javascript, native, infrastructure, unknown"]
+      - name: state
+        type: string
+        required: true
+    states:
+      - name: proposed
+        description: Split out of the transcript, not yet judged.
+      - name: filed
+        description: >
+          Recorded for a human to look at, and not acted on. The
+          resting place for anything unsafe to do unattended.
+      - name: building
+        description: A run is making the change.
+      - name: built
+        description: Changed, and the harness passed.
+      - name: delivered
+        description: Merged and, where applicable, shipped over the air.
+      - name: abandoned
+        description: >
+          Attempted and given up on. Carries why, and leaves the working
+          tree as it was found.
+    transitions:
+      - from: proposed
+        to: filed
+        trigger: >
+          confidence below the floor, blastRadius other than javascript,
+          or the request names no concrete change
+      - from: proposed
+        to: building
+        trigger: dogfood.execute_request on a request that passed the gate
+      - from: building
+        to: built
+        trigger: preflight passes on the change
+      - from: building
+        to: abandoned
+        trigger: the change cannot be made, or preflight fails twice
+      - from: built
+        to: delivered
+        trigger: dogfood.deliver_batch includes it
+
+  - name: LoopRun
+    description: >
+      One pass of the agent loop: claim what is waiting, interpret it,
+      act, deliver. Recorded so a run that misbehaves can be found
+      afterwards, and so consecutive failures can stop the loop.
+    properties:
+      - name: id
+        type: string
+        required: true
+      - name: startedAtMs
+        type: number
+        required: true
+      - name: clipIds
+        type: array
+        required: true
+      - name: outcome
+        type: string
+        required: true
+        constraints:
+          ["is one of: delivered, filed_only, nothing_waiting, failed"]
+      - name: note
+        type: string
+        required: false
+        description: What happened, in one line, when it was not routine.

@@ -1,0 +1,112 @@
+# The safety gate. Every test here is damage an unattended loop did not do.
+acceptance:
+  - id: ACC-DOG-013
+    interface: cli
+    title: A confident JavaScript change is built
+    given:
+      - request A has confidence 0.9 and touches javascript
+      - preflight passes
+    when:
+      - the loop runs once
+    then:
+      - request A is in state delivered
+    maps_to:
+      capability: dogfood.gate_request
+
+  - id: ACC-DOG-014
+    interface: cli
+    title: A native change is filed, however confident
+    given:
+      - request A has confidence 0.99 and touches native
+    when:
+      - the loop runs once
+    then:
+      - request A is in state filed
+      - the run built nothing
+    maps_to:
+      capability: dogfood.gate_request
+      invariants: [INV-DOG-005]
+
+  - id: ACC-DOG-015
+    interface: cli
+    title: An infrastructure change is filed
+    given:
+      - request A has confidence 0.95 and touches infrastructure
+    when:
+      - the loop runs once
+    then:
+      - request A is in state filed
+    maps_to:
+      capability: dogfood.gate_request
+      invariants: [INV-DOG-005]
+
+  - id: ACC-DOG-016
+    interface: cli
+    title: An unclear blast radius is filed
+    given:
+      - request A has confidence 0.95 and touches unknown
+    when:
+      - the loop runs once
+    then:
+      - request A is in state filed
+    maps_to:
+      capability: dogfood.gate_request
+      invariants: [INV-DOG-005]
+
+  - id: ACC-DOG-017
+    interface: cli
+    title: A vague remark is filed rather than guessed at
+    given:
+      - request A has confidence 0.3 and touches javascript
+    when:
+      - the loop runs once
+    then:
+      - request A is in state filed
+      - the run built nothing
+    maps_to:
+      capability: dogfood.gate_request
+      invariants: [INV-DOG-007]
+
+  - id: ACC-DOG-018
+    interface: cli
+    title: Signing material is never touched unattended
+    given:
+      - request A has confidence 0.99 and touches javascript
+      - request A would change packages/client/fastlane/signing/signing.env
+    when:
+      - the loop runs once
+    then:
+      - request A is in state filed
+    maps_to:
+      capability: dogfood.gate_request
+      invariants: [INV-DOG-006]
+
+  - id: ACC-DOG-019
+    interface: cli
+    title: The release scripts are never touched unattended
+    given:
+      - request A has confidence 0.99 and touches javascript
+      - request A would change scripts/release.sh
+    when:
+      - the loop runs once
+    then:
+      - request A is in state filed
+    maps_to:
+      capability: dogfood.gate_request
+      invariants: [INV-DOG-006]
+
+  - id: ACC-DOG-020
+    interface: cli
+    title: One unsafe request does not hold up a safe one
+    given:
+      - request A has confidence 0.9 and touches javascript
+      - request B has confidence 0.9 and touches native
+      - preflight passes
+    when:
+      - the loop runs once
+    then:
+      - request A is in state delivered
+      - request B is in state filed
+    maps_to:
+      capability: dogfood.interpret_clip
+      invariants: [INV-DOG-005]

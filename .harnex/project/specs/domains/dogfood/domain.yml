@@ -1,0 +1,74 @@
+domain:
+  name: dogfood
+  version: 0.1.0
+  status: specifying
+  owner: human
+
+  description: >
+    Talking to the app about the app. A control in the top-right of every
+    screen records the maintainer describing what they are looking at and
+    what they want instead. The recording is uploaded, transcribed, read
+    as a set of change requests, built, and — when it is safe to — shipped
+    over the air without anyone typing anything.
+
+    The domain is named dogfood rather than feedback because feedback is
+    already taken: FeedbackDto means how well someone sang. These two must
+    never be confused, so they do not share a word.
+
+    This exists because micdrp has one user, who is also its author, and
+    the slowest step in improving it is describing a problem in writing.
+    Speaking is faster than typing and can be done while looking at the
+    thing being complained about. That is the whole idea.
+
+    Two things bound it. A voice note is a lossy, unreviewed instruction,
+    so the loop that acts on one is allowed to change only what can be
+    undone cheaply: JavaScript, which ships over the air and rolls back on
+    its own. And nothing here may interrupt singing — the microphone
+    serves one purpose at a time, and a take is worth more than a remark.
+
+  interfaces:
+    - type: ui
+      description: >
+        A record control present on every screen, its elapsed time, a
+        countdown when the cap is close, and pause/resume/stop.
+    - type: module
+      description: >
+        The client recorder and uploader in packages/client/src/dogfood.
+    - type: rest
+      description: >
+        A PocketBase collection holding each clip, its audio, and the
+        screens it was recorded over.
+    - type: cli
+      description: >
+        The agent loop: a service on the maintainer's machine that claims
+        clips, transcribes them, splits them into tasks, builds, and
+        delivers.
+
+  boundaries:
+    owns:
+      - The always-present record control and everything it displays
+      - The recording session, including pause, resume, stop and the cap
+      - Which screens were visited while a clip was being recorded
+      - Uploading a clip, and retrying an upload that failed
+      - Claiming, transcribing and interpreting a clip
+      - Deciding whether an interpretation is safe to act on unattended
+      - Building, verifying and delivering the changes a clip asks for
+    does_not_own:
+      - Singing feedback, scoring, or anything FeedbackDto means
+      - Capturing or analysing a musical take (notes, pitch, practice)
+      - Whether an over-the-air bundle reaches a device (updates owns that)
+      - The release scripts, signing, or anything that needs a native build
+
+  depends_on:
+    - domain: notes
+      reason: Reads whether a capture is running, to disable the control
+    - domain: practice
+      reason: Reads whether a guided session is running, for the same reason
+    - domain: account
+      reason: A clip belongs to the signed-in maintainer
+    - domain: updates
+      reason: >
+        Delivery is an over-the-air bundle, and the guarantees that make
+        unattended delivery survivable are that domain's
+
+  depended_on_by: []

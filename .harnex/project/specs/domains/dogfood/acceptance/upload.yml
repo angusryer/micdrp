@@ -1,0 +1,42 @@
+# Getting a spoken remark off the device.
+acceptance:
+  - id: ACC-DOG-010
+    interface: module
+    title: A failed upload keeps the clip
+    given:
+      - clip A is in state pending_upload
+      - the server is unreachable
+    when:
+      - the loop runs once
+    then:
+      - clip A is in state pending_upload
+    maps_to:
+      capability: dogfood.upload_clip
+      invariants: [INV-DOG-004]
+
+  - id: ACC-DOG-011
+    interface: module
+    title: A queued clip survives a relaunch
+    given:
+      - clip A is in state pending_upload
+      - the server is unreachable
+    when:
+      - the app relaunches
+    then:
+      - clip A is in state pending_upload
+    maps_to:
+      capability: dogfood.list_pending
+      invariants: [INV-DOG-004]
+
+  - id: ACC-DOG-012
+    interface: rest
+    title: An accepted clip is not uploaded twice
+    given:
+      - clip A is in state uploaded
+    when:
+      - the loop runs twice
+    then:
+      - clip A is in state uploaded
+    maps_to:
+      capability: dogfood.upload_clip
+      invariants: [INV-DOG-004]

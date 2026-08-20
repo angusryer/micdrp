@@ -1,0 +1,119 @@
+# The agent loop. Runs on the maintainer's machine, unattended.
+capabilities:
+  - name: dogfood.claim_clip
+    description: >
+      Take an uploaded clip so no second run picks up the same one. The
+      loop may be running when a previous run has not finished.
+    actor: agent
+    implemented_by: scripts/dogfood/claim.ts
+    parameters:
+      required: []
+    preconditions:
+      - a clip is in state uploaded
+    postconditions:
+      - the oldest unclaimed clip is claimed, and moves to state claimed
+      - a clip already claimed is never returned to a second run
+      - a claim older than the stale threshold is reclaimable, so a run
+        that died does not strand its clip forever
+
+  - name: dogfood.transcribe_clip
+    description: >
+      Turn the audio into text. Done once per clip and stored, because a
+      re-run must not pay for the same audio twice.
+    actor: agent
+    implemented_by: scripts/dogfood/transcribe.ts
+    parameters:
+      required: [clipId]
+    preconditions:
+      - the clip is in state claimed
+      - the clip has audio
+    postconditions:
+      - the transcript is stored against the clip
+      - a clip already transcribed is not transcribed again
+      - a failed transcription leaves the clip claimable rather than lost
+
+  - name: dogfood.interpret_clip
+    description: >
+      Read a transcript as a set of independent change requests, each
+      carrying the words it came from and how sure the reading is.
+    actor: agent
+    implemented_by: scripts/dogfood/interpret.ts
+    parameters:
+      required: [clipId]
+    preconditions:
+      - the clip has a transcript
+    postconditions:
+      - each request quotes the transcript span it came from, verbatim
+      - each request is scored for confidence and for what it would touch
+      - a request that names no concrete change is produced as filed, not
+        invented into something actionable
+      - the screen trail resolves each request's route where it has one
+      - requests are independent; one being unsafe does not block another
+
+  - name: dogfood.gate_request
+    description: >
+      Decide whether a request may be acted on with nobody watching.
+      This is the whole of the safety story, so it fails closed.
+    actor: agent
+    implemented_by: scripts/dogfood/gate.ts
+    parameters:
+      required: [requestId]
+    preconditions:
+      - the request is in state proposed
+    postconditions:
+      - a request below the confidence floor is filed, not built
+      - a request whose blastRadius is not javascript is filed, not built
+      - a request touching signing, secrets, CI, or the release scripts is
+        filed regardless of anything else
+      - a request that passes every test moves to state building
+      - the reason for filing is recorded with the request
+
+  - name: dogfood.execute_request
+    description: >
+      Make the change the request asks for, and prove it.
+    actor: agent
+    implemented_by: scripts/dogfood/execute.ts
+    parameters:
+      required: [requestId]
+    preconditions:
+      - the request is in state building
+      - the working tree is clean
+    postconditions:
+      - the spec is updated before the code, as for any other change
+      - preflight passes, or the request is abandoned
+      - an abandoned request leaves the working tree as it was found
+      - preflight failing twice abandons rather than retrying forever
+
+  - name: dogfood.deliver_batch
+    description: >
+      Merge what was built and ship it. Batching is deliberate: several
+      small changes in one bundle is one interruption for the maintainer
+      instead of several.
+    actor: agent
+    implemented_by: scripts/dogfood/deliver.ts
+    parameters:
+      required: [requestIds]
+    preconditions:
+      - every request in the batch is in state built
+      - preflight passes on the batch as a whole, not only per request
+    postconditions:
+      - the batch is committed to main with the transcript quoted
+      - an over-the-air bundle is published for the current binary
+      - the bundle's minimum build number is the running build, never lower
+      - nothing is published when the batch changed no JavaScript
+      - each request moves to state delivered
+
+  - name: dogfood.halt_loop
+    description: >
+      Stop the loop when it is not working. An automated thing that keeps
+      going after repeated failure does more damage than one that stops.
+    actor: agent
+    implemented_by: scripts/dogfood/loop.ts
+    parameters:
+      required: []
+    preconditions:
+      - consecutive runs have failed, or a delivered bundle was rolled back
+    postconditions:
+      - no further clip is claimed until a human restarts the loop
+      - the reason is recorded where the maintainer will see it
+      - clips already uploaded are left untouched for the next run

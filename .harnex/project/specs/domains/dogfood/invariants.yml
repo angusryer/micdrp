@@ -1,0 +1,130 @@
+invariants:
+  - id: INV-DOG-001
+    description: Recording a remark never interrupts singing
+    severity: critical
+    check: >
+      The record control is unavailable while a capture or a practice
+      session is running, and starting one while a clip is recording
+      stops the clip rather than the take. Verified by asserting
+      canRecord is false throughout both activities. The microphone
+      serves one purpose at a time and a take cannot be sung again
+      identically; a remark can be repeated word for word.
+
+  - id: INV-DOG-002
+    description: A remark is never separated from what it was about
+    severity: critical
+    check: >
+      Every clip carries the screens shown while it was being recorded,
+      in order, with offsets; and the version, build and bundle it was
+      recorded on. Verified by recording across a navigation and
+      asserting both screens appear in the trail. "Move this button" is
+      not actionable without knowing which screen was on show, and a
+      remark about behaviour that has since shipped differently must be
+      recognisable as stale.
+
+  - id: INV-DOG-003
+    description: Stopping sends, and the cap stops
+    severity: critical
+    check: >
+      dogfood.stop_clip and the cap elapsing produce the same outcome: a
+      clip in state pending_upload, uploading. Verified by driving both
+      and comparing the resulting state. A recording that has to be sent
+      as a second deliberate act is a recording that gets forgotten.
+
+  - id: INV-DOG-004
+    description: A spoken remark is not lost by a bad connection
+    severity: critical
+    check: >
+      A clip whose upload fails stays in pending_upload, survives a
+      relaunch, and is retried. Verified by failing an upload, restarting,
+      and asserting the clip is still queued. Nothing is deleted locally
+      until the server has accepted it.
+
+  - id: INV-DOG-005
+    description: The loop changes only what can be taken back
+    severity: critical
+    check: >
+      No request is built unattended unless its blastRadius is
+      javascript. Anything native, infrastructural, or unknown is filed.
+      Verified by gating a request of each kind and asserting only the
+      javascript one builds. JavaScript is the only thing that ships over
+      the air, and the only thing that rolls itself back when it fails to
+      boot; everything else needs a build, a human, and a decision.
+
+  - id: INV-DOG-006
+    description: The loop never touches what it cannot be trusted with
+    severity: critical
+    check: >
+      A request whose change would touch signing material, secrets, CI
+      configuration, or the release scripts is filed regardless of its
+      confidence or blast radius. Verified by proposing such a request
+      and asserting it is filed with a reason. These are the changes
+      whose failure mode is not a bad screen but a lost credential or an
+      unshippable app.
+
+  - id: INV-DOG-007
+    description: An uncertain reading is filed, never guessed at
+    severity: critical
+    check: >
+      A request below the confidence floor is filed with its reason and
+      the transcript span it came from, and is not built. Verified by
+      interpreting a deliberately vague remark and asserting nothing was
+      built. A transcript is a lossy record of a spoken thought; acting
+      confidently on a poor reading is how an automated loop does damage.
+
+  - id: INV-DOG-008
+    description: Nothing ships that the harness has not passed
+    severity: critical
+    check: >
+      Preflight passes on each change and again on the assembled batch
+      before anything is committed or published. Verified by making a
+      change that fails preflight and asserting it is abandoned rather
+      than delivered. The batch is checked as a whole because two changes
+      that each pass alone can fail together.
+
+  - id: INV-DOG-009
+    description: A failed attempt leaves nothing behind
+    severity: critical
+    check: >
+      An abandoned request leaves the working tree exactly as it was
+      found, with no partial edit and no stray branch. Verified by
+      abandoning mid-change and asserting a clean tree. A loop that runs
+      unattended must never leave the repository in a state the next run
+      inherits.
+
+  - id: INV-DOG-010
+    description: A loop that is failing stops itself
+    severity: critical
+    check: >
+      Consecutive failed runs, or a delivered bundle that rolled back,
+      halt the loop until a human restarts it. Verified by failing runs
+      to the threshold and asserting no further clip is claimed. An
+      automated process that keeps going after repeated failure does more
+      damage than one that stops and says so.
+
+  - id: INV-DOG-011
+    description: A bundle is never offered to a binary that predates it
+    severity: critical
+    check: >
+      A bundle the loop publishes carries the running build as its
+      minimum, never lower. Verified by delivering and asserting the
+      published minimum equals the build the changes were made against.
+      This is INV-UPD-002 restated at the point where a machine, rather
+      than a person, chooses the number.
+
+  - id: INV-DOG-012
+    description: A clip is worked on by one run at a time
+    severity: high
+    check: >
+      A claimed clip is never returned to a second run, and a claim left
+      by a run that died becomes reclaimable after the stale threshold.
+      Verified by claiming twice concurrently and asserting the second
+      claim returns nothing.
+
+  - id: INV-DOG-013
+    description: Audio is transcribed once
+    severity: high
+    check: >
+      A clip already carrying a transcript is not sent for transcription
+      again, including across runs and restarts. Verified by running the
+      loop twice over the same clip and asserting one transcription call.

@@ -1,0 +1,113 @@
+# The device side: speak, and get it to the server.
+capabilities:
+  - name: dogfood.start_clip
+    description: >
+      Begin recording a remark. Available from every screen, and the
+      recording survives navigating away — walking through the app while
+      describing it is the point.
+    actor: maintainer
+    implemented_by: packages/client/src/dogfood/session.ts
+    parameters:
+      required: []
+    preconditions:
+      - no capture is in progress
+      - no practice session is in progress
+      - the microphone permission is granted
+    postconditions:
+      - the audio session is configured for speech, not for pitch detection
+      - elapsedMs starts at 0 and advances only while recording
+      - the screen on show is the first entry in the trail
+      - navigating appends to the trail and does not stop the recording
+    permissions:
+      - role: maintainer
+        notes: The signed-in owner of the clip.
+
+  - name: dogfood.pause_clip
+    description: Hold the recording, keeping what has been said.
+    actor: maintainer
+    implemented_by: packages/client/src/dogfood/session.ts
+    parameters:
+      required: []
+    preconditions:
+      - a clip is in state recording
+    postconditions:
+      - elapsedMs stops advancing
+      - time spent paused does not count towards the cap
+      - the microphone is released while paused
+
+  - name: dogfood.resume_clip
+    description: Carry on recording into the same clip.
+    actor: maintainer
+    implemented_by: packages/client/src/dogfood/session.ts
+    parameters:
+      required: []
+    preconditions:
+      - a clip is in state paused
+      - no capture is in progress
+      - no practice session is in progress
+    postconditions:
+      - elapsedMs resumes from where it stopped
+      - what was said before the pause is retained
+      - the screen on show is appended to the trail
+
+  - name: dogfood.stop_clip
+    description: >
+      Finish, and send. There is no separate send step: stopping is the
+      instruction to send, because a remark held on the device helps
+      nobody.
+    actor: maintainer
+    implemented_by: packages/client/src/dogfood/session.ts
+    parameters:
+      required: []
+    preconditions:
+      - a clip is in state recording or paused
+    postconditions:
+      - the clip moves to state pending_upload
+      - the audio session is restored to what it was before recording
+      - upload begins immediately and does not block the interface
+      - a clip of zero length is discarded rather than uploaded
+
+  - name: dogfood.expire_clip
+    description: >
+      Finish a clip that reached the cap. Identical in effect to
+      stopping: the recording is sent, not discarded, because the words
+      already spoken are worth as much as if the button had been pressed.
+    actor: system
+    implemented_by: packages/client/src/dogfood/session.ts
+    parameters:
+      required: []
+    preconditions:
+      - elapsedMs has reached the cap
+    postconditions:
+      - the clip is sent exactly as dogfood.stop_clip sends it
+      - the countdown was visible for the warning threshold beforehand
+
+  - name: dogfood.upload_clip
+    description: >
+      Put a finished clip on the server, with its trail and the binary it
+      came from.
+    actor: system
+    implemented_by: packages/client/src/dogfood/upload.ts
+    parameters:
+      required: [clipId]
+    preconditions:
+      - the clip is in state pending_upload
+      - the maintainer is signed in
+    postconditions:
+      - the audio, the trail, and the recording binary are sent together
+      - a failed upload leaves the clip in pending_upload and retries later
+      - a clip is never uploaded twice
+      - the local audio is deleted once the server has accepted it
+
+  - name: dogfood.list_pending
+    description: >
+      What is recorded but not yet accepted by the server, so a clip
+      cannot be lost by closing the app on a bad connection.
+    actor: system
+    implemented_by: packages/client/src/dogfood/upload.ts
+    parameters:
+      required: []
+    preconditions: []
+    postconditions:
+      - clips in state pending_upload are returned oldest first
+      - they survive a relaunch

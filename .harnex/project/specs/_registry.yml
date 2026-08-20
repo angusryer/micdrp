@@ -39,3 +39,8 @@ domains:
     priority: medium
     description: Over-the-air JavaScript bundle delivery to TestFlight builds, with
       prompted apply and automatic rollback
+  dogfood:
+    path: .harnex/project/specs/domains/dogfood
+    status: specifying
+    priority: medium
+    description: Spoken feedback about the app, transcribed and acted on by an agent loop that ships JavaScript-only changes over the air

@@ -1,0 +1,150 @@
+# Dogfood test grammar. A fake audio session and a fake clip store, so no
+# case needs a microphone, a network, or a paid transcription. Dense, with
+# near-duplicates merged: one file per domain (harnex#153), 150-line budget.
+
+given:
+  - id: GX-DOG-SCREEN
+    pattern: 'the maintainer is on the {value} screen'
+    mode: extension
+    action: dog_set_route
+    params: { route: "{value}" }
+  - id: GX-DOG-BUSY
+    pattern: 'a {value} is in progress'
+    mode: extension
+    action: dog_set_busy
+    params: { activity: "{value}" }
+  - id: GX-DOG-CLIP-STATE
+    pattern: 'a clip is {state}'
+    mode: extension
+    action: dog_set_clip_state
+    params: { state: "{state}" }
+  - id: GX-DOG-ELAPSED
+    pattern: 'the clip has been recording for {N} seconds'
+    mode: extension
+    action: dog_set_elapsed
+    params: { seconds: "{N}" }
+  - id: GX-DOG-LABELLED
+    pattern: 'clip {label} is in state {state}'
+    mode: extension
+    action: dog_set_labelled_clip
+    params: { label: "{label}", state: "{state}" }
+  - id: GX-DOG-OFFLINE
+    pattern: 'the server is unreachable'
+    mode: extension
+    action: dog_set_offline
+  - id: GX-DOG-TRANSCRIPT
+    pattern: 'clip {label} was heard as {value}'
+    mode: extension
+    action: dog_set_transcript
+    params: { label: "{label}", text: "{value}" }
+  - id: GX-DOG-REQUEST
+    pattern: 'request {label} has confidence {value} and touches {value2}'
+    mode: extension
+    action: dog_set_request
+    params: { label: "{label}", confidence: "{value}", blastRadius: "{value2}" }
+  - id: GX-DOG-REQUEST-PATH
+    pattern: 'request {label} would change {value}'
+    mode: extension
+    action: dog_set_request_path
+    params: { label: "{label}", path: "{value}" }
+  - id: GX-DOG-PREFLIGHT
+    pattern: 'preflight {value}'
+    mode: extension
+    action: dog_set_preflight
+    params: { outcome: "{value}" }
+  - id: GX-DOG-RUNS-FAILED
+    pattern: '{N} consecutive runs have failed'
+    mode: extension
+    action: dog_set_failed_runs
+    params: { count: "{N}" }
+
+when:
+  - id: WX-DOG-TAP
+    pattern: 'the maintainer taps {value}'
+    mode: extension
+    action: dog_tap
+    params: { control: "{value}" }
+    resolution: One of record, pause, resume, stop.
+  - id: WX-DOG-NAVIGATE
+    pattern: 'the maintainer navigates to {value}'
+    mode: extension
+    action: dog_navigate
+    params: { route: "{value}" }
+  - id: WX-DOG-CAP
+    pattern: 'the cap elapses'
+    mode: extension
+    action: dog_elapse_cap
+  - id: WX-DOG-ACTIVITY-ENDS
+    pattern: 'the {value} ends'
+    mode: extension
+    action: dog_end_busy
+    params: { activity: "{value}" }
+  - id: WX-DOG-RELAUNCH
+    pattern: 'the app relaunches'
+    mode: extension
+    action: dog_relaunch
+  - id: WX-DOG-LOOP
+    pattern: 'the loop runs {value}'
+    mode: extension
+    action: dog_run_loop
+    params: { times: "{value}" }
+    resolution: One of once, twice.
+  - id: WX-DOG-CLAIM-CONCURRENT
+    pattern: 'two runs claim at once'
+    mode: extension
+    action: dog_claim_concurrent
+
+then:
+  - id: TX-DOG-STATE
+    pattern: 'the clip is in state {state}'
+    mode: extension
+    action: dog_assert_clip_state
+    params: { state: "{state}" }
+  - id: TX-DOG-LABELLED-STATE
+    pattern: '{value} {label} is in state {state}'
+    mode: extension
+    action: dog_assert_labelled_state
+    params: { kind: "{value}", label: "{label}", state: "{state}" }
+    resolution: kind is clip or request.
+  - id: TX-DOG-TRAIL
+    pattern: 'the trail is {value}'
+    mode: extension
+    action: dog_assert_trail
+    params: { routes: "{value}" }
+  - id: TX-DOG-CONTROL
+    pattern: 'the record control is {state}'
+    mode: extension
+    action: dog_assert_control
+    params: { state: "{state}" }
+  - id: TX-DOG-COUNTDOWN
+    pattern: 'the countdown is {state}'
+    mode: extension
+    action: dog_assert_countdown
+    params: { state: "{state}" }
+  - id: TX-DOG-ELAPSED
+    pattern: 'the elapsed time is {N} seconds'
+    mode: extension
+    action: dog_assert_elapsed
+    params: { seconds: "{N}" }
+  - id: TX-DOG-FILED-REASON
+    pattern: 'request {label} is filed because {value}'
+    mode: extension
+    action: dog_assert_filed_reason
+    params: { label: "{label}", reason: "{value}" }
+  - id: TX-DOG-PUBLISHED
+    pattern: 'a bundle is published with minimum build {N}'
+    mode: extension
+    action: dog_assert_published
+    params: { minBuild: "{N}" }
+  - id: TX-DOG-NOT-PUBLISHED
+    pattern: 'no bundle is published'
+    mode: extension
+    action: dog_assert_not_published
+  - id: TX-DOG-OUTCOME
+    pattern: 'the run {value}'
+    mode: extension
+    action: dog_assert_outcome
+    params: { outcome: "{value}" }
+    resolution: >
+      One of: built nothing, left the working tree unchanged, halted the
+      loop, claimed nothing, transcribed once.

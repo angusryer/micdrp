@@ -1,0 +1,127 @@
+# What gets recorded and uploaded. The agent-side shapes are in
+# entities-loop.yml.
+entities:
+  - name: DogfoodClip
+    description: >
+      One spoken remark about the app, with the trail of screens it was
+      spoken over. The trail matters more than it looks: "this button is
+      in the wrong place" is unactionable without knowing which screen
+      was on show when it was said.
+    properties:
+      - name: id
+        type: string
+        required: true
+      - name: audioPath
+        type: string
+        required: false
+        description: >
+          The clip's durable server-side filename. Deliberately not a
+          URL: a file token expires in about two minutes, so a URL stored
+          here would be dead before anything read it (INV-NOTES-014
+          learned this the hard way).
+      - name: durationMs
+        type: number
+        required: true
+        constraints: ["is greater than 0", "is at most the recording cap"]
+      - name: screenTrail
+        type: array
+        required: true
+        description: >
+          Every screen shown while recording, in order, each with the
+          offset it appeared at. A clip recorded without moving has one
+          entry.
+      - name: appVersion
+        type: string
+        required: true
+        description: >
+          The VERSION_NUMBER of the binary that recorded it, so a remark
+          about behaviour that has since changed can be recognised.
+      - name: buildNumber
+        type: number
+        required: true
+      - name: bundleId
+        type: string
+        required: false
+        description: >
+          The over-the-air bundle running when the clip was recorded, or
+          null for the binary's own. Without this a remark cannot be tied
+          to the JavaScript that produced the behaviour.
+      - name: recordedAtMs
+        type: number
+        required: true
+      - name: state
+        type: string
+        required: true
+    states:
+      - name: recording
+        description: Being spoken now. Exists only on the device.
+      - name: paused
+        description: Held, retaining what has been said so far.
+      - name: pending_upload
+        description: Finished and on disk, not yet accepted by the server.
+      - name: uploaded
+        description: Accepted by the server; the device is done with it.
+      - name: claimed
+        description: An agent loop run has taken it and is working on it.
+      - name: interpreted
+        description: Transcribed and split into tasks.
+      - name: delivered
+        description: Every task it produced reached a conclusion.
+    transitions:
+      - from: recording
+        to: paused
+        trigger: dogfood.pause_clip
+      - from: paused
+        to: recording
+        trigger: dogfood.resume_clip
+      - from: recording
+        to: pending_upload
+        trigger: dogfood.stop_clip, or the cap elapsing
+      - from: paused
+        to: pending_upload
+        trigger: dogfood.stop_clip, or the cap elapsing
+      - from: pending_upload
+        to: uploaded
+        trigger: the server accepts the clip
+      - from: uploaded
+        to: claimed
+        trigger: dogfood.claim_clip
+
+  - name: ScreenVisit
+    description: One screen, and when during the clip it was on show.
+    properties:
+      - name: route
+        type: string
+        required: true
+        description: The navigator route name, not a human title.
+      - name: atMs
+        type: number
+        required: true
+        description: Offset from the start of the clip, excluding pauses.
+
+  - name: RecordingSession
+    description: >
+      The live recording, as the control renders it. Held on the device
+      and never uploaded; only the clip it produces is.
+    properties:
+      - name: elapsedMs
+        type: number
+        required: true
+        description: Time recorded, excluding anything spent paused.
+      - name: remainingMs
+        type: number
+        required: true
+        description: The cap minus elapsedMs.
+      - name: isCountingDown
+        type: boolean
+        required: true
+        description: >
+          True once remainingMs is at or under the warning threshold. The
+          control shows the countdown only then — a timer running the
+          whole time invites watching the clock instead of talking.
+      - name: canRecord
+        type: boolean
+        required: true
+        description: >
+          False while a capture or practice session holds the microphone.
+          The device serves one at a time, and a take outranks a remark.

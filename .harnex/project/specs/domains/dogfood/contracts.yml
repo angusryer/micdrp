@@ -1,0 +1,87 @@
+# The clip collection, as PocketBase serves it. Same shape as notes: a
+# record with an attached file, guarded by per-record ownership rules
+# evaluated server-side.
+contracts:
+  rest_api:
+    - name: create_clip
+      method: POST
+      path: /api/collections/dogfood_clips/records
+      maps_to: dogfood.upload_clip
+      description: >
+        Upload one finished clip. The audio and the record go up in a
+        single multipart request, so a clip is never half-present.
+      request_body:
+        audio: { type: file, required: true, description: "The recording" }
+        duration_ms: { type: number, required: true }
+        screen_trail: { type: json, required: true, description: "ScreenVisit list, in order" }
+        app_version: { type: string, required: true }
+        build_number: { type: number, required: true }
+        bundle_id: { type: string, nullable: true }
+        recorded_at_ms: { type: number, required: true }
+        state: { type: string, enum: [uploaded, claimed, interpreted, delivered] }
+      responses:
+        "200": { description: "Accepted; the record is returned with its id" }
+        "400": { description: "Malformed record or missing audio" }
+        "403": { description: "Not signed in, or writing as another owner" }
+
+    - name: list_clips
+      method: GET
+      path: /api/collections/dogfood_clips/records
+      maps_to: dogfood.claim_clip
+      description: >
+        What is waiting. The loop reads this filtered to state uploaded,
+        oldest first.
+      responses:
+        "200": { description: "The caller's own clips only" }
+        "403": { description: "Not signed in" }
+
+    - name: claim_clip
+      method: PATCH
+      path: /api/collections/dogfood_clips/records/{id}
+      maps_to: dogfood.claim_clip
+      description: >
+        Move a clip to claimed, so a second run cannot take it. The
+        claim carries the time it was made; a claim older than the stale
+        threshold may be taken over, so a run that died does not strand
+        its clip.
+      request_body:
+        state: { type: string, required: true }
+        claimed_at_ms: { type: number, required: true }
+        claimed_by: { type: string, required: true, description: "LoopRun id" }
+      responses:
+        "200": { description: "Claimed" }
+        "403": { description: "Not the owner" }
+        "404": { description: "No such clip" }
+
+    - name: store_interpretation
+      method: PATCH
+      path: /api/collections/dogfood_clips/records/{id}
+      maps_to: dogfood.transcribe_clip
+      description: >
+        Record the transcript and the requests read out of it, so a
+        re-run pays for neither again.
+      request_body:
+        transcript: { type: string, required: true }
+        transcript_confidence: { type: number, nullable: true }
+        requests: { type: json, required: true, description: "ChangeRequest list" }
+        state: { type: string, required: true }
+      responses:
+        "200": { description: "Stored" }
+        "403": { description: "Not the owner" }
+
+  error_format:
+    description: >
+      PocketBase's own: a status code, a message, and a per-field data
+      map. Nothing here adds a second error shape.
+    fields:
+      code: { type: number }
+      message: { type: string }
+      data: { type: object }
+
+  read_models:
+    - name: pending_clips
+      entity: DogfoodClip
+      description: >
+        Clips in state uploaded, oldest first — what a loop run claims
+        from. Access is the owner's own records only, enforced by the
+        collection's view rule rather than by the query.

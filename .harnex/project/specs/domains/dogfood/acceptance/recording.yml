@@ -1,0 +1,123 @@
+# The control, the session, and the rule that singing wins.
+acceptance:
+  - id: ACC-DOG-001
+    interface: ui
+    title: A remark can be spoken across screens without stopping
+    given:
+      - the maintainer is on the Notes screen
+    when:
+      - the maintainer taps record
+      - the maintainer navigates to Practice
+    then:
+      - the clip is in state recording
+      - the trail is Notes,Practice
+    maps_to:
+      capability: dogfood.start_clip
+      invariants: [INV-DOG-002]
+
+  - id: ACC-DOG-002
+    interface: ui
+    title: A take keeps the microphone
+    given:
+      - a capture is in progress
+    when:
+      - the maintainer taps record
+    then:
+      - the record control is unavailable
+      - the clip is in state idle
+    maps_to:
+      capability: dogfood.start_clip
+      invariants: [INV-DOG-001]
+
+  - id: ACC-DOG-003
+    interface: ui
+    title: A practice session keeps it too
+    given:
+      - a practice session is in progress
+    when:
+      - the maintainer taps record
+    then:
+      - the record control is unavailable
+    maps_to:
+      capability: dogfood.start_clip
+      invariants: [INV-DOG-001]
+
+  - id: ACC-DOG-004
+    interface: ui
+    title: The control returns the moment the take ends
+    given:
+      - a capture is in progress
+    when:
+      - the capture ends
+    then:
+      - the record control is available
+    maps_to:
+      capability: dogfood.start_clip
+      invariants: [INV-DOG-001]
+
+  - id: ACC-DOG-005
+    interface: ui
+    title: Thinking time is free
+    given:
+      - a clip is recording
+      - the clip has been recording for 30 seconds
+    when:
+      - the maintainer taps pause
+    then:
+      - the clip is in state paused
+      - the elapsed time is 30 seconds
+    maps_to:
+      capability: dogfood.pause_clip
+
+  - id: ACC-DOG-006
+    interface: ui
+    title: Resuming continues the same clip
+    given:
+      - a clip is paused
+      - the maintainer is on the Dashboard screen
+    when:
+      - the maintainer taps resume
+    then:
+      - the clip is in state recording
+      - the trail is Dashboard
+    maps_to:
+      capability: dogfood.resume_clip
+
+  - id: ACC-DOG-007
+    interface: ui
+    title: The countdown appears only near the end
+    given:
+      - a clip is recording
+      - the clip has been recording for 30 seconds
+    when:
+      - the maintainer taps record
+    then:
+      - the countdown is hidden
+    maps_to:
+      capability: dogfood.start_clip
+
+  - id: ACC-DOG-008
+    interface: ui
+    title: Stopping sends without a second action
+    given:
+      - a clip is recording
+    when:
+      - the maintainer taps stop
+    then:
+      - the clip is in state pending_upload
+    maps_to:
+      capability: dogfood.stop_clip
+      invariants: [INV-DOG-003]
+
+  - id: ACC-DOG-009
+    interface: ui
+    title: Running out of time sends what was said
+    given:
+      - a clip is recording
+    when:
+      - the cap elapses
+    then:
+      - the clip is in state pending_upload
+    maps_to:
+      capability: dogfood.expire_clip
+      invariants: [INV-DOG-003]

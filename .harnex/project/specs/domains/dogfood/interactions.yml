@@ -1,0 +1,68 @@
+interactions:
+  - id: INT-DOG-001
+    name: Talk through the app
+    view: VIEW-DOG-001
+    precondition: >
+      The maintainer is signed in, the microphone permission is granted,
+      and no capture or practice session is running.
+    steps:
+      - Tap the record control
+      - Describe what is on screen and what should be different
+      - Navigate to another screen and keep talking
+      - Tap stop
+    outcome: >
+      The clip is sent with the trail of screens it was spoken over. The
+      agent loop picks it up without anything else being done.
+    error_handling: >
+      A failed upload keeps the clip queued and retries; nothing is lost
+      by closing the app. A denied microphone permission surfaces the
+      prompt to grant it and leaves no clip behind.
+    maps_to:
+      capability: dogfood.stop_clip
+
+  - id: INT-DOG-002
+    name: Gather a thought mid-sentence
+    view: VIEW-DOG-001
+    precondition: A clip is recording.
+    steps:
+      - Tap pause
+      - Think, or go and look at something
+      - Tap resume and carry on
+    outcome: >
+      One clip, containing both halves. Time spent paused does not count
+      against the cap, so thinking is free.
+    error_handling: >
+      Starting a capture while paused ends the clip and sends what was
+      said rather than discarding it.
+    maps_to:
+      capability: dogfood.pause_clip
+
+  - id: INT-DOG-003
+    name: Run out of time
+    view: VIEW-DOG-001
+    precondition: A clip has been recording for close to the cap.
+    steps:
+      - Notice the countdown appear
+      - Finish the sentence
+    outcome: >
+      At zero the clip sends itself, exactly as stopping would. Nothing
+      spoken is discarded.
+    error_handling: >
+      Tapping stop during the countdown does the same thing sooner.
+    maps_to:
+      capability: dogfood.expire_clip
+
+  - id: INT-DOG-004
+    name: Try to talk mid-take
+    view: VIEW-DOG-001
+    precondition: A capture or practice session is running.
+    steps:
+      - Look at the record control
+    outcome: >
+      It is visibly unavailable. The take keeps the microphone, and the
+      remark can be made the moment it ends.
+    error_handling: >
+      The control becomes available again as soon as the take finishes,
+      without needing to change screens.
+    maps_to:
+      capability: dogfood.start_clip

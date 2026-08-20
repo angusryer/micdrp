@@ -1,0 +1,36 @@
+commands:
+  - id: CMD-DOG-001
+    name: yarn dogfood
+    maps_to: dogfood.claim_clip
+    arguments:
+      positional: []
+      flags:
+        "once": { type: boolean, default: false, description: "Run one pass and exit, instead of polling" }
+        "interval": { type: integer, default: 120, description: "Seconds between passes when polling" }
+        "dry-run": { type: boolean, default: false, description: "Transcribe and interpret, but never build or deliver" }
+        "no-deliver": { type: boolean, default: false, description: "Build and verify, but stop before committing or publishing" }
+    output: >
+      One line per pass: "<n> clip(s): <b> built, <f> filed, <d>
+      delivered." Nothing waiting prints nothing, so an idle loop is
+      silent rather than noisy.
+
+  - id: CMD-DOG-002
+    name: yarn dogfood status
+    maps_to: dogfood.list_pending
+    arguments:
+      positional: []
+      flags:
+        "json": { type: boolean, default: false }
+    output: >
+      Whether the loop is running or halted and why; clips waiting,
+      claimed, and delivered; and every request currently filed, with the
+      reason it was filed and the words it came from.
+
+  - id: CMD-DOG-003
+    name: yarn dogfood resume
+    maps_to: dogfood.halt_loop
+    arguments:
+      positional: []
+    output: >
+      Clears a halt and starts claiming again. Prints what the halt was
+      for, so restarting is a deliberate act rather than a reflex.

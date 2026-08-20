@@ -1,0 +1,113 @@
+# Building, proving, and shipping — or stopping.
+acceptance:
+  - id: ACC-DOG-021
+    interface: cli
+    title: A change the harness rejects is never delivered
+    given:
+      - request A has confidence 0.9 and touches javascript
+      - preflight fails
+    when:
+      - the loop runs once
+    then:
+      - request A is in state abandoned
+      - no bundle is published
+    maps_to:
+      capability: dogfood.execute_request
+      invariants: [INV-DOG-008]
+
+  - id: ACC-DOG-022
+    interface: cli
+    title: An abandoned change leaves nothing behind
+    given:
+      - request A has confidence 0.9 and touches javascript
+      - preflight fails
+    when:
+      - the loop runs once
+    then:
+      - the run left the working tree unchanged
+    maps_to:
+      capability: dogfood.execute_request
+      invariants: [INV-DOG-009]
+
+  - id: ACC-DOG-023
+    interface: cli
+    title: A delivered bundle cannot reach a binary that predates it
+    given:
+      - request A has confidence 0.9 and touches javascript
+      - preflight passes
+    when:
+      - the loop runs once
+    then:
+      - a bundle is published with minimum build 5
+    maps_to:
+      capability: dogfood.deliver_batch
+      invariants: [INV-DOG-011]
+
+  - id: ACC-DOG-024
+    interface: cli
+    title: Nothing is published when no JavaScript changed
+    given:
+      - request A has confidence 0.9 and touches javascript
+      - request A would change .harnex/project/specs/domains/dogfood/domain.yml
+      - preflight passes
+    when:
+      - the loop runs once
+    then:
+      - no bundle is published
+    maps_to:
+      capability: dogfood.deliver_batch
+
+  - id: ACC-DOG-025
+    interface: cli
+    title: A loop that keeps failing stops itself
+    given:
+      - 3 consecutive runs have failed
+    when:
+      - the loop runs once
+    then:
+      - the run halted the loop
+      - the run claimed nothing
+    maps_to:
+      capability: dogfood.halt_loop
+      invariants: [INV-DOG-010]
+
+  - id: ACC-DOG-026
+    interface: cli
+    title: Two runs never work the same clip
+    given:
+      - clip A is in state uploaded
+    when:
+      - two runs claim at once
+    then:
+      - clip A is in state claimed
+    maps_to:
+      capability: dogfood.claim_clip
+      invariants: [INV-DOG-012]
+
+  - id: ACC-DOG-027
+    interface: cli
+    title: Audio is paid for once
+    given:
+      - clip A is in state claimed
+      - clip A was heard as move the record button lower
+    when:
+      - the loop runs twice
+    then:
+      - the run transcribed once
+    maps_to:
+      capability: dogfood.transcribe_clip
+      invariants: [INV-DOG-013]
+
+  - id: ACC-DOG-028
+    interface: cli
+    title: A reading keeps the words it came from
+    given:
+      - clip A is in state claimed
+      - clip A was heard as the record button is too small on Notes
+    when:
+      - the loop runs once
+    then:
+      - request A is filed because low confidence
+    maps_to:
+      capability: dogfood.interpret_clip
+      invariants: [INV-DOG-007]
