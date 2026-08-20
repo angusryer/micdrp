@@ -60,7 +60,10 @@ echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' \
 
 # --- gate -------------------------------------------------------------------
 step "preflight"
-scripts/preflight.sh --build
+# --pods, not --build: the release archives the app a few lines below, and that
+# archive is the compile check. Building a simulator variant first doubles the
+# wall clock of every release to catch nothing the archive would not catch.
+scripts/preflight.sh --pods
 
 # --- version ----------------------------------------------------------------
 step "version"

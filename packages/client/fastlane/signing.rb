@@ -20,4 +20,17 @@ module Signing
   def self.name(profile_path)
     profile_plist(profile_path)["Name"]
   end
+
+  # True when the project already carries exactly these signing settings.
+  # Rewriting project.pbxproj changes its mtime, which invalidates Xcode's
+  # incremental state and forces a full rebuild — so writing settings that
+  # are already correct costs a few minutes per release for no effect.
+  def self.settings_current?(project_path, profile_name:, team_id:)
+    pbxproj = File.join(project_path, "project.pbxproj")
+    return false unless File.exist?(pbxproj)
+    body = File.read(pbxproj)
+    body.include?(%(PROVISIONING_PROFILE_SPECIFIER = "#{profile_name}")) &&
+      body.include?("DEVELOPMENT_TEAM[sdk=iphoneos*]\" = #{team_id}") &&
+      body.include?(%("CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution"))
+  end
 end
