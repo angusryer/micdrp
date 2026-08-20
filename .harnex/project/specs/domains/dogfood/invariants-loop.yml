@@ -76,6 +76,10 @@ invariants:
       then invisible. Whether a clip is abandoned is a question about
       its claim, not about how far it happened to get.
 
+      Resuming also means not repeating: a request already delivered is
+      skipped, because its change is in main and building it again is at
+      best a no-op and at worst a second, conflicting edit.
+
 
   - id: INV-DOG-020
     description: A run holds its lock for as long as it actually runs

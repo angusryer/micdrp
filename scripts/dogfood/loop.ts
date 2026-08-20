@@ -59,7 +59,7 @@ export async function runOnce(options: Options): Promise<boolean> {
   // died mid-build already has its requests; re-reading the same words would
   // cost again and could land on a different split of them.
   const requests: ChangeRequestDto[] = clip.requests?.length
-    ? clip.requests.map((r) => ({ ...r, state: 'proposed' }))
+    ? clip.requests
     : (await interpret(transcript, clip.screen_trail ?? [])).map((r, i) => ({
         ...r,
         id: `${clip.id}-${i}`,
@@ -78,6 +78,12 @@ export async function runOnce(options: Options): Promise<boolean> {
 
   const built: ChangeRequestDto[] = [];
   for (const request of requests) {
+    // A resumed clip must not build again what it already shipped. Its
+    // change is in main; repeating it is at best a no-op and at worst a
+    // second, conflicting edit (INV-DOG-016).
+    if (request.state === 'delivered' || request.state === 'filed') {
+      continue;
+    }
     const verdict = gateRequest(request);
     if (!verdict.mayBuild) {
       request.state = 'filed';
@@ -115,6 +121,11 @@ export async function runOnce(options: Options): Promise<boolean> {
   if (!outcome.delivered) {
     throw new Error(`delivery failed: ${outcome.reason}`);
   }
+  // Recorded before the clip is closed, so a resume knows what shipped.
+  for (const request of built) {
+    request.state = 'delivered';
+  }
+  await storeRequests(pb, clip.id, requests);
   await markDelivered(pb, clip.id);
   console.log(
     `dogfood: ${requests.length} request(s), ${built.length} built, ` +
