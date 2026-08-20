@@ -50,12 +50,6 @@ export type PendingBundle = {
   bundleId: string;
 };
 
-/**
- * An activity that must not be interrupted by a restart prompt (INV-UPD-004).
- * The names are the ones the spec's grammar uses.
- */
-export type BusyActivity = 'capture' | 'practice session';
-
 /** The result of a launch, as the native layer reports it. */
 export type LaunchReport = {
   /** True when the previous bundle failed to boot and was replaced. */

@@ -1,0 +1,102 @@
+/**
+ * Getting a finished clip off the device, and not losing it if that fails.
+ *
+ * The queue is persisted rather than held in memory (INV-DOG-004). A remark is
+ * spoken once; the maintainer will not know it vanished, and will not say it
+ * again. So the clip stays on disk and in the queue until the server has
+ * actually accepted it, surviving a relaunch, a dead connection, and a crash.
+ */
+import { unlink } from '@dr.pogodin/react-native-fs';
+
+import { backend } from '../lib/backend';
+import { getJSON, setJSON } from '../data/store';
+import type { PendingClip } from './types';
+
+/** MMKV key for the queue. */
+const QUEUE_KEY = 'dogfood.pending';
+
+/** The collection clips land in. Keep in step with backend/migrations. */
+const CLIPS_COLLECTION = 'dogfood_clips';
+
+const readQueue = (): PendingClip[] => getJSON<PendingClip[]>(QUEUE_KEY) ?? [];
+const writeQueue = (clips: PendingClip[]): void => setJSON(QUEUE_KEY, clips);
+
+/** Queue a finished clip. It is on disk; this makes it survive a relaunch. */
+export function enqueue(clip: PendingClip): void {
+  writeQueue([...readQueue(), clip]);
+}
+
+/** What is recorded but not yet accepted, oldest first. */
+export function listPending(): PendingClip[] {
+  return readQueue();
+}
+
+async function post(clip: PendingClip): Promise<void> {
+  const form = new FormData();
+  // React Native's FormData takes a file descriptor object here and streams
+  // the file off disk, rather than reading it into memory first.
+  form.append('audio', {
+    uri: clip.audioPath,
+    name: 'clip.m4a',
+    type: 'audio/m4a'
+  });
+  form.append('duration_ms', String(clip.durationMs));
+  form.append('screen_trail', JSON.stringify(clip.screenTrail));
+  form.append('app_version', clip.appVersion);
+  form.append('build_number', String(clip.buildNumber));
+  form.append('bundle_id', clip.bundleId ?? '');
+  form.append('recorded_at_ms', String(clip.recordedAtMs));
+  form.append('state', 'uploaded');
+
+  await backend.collection(CLIPS_COLLECTION).create(form);
+}
+
+/**
+ * Send one clip.
+ *
+ * The local audio is deleted only after the server has accepted it, and the
+ * clip leaves the queue only then too — the two must not drift apart, or a
+ * retry would upload a file that is no longer there.
+ */
+export async function uploadOne(clip: PendingClip): Promise<boolean> {
+  try {
+    await post(clip);
+  } catch {
+    // Offline, signed out, or the server is unhappy. Keep it queued; the next
+    // flush tries again. Nothing is surfaced: the maintainer did not ask to
+    // be told about the transport.
+    return false;
+  }
+
+  writeQueue(readQueue().filter((queued) => queued.id !== clip.id));
+  try {
+    await unlink(clip.audioPath);
+  } catch {
+    // The record is up, which is what mattered. A stray file is not worth
+    // reporting or retrying.
+  }
+  return true;
+}
+
+/**
+ * Try everything waiting, oldest first.
+ *
+ * Stops at the first failure rather than hammering a dead connection with the
+ * whole backlog. Returns how many got through.
+ */
+export async function flushPending(): Promise<number> {
+  let sent = 0;
+  for (const clip of readQueue()) {
+    // eslint-disable-next-line no-await-in-loop -- ordered, and stops on failure
+    if (!(await uploadOne(clip))) {
+      break;
+    }
+    sent += 1;
+  }
+  return sent;
+}
+
+/** Test seam. Never called by app code. */
+export function resetQueueForTests(): void {
+  writeQueue([]);
+}

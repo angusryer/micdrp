@@ -27,6 +27,10 @@ module.exports = [
       '**/*cache*/**',
       '**/*deploy*/**',
       '**/__snapshots__/**',
+      // PocketBase JSVM migrations: not TypeScript, not in any TS project,
+      // and written against globals (migrate, Collection, app) the linter
+      // has no way to know about.
+      'backend/migrations/**',
       '.harnex/**'
     ]
   },

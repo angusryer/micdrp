@@ -12,7 +12,7 @@ import { I18nProvider } from '../../i18n';
 import { ThemeProvider } from '../../theme';
 import UpdateGate from '../UpdateGate';
 import { resetDeferralsForTests } from '../apply';
-import { markBusy, resetBusyForTests } from '../busy';
+import { markBusy, resetBusyForTests } from '../../app/activity';
 import { checkForUpdate } from '../check';
 import { downloadBundle } from '../download';
 

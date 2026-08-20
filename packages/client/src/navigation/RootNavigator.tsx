@@ -8,6 +8,7 @@ import React, { useCallback } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { useAuth } from '../auth';
+import { publishRoute } from '../dogfood';
 import { useTheme } from '../theme';
 import { useTranslation } from '../i18n';
 import { Icon, type IconName } from '../components/Icon';
@@ -25,6 +26,16 @@ import type {
   MainTabParamList,
   RootStackParamList
 } from './types';
+
+/** The deepest focused route, so a tab reports the tab and not just "Main". */
+function getFocusedRouteName(state: {
+  index?: number;
+  routes: { name: string; state?: unknown }[];
+}): string {
+  const route = state.routes[state.index ?? 0];
+  const nested = route?.state as typeof state | undefined;
+  return nested?.routes ? getFocusedRouteName(nested) : (route?.name ?? 'unknown');
+}
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -108,7 +119,18 @@ export default function RootNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      // The feedback control lives above this container so a recording
+      // survives navigating, which means it cannot read the route itself.
+      // Publishing it here is what lets a clip carry the trail of screens it
+      // was spoken over (INV-DOG-002).
+      onStateChange={(state) => {
+        const route = state ? getFocusedRouteName(state) : null;
+        if (route) {
+          publishRoute(route);
+        }
+      }}
+      onReady={() => publishRoute('Splash')}>
       {session ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Main" component={MainTabs} />

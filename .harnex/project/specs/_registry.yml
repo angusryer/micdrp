@@ -41,6 +41,7 @@ domains:
       prompted apply and automatic rollback
   dogfood:
     path: .harnex/project/specs/domains/dogfood
-    status: specifying
+    status: building
     priority: medium
-    description: Spoken feedback about the app, transcribed and acted on by an agent loop that ships JavaScript-only changes over the air
+    description: Spoken feedback about the app, transcribed and acted on by an agent
+      loop that ships JavaScript-only changes over the air

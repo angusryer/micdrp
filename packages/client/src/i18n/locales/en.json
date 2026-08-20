@@ -228,5 +228,11 @@
     "ready": "An update is ready.",
     "restartNow": "Restart now",
     "later": "Later"
+  },
+  "dogfood": {
+    "record": "Record feedback",
+    "pause": "Pause feedback recording",
+    "resume": "Resume feedback recording",
+    "stop": "Stop and send feedback"
   }
 }

@@ -141,6 +141,37 @@ Specification: `.harnex/project/specs/domains/updates/`.
 
 ---
 
+## Talking to the app about the app
+
+A record control sits in the top-right of every screen. Tap it, say what is
+wrong with what you are looking at, walk to another screen and keep talking,
+then stop — which sends it. An agent loop on the maintainer's machine
+transcribes the clip locally, reads it as change requests, builds what is safe
+to build unattended, and ships that over the air.
+
+```sh
+yarn dogfood --dry-run     # hear and interpret, build nothing — start here
+yarn dogfood               # poll every 2 minutes
+yarn dogfood status        # running, or halted and why
+```
+
+The clip carries the trail of screens it was spoken over, plus the version,
+build and bundle that produced them — "move this button" is unactionable
+without knowing which screen was on show.
+
+**Only JavaScript ships unattended.** It is the only thing that goes over the
+air and the only thing that rolls itself back when it fails to boot. Native and
+infrastructure changes are filed for a human. Signing material, secrets, CI and
+the release scripts are off limits at any confidence.
+
+Not to be confused with `FeedbackDto`, which is how well someone sang — the two
+never share a word, which is why this one is called dogfood.
+
+Details: [scripts/dogfood/README.md](scripts/dogfood/README.md). Specification:
+`.harnex/project/specs/domains/dogfood/`.
+
+---
+
 ## Native App (React Native 0.86 + New Architecture)
 
 The `packages/client` package is a bare React Native app (not Expo) with a

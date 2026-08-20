@@ -1,18 +1,22 @@
 /**
- * Whether something is happening that a restart prompt must not interrupt
- * (INV-UPD-004).
+ * Whether something is happening that must not be interrupted.
  *
- * A modal thrown over a live take costs the take, and a take is the one thing
- * in this app the singer cannot redo identically. So the gate asks here before
- * it presents, and the screens that own a capture or a guided session declare
- * themselves busy for as long as they are.
+ * Two domains ask: `updates` before showing a restart prompt (INV-UPD-004),
+ * and `dogfood` before recording a spoken remark (INV-DOG-001). For updates
+ * the cost of interrupting is a lost take; for dogfood it is that, plus the
+ * microphone being exclusive — AVAudioSession serves one purpose at a time.
  *
- * This is a module-level registry rather than React state on purpose: the
- * check happens in an app-lifecycle handler that is not inside the tree that
- * owns the recording, and threading a context through the navigator for one
- * boolean would couple the two domains far harder than a counter does.
+ * It lives here rather than in either domain because it belongs to neither:
+ * it is the app's answer to "is the singer in the middle of something".
+ *
+ * A module-level registry rather than React state on purpose. Both consumers
+ * sit outside the tree that owns the recording, and threading a context
+ * through the navigator for one boolean would couple them far harder than a
+ * counter does.
  */
-import type { BusyActivity } from './types';
+
+/** An activity that owns the microphone, or the singer's attention. */
+export type BusyActivity = 'capture' | 'practice session';
 
 const active = new Set<BusyActivity>();
 const listeners = new Set<() => void>();

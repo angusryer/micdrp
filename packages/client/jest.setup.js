@@ -110,7 +110,32 @@ jest.mock('@shopify/react-native-skia', () => {
 // Native audio engine + fs + share: virtual mocks (may be absent in some setups).
 jest.mock(
   'react-native-audio-api',
-  () => ({ AudioRecorder: function () {}, AudioContext: function () {} }),
+  () => ({
+    // A recorder that behaves like the real one without a microphone: the
+    // dogfood session's timing, pause semantics and trail are the things
+    // under test, not the native capture.
+    AudioRecorder: class {
+      enableFileOutput() {
+        return { status: 'success' };
+      }
+      start() {
+        return Promise.resolve({ status: 'success' });
+      }
+      stop() {
+        return Promise.resolve({
+          status: 'success',
+          paths: ['/tmp/micdrp/dogfood/clip.m4a'],
+          size: 0.1,
+          duration: 4
+        });
+      }
+      pause() {}
+      resume() {}
+    },
+    AudioContext: function () {},
+    FileFormat: { Wav: 0, Caf: 1, M4A: 2, Flac: 3 },
+    FileDirectory: { Document: 0, Cache: 1 }
+  }),
   { virtual: true }
 );
 jest.mock(

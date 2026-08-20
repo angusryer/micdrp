@@ -5,13 +5,13 @@
  * These two are the whole of the prompt's policy, and both are pure, so they
  * are tested here rather than through the component.
  */
-import { deferUpdate, isDeferred, resetDeferralsForTests } from '../apply';
+import { deferUpdate, isDeferred, resetDeferralsForTests } from '../../updates/apply';
 import {
   isBusy,
   markBusy,
   resetBusyForTests,
   subscribeToBusy
-} from '../busy';
+} from '../activity';
 
 beforeEach(() => {
   resetBusyForTests();

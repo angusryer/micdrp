@@ -10,15 +10,18 @@
  */
 export { default as UpdateGate } from './UpdateGate';
 export { initUpdates, lastLaunchReport } from './boot';
-export { markBusy, isBusy, subscribeToBusy } from './busy';
+// The busy registry moved to src/app/activity — it belongs to neither
+// domain now that dogfood consults it too. Re-exported so the screens
+// that already import it from here keep working.
+export { markBusy, isBusy, subscribeToBusy } from '../app/activity';
 export { checkForUpdate } from './check';
 export { downloadBundle } from './download';
 export { applyUpdate, deferUpdate, isDeferred } from './apply';
 export { crashedBundleIds, rollBack } from './rollback';
 export { resolveEligibility } from './eligibility';
 export { readUpdatesConfig, BETA_CHANNEL } from './config';
+export type { BusyActivity } from '../app/activity';
 export type {
-  BusyActivity,
   Decision,
   Eligibility,
   EligibilityReason,

@@ -21,7 +21,7 @@ import { useTheme } from '../theme';
 import { applyUpdate, deferUpdate, isDeferred } from './apply';
 import { checkForUpdate } from './check';
 import { downloadBundle } from './download';
-import { isBusy, subscribeToBusy } from './busy';
+import { isBusy, subscribeToBusy } from '../app/activity';
 import { rollBack } from './rollback';
 import type { PendingBundle } from './types';
 
