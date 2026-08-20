@@ -31,8 +31,9 @@ Other notable things:
 ```
 
 ## Technologies used
-- react native for the client
-- node and express for the server
+- react native (bare, 0.86) for the client, with a C++ DSP core
+- self-hosted PocketBase for the backend, on fly.io
+- a Cloudflare Worker over D1 + R2 for over-the-air updates
 - git-secret for environment variable storage and sharing
 
 ### Each of the below commands should be run from the root directory unless otherwise specified
@@ -63,6 +64,23 @@ You can specify specific tests within each package, or across all workspaces by 
 `yarn test client /*some test description fragment*/`
 
 ## Building and/or Deploying
+```sh
+yarn release:check          # can I ship right now?
+yarn preflight              # the gate: specs, types, lint, tests
+yarn release 1.0.0          # gate, build, upload to TestFlight
+```
+
+`scripts/release.sh` is the only entry point. The build number is derived from
+what TestFlight already has rather than typed, so nothing needs to remember to
+bump it. See the `micdrp-ship` skill for signing, credentials and the
+troubleshooting that matters.
+
+### Legacy commands below are out of date
+
+The `yarn dev` / `yarn build --deploy` invocations described further down predate
+the current release scripts, as do the references to an express server and
+React Native 0.72. Treat the block above and `micdrp-ship` as authoritative.
+
 You can build and deploy to both the App Store and Google Play with this command:
 `yarn build --deploy --e [s|p] [ios|android|both]`
 
@@ -74,9 +92,56 @@ This will raise the major version number by one:
 
 ### Note that _only the build number will increment when specifying the `d` (developement) environment
 
+
 ---
 
-## Native App (React Native 0.72 + New Architecture)
+## Over-the-air updates
+
+A JavaScript-only fix can reach an installed TestFlight build without another
+archive, upload and review cycle.
+
+```sh
+yarn ota publish beta                 # version and min-build from .env.production
+yarn ota publish beta --min-build 7   # needs a native change that shipped in build 7
+yarn ota publish beta --dry-run       # everything up to the upload
+yarn ota list beta                    # what is published, newest first
+yarn ota disable <bundleId>           # withdraw; installs roll back on next check
+yarn ota whoami                       # which Cloudflare account is in scope
+```
+
+**`--min-build` is the one that matters.** It defaults to the current
+`BUILD_NUMBER`, which is right for a pure JavaScript fix. Raise it whenever the
+bundle calls something that only exists in a newer binary: JavaScript reaching
+for a native module the binary lacks crashes rather than degrading.
+
+Four rules govern the whole thing, and each is a failure mode avoided:
+
+- **TestFlight only.** Eligibility is read at runtime from the App Store
+  receipt (`sandboxReceipt` means TestFlight), never from a build-time flag —
+  the binary promoted to the App Store is the same one TestFlight ran, so
+  nothing baked in can tell them apart. An App Store install makes no request
+  at all.
+- **Never to a binary that cannot run it.** A bundle declares the app version
+  and lowest build number it may run on, and the server refuses everything else.
+- **Never over singing.** The singer is asked before any reload, and the prompt
+  is suppressed entirely while a capture or practice session is running — a
+  modal over a live take costs the take.
+- **A bundle that will not boot is replaced on its own**, before JavaScript
+  runs. That is the case that has to work when the thing that would deliver the
+  fix is itself broken.
+
+Only JavaScript ships this way. The C++ pitch engine, every native module, and
+every value `react-native-config` compiled into the binary need a real build.
+
+iOS only for now: the receipt check has no Android equivalent, so the server
+refuses to serve it rather than serving bundles it could not gate.
+
+Details, credentials and provisioning: [backend/ota/README.md](backend/ota/README.md).
+Specification: `.harnex/project/specs/domains/updates/`.
+
+---
+
+## Native App (React Native 0.86 + New Architecture)
 
 The `packages/client` package is a bare React Native app (not Expo) with a
 shared C++ DSP core for real-time pitch detection. Key documentation:

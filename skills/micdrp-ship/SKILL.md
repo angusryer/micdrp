@@ -1,6 +1,6 @@
 ---
 name: micdrp-ship
-description: Ship micdrp — preflight gates, App Store / TestFlight releases, and the PocketBase backend. Load before running any release, deploy, build, or backend command in this repo, and before touching signing credentials.
+description: Ship micdrp — preflight gates, App Store / TestFlight releases, over-the-air JavaScript updates, and the PocketBase backend. Load before running any release, deploy, build, OTA publish, or backend command in this repo, and before touching signing or Cloudflare credentials.
 ---
 
 # Shipping micdrp
@@ -15,6 +15,7 @@ long form drifts.
 yarn release:check          # can I ship right now?
 yarn preflight              # the gate: specs, types, lint, tests
 yarn release 1.2.0          # gate, build, upload to TestFlight
+yarn ota publish beta       # ship a JS-only fix to an installed build
 ```
 
 ## Preflight
@@ -69,6 +70,58 @@ re-downloaded.
 `BUILD_NUMBER` must increase on every upload; App Store Connect rejects a
 repeat. `scripts/bump-version.sh` handles it.
 
+## Over-the-air updates
+
+A JavaScript-only fix can reach an installed TestFlight build without another
+archive and review cycle. Native code cannot — the C++ pitch engine, every
+native module, and everything `react-native-config` baked into the binary all
+need a real build.
+
+```sh
+yarn ota whoami                       # which Cloudflare account is in scope — check first
+yarn ota publish beta                 # version and min-build from .env.production
+yarn ota publish beta --min-build 7   # the bundle needs a native change from build 7
+yarn ota publish beta --dry-run       # everything up to the upload
+yarn ota list beta                    # what is published, newest first
+yarn ota disable <bundleId>           # withdraw; installs roll back on their next check
+```
+
+**Raise `--min-build` whenever the bundle needs a newer binary.** It defaults to
+the current `BUILD_NUMBER`, which is correct for a pure JavaScript fix. A bundle
+calling a native module the installed binary lacks crashes rather than
+degrading, and that guard is the only thing standing between the two.
+
+### Credentials: a different variable on purpose
+
+Every OTA command reads **`MICDRP_CLOUDFLARE_API_TOKEN`**, never the ambient
+`CLOUDFLARE_API_TOKEN`. There is more than one Cloudflare account on this
+machine and the ambient token belongs to TallieUp; a command that silently fell
+back to it would create micdrp's resources in the wrong account. A missing
+variable is an error, not a fallback — do not "fix" that by adding a fallback.
+
+The token needs **D1 Edit**, **Workers R2 Storage Edit** and **Workers Scripts
+Edit**. Both it and `MICDRP_CLOUDFLARE_ACCOUNT_ID` are in 1Password
+(vault `micdrp`, item "micdrp — Cloudflare API token (OTA)"), reachable through
+the `AI_MICDRP_RW` service account token.
+
+### What lives where
+
+| Piece | Where |
+|---|---|
+| Update server | `backend/ota/` → https://micdrp-ota.angusryer.workers.dev |
+| Who-gets-what rules | `packages/shared/src/dto/updateBundle.ts` (tested) |
+| Client policy | `packages/client/src/updates/` |
+| Publish pipeline | `scripts/ota.sh` + `packages/client/hot-updater.config.ts` |
+| Spec | `.harnex/project/specs/domains/updates/` |
+
+hot-updater owns bundling, upload, hash verification and the native bundle
+swap. This repo owns the policy: who is eligible, which binary may take which
+bundle, when the singer is asked, and what happens when a bundle will not boot.
+
+iOS only. The receipt check that gates eligibility has no Android equivalent,
+so the Worker refuses to serve Android rather than serving bundles it could not
+gate.
+
 ## Backend
 
 Self-hosted PocketBase. See `backend/README.md` for the schema and rules.
@@ -116,6 +169,19 @@ git secret whoknows         # who can decrypt
 `packages/client/.env.example` documents every key. `BACKEND_URL` must point at
 the deployed instance for any build a tester will run — a phone cannot reach
 `127.0.0.1`.
+
+`OTA_UPDATE_URL` is set in `.env.production` only. Empty disables over-the-air
+updates outright, which is what `.env` and `.env.staging` want.
+
+`git secret hide` re-encrypts **all seven** files, not just the ones that
+changed — GPG emits different ciphertext every run, so the keystores and
+signing material show as modified even when their plaintext did not move.
+Restore the untouched ones before committing rather than carrying the churn:
+
+```sh
+git checkout -- packages/client/android/app/*.keystore.secret \
+                packages/client/fastlane/signing/*.secret
+```
 
 ## Version ceiling
 

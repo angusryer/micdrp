@@ -77,3 +77,5 @@ android/app/src/main/assets/index.android.bundle
 *.keychain-db
 fastlane/signing/*.p12
 !fastlane/signing/*.p12.secret
+# hot-updater
+.hot-updater/output

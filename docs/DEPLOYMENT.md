@@ -1,5 +1,21 @@
 # micdrp — Deployment Guide
 
+> **Partly superseded. Read the `micdrp-ship` skill first.**
+>
+> Section 1 below describes **Match**-based iOS signing. This repo no longer
+> uses Match: iOS authenticates with a single App Store Connect API key that
+> both signs and uploads, which replaced five secrets (Apple ID, team id, a
+> private certificate repo, its passphrase, a keychain password) and the 2FA
+> prompt that made unattended releases impossible. `packages/client/fastlane/`
+> has no Matchfile. Follow `micdrp-ship` for signing, credentials, and
+> releasing; treat section 1 as history.
+>
+> Over-the-air JavaScript updates are documented in
+> [../backend/ota/README.md](../backend/ota/README.md) and specified in
+> `.harnex/project/specs/domains/updates/`. They are a separate path from the
+> store releases described here: JavaScript only, TestFlight only, and no
+> App Store review.
+
 > See also: [ARCHITECTURE.md](./ARCHITECTURE.md) (system overview),
 > [NATIVE_SETUP.md](./NATIVE_SETUP.md) (local build setup),
 > [NATIVE_BUILD_PLAN.md](./NATIVE_BUILD_PLAN.md) (authoritative spec).

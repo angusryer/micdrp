@@ -7,6 +7,7 @@
  */
 import {
   decideUpdate,
+  r2ObjectKey,
   NIL_BUNDLE_ID,
   type UpdateBundleDto,
   type UpdateClientDto
@@ -133,5 +134,31 @@ describe('decideUpdate', () => {
 
   it('an empty server offers nothing', () => {
     expect(decideUpdate([], client())).toMatchObject({ decision: 'none' });
+  });
+});
+
+describe('r2ObjectKey', () => {
+  it('drops the scheme and the bucket, which is not part of the key', () => {
+    // The regression: stripping only "r2://" left the bucket glued on and
+    // every archive download 404'd.
+    expect(
+      r2ObjectKey('r2://micdrp-ota-bundles/bundles/01a0/bundle.zip')
+    ).toBe('bundles/01a0/bundle.zip');
+  });
+
+  it('handles a nested key', () => {
+    expect(r2ObjectKey('r2://b/a/deep/path/file.zip')).toBe(
+      'a/deep/path/file.zip'
+    );
+  });
+
+  it('leaves a plain key alone', () => {
+    expect(r2ObjectKey('bundles/01a0/bundle.zip')).toBe(
+      'bundles/01a0/bundle.zip'
+    );
+  });
+
+  it('never returns a leading slash', () => {
+    expect(r2ObjectKey('r2://bucket//weird/key')).not.toMatch(/^\//);
   });
 });

@@ -22,6 +22,7 @@
 import {
   decideUpdate,
   NIL_BUNDLE_ID,
+  r2ObjectKey,
   type UpdateBundleDto,
   type UpdateClientDto
 } from 'shared';
@@ -78,10 +79,6 @@ const json = (body: unknown, status = 200): Response =>
     headers: { 'Content-Type': 'application/json' }
   });
 
-/** The R2 object key behind a row's storage_uri. */
-const objectKey = (storageUri: string): string =>
-  storageUri.replace(/^r2:\/\//, '').replace(/^\/+/, '');
-
 const toDto = (row: BundleRow, origin: string): UpdateBundleDto => ({
   bundleId: row.id,
   channel: row.channel,
@@ -91,7 +88,7 @@ const toDto = (row: BundleRow, origin: string): UpdateBundleDto => ({
   // bucket. The bucket stays private, there is no r2.dev origin or custom
   // domain to configure, and the download URL is the same host the client
   // already asked — one fewer value to get wrong.
-  fileUrl: `${origin}/bundle/${objectKey(row.storage_uri)}`,
+  fileUrl: `${origin}/bundle/${r2ObjectKey(row.storage_uri)}`,
   fileHash: row.file_hash,
   isEnabled: row.enabled === 1
 });

@@ -2400,6 +2400,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@hot-updater/bare@npm:0.36.1":
+  version: 0.36.1
+  resolution: "@hot-updater/bare@npm:0.36.1"
+  dependencies:
+    "@hot-updater/cli-tools": 0.36.1
+    "@hot-updater/plugin-core": 0.36.1
+    uuidv7: ^1.0.2
+  checksum: 46b55c40a3f499dae17c34ef8967e8f7d3af52012f1f82da8a395274fe98df2e913490405bd85b9f941d413f19b0d204ecaeed4ea68e8fead1004e3d3c5c83f2
+  languageName: node
+  linkType: hard
+
 "@hot-updater/bsdiff@npm:0.36.1":
   version: 0.36.1
   resolution: "@hot-updater/bsdiff@npm:0.36.1"
@@ -5647,6 +5658,7 @@ __metadata:
   resolution: "client@workspace:packages/client"
   dependencies:
     "@dr.pogodin/react-native-fs": ^2.40.0
+    "@hot-updater/bare": 0.36.1
     "@hot-updater/cloudflare": 0.36.1
     "@hot-updater/react-native": 0.36.1
     "@react-navigation/bottom-tabs": ^7.18.17

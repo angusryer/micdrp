@@ -14,6 +14,19 @@
 /** hot-updater's id for "running the bundle compiled into the binary". */
 export const NIL_BUNDLE_ID = '00000000-0000-0000-0000-000000000000';
 
+/**
+ * The object key inside the bucket, from a `storage_uri`.
+ *
+ * hot-updater records `r2://<bucket>/<key>`, and R2 addresses objects by
+ * `<key>` alone — the bucket is not part of it. Stripping only the scheme
+ * leaves the bucket name glued to the front and every download 404s, which is
+ * exactly what happened the first time this shipped. Tested here rather than
+ * inlined in the Worker so it cannot happen twice.
+ */
+export function r2ObjectKey(storageUri: string): string {
+  return storageUri.replace(/^r2:\/\/[^/]+\//, '').replace(/^\/+/, '');
+}
+
 /** One published bundle, as the update server holds it. */
 export interface UpdateBundleDto {
   /** Monotonic: ordering by this orders by publication. */
