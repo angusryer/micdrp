@@ -42,9 +42,18 @@ Rules:
   alone — one being unsafe to act on must not hold up the others.
 - Quote the span each request came from, verbatim. If the quote does not
   support the summary, the summary is wrong.
-- Score confidence honestly, 0 to 1. Rambling, trailing off, self-correction
-  and "maybe we could" all mean low confidence. A high score is a claim that
-  acting on this unattended is safe.
+- Score how clear the INSTRUCTION is, not how formal the delivery was. This
+  is speech: a developer thinking aloud says "we can also make the button red"
+  and means "make the button red". Casual phrasing, hedging words like "maybe"
+  or "a little bit", and a conversational run-on are how people talk — they
+  are not uncertainty about what is wanted.
+  High confidence means: you know which element, and you know what change is
+  being asked for. "Make the record button red" is a 0.95 however casually it
+  was said.
+  Low confidence means the ask itself is unresolved — the speaker changed
+  their mind, wondered aloud without deciding, named no target, or described
+  something without requesting anything. "The note cards could maybe be
+  taller? I don't know" is low, because they did not decide.
 - blastRadius: "javascript" for React/TypeScript under packages/; "native" for
   iOS, Android or the C++ engine; "infrastructure" for CI, release scripts,
   secrets or the update server; "unknown" when unsure. unknown is a real
