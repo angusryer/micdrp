@@ -5,10 +5,14 @@
  * audio URI. Playback state is local to this component; it is entirely separate
  * from the live recording path.
  *
+ * The audio URL is handed to `decodeAudioData` as-is. A note served from the
+ * backend carries an https URL with a session-scoped token; a capture that has
+ * not synced yet carries a file:// URI. The decoder resolves both, so this
+ * component must never assume a local filesystem path (INV-NOTES-012).
+ *
  * Lifecycle:
- *   1. User taps Play → fetch the file via RNFS, decode with
- *      `AudioContext.decodeAudioData`, create a BufferSourceNode, connect to
- *      destination, and start.
+ *   1. User taps Play → decode the URL with `AudioContext.decodeAudioData`,
+ *      create a BufferSourceNode, connect to destination, and start.
  *   2. User taps Pause (or audio ends naturally) → close the context and
  *      transition back to `stopped`.
  *   3. A new `audioUri` prop (different note) resets state.
@@ -25,7 +29,6 @@ import {
   Text,
   View
 } from 'react-native';
-import * as RNFS from '@dr.pogodin/react-native-fs';
  
 const { AudioContext } = require('react-native-audio-api') as {
   AudioContext: new () => AudioContextLike;
@@ -54,7 +57,8 @@ type AudioDestinationNodeLike = object;
 
 interface AudioContextLike {
   destination: AudioDestinationNodeLike;
-  decodeAudioData(data: ArrayBuffer): Promise<AudioBufferLike>;
+  /** Accepts a remote URL, a file:// URI, or raw bytes. */
+  decodeAudioData(source: string | ArrayBuffer): Promise<AudioBufferLike>;
   createBufferSource(): AudioBufferSourceNodeLike;
   close(): Promise<void>;
 }
@@ -114,23 +118,14 @@ export function PlaybackBar({ audioUri, durationLabel }: PlaybackBarProps) {
     }
     setPlaybackState('loading');
     try {
-      // RNFS.readFile returns a base64 string for the binary audio file.
-      const b64 = await RNFS.readFile(
-        audioUri.replace(/^file:\/\//, ''),
-        'base64'
-      );
-      // Convert base64 to ArrayBuffer for decodeAudioData.
-      const binary = atob(b64);
-      const buffer = new ArrayBuffer(binary.length);
-      const view = new Uint8Array(buffer);
-      for (let i = 0; i < binary.length; i++) {
-        view[i] = binary.charCodeAt(i);
-      }
-
       const ctx = new AudioContext();
       ctxRef.current = ctx;
 
-      const audioBuffer = await ctx.decodeAudioData(buffer);
+      // Hand the URL straight to the decoder. It resolves a remote source by
+      // fetching it and a file:// source by decoding natively, which is what
+      // INV-NOTES-012 requires: a note served from the backend has an https
+      // audio URL, and a note captured but not yet synced has a local one.
+      const audioBuffer = await ctx.decodeAudioData(audioUri);
       const source = ctx.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(ctx.destination);
@@ -143,8 +138,12 @@ export function PlaybackBar({ audioUri, durationLabel }: PlaybackBarProps) {
       source.start(0);
       sourceRef.current = source;
       setPlaybackState('playing');
-    } catch {
+    } catch (err) {
+      // Swallowing this is what made the original failure undiagnosable: the
+      // UI said "Playback failed" and the actual cause never left the closure.
+      console.warn('[PlaybackBar] playback failed for', audioUri, err);
       setPlaybackState('error');
+      void ctxRef.current?.close().catch(() => undefined);
       ctxRef.current = null;
       sourceRef.current = null;
     }

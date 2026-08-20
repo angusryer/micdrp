@@ -94,3 +94,14 @@ invariants:
       key is null when the key confidence is below the floor and tempoBpm
       is null when the tempo confidence is below the floor. No view
       renders a detected value that the analysis declined to assert.
+
+  - id: INV-NOTES-012
+    description: Playback plays whatever the resolved audio URL points at
+    severity: major
+    check: >
+      A note's playback source is the resolved audio URL, which is remote
+      while the note is served from the backend and local only for a capture
+      that has not synced. Playback must accept both. Treating the resolved
+      URL as a local filesystem path fails every backend-served note, which
+      is every note after a sync.
+

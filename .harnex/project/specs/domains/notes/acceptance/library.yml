@@ -123,3 +123,19 @@ acceptance:
     maps_to:
       capability: notes.export_midi
       invariants: [INV-NOTES-003]
+
+  - id: ACC-NOTES-024
+    interface: ui
+    title: A note with stored audio plays from its resolved URL
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio
+    when:
+      - singer S calls notes.play on note N
+    then:
+      - the call succeeds
+    maps_to:
+      capability: notes.play
+      invariants: [INV-NOTES-012]
+      interaction: INT-NOTES-008
+
