@@ -133,6 +133,12 @@ jest.mock(
       resume() {}
     },
     AudioContext: function () {},
+    // The session has to be told it is recording speech before the recorder's
+    // engine will activate it.
+    AudioManager: {
+      setAudioSessionOptions: jest.fn(),
+      setAudioSessionActivity: jest.fn(() => Promise.resolve())
+    },
     FileFormat: { Wav: 0, Caf: 1, M4A: 2, Flac: 3 },
     FileDirectory: { Document: 0, Cache: 1 }
   }),

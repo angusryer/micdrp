@@ -156,6 +156,23 @@ describe('DogfoodSession', () => {
     expect(permissionMock).toHaveBeenCalled();
   });
 
+  it('configures the session for speech before recording', async () => {
+    // The recorder's engine cannot activate a session left configured for
+    // pitch detection, and refuses outright — which is what stopped every
+    // recording on the device.
+    const { AudioManager } = jest.requireMock('react-native-audio-api') as {
+      AudioManager: { setAudioSessionOptions: jest.Mock };
+    };
+    AudioManager.setAudioSessionOptions.mockClear();
+
+    const session = new DogfoodSession(() => 1000);
+    await session.start('Notes');
+
+    expect(AudioManager.setAudioSessionOptions).toHaveBeenCalledWith(
+      expect.objectContaining({ iosCategory: 'playAndRecord' })
+    );
+  });
+
   it('does not record when the permission is refused', async () => {
     permissionMock.mockResolvedValue(false);
     const session = new DogfoodSession(() => 1000);

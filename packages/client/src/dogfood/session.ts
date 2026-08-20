@@ -11,7 +11,12 @@
  * recording that needs a second deliberate act to send is one that gets
  * forgotten, and words already spoken are worth the same either way.
  */
-import { AudioRecorder, FileDirectory, FileFormat } from 'react-native-audio-api';
+import {
+  AudioManager,
+  AudioRecorder,
+  FileDirectory,
+  FileFormat
+} from 'react-native-audio-api';
 
 import { audioEngine } from '../audio/AudioEngine';
 import { isBusy } from '../app/activity';
@@ -100,9 +105,28 @@ export class DogfoodSession {
       return false;
     }
 
+    // Configure the session for recording speech before starting anything.
+    // Without this the recorder's engine cannot activate the session at all
+    // and refuses with "failed to start audio engine for recording" — the
+    // session is shared, and micdrp's own engine leaves it configured for
+    // pitch detection, which is a different job.
+    //
+    // voiceChat rather than measurement: measurement disables the input
+    // processing that makes speech transcribable, which is right for
+    // detecting pitch and wrong for understanding words.
+    try {
+      AudioManager.setAudioSessionOptions({
+        iosCategory: 'playAndRecord',
+        iosMode: 'voiceChat',
+        iosOptions: ['defaultToSpeaker', 'allowBluetoothHFP']
+      });
+      await AudioManager.setAudioSessionActivity(true);
+    } catch (error) {
+      lastStartError = `audio session refused: ${String(error)}`;
+      return false;
+    }
+
     const recorder = new AudioRecorder();
-    // Speech, not pitch: the engine's Measurement mode disables the input
-    // processing that makes a voice transcribable.
     recorder.enableFileOutput({
       format: FileFormat.M4A,
       directory: FileDirectory.Document,
