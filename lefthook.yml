@@ -2,7 +2,12 @@ pre-commit:
   parallel: true
   commands:
     secret:
-      run: git secret hide
+      # -m re-encrypts only files whose plaintext actually changed. Without it
+      # every commit rewrites all ciphertext (gpg output is non-deterministic),
+      # leaving a dirty tree after each commit and filling history with binary
+      # diffs that represent no change. stage_fixed commits the result.
+      run: git secret hide -m
+      stage_fixed: true
     lint:
       files: git diff --name-only @{push}
       glob: '*.{js,ts,jsx,tsx}'
