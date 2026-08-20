@@ -114,3 +114,18 @@ invariants:
       nothing issuing that reset, makes the record control inert for the rest
       of the session and is only recoverable by relaunching the app.
 
+
+  - id: INV-NOTES-014
+    description: A note's audio URL is minted for playback, never stored
+    severity: critical
+    check: >
+      The cached note record holds the audio's durable server-side path,
+      not a URL. The URL is built at the moment playback starts and is
+      never persisted. Verified by asserting the cache contains no
+      token-bearing URL after a sync, and that starting playback requests
+      a fresh one.
+
+      A PocketBase file token is valid for roughly two minutes. Storing a
+      signed URL in the on-disk cache and refreshing it only on sync meant
+      every note played more than two minutes after the last sync fetched
+      with a dead token, which is every note in ordinary use.

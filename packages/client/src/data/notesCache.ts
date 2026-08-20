@@ -28,8 +28,15 @@ export interface NoteMeta {
   createdAtMs: number;
   durationMs: number;
   sampleRateHz: number;
-  /** Signed URL of the captured audio (refreshed on each sync), or '' if none. */
-  audioUri: string;
+  /**
+   * The captured audio's server-side filename, or null if none.
+   *
+   * Deliberately NOT a URL. A PocketBase file token lives about two minutes,
+   * so a signed URL cached here was expired for all but the first moments
+   * after a sync, and every note played later failed (INV-NOTES-014). The
+   * durable path keeps, and the URL is minted when playback starts.
+   */
+  audioPath: string | null;
   /** The symbolic melody — source of truth for all corpus analysis. */
   melody: NoteEventDto[];
   key?: string;

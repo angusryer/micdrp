@@ -22,6 +22,7 @@ import { MelodyView } from '../../components/MelodyView';
 import { midiToLabel } from '../Results/NoteList';
 import type { NoteMeta } from '../../data/notesCache';
 import { PlaybackBar } from './PlaybackBar';
+import { notesRepo } from '../../data/notesRepo';
 
 /** Horizontal space consumed by the list padding (16) + card padding (14) each side. */
 const CARD_HORIZONTAL_INSET = 2 * (16 + 14);
@@ -57,6 +58,14 @@ export function NoteCard({ note, onOpen, onDelete }: NoteCardProps) {
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const [expanded, setExpanded] = useState(false);
+
+  // Mint the audio URL when Play is pressed rather than here: the token it
+  // carries is good for about two minutes (INV-NOTES-014).
+  const resolveAudio = useCallback(
+    () => notesRepo.audioUrlFor(note.id, note.audioPath),
+    [note.id, note.audioPath]
+  );
+
 
   const handleTogglePlay = useCallback((): void => setExpanded((v) => !v), []);
   const handleOpen = useCallback((): void => onOpen(note.id), [onOpen, note.id]);
@@ -135,10 +144,10 @@ export function NoteCard({ note, onOpen, onDelete }: NoteCardProps) {
         ) : null}
       </Pressable>
 
-      {expanded && note.audioUri ? (
+      {expanded && note.audioPath ? (
         <View style={styles.playbackWrap}>
           <PlaybackBar
-            audioUri={note.audioUri}
+            resolveAudioUri={resolveAudio}
             durationLabel={formatDuration(note.durationMs)}
           />
         </View>

@@ -18,19 +18,21 @@ import { NOTES_INDEX_KEY, listNotes, type NoteMeta } from './notesCache';
 import { setJSON } from './store';
 
 /**
- * Project a cloud {@link NoteDto} (+ signed audio URL) onto the local
- * {@link NoteMeta} cache shape. The signed URL is stored so playback works
- * directly off the cache between syncs; the melody is stored so analysis never
- * needs the network.
+ * Project a cloud {@link NoteDto} onto the local {@link NoteMeta} cache shape.
+ *
+ * The audio's durable path is stored rather than a signed URL: a file token
+ * expires in about two minutes, so a URL cached here would be dead long before
+ * the singer opened the note (INV-NOTES-014). The melody is stored so analysis
+ * never needs the network.
  */
-export function dtoToMeta(dto: NoteDto, audioUrl: string | null): NoteMeta {
+export function dtoToMeta(dto: NoteDto): NoteMeta {
   return {
     id: dto.id,
     title: dto.title,
     createdAtMs: dto.createdAtMs,
     durationMs: dto.durationMs,
     sampleRateHz: dto.sampleRateHz,
-    audioUri: audioUrl ?? '',
+    audioPath: dto.audioPath,
     melody: dto.melody,
     key: dto.key ?? undefined,
     tempoBpm: dto.tempoBpm ?? undefined,
@@ -50,12 +52,9 @@ export function dtoToMeta(dto: NoteDto, audioUrl: string | null): NoteMeta {
 export async function syncNotes(): Promise<NoteMeta[]> {
   const dtos = await notesRepo.list();
 
-  const metas = await Promise.all(
-    dtos.map(async (dto) => {
-      const audioUrl = await notesRepo.signedAudioUrl(dto);
-      return dtoToMeta(dto, audioUrl);
-    })
-  );
+  // No per-note token request: the path is already on the DTO, and minting a
+  // URL here is what used to make playback fail later.
+  const metas = dtos.map(dtoToMeta);
 
   const index: Record<string, NoteMeta> = {};
   for (const meta of metas) {

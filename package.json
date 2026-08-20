@@ -31,7 +31,7 @@
     "testflight": "./scripts/testflight-status.py",
     "testflight:watch": "./scripts/testflight-status.py --watch",
     "ota": "./scripts/ota.sh",
-    "ota:deploy": "npx wrangler deploy --config backend/ota/wrangler.jsonc"
+    "ota:deploy": "./scripts/ota.sh deploy"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",

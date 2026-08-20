@@ -189,6 +189,17 @@ export const notesRepo = {
   },
 
   /**
+   * Mint a playable URL for a note held in the cache.
+   *
+   * Called at the moment playback starts, never earlier. The token this
+   * embeds is valid for about two minutes, which is ample for a fetch that
+   * begins immediately and useless if stored (INV-NOTES-014).
+   */
+  async audioUrlFor(noteId: string, audioPath: string | null): Promise<string | null> {
+    return fileUrl(noteId, audioPath);
+  },
+
+  /**
    * Delete a note. Deleting the record takes its attached audio with it, and
    * the access rule scopes the delete to the owner, so there is no separate
    * blob sweep and no way to delete someone else's.

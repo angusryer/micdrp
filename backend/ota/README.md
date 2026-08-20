@@ -22,12 +22,30 @@ no column for `min_build_number`, so `yarn ota publish` stamps that into the
 row's `metadata` after the deploy — see `scripts/ota.sh` for why that guard
 exists at all.
 
-## First-time provisioning
+## Credentials
 
-Not yet run. These create resources in whichever Cloudflare account
-`CLOUDFLARE_API_TOKEN` belongs to, so check `npx wrangler whoami` first.
+Every command reads **`MICDRP_CLOUDFLARE_API_TOKEN`**, never the ambient
+`CLOUDFLARE_API_TOKEN`. That is deliberate: the ambient variable belongs to
+whichever project was last worked on — on this machine, TallieUp's account —
+and a deploy that silently fell back to it would create micdrp's database
+somewhere it does not belong. A missing variable is an error, not a fallback.
 
 ```sh
+export MICDRP_CLOUDFLARE_API_TOKEN=...     # D1 Edit, R2 Edit, Workers Scripts Edit
+export MICDRP_CLOUDFLARE_ACCOUNT_ID=...    # optional; pins the account
+yarn ota whoami                            # confirm the account before anything else
+```
+
+Neither belongs in `packages/client/.env*`. react-native-config compiles those
+into the IPA, where `env.xcconfig` sits in the Resources build phase and
+anything in it is readable from the app bundle.
+
+## First-time provisioning
+
+Not yet run.
+
+```sh
+yarn ota whoami                            # confirm the account FIRST
 npx wrangler d1 create micdrp-ota
 npx wrangler r2 bucket create micdrp-ota-bundles
 # write the returned database_id into wrangler.jsonc

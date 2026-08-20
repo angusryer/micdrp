@@ -28,6 +28,7 @@ import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { createReferenceTonePlayer } from '../../audio/referenceTone';
 import { cachedNotes } from '../../data/notesSync';
+import { notesRepo } from '../../data/notesRepo';
 import { writeMidi } from '../../data/files';
 import { MelodyView } from '../../components/MelodyView';
 import { ExportSheet } from '../Results/ExportSheet';
@@ -60,6 +61,14 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
 
   const note = useMemo(() => cachedNotes().find((n) => n.id === id), [id]);
   const melody = (note?.melody ?? []) as NoteEvent[];
+
+  // Mint the audio URL when Play is pressed rather than here: the token it
+  // carries is good for about two minutes (INV-NOTES-014).
+  const audioPath = note?.audioPath ?? null;
+  const resolveAudio = useCallback(
+    () => notesRepo.audioUrlFor(id, audioPath),
+    [id, audioPath]
+  );
 
   // Fit the metrical grid here rather than reading a stored one. The melody is
   // persisted, so this costs nothing and needs no migration — and it means
@@ -169,9 +178,9 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
           {note.title}
         </Text>
 
-        {note.audioUri ? (
+        {note.audioPath ? (
           <PlaybackBar
-            audioUri={note.audioUri}
+            resolveAudioUri={resolveAudio}
             durationLabel={formatDuration(note.durationMs)}
           />
         ) : null}

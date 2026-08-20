@@ -7,6 +7,12 @@
  * every backend-served note — which is every note after a sync — failed to
  * play. These tests pin the URL reaching the decoder untouched.
  *
+ * INV-NOTES-014 sits on top of that: the URL is now produced by a resolver
+ * called when Play is pressed, because a PocketBase file token lives about two
+ * minutes. Signing at sync time and caching the result — what the code did
+ * before — meant every note played more than two minutes later fetched with a
+ * dead token, which is why playback still failed after the first fix.
+ *
  * Note the render pattern: `await waitFor(() => render(...))` before touching
  * `screen`, matching ErrorBoundary.test.tsx. A bare render() leaves `screen`
  * unbound in this setup and every query throws notImplemented.
@@ -40,11 +46,11 @@ const REMOTE =
   'https://micdrp-backend.fly.dev/api/files/notes/abc123/audio.caf?token=t0ken';
 const LOCAL = 'file:///var/mobile/tmp/micdrp-abc.caf';
 
-const renderBar = (audioUri: string) =>
+const renderBar = (audioUri: string | null) =>
   waitFor(() =>
     render(
       <ThemeProvider>
-        <PlaybackBar audioUri={audioUri} />
+        <PlaybackBar resolveAudioUri={() => Promise.resolve(audioUri)} />
       </ThemeProvider>
     )
   );

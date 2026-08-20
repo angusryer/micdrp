@@ -18,6 +18,16 @@ set -euo pipefail
 # Commands are specified in
 # .harnex/project/specs/domains/updates/commands.yml.
 
+# Cloudflare credentials are read from a micdrp-specific variable, never from
+# the ambient CLOUDFLARE_API_TOKEN. That variable belongs to whichever project
+# was last worked on — on this machine it is TallieUp's — and a deploy that
+# silently fell back to it would create micdrp's database in someone else's
+# account. Missing is an error, not a fallback.
+#
+# Set MICDRP_CLOUDFLARE_API_TOKEN (and optionally MICDRP_CLOUDFLARE_ACCOUNT_ID)
+# in your shell. Do NOT put either in packages/client/.env* — react-native-config
+# compiles those into the IPA, where anyone can read them.
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLIENT_DIR="${REPO_ROOT}/packages/client"
 OTA_DIR="${REPO_ROOT}/backend/ota"
@@ -26,9 +36,28 @@ D1_NAME="micdrp-ota"
 die() { printf 'error: %s\n' "$1" >&2; exit 1; }
 info() { printf '%s\n' "$1"; }
 
+# Run wrangler with micdrp's credentials and nothing else in scope.
+wr() {
+  [ -n "${MICDRP_CLOUDFLARE_API_TOKEN:-}" ] ||
+    die "MICDRP_CLOUDFLARE_API_TOKEN is not set. Refusing to fall back to
+       CLOUDFLARE_API_TOKEN, which on this machine belongs to another project."
+
+  CLOUDFLARE_API_TOKEN="${MICDRP_CLOUDFLARE_API_TOKEN}" \
+  CLOUDFLARE_ACCOUNT_ID="${MICDRP_CLOUDFLARE_ACCOUNT_ID:-}" \
+    npx --yes wrangler "$@"
+}
+
 d1() {
-  npx --yes wrangler d1 execute "${D1_NAME}" --remote \
+  wr d1 execute "${D1_NAME}" --remote \
     --config "${OTA_DIR}/wrangler.jsonc" --command "$1"
+}
+
+cmd_whoami() {
+  wr whoami
+}
+
+cmd_deploy() {
+  wr deploy --config "${OTA_DIR}/wrangler.jsonc"
 }
 
 # Read a key out of the active env file. The same values the binary was built
@@ -65,7 +94,10 @@ cmd_publish() {
   fi
 
   # hot-updater builds, uploads to R2 and inserts the row.
-  ( cd "$CLIENT_DIR" && npx hot-updater deploy \
+  ( cd "$CLIENT_DIR" && \
+    CLOUDFLARE_API_TOKEN="${MICDRP_CLOUDFLARE_API_TOKEN}" \
+    CLOUDFLARE_ACCOUNT_ID="${MICDRP_CLOUDFLARE_ACCOUNT_ID:-}" \
+    npx hot-updater deploy \
       --platform ios --channel "$channel" \
       --target-app-version "$target_version" \
       ${message:+--message "$message"} )
@@ -104,5 +136,7 @@ case "${1:-}" in
   publish) shift; cmd_publish "$@" ;;
   disable) shift; cmd_disable "$@" ;;
   list)    shift; cmd_list "$@" ;;
-  *) die "usage: yarn ota {publish <channel>|disable <bundleId>|list [channel]}" ;;
+  whoami)  shift; cmd_whoami ;;
+  deploy)  shift; cmd_deploy ;;
+  *) die "usage: yarn ota {publish <channel>|disable <bundleId>|list [channel]|whoami|deploy}" ;;
 esac

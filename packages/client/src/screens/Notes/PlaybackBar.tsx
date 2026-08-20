@@ -5,9 +5,14 @@
  * audio URI. Playback state is local to this component; it is entirely separate
  * from the live recording path.
  *
- * The audio URL is handed to `decodeAudioData` as-is. A note served from the
- * backend carries an https URL with a session-scoped token; a capture that has
- * not synced yet carries a file:// URI. The decoder resolves both, so this
+ * The URL is resolved by the caller at the moment Play is pressed, never
+ * before. A note served from the backend needs a token that lives about two
+ * minutes, so a URL obtained any earlier — at sync, at render — is dead by the
+ * time anyone taps anything (INV-NOTES-014). Taking a resolver rather than a
+ * string is what makes that structural instead of a convention.
+ *
+ * Whatever comes back is handed to `decodeAudioData` untouched. The decoder
+ * fetches a remote source and decodes a file:// source natively, so this
  * component must never assume a local filesystem path (INV-NOTES-012).
  *
  * Lifecycle:
@@ -68,26 +73,32 @@ interface AudioContextLike {
 export type PlaybackState = 'stopped' | 'loading' | 'playing' | 'error';
 
 export interface PlaybackBarProps {
-  /** file:// URI of the captured audio to play. */
-  audioUri: string;
+  /**
+   * Produce a playable URL. Called when Play is pressed, so any token it
+   * embeds is fresh. Returning null means the audio could not be resolved.
+   */
+  resolveAudioUri: () => Promise<string | null>;
   /** Optional override duration label (e.g. "1:23"). */
   durationLabel?: string;
 }
 
-export function PlaybackBar({ audioUri, durationLabel }: PlaybackBarProps) {
+export function PlaybackBar({
+  resolveAudioUri,
+  durationLabel
+}: PlaybackBarProps) {
   const { colors } = useTheme();
 
   const [playbackState, setPlaybackState] = useState<PlaybackState>('stopped');
   const ctxRef = useRef<AudioContextLike | null>(null);
   const sourceRef = useRef<AudioBufferSourceNodeLike | null>(null);
 
-  // When the audioUri changes (different card opened), stop any running audio.
+  // When the source changes (different card opened), stop any running audio.
   useEffect(() => {
     return () => {
       void stopAudio();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioUri]);
+  }, [resolveAudioUri]);
 
   // Cleanup on unmount.
   useEffect(() => {
@@ -117,7 +128,19 @@ export function PlaybackBar({ audioUri, durationLabel }: PlaybackBarProps) {
       return;
     }
     setPlaybackState('loading');
+    // Hoisted so the catch can name the URL that actually failed. Logging the
+    // cause is what made the original failure diagnosable at all.
+    let resolved: string | null = null;
     try {
+      // Mint the URL now, not at render: a backend file token is good for
+      // about two minutes (INV-NOTES-014).
+      resolved = await resolveAudioUri();
+      if (!resolved) {
+        console.warn('[PlaybackBar] no audio URL could be resolved');
+        setPlaybackState('error');
+        return;
+      }
+
       const ctx = new AudioContext();
       ctxRef.current = ctx;
 
@@ -125,7 +148,7 @@ export function PlaybackBar({ audioUri, durationLabel }: PlaybackBarProps) {
       // fetching it and a file:// source by decoding natively, which is what
       // INV-NOTES-012 requires: a note served from the backend has an https
       // audio URL, and a note captured but not yet synced has a local one.
-      const audioBuffer = await ctx.decodeAudioData(audioUri);
+      const audioBuffer = await ctx.decodeAudioData(resolved);
       const source = ctx.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(ctx.destination);
@@ -141,13 +164,13 @@ export function PlaybackBar({ audioUri, durationLabel }: PlaybackBarProps) {
     } catch (err) {
       // Swallowing this is what made the original failure undiagnosable: the
       // UI said "Playback failed" and the actual cause never left the closure.
-      console.warn('[PlaybackBar] playback failed for', audioUri, err);
+      console.warn('[PlaybackBar] playback failed for', resolved, err);
       setPlaybackState('error');
       void ctxRef.current?.close().catch(() => undefined);
       ctxRef.current = null;
       sourceRef.current = null;
     }
-  }, [audioUri, playbackState]);
+  }, [resolveAudioUri, playbackState]);
 
   const handleStop = useCallback(async (): Promise<void> => {
     await stopAudio();

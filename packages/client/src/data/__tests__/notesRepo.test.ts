@@ -24,6 +24,7 @@ jest.mock('../../lib/backend', () => {
 });
 
 import { notesRepo } from '../notesRepo';
+import { backend } from '../../lib/backend';
 
 const MELODY = [
   { midi: 60, startMs: 0, endMs: 400, durationMs: 400, cents: 0, clarity: 0.9 }
@@ -142,5 +143,37 @@ describe('notesRepo.remove', () => {
 
     await signInFake('alice@micdrp.test');
     expect(await notesRepo.list()).toHaveLength(1);
+  });
+});
+
+describe('notesRepo.audioUrlFor — INV-NOTES-014', () => {
+  it('mints a token-carrying URL from a cached path', async () => {
+    await signInFake();
+    const dto = await notesRepo.create(INPUT, BLOBS);
+
+    const url = await notesRepo.audioUrlFor(dto.id, dto.audioPath);
+
+    expect(url).toContain(dto.id);
+    expect(url).toContain('token=');
+  });
+
+  it('mints a fresh token on every call rather than reusing one', async () => {
+    // The bug this pins: a token lives about two minutes, so a URL obtained
+    // once and kept is dead by the time the singer taps Play. Every call must
+    // ask again.
+    await signInFake();
+    const dto = await notesRepo.create(INPUT, BLOBS);
+    const tokenSpy = jest.spyOn(backend.files, 'getToken');
+
+    await notesRepo.audioUrlFor(dto.id, dto.audioPath);
+    await notesRepo.audioUrlFor(dto.id, dto.audioPath);
+
+    expect(tokenSpy).toHaveBeenCalledTimes(2);
+    tokenSpy.mockRestore();
+  });
+
+  it('returns null when the note has no audio', async () => {
+    await signInFake();
+    expect(await notesRepo.audioUrlFor('note-1', null)).toBeNull();
   });
 });
