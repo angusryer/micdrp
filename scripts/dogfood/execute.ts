@@ -50,19 +50,32 @@ export async function preflight(): Promise<{ passed: boolean; output: string }> 
     });
     return { passed: true, output: '' };
   } catch (error) {
-    const e = error as { stdout?: string; stderr?: string };
+    const e = error as {
+      stdout?: string;
+      stderr?: string;
+      killed?: boolean;
+      signal?: string;
+    };
+    // A killed run has no output to read, so the kill itself is the reason.
+    if (e.killed || e.signal) {
+      return { passed: false, output: `the harness was killed (${e.signal ?? 'timeout'})` };
+    }
     return { passed: false, output: failingLines(`${e.stdout ?? ''}\n${e.stderr ?? ''}`) };
   }
 }
 
-/** The lines a human would look for first in a failed harness run. */
+/**
+ * The lines a human would look for first in a failed harness run.
+ *
+ * Falls back to the tail when nothing matches. A guess at which lines matter
+ * must never be the reason a failure goes unexplained — that is the same
+ * mistake as reporting a bare false, one level further in.
+ */
 function failingLines(output: string): string {
-  const interesting = output
-    .split('\n')
-    .filter((line) => /✕|✗|FAIL|error TS|Error:|✖/.test(line))
-    .slice(0, 6)
-    .join('; ');
-  return interesting.slice(0, 400) || 'no failing line found in the output';
+  const lines = output.split('\n').filter((line) => line.trim().length > 0);
+  const matched = lines.filter((line) => /✕|✗|FAIL|error TS|Error:|✖|error:/i.test(line));
+  const chosen = matched.length > 0 ? matched.slice(0, 6) : lines.slice(-8);
+  return chosen.join('; ').slice(0, 500) || 'the harness produced no output at all';
 }
 
 /** Repo-relative paths currently modified. */
