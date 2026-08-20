@@ -16,6 +16,7 @@
 		1933D748D5F3E4026E5387AA /* mpm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DF912EB0FAD01209D28881AA /* mpm.cpp */; };
 		33F9A61EE3BC9A916E1D82E8 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B06DFC5A1521D1B52F8C216B /* PrivacyInfo.xcprivacy */; };
 		64FE505DA0AB8147C0E9A420 /* AudioEngineModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = 8AA58FD71262417B94E79C03 /* AudioEngineModule.mm */; };
+		AA11BB22CC33DD44EE55FF66 /* InstallInfoModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF77 /* InstallInfoModule.mm */; };
 		7699B88040F8A987B510C191 /* libPods-micdrp-micdrpTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19F6CBCC0A4E27FBF8BF4A61 /* libPods-micdrp-micdrpTests.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		874E8F2729CCCE4200E04F31 /* env.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 874E8F2529CCCE4200E04F31 /* env.xcconfig */; };
@@ -51,6 +52,8 @@
 		874E8F2529CCCE4200E04F31 /* env.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = env.xcconfig; sourceTree = "<group>"; };
 		89C6BE57DB24E9ADA2F236DE /* Pods-micdrp-micdrpTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-micdrp-micdrpTests.release.xcconfig"; path = "Target Support Files/Pods-micdrp-micdrpTests/Pods-micdrp-micdrpTests.release.xcconfig"; sourceTree = "<group>"; };
 		8AA58FD71262417B94E79C03 /* AudioEngineModule.mm */ = {isa = PBXFileReference; includeInIndex = 1; path = AudioEngineModule.mm; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF77 /* InstallInfoModule.mm */ = {isa = PBXFileReference; includeInIndex = 1; path = InstallInfoModule.mm; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF88 /* InstallInfoModule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = InstallInfoModule.h; sourceTree = "<group>"; };
 		9562B779ABDCD05E23FEB32B /* notes.cpp */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.cpp; name = notes.cpp; path = ../cpp/dsp/notes.cpp; sourceTree = "<group>"; };
 		B06DFC5A1521D1B52F8C216B /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = micdrp/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C68CB312D3A22CF16FFF453D /* AudioEngineModule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = AudioEngineModule.h; sourceTree = "<group>"; };
@@ -116,6 +119,8 @@
 			children = (
 				C68CB312D3A22CF16FFF453D /* AudioEngineModule.h */,
 				8AA58FD71262417B94E79C03 /* AudioEngineModule.mm */,
+				AA11BB22CC33DD44EE55FF88 /* InstallInfoModule.h */,
+				AA11BB22CC33DD44EE55FF77 /* InstallInfoModule.mm */,
 				DF912EB0FAD01209D28881AA /* mpm.cpp */,
 				31A3F1DA1B4AD9D5214AEBC3 /* mpm.h */,
 				9562B779ABDCD05E23FEB32B /* notes.cpp */,
@@ -448,6 +453,7 @@
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 				64FE505DA0AB8147C0E9A420 /* AudioEngineModule.mm in Sources */,
+				AA11BB22CC33DD44EE55FF66 /* InstallInfoModule.mm in Sources */,
 				1933D748D5F3E4026E5387AA /* mpm.cpp in Sources */,
 				0730E62C3B640AEB23864E9A /* notes.cpp in Sources */,
 			);

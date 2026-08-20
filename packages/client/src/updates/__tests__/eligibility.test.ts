@@ -8,7 +8,10 @@
 import { Platform } from 'react-native';
 import { exists } from '@dr.pogodin/react-native-fs';
 
+import NativeInstallInfo from '../../specs/NativeInstallInfo';
 import { resolveEligibility } from '../eligibility';
+
+const receiptNameMock = jest.mocked(NativeInstallInfo.getReceiptName);
 
 const existsMock = exists as jest.MockedFunction<typeof exists>;
 
@@ -131,5 +134,55 @@ describe('where the receipt is looked for — INV-UPD-001', () => {
   it('reports no receipt when none was found', async () => {
     withReceipt(null);
     expect((await resolveEligibility()).receiptPath).toBeNull();
+  });
+});
+
+describe('what the platform says — INV-UPD-001', () => {
+  const dev = globalThis as unknown as { __DEV__: boolean };
+
+  beforeEach(() => {
+    existsMock.mockReset().mockResolvedValue(false);
+    receiptNameMock.mockReset().mockReturnValue('');
+    dev.__DEV__ = false;
+    Platform.OS = 'ios';
+  });
+
+  it('is TestFlight when the platform names a sandbox receipt', async () => {
+    // The regression in builds 6 and 7: the name is reported from first
+    // launch, but StoreKit may not have written the file — so `exists` stays
+    // false and the old check said unknown.
+    receiptNameMock.mockReturnValue('sandboxReceipt');
+    await expect(resolveEligibility()).resolves.toMatchObject({
+      isEligible: true,
+      reason: 'testflight'
+    });
+    expect(existsMock).not.toHaveBeenCalled();
+  });
+
+  it('is App Store when the platform names a store receipt', async () => {
+    receiptNameMock.mockReturnValue('receipt');
+    await expect(resolveEligibility()).resolves.toMatchObject({
+      isEligible: false,
+      reason: 'app_store'
+    });
+  });
+
+  it('falls back to the filesystem when the platform says nothing', async () => {
+    receiptNameMock.mockReturnValue('');
+    existsMock.mockImplementation((path: string) =>
+      Promise.resolve(path === '/tmp/micdrp/StoreKit/sandboxReceipt')
+    );
+    await expect(resolveEligibility()).resolves.toMatchObject({
+      reason: 'testflight'
+    });
+  });
+
+  it('falls back when the module is missing entirely', async () => {
+    receiptNameMock.mockImplementation(() => {
+      throw new Error('module not found');
+    });
+    await expect(resolveEligibility()).resolves.toMatchObject({
+      reason: 'unknown'
+    });
   });
 });

@@ -10,13 +10,16 @@
  * What does differ is the receipt StoreKit installs: TestFlight writes
  * `sandboxReceipt`, the App Store writes `receipt`.
  *
- * It lives in the app's DATA container, beside Documents — NOT in the app
- * bundle. The first version looked in the bundle, found nothing, resolved
- * every install to `unknown`, and so never asked for an update at all. That
- * shipped in build 6 and could not be repaired over the air, because an app
- * that never asks cannot be sent the fix. Hence the belt and braces below:
- * every plausible location is tried, and the one that matched is reported so
- * a wrong guess is visible on the device rather than inferred from outside.
+ * The name comes from the platform, not from the filesystem. That is the
+ * correction that mattered: `Bundle.main.appStoreReceiptURL` reports the
+ * receipt's name from first launch, but StoreKit does not necessarily write
+ * the file until it refreshes. Builds 6 and 7 both asked the filesystem
+ * whether the receipt existed — a different question, whose answer was no, so
+ * both resolved to `unknown` and never asked for an update at all.
+ *
+ * The filesystem probe is kept as a fallback for the case where the native
+ * module is unavailable, and whatever decided the verdict is reported so a
+ * wrong answer is visible on the device rather than inferred from outside.
  */
 import { Platform } from 'react-native';
 import {
@@ -25,7 +28,18 @@ import {
   MainBundlePath
 } from '@dr.pogodin/react-native-fs';
 
+import NativeInstallInfo from '../specs/NativeInstallInfo';
 import type { Eligibility, EligibilityReason } from './types';
+
+/** What iOS calls the receipt, when it will say. */
+function receiptName(): string | null {
+  try {
+    return NativeInstallInfo.getReceiptName() || null;
+  } catch {
+    // Older binary without the module, or Android. Fall through to the probe.
+    return null;
+  }
+}
 
 /** The data container: Documents' parent, where StoreKit puts the receipt. */
 const dataContainer = (): string =>
@@ -64,6 +78,15 @@ export async function resolveEligibility(): Promise<Eligibility> {
   }
   if (Platform.OS !== 'ios') {
     return verdict('unknown');
+  }
+
+  // The platform's own answer, which does not depend on the file existing.
+  const name = receiptName();
+  if (name === 'sandboxReceipt') {
+    return verdict('testflight', name);
+  }
+  if (name === 'receipt') {
+    return verdict('app_store', name);
   }
 
   try {

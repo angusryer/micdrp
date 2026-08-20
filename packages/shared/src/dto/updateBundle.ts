@@ -36,6 +36,16 @@ export interface UpdateBundleDto {
   targetAppVersion: string;
   /** The lowest BUILD_NUMBER this bundle may run on. */
   minBuildNumber: number;
+  /**
+   * The BUILD_NUMBER whose source this bundle was built from.
+   *
+   * How recency is judged. A binary carries JavaScript from its own build, so
+   * a bundle made from an older build is older than what the binary already
+   * has — offering it is a downgrade (INV-UPD-010). Absent on bundles
+   * published before this field existed, which are treated as unknown-age and
+   * refused to any binary newer than their floor.
+   */
+  builtFromBuild?: number;
   fileUrl: string;
   fileHash: string;
   /** False once withdrawn: never offered, and pulled back off installs. */
@@ -50,11 +60,12 @@ export interface UpdateClientDto {
   /** What it is running now; NIL_BUNDLE_ID for the binary's own bundle. */
   bundleId: string;
   /**
-   * The bundle compiled into the binary at build time.
+   * The bundle compiled into the binary. Reported for diagnosis only.
    *
-   * Without it, a fresh install reports no running bundle and every
-   * published bundle looks newer than nothing — including ones published
-   * before the binary was built (INV-UPD-010).
+   * NOT usable as a recency floor: it is not regenerated per build. Build 7's
+   * was stamped a day before build 7 existed, so every published bundle
+   * sorted after it. That was the first attempt at INV-UPD-010 and it did not
+   * work; `builtFromBuild` on the bundle is what does.
    */
   minBundleId?: string;
 }
@@ -94,6 +105,24 @@ export function isRunnableBy(
 }
 
 /**
+ * Is this bundle newer than the JavaScript the binary already carries?
+ *
+ * A binary ships JavaScript built from its own source, so a bundle made from
+ * an earlier build is a downgrade however recently it was published. Build 7
+ * shipped the fix that let the app ask for updates at all, and the newest
+ * bundle on the channel predated it — accepting that would have undone the
+ * fix and left another build as the only way out (INV-UPD-010).
+ */
+export function isNewerThanBinary(
+  bundle: UpdateBundleDto,
+  client: UpdateClientDto
+): boolean {
+  // Unstamped bundles predate the field. Refusing them is the safe reading:
+  // an unknown-age bundle cannot be shown to be newer.
+  return (bundle.builtFromBuild ?? -1) >= client.buildNumber;
+}
+
+/**
  * Decide what one install should do.
  *
  * Withdrawal is answered first. An install running a bundle a maintainer has
@@ -110,17 +139,10 @@ export function decideUpdate(
     return { ...NOTHING, decision: 'rollback' };
   }
 
-  // Newer than what is running, and newer than what the binary shipped
-  // with. The second test is what stops a new build being handed
-  // JavaScript published before it existed (INV-UPD-010).
-  const floor =
-    client.minBundleId && client.minBundleId > client.bundleId
-      ? client.minBundleId
-      : client.bundleId;
-
   const newest = bundles
     .filter((b) => isRunnableBy(b, client))
-    .filter((b) => b.bundleId > floor)
+    .filter((b) => isNewerThanBinary(b, client))
+    .filter((b) => b.bundleId > client.bundleId)
     .sort((a, b) => (a.bundleId < b.bundleId ? 1 : -1))[0];
 
   if (!newest) {

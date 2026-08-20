@@ -1,20 +1,31 @@
 /**
- * Which over-the-air bundle is running.
+ * Which over-the-air bundle is running, if any.
  *
- * The same question `dogfood/origin.ts` asks, and it belongs here — the
- * updates domain owns what a bundle is. dogfood re-exports it rather than
- * asking hot-updater separately.
+ * `getBundleId()` falls back to the id compiled into the binary when no bundle
+ * has been applied — it does not return the nil uuid. Build 7 displayed
+ * `01a01967` in settings and looked as though a bundle were running when
+ * nothing had been. Comparing against the build-time id is what tells the two
+ * apart.
  */
 import { HotUpdater } from '@hot-updater/react-native';
 
-/** The nil id hot-updater reports when no bundle has been applied. */
-const NIL = /^0+-0+-0+-0+-0+$/;
+/** The id compiled into the binary. Fixed for the life of that binary. */
+export function embeddedBundle(): string | null {
+  try {
+    return HotUpdater.getMinBundleId() || null;
+  } catch {
+    return null;
+  }
+}
 
-/** The running bundle, or null when the binary's own is in use. */
+/** The applied bundle, or null when the binary's own is what is running. */
 export function runningBundle(): string | null {
   try {
-    const id = HotUpdater.getBundleId();
-    return id && !NIL.test(id) ? id : null;
+    const current = HotUpdater.getBundleId();
+    if (!current || current === embeddedBundle()) {
+      return null;
+    }
+    return current;
   } catch {
     return null;
   }

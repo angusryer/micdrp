@@ -216,6 +216,14 @@ jest.mock(
   { virtual: true }
 );
 
+// The install-info TurboModule is native, so it is absent on the host. The
+// default answers "no receipt", which is what a simulator or a development
+// build reports — tests that care override it.
+jest.mock('./src/specs/NativeInstallInfo', () => ({
+  __esModule: true,
+  default: { getReceiptName: jest.fn(() => '') }
+}));
+
 jest.mock('react-native-url-polyfill/auto', () => ({}), { virtual: true });
 
 // pocketbase ships ESM from every entry point its CJS build exports only the

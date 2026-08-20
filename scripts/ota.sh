@@ -86,6 +86,10 @@ cmd_publish() {
   [ -n "$target_version" ] || target_version="$(env_value VERSION_NUMBER)"
   [ -n "$min_build" ] || min_build="$(env_value BUILD_NUMBER)"
   [[ "$min_build" =~ ^[0-9]+$ ]] || die "--min-build must be a number"
+  # Always the build this machine is on: the source being bundled is that
+  # build's source.
+  local built_from
+  built_from="$(env_value BUILD_NUMBER)"
 
   info "Bundle for ${target_version}, runnable on build >=${min_build}"
   if [ "$dry_run" = "1" ]; then
@@ -104,9 +108,15 @@ cmd_publish() {
 
   # Stamp the one constraint their schema has no column for, onto the row the
   # deploy just created — the newest on the channel.
+  # Two numbers, and they answer different questions. min_build_number is the
+  # lowest binary that CAN run this bundle. built_from_build is the binary
+  # whose source it was built FROM — which is how recency is judged, because a
+  # bundle made from an older build is a downgrade however recently it was
+  # published (INV-UPD-010).
   d1 "UPDATE bundles
-         SET metadata = json_set(COALESCE(metadata, '{}'),
-                                 '\$.min_build_number', ${min_build})
+         SET metadata = json_set(json_set(COALESCE(metadata, '{}'),
+                                 '\$.min_build_number', ${min_build}),
+                                 '\$.built_from_build', ${built_from})
        WHERE id = (SELECT id FROM bundles
                     WHERE channel = '${channel}' AND platform = 'ios'
                     ORDER BY id DESC LIMIT 1)"

@@ -52,14 +52,14 @@ type BundleRow = {
   metadata: string | null;
 };
 
-/** The lowest BUILD_NUMBER this bundle may run on, or 0 if never stamped. */
-function minBuildNumber(row: BundleRow): number {
+/** One number out of the row's metadata, or undefined when absent. */
+function metaNumber(row: BundleRow, key: string): number | undefined {
   try {
     const parsed = JSON.parse(row.metadata ?? '{}') as Record<string, unknown>;
-    const value = Number(parsed.min_build_number);
-    return Number.isFinite(value) ? value : 0;
+    const value = Number(parsed[key]);
+    return Number.isFinite(value) ? value : undefined;
   } catch {
-    return 0;
+    return undefined;
   }
 }
 
@@ -83,7 +83,8 @@ const toDto = (row: BundleRow, origin: string): UpdateBundleDto => ({
   bundleId: row.id,
   channel: row.channel,
   targetAppVersion: row.target_app_version ?? '',
-  minBuildNumber: minBuildNumber(row),
+  minBuildNumber: metaNumber(row, 'min_build_number') ?? 0,
+  builtFromBuild: metaNumber(row, 'built_from_build'),
   // Archives are served back through this Worker rather than from a public
   // bucket. The bucket stays private, there is no r2.dev origin or custom
   // domain to configure, and the download URL is the same host the client

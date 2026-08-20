@@ -21,6 +21,7 @@ const bundle = (over: Partial<UpdateBundleDto> = {}): UpdateBundleDto => ({
   fileUrl: 'https://ota.example.com/b2.zip',
   fileHash: 'abc',
   isEnabled: true,
+  builtFromBuild: 4,
   ...over
 });
 
@@ -52,15 +53,23 @@ describe('decideUpdate', () => {
     });
   });
 
-  it('ACC-UPD-007: offers a bundle whose floor the binary clears', () => {
+  it('ACC-UPD-007: clearing the run floor is not on its own enough', () => {
+    // A bundle built from build 4 is older JavaScript than a build-6 binary
+    // already carries, however happily that binary could run it.
     expect(
-      decideUpdate([bundle({ minBuildNumber: 4 })], client({ buildNumber: 6 }))
-    ).toMatchObject({ decision: 'update' });
+      decideUpdate(
+        [bundle({ minBuildNumber: 4, builtFromBuild: 4 })],
+        client({ buildNumber: 6 })
+      )
+    ).toMatchObject({ decision: 'none' });
   });
 
   it('the build floor is inclusive', () => {
     expect(
-      decideUpdate([bundle({ minBuildNumber: 4 })], client({ buildNumber: 4 }))
+      decideUpdate(
+        [bundle({ minBuildNumber: 4, builtFromBuild: 4 })],
+        client({ buildNumber: 4 })
+      )
     ).toMatchObject({ decision: 'update' });
   });
 
@@ -138,40 +147,45 @@ describe('decideUpdate', () => {
 });
 
 describe('bundles older than the binary — INV-UPD-010', () => {
-  it('refuses a bundle published before the binary was built', () => {
-    // The regression: a fresh install reports no running bundle, so every
-    // published bundle looked newer than nothing — including ones that
-    // predate the binary and would downgrade it.
-    const older = bundle({ bundleId: 'b1' });
-    expect(
-      decideUpdate([older], client({ bundleId: NIL_BUNDLE_ID, minBundleId: 'b5' }))
-    ).toMatchObject({ decision: 'none' });
+  it('refuses a bundle built from an older binary', () => {
+    // The near-miss: build 7 shipped the fix that let the app ask for updates
+    // at all, and the newest bundle on the channel was built from build 6.
+    // Taking it would have undone the fix, with another build the only way
+    // out.
+    const stale = bundle({ bundleId: 'b9', minBuildNumber: 6, builtFromBuild: 6 });
+    expect(decideUpdate([stale], client({ buildNumber: 7 }))).toMatchObject({
+      decision: 'none'
+    });
   });
 
-  it('offers one published after the binary was built', () => {
-    const newer = bundle({ bundleId: 'b9' });
-    expect(
-      decideUpdate([newer], client({ bundleId: NIL_BUNDLE_ID, minBundleId: 'b5' }))
-    ).toMatchObject({ decision: 'update', bundleId: 'b9' });
+  it('offers one built from the same binary', () => {
+    const current = bundle({ bundleId: 'b9', minBuildNumber: 7, builtFromBuild: 7 });
+    expect(decideUpdate([current], client({ buildNumber: 7 }))).toMatchObject({
+      decision: 'update',
+      bundleId: 'b9'
+    });
   });
 
-  it('the embedded bundle is a floor, not a target', () => {
-    const same = bundle({ bundleId: 'b5' });
-    expect(
-      decideUpdate([same], client({ bundleId: NIL_BUNDLE_ID, minBundleId: 'b5' }))
-    ).toMatchObject({ decision: 'none' });
+  it('refuses an unstamped bundle, whose age cannot be shown', () => {
+    const unstamped = bundle({ bundleId: 'b9', builtFromBuild: undefined });
+    expect(decideUpdate([unstamped], client({ buildNumber: 7 }))).toMatchObject({
+      decision: 'none'
+    });
   });
 
-  it('still respects the running bundle when it is newer than the embedded one', () => {
-    const older = bundle({ bundleId: 'b6' });
-    expect(
-      decideUpdate([older], client({ bundleId: 'b7', minBundleId: 'b5' }))
-    ).toMatchObject({ decision: 'none' });
+  it('picks the newest among several built from the same binary', () => {
+    const older = bundle({ bundleId: 'b8', minBuildNumber: 7, builtFromBuild: 7 });
+    const newer = bundle({ bundleId: 'b9', minBuildNumber: 7, builtFromBuild: 7 });
+    expect(decideUpdate([older, newer], client({ buildNumber: 7 }))).toMatchObject({
+      bundleId: 'b9'
+    });
   });
 
-  it('behaves as before when the binary reports no embedded bundle', () => {
-    expect(decideUpdate([bundle()], client())).toMatchObject({
-      decision: 'update'
+  it('a stale bundle does not hide a current one', () => {
+    const stale = bundle({ bundleId: 'b9', minBuildNumber: 6, builtFromBuild: 6 });
+    const current = bundle({ bundleId: 'b8', minBuildNumber: 7, builtFromBuild: 7 });
+    expect(decideUpdate([stale, current], client({ buildNumber: 7 }))).toMatchObject({
+      bundleId: 'b8'
     });
   });
 });
