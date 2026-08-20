@@ -13,37 +13,24 @@ import { promisify } from 'node:util';
 // extensionless for Metro's benefit. This is the only file the loop needs.
 import { shouldPublishBundle, type ChangeRequestDto } from '../../packages/shared/src/dto/dogfood.ts';
 
-import { changedSince, preflight, restoreTree } from './execute.ts';
+import { preflight } from './execute.ts';
+import { changedSince, restoreTree } from './tree.ts';
+import { commitMessage } from './report.ts';
 import { WORKTREE } from './worktree.ts';
 
 const run = promisify(execFile);
 
-/** The build the changes were made against — the floor for any bundle. */
-export function runningBuildNumber(clipBuild: number): number {
-  return clipBuild;
-}
-
-function commitMessage(batch: ChangeRequestDto[]): string {
-  const subject =
-    batch.length === 1
-      ? batch[0].summary
-      : `apply ${batch.length} spoken change requests`;
-
-  const body = batch
-    .map((r) => `- ${r.summary}\n  heard as: "${r.quote}"`)
-    .join('\n');
-
-  return (
-    `feat(dogfood): ${subject.charAt(0).toLowerCase()}${subject.slice(1)}\n\n` +
-    `Built from spoken feedback, unattended. The maintainer's own words are\n` +
-    `quoted so a misreading is visible as a misreading rather than hidden\n` +
-    `behind a paraphrase.\n\n${body}\n\n` +
-    `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>\n`
-  );
-}
 
 export interface DeliveryOutcome {
   delivered: boolean;
+  /**
+   * Whether the commit reached main.
+   *
+   * Separate from `delivered` because only one of delivery's two outward
+   * steps can be taken back. A push is public the moment it happens; a
+   * publish is a retry away (INV-DOG-023).
+   */
+  pushed: boolean;
   published: boolean;
   /** How it went out, when it did. */
   route: 'bundle' | 'testflight' | null;
@@ -61,14 +48,14 @@ export async function deliverBatch(
   minBuild: number
 ): Promise<DeliveryOutcome> {
   if (batch.length === 0) {
-    return { delivered: false, published: false, route: null, reason: 'nothing built' };
+    return { delivered: false, pushed: false, published: false, route: null, reason: 'nothing built' };
   }
 
   // Against origin/main, not the working tree: each built request was
   // checkpointed, so the tree is clean and the work is in commits.
   const paths = await changedSince('origin/main');
   if (paths.length === 0) {
-    return { delivered: false, published: false, route: null, reason: 'nothing changed' };
+    return { delivered: false, pushed: false, published: false, route: null, reason: 'nothing changed' };
   }
 
   // The whole batch, together, before anything is written to history.
@@ -77,6 +64,7 @@ export async function deliverBatch(
     await restoreTree();
     return {
       delivered: false,
+      pushed: false,
       published: false,
       route: null,
       reason: `batch preflight failed: ${harness.output}`
@@ -99,21 +87,33 @@ export async function deliverBatch(
       cwd: WORKTREE,
       timeout: 30 * 60 * 1000
     });
-    return { delivered: true, published: false, route: 'testflight', reason: null };
+    return { delivered: true, pushed: true, published: false, route: 'testflight', reason: null };
   }
 
   if (!shouldPublishBundle(paths)) {
-    return { delivered: true, published: false, route: null, reason: null };
+    return { delivered: true, pushed: true, published: false, route: null, reason: null };
   }
 
-  await run('./scripts/ota.sh', [
-    'publish',
-    'beta',
-    '--min-build',
-    String(minBuild),
-    '--message',
-    batch.map((r) => r.summary).join('; ')
-  ], { cwd: WORKTREE, timeout: 15 * 60 * 1000 });
+  // Past this point the commit is public. A publish that fails is a step
+  // to retry, not a reason to treat the pushed work as unbuilt.
+  try {
+    await run('./scripts/ota.sh', [
+      'publish',
+      'beta',
+      '--min-build',
+      String(minBuild),
+      '--message',
+      batch.map((r) => r.summary).join('; ')
+    ], { cwd: WORKTREE, timeout: 15 * 60 * 1000 });
+  } catch (error) {
+    return {
+      delivered: true,
+      pushed: true,
+      published: false,
+      route: 'bundle',
+      reason: `pushed to main, but publishing failed: ${String(error).slice(0, 300)}`
+    };
+  }
 
-  return { delivered: true, published: true, route: 'bundle', reason: null };
+  return { delivered: true, pushed: true, published: true, route: 'bundle', reason: null };
 }

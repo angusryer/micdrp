@@ -14,7 +14,8 @@ import { gateRequest, type ChangeRequestDto } from '../../packages/shared/src/dt
 import { halt, isHalted, readFailures, releaseLock, takeLock, writeFailures, HALT_AFTER } from './guard.ts';
 import { audioUrl, claimOldest, connect, markDelivered, signIn, storeRequests, storeTranscript } from './clips.ts';
 import { deliverBatch } from './deliver.ts';
-import { checkpoint, executeRequest } from './execute.ts';
+import { describeOutcome } from './report.ts';
+import { buildRequests } from './build.ts';
 import { installDeps, prepareWorktree } from './worktree.ts';
 import { interpret } from './interpret.ts';
 import { transcribe } from './transcribe.ts';
@@ -76,38 +77,7 @@ export async function runOnce(options: Options): Promise<boolean> {
     await installDeps();
   }
 
-  const built: ChangeRequestDto[] = [];
-  for (const request of requests) {
-    // A resumed clip must not build again what it already shipped. Its
-    // change is in main; repeating it is at best a no-op and at worst a
-    // second, conflicting edit (INV-DOG-016).
-    if (request.state === 'delivered' || request.state === 'filed') {
-      continue;
-    }
-    const verdict = gateRequest(request);
-    if (!verdict.mayBuild) {
-      request.state = 'filed';
-      console.log(`  filed: ${request.summary} (${verdict.reason})`);
-      continue;
-    }
-    if (options.dryRun) {
-      console.log(`  would build (${verdict.route}): ${request.summary}`);
-      continue;
-    }
-    // eslint-disable-next-line no-await-in-loop -- one change at a time, by design
-    const outcome = await executeRequest(request);
-    if (!outcome.built) {
-      request.state = 'abandoned';
-      console.log(`  abandoned: ${request.summary} (${outcome.reason})`);
-      continue;
-    }
-    request.state = 'built';
-    built.push(request);
-    // Kept now so the next request starts clean and a later failure cannot
-    // reset this one away (INV-DOG-009).
-    // eslint-disable-next-line no-await-in-loop -- one change at a time, by design
-    await checkpoint(request.summary);
-  }
+  const built = await buildRequests(requests, options.dryRun);
 
   await storeRequests(pb, clip.id, requests);
 
@@ -118,23 +88,26 @@ export async function runOnce(options: Options): Promise<boolean> {
   }
 
   const outcome = await deliverBatch(built, clip.build_number);
+
+  // Recorded on the push, not on the publish. The commit is public the
+  // moment it lands; a resume must never set about building it again
+  // because a later, retryable step failed (INV-DOG-023).
+  if (outcome.pushed) {
+    for (const request of built) {
+      request.state = 'delivered';
+    }
+    await storeRequests(pb, clip.id, requests);
+    await markDelivered(pb, clip.id);
+  }
+
   if (!outcome.delivered) {
     throw new Error(`delivery failed: ${outcome.reason}`);
   }
-  // Recorded before the clip is closed, so a resume knows what shipped.
-  for (const request of built) {
-    request.state = 'delivered';
+  if (!outcome.published && outcome.route === 'bundle') {
+    // The changes are on main and reach the device on the next publish.
+    console.error(`dogfood: ${outcome.reason}`);
   }
-  await storeRequests(pb, clip.id, requests);
-  await markDelivered(pb, clip.id);
-  console.log(
-    `dogfood: ${requests.length} request(s), ${built.length} built, ` +
-      (outcome.route === 'testflight'
-        ? 'shipped to TestFlight — install it when the email arrives'
-        : outcome.published
-          ? 'published over the air'
-          : 'committed, nothing to publish')
-  );
+  console.log(describeOutcome(outcome, requests.length, built.length));
   return true;
 }
 

@@ -13,25 +13,11 @@ import { promisify } from 'node:util';
 // extensionless for Metro's benefit. This is the only file the loop needs.
 import type { ChangeRequestDto } from '../../packages/shared/src/dto/dogfood.ts';
 import { AGENT_ARGS, agentPrompt, lastWords } from './agent.ts';
+import { changedPaths, restoreTree, treeIsClean } from './tree.ts';
 import { WORKTREE } from './worktree.ts';
 
 const run = promisify(execFile);
 
-// Everything happens in the worktree, never the maintainer's checkout
-// (INV-DOG-015). The two are different directories on the same repository.
-const git = (args: string[]) => run('git', args, { cwd: WORKTREE });
-
-/** The worktree is reset before each run, so anything here is this run's. */
-export async function treeIsClean(): Promise<boolean> {
-  const { stdout } = await git(['status', '--porcelain']);
-  return stdout.trim().length === 0;
-}
-
-/** Put the tree back exactly as it was, including anything newly created. */
-export async function restoreTree(): Promise<void> {
-  await git(['reset', '--hard', 'HEAD']);
-  await git(['clean', '-fd']);
-}
 
 /**
  * Run the harness, and keep what it said when it refuses.
@@ -76,40 +62,6 @@ function failingLines(output: string): string {
   const matched = lines.filter((line) => /✕|✗|FAIL|error TS|Error:|✖|error:/i.test(line));
   const chosen = matched.length > 0 ? matched.slice(0, 6) : lines.slice(-8);
   return chosen.join('; ').slice(0, 500) || 'the harness produced no output at all';
-}
-
-/** Repo-relative paths currently modified. */
-export async function changedPaths(): Promise<string[]> {
-  const { stdout } = await git(['status', '--porcelain']);
-  return stdout
-    .split('\n')
-    .map((line) => line.slice(3).trim())
-    .filter(Boolean);
-}
-
-/** Repo-relative paths this run has changed, committed or not. */
-export async function changedSince(ref: string): Promise<string[]> {
-  const { stdout } = await git(['diff', '--name-only', `${ref}...HEAD`]);
-  const committed = stdout.split('\n').filter(Boolean);
-  return [...new Set([...committed, ...(await changedPaths())])];
-}
-
-/**
- * Keep what a request built, so a later failure cannot take it away.
- *
- * Restoring the tree is how an abandoned request leaves nothing behind
- * (INV-DOG-009), but a reset discards everything uncommitted — including
- * requests that already succeeded. A checkpoint per request makes the two
- * compatible: the reset lands on the last good state rather than on the
- * start of the run. It also leaves a clean tree, which is what the next
- * request's precondition asks for.
- *
- * These commits are local to the checkout and squashed at delivery; the
- * maintainer sees one commit per batch, not one per request.
- */
-export async function checkpoint(summary: string): Promise<void> {
-  await git(['add', '-A']);
-  await git(['commit', '-m', `checkpoint: ${summary}`, '--no-verify']);
 }
 
 export interface ExecuteOutcome {

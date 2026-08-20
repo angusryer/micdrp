@@ -114,3 +114,19 @@ invariants:
       validation tried to install it, and the fallback was not on the
       path either. Every change was discarded for a reason that never
       appeared when anyone looked.
+
+  - id: INV-DOG-023
+    description: Work that reached main is never built a second time
+    severity: critical
+    check: >
+      A batch whose commit reached main is recorded as delivered even
+      when a later step fails, and a resumed clip never rebuilds it.
+      Verified by failing the publish after a successful push and
+      asserting the next run publishes rather than rebuilds.
+
+      Delivery is two outward steps and only one of them can be undone.
+      Pushing to main is public the moment it happens; publishing a
+      bundle is a retry away. Treating the pair as one act meant a
+      failed publish left three pushed changes recorded as unbuilt, and
+      the next run set about making them again — against a tree that
+      already had them.
