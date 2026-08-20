@@ -194,3 +194,6 @@ packages/client/ios/release.xcconfig
 .dogfood-failures
 
 # The agent loop works in its own worktree, outside this checkout.
+
+# Cached app login for scheduled runs (0600, never committed).
+.micdrp-dogfood-credentials

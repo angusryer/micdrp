@@ -69,6 +69,9 @@ async function fromVault(field: string): Promise<string> {
  * and nothing more.
  */
 export async function signIn(pb: PocketBase): Promise<void> {
+  // The environment first, and `op` only as an interactive fallback. Reading
+  // 1Password's container makes macOS prompt "node would like to access data
+  // from other apps", and a scheduled run has nobody to answer it.
   const email = process.env.DOGFOOD_EMAIL ?? (await fromVault('username'));
   const password = process.env.DOGFOOD_PASSWORD ?? (await fromVault('password'));
   await pb.collection('users').authWithPassword(email, password);

@@ -17,6 +17,7 @@ import { guardedRun, isHalted } from './loop.ts';
 import {
   install,
   isScheduled,
+  loadCachedCredentials,
   loadProfileSecrets,
   uninstall,
   LOG
@@ -40,6 +41,7 @@ async function main(): Promise<void> {
   // A scheduled run has no shell profile. Credentials are read here rather
   // than written into the plist, which is an unguarded file.
   loadProfileSecrets();
+  loadCachedCredentials();
 
   const [command] = argv;
 
