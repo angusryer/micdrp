@@ -89,3 +89,20 @@ invariants:
       second one on the same checkout. Any elapsed-time threshold is a
       guess at how long work may legitimately take; asking whether the
       holder is still alive needs no guess.
+
+  - id: INV-DOG-021
+    description: A scheduled run resolves the same tools as a manual one
+    severity: critical
+    check: >
+      Every interpreter and binary the harness invokes resolves under the
+      schedule's environment, to the same one the maintainer's shell
+      finds. Verified by running the harness with only the scheduled
+      environment set and asserting it passes.
+
+      This was the third reason nothing ever shipped, and the hardest to
+      see: the harness passed when run by hand and failed under the
+      schedule. A launchd job inherits almost no environment, so python3
+      resolved to a different interpreter without the YAML module, spec
+      validation tried to install it, and the fallback was not on the
+      path either. Every change was discarded for a reason that never
+      appeared when anyone looked.

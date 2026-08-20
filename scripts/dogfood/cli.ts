@@ -15,14 +15,8 @@ import { join } from 'node:path';
 
 import { guardedRun } from './loop.ts';
 import { isHalted } from './guard.ts';
-import {
-  install,
-  isScheduled,
-  loadCachedCredentials,
-  loadProfileSecrets,
-  uninstall,
-  LOG
-} from './schedule.ts';
+import { install, isScheduled, uninstall, LOG } from './schedule.ts';
+import { loadCachedCredentials, loadProfileSecrets } from './credentials.ts';
 
 const REPO = new URL('../..', import.meta.url).pathname;
 const HALT_FILE = join(REPO, '.dogfood-halt');

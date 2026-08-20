@@ -140,6 +140,8 @@ capabilities:
       optional: [interval]
     preconditions:
       - the loop's credentials are readable without a human present
+      - the scheduled environment resolves every tool the harness runs,
+        and resolves them to the same ones the maintainer's shell does
     postconditions:
       - a run starts on the interval and survives logout and reboot
       - a second run never starts while one is in progress
