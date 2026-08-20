@@ -49,10 +49,34 @@ query. This is what `INV-NOTES-005`, `INV-PRACT-007` and `INV-ACCOUNT-006`
 assert, and `backend/verify-rules.mjs` demonstrates it against a running
 instance.
 
-## Deploying
+## Deployed instance
 
-The binary is self-contained, so any host that runs a process and keeps a
-volume works — fly.io, Railway, a VPS. Point the app at it by setting
-`BACKEND_URL` in `packages/client/.env`. Until then it runs locally, which is
-enough for the simulator but not for a TestFlight build on someone else's
-phone.
+<https://micdrp-backend.fly.dev> — one Fly machine in `yyz` with a 1 GB volume
+at `/pb/data` holding the SQLite database and uploaded audio.
+
+```sh
+fly deploy --app micdrp-backend --ha=false   # from backend/
+fly logs   --app micdrp-backend
+fly status --app micdrp-backend
+```
+
+Two things about this setup are deliberate:
+
+- **One machine, never more.** PocketBase is SQLite-backed, so a second machine
+  would carry its own separate database. `--ha=false` and
+  `min_machines_running = 0` keep it single; do not scale it out.
+
+- **It suspends when idle** (`auto_stop_machines = "suspend"`) and wakes on the
+  next request, which is what keeps a backend for a beta close to free. The
+  first request after an idle period pays a short wake-up.
+
+The admin UI is at `/_/` but has no superuser until you create one — nobody
+can reach it before you do:
+
+```sh
+fly ssh console --app micdrp-backend \
+  --command "/usr/local/bin/pocketbase superuser upsert you@example.com 'a-strong-password' --dir /pb/data"
+```
+
+Migrations in `migrations/` are applied on every boot, so a schema change ships
+with a deploy. Already-applied migrations are no-ops.

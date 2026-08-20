@@ -1,0 +1,44 @@
+# Fly configuration for the micdrp backend.
+#
+# One machine with one attached volume. PocketBase is SQLite-backed, so it must
+# not be scaled horizontally: two machines would each hold their own database.
+# auto_stop_machines lets the single machine idle down and wake on a request,
+# which is what keeps a backend for a beta close to free.
+
+app = "micdrp-backend"
+primary_region = "yyz"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PB_ENCRYPTION_KEY_FILE = ""
+
+[[mounts]]
+  source = "micdrp_pb_data"
+  destination = "/pb/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  # SQLite: exactly one writer. Never raise this.
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+
+[checks.health]
+  type = "http"
+  port = 8080
+  path = "/api/health"
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "10s"
