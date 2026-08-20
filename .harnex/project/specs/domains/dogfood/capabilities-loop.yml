@@ -117,3 +117,26 @@ capabilities:
       - no further clip is claimed until a human restarts the loop
       - the reason is recorded where the maintainer will see it
       - clips already uploaded are left untouched for the next run
+
+  - name: dogfood.schedule_loop
+    description: >
+      Run the loop on a schedule, unattended, so a remark spoken while
+      away from the machine is acted on without anyone starting
+      anything. Installed as a launchd agent rather than left to a
+      terminal: a shell that has to stay open is not unattended.
+    actor: maintainer
+    implemented_by: scripts/dogfood/schedule.ts
+    parameters:
+      required: []
+      optional: [interval]
+    preconditions:
+      - the loop's credentials are readable without a human present
+    postconditions:
+      - a run starts on the interval and survives logout and reboot
+      - a second run never starts while one is in progress
+      - every run appends to a log the maintainer can read afterwards
+      - a halted loop stays halted until it is cleared by hand
+      - uninstalling removes the schedule and leaves clips untouched
+    permissions:
+      - role: maintainer
+        notes: Runs as the maintainer, with their credentials.

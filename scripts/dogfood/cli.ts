@@ -8,10 +8,19 @@
  *
  * Spec: .harnex/project/specs/domains/dogfood/commands.yml
  */
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { unlinkSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { guardedRun, isHalted } from './loop.ts';
+import {
+  install,
+  isScheduled,
+  loadProfileSecrets,
+  uninstall,
+  LOG
+} from './schedule.ts';
 
 const REPO = new URL('../..', import.meta.url).pathname;
 const HALT_FILE = join(REPO, '.dogfood-halt');
@@ -23,9 +32,15 @@ const valueOf = (flag: string, fallback: number): number => {
   return at >= 0 ? Number(argv[at + 1]) || fallback : fallback;
 };
 
+const run = promisify(execFile);
+
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function main(): Promise<void> {
+  // A scheduled run has no shell profile. Credentials are read here rather
+  // than written into the plist, which is an unguarded file.
+  loadProfileSecrets();
+
   const [command] = argv;
 
   if (command === 'resume') {
@@ -38,12 +53,34 @@ async function main(): Promise<void> {
     // reflex — the halt exists because something needed looking at.
     console.log(`dogfood: clearing halt — ${reason}`);
     unlinkSync(HALT_FILE);
+    // Clear the count too, or the very next failure halts again immediately.
+    try {
+      unlinkSync(join(REPO, '.dogfood-failures'));
+    } catch {
+      // Never counted a failure. Nothing to clear.
+    }
     return;
   }
 
   if (command === 'status') {
     const reason = isHalted();
     console.log(reason ? `halted: ${reason}` : 'running');
+    console.log(isScheduled() ? `scheduled — log: ${LOG}` : 'not scheduled');
+    return;
+  }
+
+  if (command === 'install') {
+    await install(valueOf('--interval', 300));
+    return;
+  }
+
+  if (command === 'uninstall') {
+    await uninstall();
+    return;
+  }
+
+  if (command === 'logs') {
+    await run('tail', has('--follow') ? ['-f', LOG] : ['-n', '200', LOG]);
     return;
   }
 

@@ -111,3 +111,30 @@ acceptance:
     maps_to:
       capability: dogfood.interpret_clip
       invariants: [INV-DOG-007]
+
+  - id: ACC-DOG-030
+    interface: cli
+    title: A scheduled run never overlaps another
+    given:
+      - clip A is in state uploaded
+    when:
+      - two runs claim at once
+    then:
+      - clip A is in state claimed
+    maps_to:
+      capability: dogfood.schedule_loop
+      invariants: [INV-DOG-012]
+
+  - id: ACC-DOG-031
+    interface: cli
+    title: A halted loop stays halted on its own schedule
+    given:
+      - 3 consecutive runs have failed
+    when:
+      - the loop runs once
+    then:
+      - the run halted the loop
+      - the run claimed nothing
+    maps_to:
+      capability: dogfood.schedule_loop
+      invariants: [INV-DOG-010]

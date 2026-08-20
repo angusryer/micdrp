@@ -188,3 +188,7 @@ packages/client/ios/release.xcconfig
 
 # The agent loop halts by writing this; it is machine state, not history.
 .dogfood-halt
+
+# Scheduled-loop state: machine state, not history.
+.dogfood-lock
+.dogfood-failures

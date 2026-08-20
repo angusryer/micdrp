@@ -156,3 +156,16 @@ invariants:
       account control's padding and hitSlop reached 28 points to its
       left, exactly where this sits, and every tap opened settings
       instead of starting a recording.
+
+  - id: INV-DOG-015
+    description: Work in progress defers the loop, it does not lose requests
+    severity: critical
+    check: >
+      A run finding an unclean working tree stops without claiming, and
+      the clip stays available for the next run. Verified by dirtying the
+      tree and asserting nothing is claimed and nothing is abandoned.
+
+      The first scheduled run abandoned two real requests because someone
+      was editing at the time. Abandoning is for a change that was tried
+      and could not be made; a tree that is busy means the run should not
+      have started, and the request deserves the attempt it never got.

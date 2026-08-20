@@ -8,7 +8,7 @@
  *
  * Spec: .harnex/project/specs/domains/dogfood/commands.yml
  */
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 // Imported by file rather than through the `shared` barrel: Node's ESM
 // loader needs explicit extensions, and the barrel's own imports are
@@ -17,17 +17,69 @@ import { gateRequest, type ChangeRequestDto } from '../../packages/shared/src/dt
 
 import { audioUrl, claimOldest, connect, markDelivered, signIn, storeRequests, storeTranscript } from './clips.ts';
 import { deliverBatch } from './deliver.ts';
-import { executeRequest } from './execute.ts';
+import { executeRequest, treeIsClean } from './execute.ts';
 import { interpret } from './interpret.ts';
 import { transcribe } from './transcribe.ts';
 
 const REPO = new URL('../..', import.meta.url).pathname;
 const HALT_FILE = join(REPO, '.dogfood-halt');
+const LOCK_FILE = join(REPO, '.dogfood-lock');
+
+/** A run older than this is assumed dead and its lock ignored. */
+const STALE_LOCK_MS = 30 * 60 * 1000;
+
+/**
+ * Take the run lock, or report that another run holds it.
+ *
+ * launchd starts a run on its interval whether or not the previous one has
+ * finished, and a run can take many minutes — it builds and runs preflight.
+ * Two concurrent runs would fight over the working tree, which is the one
+ * thing INV-DOG-009 promises will not happen.
+ */
+function takeLock(): boolean {
+  if (existsSync(LOCK_FILE)) {
+    const startedAt = Number(readFileSync(LOCK_FILE, 'utf8')) || 0;
+    if (Date.now() - startedAt < STALE_LOCK_MS) {
+      return false;
+    }
+    // A run that died leaves its lock behind; do not strand the loop forever.
+  }
+  writeFileSync(LOCK_FILE, String(Date.now()));
+  return true;
+}
+
+function releaseLock(): void {
+  try {
+    unlinkSync(LOCK_FILE);
+  } catch {
+    // Already gone. Nothing to do.
+  }
+}
 
 /** How many failed runs in a row before the loop stops itself. */
 const HALT_AFTER = 3;
 
-let consecutiveFailures = 0;
+/**
+ * The failure count lives on disk, not in memory.
+ *
+ * Scheduled runs are separate processes: launchd starts a fresh one each
+ * interval, so an in-memory counter resets every time and the halt after
+ * repeated failure would never fire — the loop would fail forever, quietly,
+ * which is precisely what INV-DOG-010 exists to prevent.
+ */
+const FAILURES_FILE = join(REPO, '.dogfood-failures');
+
+function readFailures(): number {
+  try {
+    return Number(readFileSync(FAILURES_FILE, 'utf8')) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writeFailures(count: number): void {
+  writeFileSync(FAILURES_FILE, String(count));
+}
 
 export function isHalted(): string | null {
   return existsSync(HALT_FILE) ? readFileSync(HALT_FILE, 'utf8').trim() : null;
@@ -51,6 +103,14 @@ export async function runOnce(options: Options): Promise<boolean> {
   const halted = isHalted();
   if (halted) {
     console.error(`dogfood: halted — ${halted}`);
+    return false;
+  }
+
+  // A dirty tree is somebody else's work in progress, not a fault. Deferring
+  // leaves the clip unclaimed for the next run; abandoning would discard
+  // requests that were never given a chance, which is what the first
+  // scheduled run did to two of them.
+  if (!(await treeIsClean())) {
     return false;
   }
 
@@ -124,14 +184,22 @@ export async function runOnce(options: Options): Promise<boolean> {
 
 /** Run a pass, counting failures towards the halt. */
 export async function guardedRun(options: Options): Promise<void> {
+  if (!takeLock()) {
+    // Silent: an overlapping tick is routine, not a problem worth logging on
+    // every interval.
+    return;
+  }
   try {
     await runOnce(options);
-    consecutiveFailures = 0;
+    writeFailures(0);
   } catch (error) {
-    consecutiveFailures += 1;
-    console.error(`dogfood: run failed — ${String(error)}`);
-    if (consecutiveFailures >= HALT_AFTER) {
+    const failures = readFailures() + 1;
+    writeFailures(failures);
+    console.error(`dogfood: run failed (${failures}) — ${String(error)}`);
+    if (failures >= HALT_AFTER) {
       halt(`${HALT_AFTER} consecutive runs failed; last: ${String(error)}`);
     }
+  } finally {
+    releaseLock();
   }
 }

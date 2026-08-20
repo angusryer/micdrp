@@ -34,3 +34,32 @@ commands:
     output: >
       Clears a halt and starts claiming again. Prints what the halt was
       for, so restarting is a deliberate act rather than a reflex.
+
+  - id: CMD-DOG-004
+    name: yarn dogfood install
+    maps_to: dogfood.schedule_loop
+    arguments:
+      positional: []
+      flags:
+        "interval": { type: integer, default: 300, description: "Seconds between runs" }
+    output: >
+      Single line naming the interval and the log path. Installing twice
+      replaces the schedule rather than adding a second one.
+
+  - id: CMD-DOG-005
+    name: yarn dogfood uninstall
+    maps_to: dogfood.schedule_loop
+    arguments:
+      positional: []
+    output: >
+      "Schedule removed." Clips already uploaded are left alone; the next
+      manual run will pick them up.
+
+  - id: CMD-DOG-006
+    name: yarn dogfood logs
+    maps_to: dogfood.schedule_loop
+    arguments:
+      positional: []
+      flags:
+        "follow": { type: boolean, default: false }
+    output: What the scheduled runs have done, newest last.
