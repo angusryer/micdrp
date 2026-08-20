@@ -23,10 +23,19 @@ import { promisify } from 'node:util';
 
 const run = promisify(execFile);
 
-/** Models to try, best first. The first is the one Superwhisper fetched. */
+/**
+ * Models to try, best first.
+ *
+ * Our own copy comes first deliberately. Reading the original out of
+ * Superwhisper's Application Support container makes macOS raise a TCC
+ * consent prompt — "node wants to access data from other apps" — which has to
+ * be clicked. A prompt nobody is there to answer stops an unattended run
+ * dead, so the model is copied somewhere this project owns and the other
+ * app's copy is only a fallback for a machine that has not done that yet.
+ */
 const MODEL_CANDIDATES = [
-  join(homedir(), 'Library/Application Support/superwhisper/ggml-small.en.bin'),
-  join(homedir(), '.cache/whisper/ggml-small.en.bin')
+  join(homedir(), '.cache/whisper/ggml-small.en.bin'),
+  join(homedir(), 'Library/Application Support/superwhisper/ggml-small.en.bin')
 ];
 
 export function findModel(): string | null {

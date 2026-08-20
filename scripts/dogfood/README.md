@@ -44,7 +44,13 @@ for them to leave the machine.
 
 ```sh
 brew install whisper-cpp   # ffmpeg is already required by the toolchain
+mkdir -p ~/.cache/whisper
+cp ~/Library/Application\ Support/superwhisper/ggml-small.en.bin ~/.cache/whisper/
 ```
+
+The copy matters. Reading the model out of Superwhisper's own container makes
+macOS raise a consent prompt — "node wants to access data from other apps" —
+and a prompt nobody is there to answer stops an unattended run dead.
 
 Superwhisper itself is not driven directly, despite being the obvious
 candidate. It transcribes what you dictate into the Mac's microphone and has no
