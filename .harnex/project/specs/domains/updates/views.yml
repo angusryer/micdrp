@@ -1,0 +1,28 @@
+views:
+  - id: VIEW-UPD-001
+    name: Restart to update
+    route: modal/UpdateAvailable
+    description: >
+      The one screen this domain owns. A modal offering the singer the
+      choice to load a newly downloaded bundle now or carry on and take
+      it at the next launch. It is presented over whatever the singer
+      was doing, so it is held back entirely while a capture or a
+      practice session is running.
+
+      There is deliberately no progress bar, no version notes, and no
+      way to browse or decline an update permanently. The download has
+      already happened silently by the time this appears; the only
+      question left is when to reload.
+    requires_auth: false
+    min_role: singer
+    data_sources:
+      - updates.prompt_for_restart
+    elements:
+      - A single line saying an update is ready
+      - A restart now action that reloads immediately
+      - A later action that dismisses without reloading
+    absent_elements:
+      - Any download progress indicator, because the download is finished
+      - Any release notes, because a beta bundle carries none
+      - Any never-ask-again control, because deferral already lasts the
+        session and the next launch takes the bundle anyway

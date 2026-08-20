@@ -1,0 +1,149 @@
+# Updates test grammar. Tests drive the adapter against a fake update
+# server and a fake receipt, so every case is deterministic and needs
+# neither TestFlight nor a real reload. Written dense, and without the
+# resolution prose the other domains carry, because the framework loads
+# exactly one test-extensions.yml per domain (harnex#153) and this one
+# has to hold every pattern inside the 150-line budget.
+
+given:
+  - id: GX-UPD-INSTALL
+    pattern: 'the install is a {value} install'
+    mode: extension
+    action: upd_set_receipt
+    params: { kind: "{value}" }
+    resolution: One of testflight, app_store, development, unknown.
+  - id: GX-UPD-BINARY
+    pattern: 'the binary is version {value} build {N}'
+    mode: extension
+    action: upd_set_binary
+    params: { appVersion: "{value}", buildNumber: "{N}" }
+  - id: GX-UPD-PUBLISHED
+    pattern: 'bundle {label} is published for version {value} build {N}'
+    mode: extension
+    action: upd_publish
+    params: { label: "{label}", targetAppVersion: "{value}", minBuildNumber: "{N}" }
+    resolution: Enabled, on beta, with a bundleId sorting after all others.
+  - id: GX-UPD-DISABLED
+    pattern: 'bundle {label} is disabled'
+    mode: extension
+    action: upd_disable
+    params: { label: "{label}" }
+  - id: GX-UPD-CORRUPT
+    pattern: 'bundle {label} serves bytes that do not match its hash'
+    mode: extension
+    action: upd_corrupt
+    params: { label: "{label}" }
+  - id: GX-UPD-BROKEN
+    pattern: 'bundle {label} throws before first render'
+    mode: extension
+    action: upd_break_boot
+    params: { label: "{label}" }
+    resolution: The boot handshake never lands for this bundle.
+  - id: GX-UPD-RUNNING
+    pattern: 'the install is running bundle {label}'
+    mode: extension
+    action: upd_set_running
+    params: { label: "{label}" }
+    resolution: State active, bootSucceeded true.
+  - id: GX-UPD-EMBEDDED
+    pattern: 'the install is running the embedded bundle'
+    mode: extension
+    action: upd_set_embedded
+  - id: GX-UPD-PENDING
+    pattern: 'bundle {label} is pending'
+    mode: extension
+    action: upd_set_pending
+    params: { label: "{label}" }
+  - id: GX-UPD-DEFERRED
+    pattern: 'the singer deferred bundle {label}'
+    mode: extension
+    action: upd_set_deferred
+    params: { label: "{label}" }
+  - id: GX-UPD-BUSY
+    pattern: 'a {value} is in progress'
+    mode: extension
+    action: upd_set_busy
+    params: { activity: "{value}" }
+    resolution: One of capture, practice session.
+  - id: GX-UPD-OFFLINE
+    pattern: 'the update server is unreachable'
+    mode: extension
+    action: upd_set_offline
+
+when:
+  - id: WX-UPD-CHECK
+    pattern: 'the app checks for an update'
+    mode: extension
+    action: upd_check
+  - id: WX-UPD-DOWNLOAD
+    pattern: 'the app downloads bundle {label}'
+    mode: extension
+    action: upd_download
+    params: { label: "{label}" }
+  - id: WX-UPD-CHOOSE
+    pattern: 'the singer chooses {value}'
+    mode: extension
+    action: upd_choose
+    params: { choice: "{value}" }
+    resolution: One of restart now, later.
+  - id: WX-UPD-LIFECYCLE
+    pattern: 'the app {value}'
+    mode: extension
+    action: upd_lifecycle
+    params: { event: "{value}" }
+    resolution: One of relaunches, returns to the foreground, renders its first screen.
+  - id: WX-UPD-ACTIVITY-ENDS
+    pattern: 'the {value} ends'
+    mode: extension
+    action: upd_end_busy
+    params: { activity: "{value}" }
+  - id: WX-UPD-MAINTAINER
+    pattern: 'the maintainer {value} bundle {label}'
+    mode: extension
+    action: upd_maintainer_call
+    params: { operation: "{value}", label: "{label}" }
+
+then:
+  - id: TX-UPD-DECISION
+    pattern: 'the decision is {value}'
+    mode: extension
+    action: upd_assert_decision
+    params: { decision: "{value}" }
+  - id: TX-UPD-OFFERED
+    pattern: 'the offered bundle is {label}'
+    mode: extension
+    action: upd_assert_offered
+    params: { label: "{label}" }
+  - id: TX-UPD-NO-REQUEST
+    pattern: 'no request reaches the update server'
+    mode: extension
+    action: upd_assert_no_request
+  - id: TX-UPD-RUNNING
+    pattern: 'the running bundle is {label}'
+    mode: extension
+    action: upd_assert_running
+    params: { label: "{label}" }
+    resolution: The label embedded names the binary's own bundle.
+  - id: TX-UPD-STATE
+    pattern: 'bundle {label} is in state {state}'
+    mode: extension
+    action: upd_assert_state
+    params: { label: "{label}", state: "{state}" }
+  - id: TX-UPD-PROMPT
+    pattern: 'the prompt is presented for bundle {label}'
+    mode: extension
+    action: upd_assert_prompt
+    params: { label: "{label}" }
+  - id: TX-UPD-NO-PROMPT
+    pattern: 'no prompt is presented'
+    mode: extension
+    action: upd_assert_no_prompt
+  - id: TX-UPD-SILENT
+    pattern: 'nothing is surfaced to the singer'
+    mode: extension
+    action: upd_assert_silent
+  - id: TX-UPD-CONFIG
+    pattern: 'the baked configuration is unchanged'
+    mode: extension
+    action: upd_assert_config_stable
+    resolution: BACKEND_URL, VERSION_NUMBER and BUILD_NUMBER read the same after.

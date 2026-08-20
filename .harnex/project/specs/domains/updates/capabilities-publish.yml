@@ -1,0 +1,70 @@
+# The maintainer-side surface. Runs from a workstation against the
+# update server; nothing here is reachable from the app.
+capabilities:
+  - name: updates.publish_bundle
+    description: >
+      Build the JavaScript bundle and publish it to a channel, stamped
+      with the binary constraints that decide who may take it.
+    actor: maintainer
+    implemented_by: scripts/ota-publish.sh
+    parameters:
+      required: [channel, targetAppVersion, minBuildNumber]
+      optional: [message]
+    preconditions:
+      - preflight passed
+      - channel is beta
+      - targetAppVersion matches the VERSION_NUMBER of a build already
+        accepted by TestFlight
+    postconditions:
+      - the archive is uploaded and its hash is published with it
+      - the bundle is created with isEnabled true
+      - the bundle's bundleId sorts after every bundle already in the channel
+      - publishing does not change any binary, and does not touch the
+        App Store record
+    permissions:
+      - role: maintainer
+        notes: >
+          Authenticated by the update server's deploy credential, which
+          is separate from the App Store Connect API key.
+
+  - name: updates.disable_bundle
+    description: >
+      Withdraw a published bundle. This is the manual rollback: installs
+      already running it are told to go back on their next check, and no
+      further install is offered it.
+    actor: maintainer
+    implemented_by: scripts/ota-publish.sh
+    parameters:
+      required: [bundleId]
+    preconditions:
+      - a bundle with this bundleId exists
+    postconditions:
+      - isEnabled becomes false
+      - updates.check_for_update returns decision rollback to every
+        install currently running it
+      - the bundle is not offered to any install thereafter
+      - disabling a bundle no install is running changes nothing observable
+    permissions:
+      - role: maintainer
+        notes: Same deploy credential as publishing.
+
+  - name: updates.list_bundles
+    description: >
+      Show what has been published to a channel and which bundle an
+      install on a given version and build number would be offered.
+    actor: maintainer
+    implemented_by: scripts/ota-publish.sh
+    parameters:
+      required: [channel]
+      optional: [appVersion, buildNumber]
+    preconditions:
+      - channel is beta
+    postconditions:
+      - bundles are listed newest first
+      - each entry reports bundleId, targetAppVersion, minBuildNumber,
+        and isEnabled
+      - supplying appVersion and buildNumber names the single bundle that
+        combination resolves to, or none
+    permissions:
+      - role: maintainer
+        notes: Read-only.

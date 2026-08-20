@@ -1,0 +1,41 @@
+commands:
+  - id: CMD-UPD-001
+    name: yarn ota publish
+    maps_to: updates.publish_bundle
+    arguments:
+      positional:
+        - { name: channel, required: true, description: "Release track; beta is the only one" }
+      flags:
+        "target-version": { type: string, description: "VERSION_NUMBER of the binaries that may take this bundle; defaults to the active .env" }
+        "min-build": { type: integer, description: "Lowest BUILD_NUMBER that may take it; raise whenever the bundle needs a native change" }
+        "message": { type: string, description: "Note recorded alongside the bundle" }
+        "dry-run": { type: boolean, default: false, description: "Build and hash without uploading" }
+    output: >
+      Single line: "Published <bundleId> to <channel> for <version>
+      build >=<minBuild>." A dry run prints the same line prefixed
+      "Would publish".
+
+  - id: CMD-UPD-002
+    name: yarn ota disable
+    maps_to: updates.disable_bundle
+    arguments:
+      positional:
+        - { name: bundleId, required: true, description: "The bundle to withdraw" }
+    output: >
+      Single line: "Disabled <bundleId>. Installs running it roll back
+      on their next check." Withdrawing an already-disabled bundle
+      reports "<bundleId> was already disabled." and changes nothing.
+
+  - id: CMD-UPD-003
+    name: yarn ota list
+    maps_to: updates.list_bundles
+    arguments:
+      positional:
+        - { name: channel, required: true, description: "Release track to list" }
+      flags:
+        "app-version": { type: string, description: "Resolve what a binary on this VERSION_NUMBER would be offered" }
+        "build": { type: integer, description: "Resolve against this BUILD_NUMBER; requires --app-version" }
+    output: >
+      One row per bundle, newest first: bundleId, targetAppVersion,
+      minBuild, enabled. With --app-version and --build, a trailing line
+      names the single bundle that combination resolves to, or "none".

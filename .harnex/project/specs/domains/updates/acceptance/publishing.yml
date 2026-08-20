@@ -1,0 +1,50 @@
+# The maintainer's side. Nothing here is reachable from the app.
+acceptance:
+  - id: ACC-UPD-027
+    interface: cli
+    title: A published bundle becomes the newest on its channel
+    given:
+      - the binary is version 1.0.0 build 4
+      - bundle A is published for version 1.0.0 build 4
+      - bundle B is published for version 1.0.0 build 4
+      - the install is a testflight install
+      - the install is running bundle A
+    when:
+      - the app checks for an update
+    then:
+      - the decision is update
+      - the offered bundle is B
+    maps_to:
+      capability: updates.publish_bundle
+
+  - id: ACC-UPD-028
+    interface: cli
+    title: Withdrawing a bundle nobody runs changes nothing observable
+    given:
+      - the install is a testflight install
+      - the binary is version 1.0.0 build 4
+      - bundle A is published for version 1.0.0 build 4
+      - bundle B is published for version 1.0.0 build 4
+      - the install is running bundle B
+    when:
+      - the maintainer disables bundle A
+    then:
+      - the running bundle is B
+      - no prompt is presented
+    maps_to:
+      capability: updates.disable_bundle
+
+  - id: ACC-UPD-029
+    interface: cli
+    title: Listing names the bundle a given binary would be offered
+    given:
+      - the binary is version 1.0.0 build 4
+      - bundle A is published for version 1.0.0 build 4
+      - bundle B is published for version 1.0.0 build 9
+    when:
+      - the maintainer lists bundle A
+    then:
+      - the offered bundle is A
+    maps_to:
+      capability: updates.list_bundles
+      invariants: [INV-UPD-002]

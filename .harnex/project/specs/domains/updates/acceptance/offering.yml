@@ -1,0 +1,130 @@
+# Matching a published bundle to a binary, and fetching it. Every
+# rejection here is a crash that did not happen.
+acceptance:
+  - id: ACC-UPD-005
+    interface: module
+    title: A bundle built for another app version is not offered
+    given:
+      - the install is a testflight install
+      - the binary is version 1.0.0 build 4
+      - bundle A is published for version 1.1.0 build 1
+    when:
+      - the app checks for an update
+    then:
+      - the decision is none
+    maps_to:
+      capability: updates.check_for_update
+      invariants: [INV-UPD-002]
+
+  - id: ACC-UPD-006
+    interface: module
+    title: A bundle needing a newer binary is not offered
+    given:
+      - the install is a testflight install
+      - the binary is version 1.0.0 build 4
+      - bundle A is published for version 1.0.0 build 5
+    when:
+      - the app checks for an update
+    then:
+      - the decision is none
+    maps_to:
+      capability: updates.check_for_update
+      invariants: [INV-UPD-002]
+
+  - id: ACC-UPD-007
+    interface: module
+    title: A bundle needing an older binary is still offered
+    given:
+      - the install is a testflight install
+      - the binary is version 1.0.0 build 6
+      - bundle A is published for version 1.0.0 build 4
+    when:
+      - the app checks for an update
+    then:
+      - the decision is update
+      - the offered bundle is A
+    maps_to:
+      capability: updates.check_for_update
+      invariants: [INV-UPD-002]
+
+  - id: ACC-UPD-008
+    interface: module
+    title: A withdrawn bundle is not offered
+    given:
+      - the install is a testflight install
+      - the binary is version 1.0.0 build 4
+      - bundle A is published for version 1.0.0 build 4
+      - bundle A is disabled
+    when:
+      - the app checks for an update
+    then:
+      - the decision is none
+    maps_to:
+      capability: updates.check_for_update
+      invariants: [INV-UPD-002]
+
+  - id: ACC-UPD-009
+    interface: module
+    title: Already running the newest bundle asks for nothing
+    given:
+      - the install is a testflight install
+      - the binary is version 1.0.0 build 4
+      - bundle A is published for version 1.0.0 build 4
+      - the install is running bundle A
+    when:
+      - the app checks for an update
+    then:
+      - the decision is none
+    maps_to:
+      capability: updates.check_for_update
+
+  - id: ACC-UPD-010
+    interface: module
+    title: An unreachable server is not the singer's problem
+    given:
+      - the install is a testflight install
+      - the binary is version 1.0.0 build 4
+      - the install is running the embedded bundle
+      - the update server is unreachable
+    when:
+      - the app checks for an update
+    then:
+      - the decision is none
+      - nothing is surfaced to the singer
+    maps_to:
+      capability: updates.check_for_update
+      invariants: [INV-UPD-008]
+
+  - id: ACC-UPD-011
+    interface: module
+    title: A verified download waits for the singer
+    given:
+      - the install is a testflight install
+      - the binary is version 1.0.0 build 4
+      - bundle A is published for version 1.0.0 build 4
+    when:
+      - the app downloads bundle A
+    then:
+      - bundle A is in state pending
+    maps_to:
+      capability: updates.download_bundle
+      invariants: [INV-UPD-006]
+
+  - id: ACC-UPD-012
+    interface: module
+    title: A bundle whose bytes do not match its hash is discarded
+    given:
+      - the install is a testflight install
+      - the binary is version 1.0.0 build 4
+      - the install is running the embedded bundle
+      - bundle A is published for version 1.0.0 build 4
+      - bundle A serves bytes that do not match its hash
+    when:
+      - the app downloads bundle A
+    then:
+      - the running bundle is embedded
+      - no prompt is presented
+      - nothing is surfaced to the singer
+    maps_to:
+      capability: updates.download_bundle
+      invariants: [INV-UPD-006, INV-UPD-008]

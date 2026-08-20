@@ -1,0 +1,144 @@
+# The install-side loop: decide, ask, apply, recover.
+capabilities:
+  - name: updates.resolve_eligibility
+    description: >
+      Decide whether this install may take over-the-air updates. A
+      TestFlight build and the App Store build promoted from it are the
+      same binary with the same baked-in configuration, so no build-time
+      flag can separate them; the verdict is read from the receipt Apple
+      installs alongside the app.
+    actor: system
+    implemented_by: packages/client/src/updates/eligibility.ts
+    parameters:
+      required: []
+    preconditions:
+      - the app has finished launching
+    postconditions:
+      - a receipt named sandboxReceipt resolves to reason testflight and
+        isEligible true
+      - any other receipt resolves to reason app_store and isEligible false
+      - a debug build resolves to reason development and isEligible false
+      - an unreadable receipt resolves to reason unknown and isEligible false
+    permissions:
+      - role: visitor
+        notes: Pure local inspection; no network, no identity.
+
+  - name: updates.check_for_update
+    description: >
+      Ask the update server what this install must do next, on cold
+      start and whenever the app returns to the foreground.
+    actor: system
+    implemented_by: packages/client/src/updates/check.ts
+    parameters:
+      required: [channel, appVersion, buildNumber, currentBundleId]
+    preconditions:
+      - updates.resolve_eligibility returned isEligible true
+    postconditions:
+      - an ineligible install performs no request and resolves to none
+      - a bundle whose targetAppVersion differs from appVersion is not offered
+      - a bundle whose minBuildNumber exceeds buildNumber is not offered
+      - a bundle with isEnabled false is not offered
+      - the running bundle being disabled resolves to decision rollback
+      - no eligible bundle newer than currentBundleId resolves to decision none
+      - a failed request resolves to decision none and raises no error to
+        the singer
+    permissions:
+      - role: visitor
+        notes: Unauthenticated; the request carries no account identity.
+
+  - name: updates.download_bundle
+    description: >
+      Fetch an offered bundle and verify it before it is allowed to
+      become the next thing the app loads.
+    actor: system
+    implemented_by: packages/client/src/updates/download.ts
+    parameters:
+      required: [bundleId, fileUrl, fileHash]
+    preconditions:
+      - updates.check_for_update returned decision update
+    postconditions:
+      - the archive is fetched to a location outside the temporary directory
+      - a hash mismatch discards the archive and leaves the install unchanged
+      - a hash match moves the InstalledBundle to state pending
+      - a failed download leaves the install unchanged and raises no error
+        to the singer
+
+  - name: updates.prompt_for_restart
+    description: >
+      Offer the singer the choice to restart now or later. Held back
+      while a take is being captured or a practice session is running,
+      because a modal over a live take costs the take.
+    actor: singer
+    implemented_by: packages/client/src/updates/UpdateGate.tsx
+    parameters:
+      required: [bundleId]
+    preconditions:
+      - InstalledBundle is in state pending
+      - no capture is in progress
+      - no practice session is in progress
+      - the singer has not deferred this bundleId
+    postconditions:
+      - the prompt names the choice restart now or later
+      - the prompt is presented at most once per bundleId per app session
+
+  - name: updates.apply_update
+    description: >
+      Load the pending bundle by reloading JavaScript. Native state is
+      untouched; only the bundle the app runs changes.
+    actor: singer
+    implemented_by: packages/client/src/updates/apply.ts
+    parameters:
+      required: [bundleId]
+    preconditions:
+      - InstalledBundle is in state pending
+      - the singer chose restart now
+    postconditions:
+      - the app reloads against the pending bundle
+      - appliedAt records the reload
+      - bootSucceeded is false until the boot handshake lands
+
+  - name: updates.defer_update
+    description: >
+      Record that the singer chose later, so the same bundle does not
+      ask again on every return to the foreground.
+    actor: singer
+    implemented_by: packages/client/src/updates/apply.ts
+    parameters:
+      required: [bundleId]
+    preconditions:
+      - the prompt for bundleId is showing
+    postconditions:
+      - the prompt is dismissed and the bundle stays in state pending
+      - the bundle is applied on the next cold start without prompting
+      - a newer bundle published afterwards prompts again
+
+  - name: updates.mark_boot_successful
+    description: >
+      Confirm that the app started under the current bundle. Everything
+      about automatic rollback rests on this call not happening when the
+      bundle is broken.
+    actor: system
+    implemented_by: packages/client/src/updates/boot.ts
+    parameters:
+      required: []
+    preconditions:
+      - the app has rendered its first screen
+    postconditions:
+      - bootSucceeded is true and the bundle moves to state active
+      - the previous bundle's archive becomes eligible for deletion
+
+  - name: updates.roll_back
+    description: >
+      Return to the last bundle known to boot, which is the embedded
+      bundle when there is no other.
+    actor: system
+    implemented_by: packages/client/src/updates/rollback.ts
+    parameters:
+      required: []
+    preconditions:
+      - a launch found bootSucceeded false on the current bundle, or
+        updates.check_for_update returned decision rollback
+    postconditions:
+      - the failed bundle moves to state rolled_back
+      - the app loads the last bundle with bootSucceeded true
+      - the rolled-back bundleId is never offered to this install again

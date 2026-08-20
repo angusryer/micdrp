@@ -1,0 +1,70 @@
+domain:
+  name: updates
+  version: 0.1.0
+  status: specifying
+  owner: human
+
+  description: >
+    Delivering a new JavaScript bundle to an installed build without
+    going through App Store review. The domain covers publishing a
+    bundle, deciding whether an install is allowed to take it, asking
+    the singer before it is applied, and recovering when a bundle turns
+    out not to boot.
+
+    Two rules govern the whole domain. First, an update ships JavaScript
+    and nothing else: native code, the C++ pitch engine, and the values
+    react-native-config baked into the binary are all unreachable from
+    here, so a bundle that assumes any of them changed is a bundle that
+    crashes. Second, an update is never allowed to interrupt singing.
+    A prompt that appears over a live take costs the take, which is a
+    worse outcome than shipping the fix an hour later.
+
+    Scope is deliberately narrow: TestFlight builds only. An App Store
+    install never contacts the update server, so no push can reach a
+    paying user without review. Widening that is a later decision, not
+    an oversight.
+
+  interfaces:
+    - type: module
+      description: >
+        A TypeScript surface in packages/client/src/updates consumed by
+        the app root: the check, the download, the gate component that
+        owns the prompt, and the boot-success handshake.
+    - type: ui
+      description: >
+        One modal offering restart now or later, presented only when no
+        capture or practice session is running.
+    - type: cli
+      description: >
+        The maintainer's publish surface, run from a workstation against
+        the update server. Not reachable from the app.
+
+  boundaries:
+    owns:
+      - Deciding whether this install is eligible for over-the-air updates
+      - Matching a published bundle against the running binary's version
+        and build number
+      - Downloading a bundle and verifying it against its published hash
+      - The restart prompt, and honouring a deferral
+      - The boot-success handshake and automatic rollback when it fails
+      - Which bundle the native layer loads on next launch
+      - Publishing, disabling, and listing bundles on the update server
+    does_not_own:
+      - Building or signing the native binary, and uploading it to
+        TestFlight (the release scripts own that)
+      - Whether a capture or practice session is currently running
+        (notes and practice own their own session state)
+      - The pitch engine, any native module, or anything compiled
+      - Values baked in through react-native-config, including BACKEND_URL
+      - Account identity; an update decision never depends on who is
+        signed in
+
+  depends_on:
+    - domain: notes
+      reason: >
+        Reads whether a capture is in progress, to suppress the prompt
+    - domain: practice
+      reason: >
+        Reads whether a guided session is in progress, to suppress the prompt
+
+  depended_on_by: []

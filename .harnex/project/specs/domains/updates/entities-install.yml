@@ -1,0 +1,80 @@
+# The install-side view: what this device is running, and whether it
+# is allowed to take updates at all.
+entities:
+  - name: InstalledBundle
+    description: >
+      What this install is running and how far it got. The bootSucceeded
+      flag is the whole of the rollback mechanism: a bundle that never
+      sets it is a bundle that never finished starting.
+    properties:
+      - name: bundleId
+        type: string
+        required: false
+        description: >
+          Null means the bundle compiled into the binary is running.
+      - name: state
+        type: string
+        required: true
+        description: Where this bundle sits in the install lifecycle.
+      - name: appliedAt
+        type: string
+        required: false
+        description: ISO8601 timestamp of the reload that activated it.
+      - name: bootSucceeded
+        type: boolean
+        required: true
+        description: >
+          Set true once the app has rendered its first screen under this
+          bundle. False on a bundle that has been downloaded but never
+          successfully started.
+    states:
+      - name: embedded
+        description: The binary's own bundle is running; nothing was applied.
+      - name: pending
+        description: >
+          Downloaded and verified, waiting for the singer to accept the
+          restart. Not yet loaded.
+      - name: active
+        description: Running, and it booted successfully at least once.
+      - name: rolled_back
+        description: >
+          Was applied, failed to boot or was withdrawn, and has been
+          replaced by the previous good bundle.
+    transitions:
+      - from: embedded
+        to: pending
+        trigger: updates.download_bundle completes and the hash matches
+      - from: pending
+        to: active
+        trigger: updates.apply_update reloads and the boot handshake lands
+      - from: pending
+        to: rolled_back
+        trigger: >
+          updates.apply_update reloads and no boot handshake lands before
+          the next launch
+      - from: active
+        to: rolled_back
+        trigger: the server returns a rollback decision for this bundle
+      - from: active
+        to: pending
+        trigger: a newer eligible bundle is downloaded and verified
+
+  - name: UpdateEligibility
+    description: >
+      Whether this install may take over-the-air updates at all. Derived
+      at runtime, never configured, because a TestFlight build and the
+      App Store build promoted from it are the same binary carrying the
+      same baked-in configuration.
+    properties:
+      - name: isEligible
+        type: boolean
+        required: true
+        description: >
+          True only for a TestFlight install. An App Store install, a
+          simulator, and a debug build are all ineligible.
+      - name: reason
+        type: string
+        required: true
+        description: Why the verdict came out the way it did.
+        constraints:
+          ["is one of: testflight, app_store, development, unknown"]

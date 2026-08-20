@@ -1,0 +1,50 @@
+interactions:
+  - id: INT-UPD-001
+    name: Take an update now
+    view: VIEW-UPD-001
+    precondition: >
+      A bundle has been downloaded and verified, no capture is in
+      progress, and no practice session is running.
+    steps:
+      - Return to the app, or launch it
+      - Press restart now
+    outcome: >
+      The app reloads against the new bundle. Nothing the singer had
+      kept is affected; only the JavaScript being run changes.
+    error_handling: >
+      A bundle that fails to start is replaced by the previous one at
+      the next launch, without the singer being asked or told.
+    maps_to:
+      capability: updates.apply_update
+
+  - id: INT-UPD-002
+    name: Put an update off
+    view: VIEW-UPD-001
+    precondition: The restart prompt is showing.
+    steps:
+      - Press later
+    outcome: >
+      The prompt closes and does not return for that bundle for the rest
+      of the session, including on return from the background. The next
+      cold start loads the bundle without asking again.
+    error_handling: >
+      A newer bundle published afterwards prompts on its own terms
+      rather than inheriting the deferral.
+    maps_to:
+      capability: updates.defer_update
+
+  - id: INT-UPD-003
+    name: Sing through an available update
+    view: VIEW-UPD-001
+    precondition: A bundle is downloaded and a capture is in progress.
+    steps:
+      - Keep singing
+      - Stop the capture
+    outcome: >
+      No prompt appears while the capture runs. It is presented once the
+      capture ends, so the update is delayed rather than lost.
+    error_handling: >
+      Backgrounding the app mid-capture does not present the prompt on
+      return; the capture is still the thing in progress.
+    maps_to:
+      capability: updates.prompt_for_restart

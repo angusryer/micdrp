@@ -1,0 +1,139 @@
+# The prompt, the deferral, and the rule that singing wins.
+acceptance:
+  - id: ACC-UPD-013
+    interface: ui
+    title: A pending bundle asks on return to the foreground
+    given:
+      - the install is a testflight install
+      - bundle A is pending
+    when:
+      - the app returns to the foreground
+    then:
+      - the prompt is presented for bundle A
+    maps_to:
+      capability: updates.prompt_for_restart
+
+  - id: ACC-UPD-014
+    interface: ui
+    title: A take in progress is never interrupted
+    given:
+      - the install is a testflight install
+      - bundle A is pending
+      - a capture is in progress
+    when:
+      - the app returns to the foreground
+    then:
+      - no prompt is presented
+      - bundle A is in state pending
+    maps_to:
+      capability: updates.prompt_for_restart
+      invariants: [INV-UPD-004]
+
+  - id: ACC-UPD-015
+    interface: ui
+    title: A practice session is never interrupted
+    given:
+      - the install is a testflight install
+      - bundle A is pending
+      - a practice session is in progress
+    when:
+      - the app returns to the foreground
+    then:
+      - no prompt is presented
+      - bundle A is in state pending
+    maps_to:
+      capability: updates.prompt_for_restart
+      invariants: [INV-UPD-004]
+
+  - id: ACC-UPD-016
+    interface: ui
+    title: The prompt waits for the take to finish rather than being lost
+    given:
+      - the install is a testflight install
+      - bundle A is pending
+      - a capture is in progress
+    when:
+      - the capture ends
+    then:
+      - the prompt is presented for bundle A
+    maps_to:
+      capability: updates.prompt_for_restart
+      invariants: [INV-UPD-004]
+
+  - id: ACC-UPD-017
+    interface: ui
+    title: Restart now loads the new bundle
+    given:
+      - the install is a testflight install
+      - bundle A is pending
+    when:
+      - the singer chooses restart now
+    then:
+      - the running bundle is A
+      - bundle A is in state active
+    maps_to:
+      capability: updates.apply_update
+
+  - id: ACC-UPD-018
+    interface: ui
+    title: Later does not ask again in the same session
+    given:
+      - the install is a testflight install
+      - bundle A is pending
+      - the singer deferred bundle A
+    when:
+      - the app returns to the foreground
+    then:
+      - no prompt is presented
+      - bundle A is in state pending
+    maps_to:
+      capability: updates.defer_update
+      invariants: [INV-UPD-007]
+
+  - id: ACC-UPD-019
+    interface: module
+    title: A deferred bundle loads on the next cold start without asking
+    given:
+      - the install is a testflight install
+      - bundle A is pending
+      - the singer deferred bundle A
+    when:
+      - the app relaunches
+    then:
+      - the running bundle is A
+      - no prompt is presented
+    maps_to:
+      capability: updates.defer_update
+      invariants: [INV-UPD-007]
+
+  - id: ACC-UPD-020
+    interface: ui
+    title: A newer bundle after a deferral asks again
+    given:
+      - the install is a testflight install
+      - the binary is version 1.0.0 build 4
+      - bundle A is pending
+      - the singer deferred bundle A
+      - bundle B is published for version 1.0.0 build 4
+    when:
+      - the app downloads bundle B
+    then:
+      - the prompt is presented for bundle B
+    maps_to:
+      capability: updates.defer_update
+      invariants: [INV-UPD-007]
+
+  - id: ACC-UPD-021
+    interface: module
+    title: An update cannot change what the binary baked in
+    given:
+      - the install is a testflight install
+      - bundle A is pending
+    when:
+      - the singer chooses restart now
+    then:
+      - the running bundle is A
+      - the baked configuration is unchanged
+    maps_to:
+      capability: updates.apply_update
+      invariants: [INV-UPD-005]

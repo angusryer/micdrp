@@ -1,0 +1,75 @@
+# The server-side view: what has been published, and what the server
+# tells one install to do about it.
+entities:
+  - name: UpdateBundle
+    description: >
+      One published JavaScript bundle, as the update server holds it.
+      The eligibility fields exist because a bundle is JavaScript written
+      against a specific native binary; offering it to a binary that
+      lacks a native module it calls produces a crash, not a downgrade.
+    properties:
+      - name: bundleId
+        type: string
+        required: true
+        description: >
+          Monotonic identifier. Ordering bundles by this value orders
+          them by publication.
+      - name: channel
+        type: string
+        required: true
+        description: The release track this bundle belongs to.
+        constraints: ["is one of: beta"]
+      - name: targetAppVersion
+        type: string
+        required: true
+        description: >
+          The VERSION_NUMBER of the binaries this bundle may run on.
+      - name: minBuildNumber
+        type: number
+        required: true
+        description: >
+          The lowest BUILD_NUMBER this bundle may run on. Raised whenever
+          the bundle depends on a native change.
+      - name: fileUrl
+        type: string
+        required: true
+        description: Where the bundle archive is fetched from.
+      - name: fileHash
+        type: string
+        required: true
+        description: >
+          Hash of the archive, published alongside it and checked after
+          download.
+      - name: isEnabled
+        type: boolean
+        required: true
+        description: >
+          False once a maintainer has withdrawn the bundle. A disabled
+          bundle is never offered and installs already running it are
+          told to roll back.
+
+  - name: UpdateCheckResult
+    description: >
+      What the server tells one install to do. Computed per install from
+      its channel, version, build number, and the bundle it is running.
+    properties:
+      - name: decision
+        type: string
+        required: true
+        description: What the install must do next.
+        constraints: ["is one of: update, rollback, none"]
+      - name: bundleId
+        type: string
+        required: false
+        description: >
+          The bundle to move to. Null when decision is none, and null on
+          a rollback to the bundle embedded in the binary.
+      - name: fileUrl
+        type: string
+        required: false
+        description: Present when decision is update.
+      - name: fileHash
+        type: string
+        required: false
+        description: Present when decision is update.
+

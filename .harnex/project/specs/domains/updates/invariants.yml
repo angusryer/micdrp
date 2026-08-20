@@ -1,0 +1,87 @@
+invariants:
+  - id: INV-UPD-001
+    description: An App Store install never receives an over-the-air update
+    severity: critical
+    check: >
+      updates.resolve_eligibility returns isEligible false for every
+      reason other than testflight, and updates.check_for_update issues
+      no network request when isEligible is false. Verified by driving
+      the check with each receipt kind and asserting that only
+      sandboxReceipt produces a request. The gate is runtime rather than
+      build-time on purpose: the binary promoted to the App Store is the
+      same binary TestFlight ran, carrying the same baked-in values, so
+      no environment flag can tell them apart.
+
+  - id: INV-UPD-002
+    description: A bundle is never offered to a binary that cannot run it
+    severity: critical
+    check: >
+      No install is offered a bundle whose targetAppVersion differs from
+      its VERSION_NUMBER, or whose minBuildNumber exceeds its
+      BUILD_NUMBER. Verified by publishing bundles either side of both
+      boundaries and asserting decision none for each mismatching
+      install. A mismatch is a crash rather than a degraded experience,
+      because JavaScript calling a native module absent from the binary
+      cannot fail softly.
+
+  - id: INV-UPD-003
+    description: A bundle that does not boot is replaced without the singer acting
+    severity: critical
+    check: >
+      A launch that finds bootSucceeded false on the current bundle
+      loads the last bundle with bootSucceeded true, and never offers the
+      failed bundleId to that install again. Verified by applying a
+      bundle that throws before first render, relaunching, and asserting
+      the previous bundle is running. Without this, a bundle broken at
+      boot cannot be fixed over the air, because the mechanism that
+      would deliver the fix never starts.
+
+  - id: INV-UPD-004
+    description: An update never interrupts singing
+    severity: critical
+    check: >
+      updates.prompt_for_restart does not present while a capture is in
+      progress or a practice session is running, and no reload occurs
+      without the singer choosing it. Verified by holding a bundle in
+      state pending, starting a capture, and asserting no prompt is
+      presented until the capture ends.
+
+  - id: INV-UPD-005
+    description: An update changes JavaScript and nothing else
+    severity: critical
+    check: >
+      Applying a bundle leaves the binary, every native module, the C++
+      pitch engine, and every react-native-config value identical.
+      Verified by reading BACKEND_URL, VERSION_NUMBER and BUILD_NUMBER
+      before and after an apply and asserting they are unchanged. A
+      bundle that needs a different value for any of them is a bundle
+      that needs a new build.
+
+  - id: INV-UPD-006
+    description: A bundle is applied only after its hash is verified
+    severity: critical
+    check: >
+      No archive reaches state pending unless its hash equals the
+      fileHash published with it. Verified by serving an archive whose
+      bytes do not match its published hash and asserting the install
+      stays on its current bundle.
+
+  - id: INV-UPD-007
+    description: Deferring is honoured, and never becomes a nag
+    severity: high
+    check: >
+      A bundle the singer deferred does not prompt again for the rest of
+      that app session, on cold start or on return to the foreground.
+      Verified by deferring, backgrounding and foregrounding, and
+      asserting no second prompt. A newer bundle published afterwards
+      prompts normally.
+
+  - id: INV-UPD-008
+    description: A failed update is silent
+    severity: high
+    check: >
+      A failed check, a failed download and a hash mismatch each leave
+      the install on its current bundle and surface nothing to the
+      singer. Verified by driving each failure and asserting no visible
+      error and no state change. The update path is not a feature the
+      singer asked for, so its failures are not the singer's problem.

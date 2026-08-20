@@ -10,22 +10,31 @@ domains:
     priority: medium
     status: specifying
   notes:
-    description: 'Sung musical-idea memos: capture, analyse, persist, browse, chord backdrop, export'
+    description: 'Sung musical-idea memos: capture, analyse, persist, browse, chord
+      backdrop, export'
     path: .harnex/project/specs/domains/notes
     priority: high
     status: specifying
   pitch:
-    description: Microphone capture and monophonic pitch detection (MPM), smoothing, and note conversion
+    description: Microphone capture and monophonic pitch detection (MPM), smoothing,
+      and note conversion
     path: .harnex/project/specs/domains/pitch
     priority: high
     status: specifying
   practice:
-    description: 'Practising a target melody: exercise catalogue, guided session, scoring, results'
+    description: 'Practising a target melody: exercise catalogue, guided session,
+      scoring, results'
     path: .harnex/project/specs/domains/practice
     priority: medium
     status: specifying
   transcription:
-    description: 'Pitch frames to symbolic music: segmentation, key, tempo, metrical grid, harmony, MIDI'
+    description: 'Pitch frames to symbolic music: segmentation, key, tempo, metrical
+      grid, harmony, MIDI'
     path: .harnex/project/specs/domains/transcription
     priority: high
     status: specifying
+  updates:
+    path: .harnex/project/specs/domains/updates
+    status: specifying
+    priority: medium
+    description: Over-the-air JavaScript bundle delivery to TestFlight builds, with prompted apply and automatic rollback

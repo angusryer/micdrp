@@ -1,0 +1,8 @@
+# Domain Development State — overwrite each meaningful change
+updated_at: "2026-08-20T03:40:30Z"
+updated_by: harnex-new-feature
+phase: specifying
+phase_detail: >
+  Domain scaffolded. Awaiting clarify dialogue between
+  human and agent. See tmp/clarify-updates.md.
+blockers: []
