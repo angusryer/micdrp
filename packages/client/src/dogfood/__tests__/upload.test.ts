@@ -37,6 +37,11 @@ jest.mock('../../lib/backend', () => ({
   COLLECTIONS: {}
 }));
 
+// A clip is owner-scoped server-side, so the upload has to name its owner.
+jest.mock('../../data/currentUser', () => ({
+  requireUserId: jest.fn(() => Promise.resolve('user-1'))
+}));
+
 beforeEach(() => {
   resetQueueForTests();
   mockCreate.mockReset().mockResolvedValue({ id: 'server-1' });
@@ -52,6 +57,18 @@ describe('the upload queue', () => {
   it('sends the trail and the binary that recorded it', async () => {
     await uploadOne(clip('a'));
     expect(mockCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it('names the owner, without which the server refuses the record', async () => {
+    // Every clip recorded on a device was rejected and stayed queued because
+    // this field was missing.
+    await uploadOne(clip('a'));
+    // Jest runs against the standard FormData, which has `get`. React
+    // Native's own typing does not declare it, hence the cast.
+    const form = mockCreate.mock.calls[0][0] as {
+      get(name: string): unknown;
+    };
+    expect(form.get('user')).toBe('user-1');
   });
 
   it('drops a clip from the queue once the server has it', async () => {

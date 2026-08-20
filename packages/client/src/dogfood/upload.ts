@@ -9,6 +9,7 @@
 import { unlink } from '@dr.pogodin/react-native-fs';
 
 import { backend } from '../lib/backend';
+import { requireUserId } from '../data/currentUser';
 import { getJSON, setJSON } from '../data/store';
 import type { PendingClip } from './types';
 
@@ -32,7 +33,13 @@ export function listPending(): PendingClip[] {
 }
 
 async function post(clip: PendingClip): Promise<void> {
+  // The collection's create rule is `user = @request.auth.id`, so a record
+  // without an owner is rejected outright. Omitting it meant every clip
+  // recorded on a device was refused and stayed queued forever.
+  const userId = await requireUserId();
+
   const form = new FormData();
+  form.append('user', userId);
   // React Native's FormData takes a file descriptor object here and streams
   // the file off disk, rather than reading it into memory first.
   form.append('audio', {
