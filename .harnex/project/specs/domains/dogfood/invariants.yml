@@ -149,3 +149,10 @@ invariants:
       A recording survives navigation because the session is module
       state, not because the control avoids unmounting. Those are
       separate concerns and conflating them is what caused this.
+
+      It also owns a real touch target of at least 44 points rather than
+      a small mark with hitSlop. hitSlop reserves no layout space, so two
+      neighbours can claim the same points and the later one wins: the
+      account control's padding and hitSlop reached 28 points to its
+      left, exactly where this sits, and every tap opened settings
+      instead of starting a recording.

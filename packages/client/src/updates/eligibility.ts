@@ -34,7 +34,7 @@ import type { Eligibility, EligibilityReason } from './types';
 /** What iOS calls the receipt, when it will say. */
 function receiptName(): string | null {
   try {
-    return NativeInstallInfo.getReceiptName() || null;
+    return NativeInstallInfo?.getReceiptName() || null;
   } catch {
     // Older binary without the module, or Android. Fall through to the probe.
     return null;

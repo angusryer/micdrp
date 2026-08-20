@@ -22,4 +22,10 @@ export interface Spec extends TurboModule {
   getReceiptName(): string;
 }
 
-export default TurboModuleRegistry.getEnforcing<Spec>('NativeInstallInfo');
+/**
+ * `get`, never `getEnforcing`. getEnforcing throws at module scope — before
+ * any caller's try/catch exists — so a binary without the module takes down
+ * everything that imports this, which is how build 8 lost its whole About
+ * section. `NativeAudioEngine` in this directory says the same thing.
+ */
+export default TurboModuleRegistry.get<Spec>('NativeInstallInfo');

@@ -73,9 +73,11 @@ function AccountHeaderButton() {
   return (
     <Pressable
       onPress={onPress}
-      hitSlop={12}
       accessibilityRole="button"
       accessibilityLabel={t('account.open')}
+      // No hitSlop: it does not reserve layout space, so this reached 28pt to
+      // the left and swallowed taps meant for the control beside it. The
+      // padding below is a real target.
       style={styles.headerButton}
     >
       <Icon name="settings" size={24} color={colors.primary500} />
@@ -197,6 +199,10 @@ export default function RootNavigator() {
 }
 
 const styles = StyleSheet.create({
-  headerButton: { paddingHorizontal: 16 },
+  headerButton: {
+    paddingHorizontal: 16,
+    minHeight: 44,
+    justifyContent: 'center'
+  },
   headerControls: { flexDirection: 'row', alignItems: 'center' }
 });

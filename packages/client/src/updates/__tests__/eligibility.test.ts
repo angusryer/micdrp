@@ -11,7 +11,8 @@ import { exists } from '@dr.pogodin/react-native-fs';
 import NativeInstallInfo from '../../specs/NativeInstallInfo';
 import { resolveEligibility } from '../eligibility';
 
-const receiptNameMock = jest.mocked(NativeInstallInfo.getReceiptName);
+// The module is optional by design, so the mock is asserted present here.
+const receiptNameMock = jest.mocked(NativeInstallInfo!.getReceiptName);
 
 const existsMock = exists as jest.MockedFunction<typeof exists>;
 

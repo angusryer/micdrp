@@ -122,25 +122,27 @@ export default function DogfoodControl(): React.ReactElement | null {
         accessibilityLabel={label}
         accessibilityState={{ disabled: !view.canRecord }}
         disabled={!view.canRecord}
-        hitSlop={12}
         onPress={() => void onPress()}
-        style={[
-          styles.dot,
-          {
-            backgroundColor: view.canRecord ? colors.error : colors.gray100,
-            opacity: view.canRecord ? 1 : 0.4
-          },
-          view.state === 'recording' ? styles.recording : null
-        ]}
-      />
+        style={styles.target}>
+        <View
+          style={[
+            styles.dot,
+            {
+              backgroundColor: view.canRecord ? colors.error : colors.gray100,
+              opacity: view.canRecord ? 1 : 0.4
+            },
+            view.state === 'recording' ? styles.recording : null
+          ]}
+        />
+      </Pressable>
       {!idle ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('dogfood.stop')}
-          hitSlop={12}
           onPress={() => void finish()}
-          style={[styles.stop, { borderColor: colors.gray300 }]}
-        />
+          style={styles.target}>
+          <View style={[styles.stop, { borderColor: colors.gray300 }]} />
+        </Pressable>
       ) : null}
     </View>
   );
@@ -150,6 +152,20 @@ const styles = StyleSheet.create({
   // Laid out by the header, which already accounts for the safe area. No
   // absolute positioning here — that is what put it under the status bar.
   row: { flexDirection: 'row', alignItems: 'center' },
+  /**
+   * A real 44pt target, not a small mark plus hitSlop.
+   *
+   * hitSlop does not reserve layout space, so two neighbours can claim the
+   * same points and the later one wins. The account control's padding and
+   * hitSlop reach 28pt to its left, which is exactly where this sits — every
+   * tap opened settings instead of recording.
+   */
+  target: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
   time: { fontVariant: ['tabular-nums'], fontSize: 13, marginRight: 8 },
   dot: { width: 16, height: 16, borderRadius: 8 },
   recording: { borderRadius: 3 },

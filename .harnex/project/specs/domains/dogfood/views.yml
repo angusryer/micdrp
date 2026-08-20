@@ -35,7 +35,8 @@ views:
       - dogfood.resume_clip
       - dogfood.stop_clip
     elements:
-      - A record control, present on every screen
+      - A record control, present on every screen, with a touch target of
+        at least 44 points that no neighbour overlaps
       - Elapsed time while recording
       - A countdown, shown only once the cap is close
       - A pause control while recording, and resume while paused

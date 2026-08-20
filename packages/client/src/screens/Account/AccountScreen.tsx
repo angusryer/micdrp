@@ -171,11 +171,17 @@ export default function AccountScreen(_props: Props): React.JSX.Element {
   const [install, setInstall] = useState<InstallDescription | null>(null);
   useEffect(() => {
     let live = true;
-    void describeInstall().then((described) => {
-      if (live) {
-        setInstall(described);
-      }
-    });
+    void describeInstall()
+      .then((described) => {
+        if (live) {
+          setInstall(described);
+        }
+      })
+      .catch((error: unknown) => {
+        // A blank About section is the least useful failure mode there is:
+        // build 8 showed dashes and could not say why. Report the fault.
+        console.warn('[About] could not describe this install', error);
+      });
     return () => {
       live = false;
     };

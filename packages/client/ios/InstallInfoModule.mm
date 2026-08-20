@@ -19,7 +19,9 @@
 
 @implementation InstallInfoModule
 
-RCT_EXPORT_MODULE()
+// Registered under the SPEC name, not the class name: JS asks for
+// 'NativeInstallInfo' and the two must match.
+RCT_EXPORT_MODULE(NativeInstallInfo)
 
 - (NSString *)getReceiptName
 {
