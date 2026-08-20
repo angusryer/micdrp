@@ -10,7 +10,7 @@
  * Linked rather than copied so an upgrade on the maintainer's machine is
  * picked up without anything here needing to know.
  */
-import { existsSync, symlinkSync, rmSync } from 'node:fs';
+import { lstatSync, symlinkSync, existsSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
@@ -37,10 +37,46 @@ export async function linkLocalHarness(
     if (!existsSync(source)) {
       continue;
     }
-    const target = join(checkout, path);
     // Replace rather than skip: a previous run may have linked a path that
     // has since moved, and a dangling link is worse than none.
-    rmSync(target, { force: true, recursive: false });
-    symlinkSync(source, target);
+    clear(join(checkout, path));
+    symlinkSync(source, join(checkout, path));
   }
+  ignoreLocalHarness(checkout);
+}
+
+/**
+ * Remove whatever is at a path, link or directory alike.
+ *
+ * A symlink to a directory must be unlinked, not removed as a tree: rmSync
+ * refuses it without `recursive`, and follows it with.
+ */
+function clear(target: string): void {
+  let stat;
+  try {
+    stat = lstatSync(target);
+  } catch {
+    return;
+  }
+  if (stat.isSymbolicLink()) {
+    unlinkSync(target);
+    return;
+  }
+  rmSync(target, { force: true, recursive: true });
+}
+
+/**
+ * Hide what was just planted from git.
+ *
+ * The maintainer's checkout excludes these in .git/info/exclude, which git
+ * clone does not copy — so without this every link shows as untracked, the
+ * tree is never clean, and each request is abandoned before it starts. That
+ * is a whole run wasted on files the loop itself put there.
+ */
+function ignoreLocalHarness(checkout: string): void {
+  const rules = LOCAL_PATHS.map((path) => `/${path}`).join('\n');
+  writeFileSync(
+    join(checkout, '.git', 'info', 'exclude'),
+    `# Planted by the dogfood loop; see scripts/dogfood/harness.ts\n${rules}\n`
+  );
 }
