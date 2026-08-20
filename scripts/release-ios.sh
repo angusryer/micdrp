@@ -44,25 +44,30 @@ require_env() {
   fi
 }
 
-require_env "APPLE_ID"
-require_env "APPLE_TEAM_ID"
-require_env "ITC_TEAM_ID"
-require_env "IOS_BUNDLE_ID"
-require_env "MATCH_GIT_URL"
-require_env "MATCH_PASSWORD"
-require_env "MATCH_KEYCHAIN_PASSWORD"
-require_env "ASC_API_KEY_JSON"
+# One credential. The App Store Connect API key both signs and uploads, so the
+# Apple ID, team ids, match repo, match passphrase and keychain password the
+# previous flow needed are all gone. Supply it either as a path to fastlane's
+# JSON, or as its three parts.
+if [ -n "${ASC_API_KEY_PATH:-}" ] || [ -n "${ASC_API_KEY_JSON:-}" ]; then
+  :
+else
+  require_env "ASC_KEY_ID"
+  require_env "ASC_ISSUER_ID"
+  require_env "ASC_KEY_CONTENT"
+fi
 
 # ---------------------------------------------------------------------------
 # Write App Store Connect API key to a temp file
 # ---------------------------------------------------------------------------
-ASC_KEY_TMPFILE="$(mktemp /tmp/asc_api_key_XXXXXX.json)"
-trap 'rm -f "${ASC_KEY_TMPFILE}"' EXIT INT TERM
-
-printf '%s' "${ASC_API_KEY_JSON}" > "${ASC_KEY_TMPFILE}"
-export ASC_API_KEY_PATH="${ASC_KEY_TMPFILE}"
-
-echo "ASC API key written to: ${ASC_KEY_TMPFILE}"
+# Only when the key arrives as JSON. A path is used as-is, and the three-part
+# form is read straight from the environment by the Fastfile.
+if [ -z "${ASC_API_KEY_PATH:-}" ] && [ -n "${ASC_API_KEY_JSON:-}" ]; then
+  ASC_KEY_TMPFILE="$(mktemp /tmp/asc_api_key_XXXXXX.json)"
+  trap 'rm -f "${ASC_KEY_TMPFILE}"' EXIT INT TERM
+  printf '%s' "${ASC_API_KEY_JSON}" > "${ASC_KEY_TMPFILE}"
+  chmod 600 "${ASC_KEY_TMPFILE}"
+  export ASC_API_KEY_PATH="${ASC_KEY_TMPFILE}"
+fi
 
 # ---------------------------------------------------------------------------
 # Optional version bump (only when both vars are supplied)

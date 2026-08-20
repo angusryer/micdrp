@@ -131,3 +131,8 @@ echo ""
 echo "Version bump complete."
 [ -n "${NEW_VERSION}" ] && echo "  VERSION_NUMBER = ${NEW_VERSION}"
 [ -n "${NEW_BUILD}" ]   && echo "  BUILD_NUMBER   = ${NEW_BUILD}"
+
+# A trailing `[ ... ] && echo` makes the failed test the script's exit status,
+# so bumping a version without a build number reported failure while having
+# succeeded. Anything with `set -e` calling this — a release — then aborted.
+exit 0
