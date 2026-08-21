@@ -166,3 +166,32 @@ describe('AudioEngine (Tier 1 — native present)', () => {
     expect(handle.samples[1].midi).toBeNull();
   });
 });
+
+describe('the capture format contract (INV-PITCH-012)', () => {
+  // The recorder and the decoder are two halves of one promise. Nothing used
+  // to check they agreed, so a capture nothing could open shipped and every
+  // note was silently unplayable until someone pressed play.
+  const captureReturning = (uri: string) => ({
+    id: 'rec-1',
+    uri,
+    sampleRateHz: 44100,
+    durationMs: 1234,
+    samples: []
+  });
+
+  it('complains, naming the format, when a capture cannot be played', async () => {
+    const complain = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockNative.stop.mockResolvedValueOnce(captureReturning('file:///tmp/rec-1.caf'));
+    await audioEngine.stop();
+    expect(complain).toHaveBeenCalledWith(expect.stringContaining('caf'));
+    complain.mockRestore();
+  });
+
+  it('says nothing when the capture is playable', async () => {
+    const complain = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockNative.stop.mockResolvedValueOnce(captureReturning('file:///tmp/rec-1.wav'));
+    await audioEngine.stop();
+    expect(complain).not.toHaveBeenCalled();
+    complain.mockRestore();
+  });
+});

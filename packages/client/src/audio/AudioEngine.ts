@@ -28,6 +28,11 @@ import {
 } from './contract';
 import { createWorkletPitchEngine, WorkletPitchEngine } from './worklet/pitchProcessor';
 import { ensureDirs, recordingsDir } from '../data/files';
+import {
+  PLAYABLE_AUDIO_EXTENSIONS,
+  audioExtensionOf,
+  isPlayableAudioPath
+} from 'shared';
 
 type PitchListener = (sample: PitchSample) => void;
 type StateListener = (state: EngineState) => void;
@@ -179,6 +184,17 @@ class AudioEngineImpl implements AudioEngineContract {
     durationMs: number;
     samples: readonly unknown[];
   }): RecordingHandle {
+    // The seam where the recorder's file meets the code that has to play it.
+    // Nothing checked it before, so a capture written in a format the decoder
+    // cannot open shipped and stayed shipped — every note silently unplayable
+    // until someone pressed play (INV-PITCH-012). Complaining here names the
+    // format, at the moment it is produced, rather than long afterwards.
+    if (!isPlayableAudioPath(handle.uri)) {
+      console.error(
+        `[AudioEngine] captured ${audioExtensionOf(handle.uri) || 'an unnamed format'}, ` +
+          `which playback cannot open. Expected one of ${PLAYABLE_AUDIO_EXTENSIONS.join(', ')}.`
+      );
+    }
     return {
       ...handle,
       samples: Array.isArray(handle.samples) ? handle.samples.map(toPitchSample) : []
