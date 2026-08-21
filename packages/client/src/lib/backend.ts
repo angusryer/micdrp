@@ -62,6 +62,8 @@ export interface NoteRecord extends BaseRecord {
   note_count: number;
   range_low_midi: number | null;
   range_high_midi: number | null;
+  /** Readings a person has made of this take; absent on older notes. */
+  interpretations_json?: unknown;
 }
 
 export interface PracticeProgressRecord extends BaseRecord {

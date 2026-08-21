@@ -14,8 +14,13 @@
  *
  * The bucket is private, so reads return short-lived signed URLs for playback.
  */
-import { AppErrorCode, appError } from 'shared';
-import type { CreateNoteInput, NoteDto, NoteEventDto } from 'shared';
+import { AppErrorCode, appError, parseInterpretations } from 'shared';
+import type {
+  CreateNoteInput,
+  InterpretationDto,
+  NoteDto,
+  NoteEventDto
+} from 'shared';
 
 import { backend, COLLECTIONS } from '../lib/backend';
 import type { NoteRecord } from '../lib/backend';
@@ -59,7 +64,8 @@ function rowToDto(row: NoteRow): NoteDto {
     meanCentsError: row.mean_cents_error,
     noteCount: row.note_count,
     rangeLowMidi: row.range_low_midi,
-    rangeHighMidi: row.range_high_midi
+    rangeHighMidi: row.range_high_midi,
+    interpretations: parseInterpretations(row.interpretations_json)
   };
 }
 
@@ -197,6 +203,26 @@ export const notesRepo = {
    */
   async audioUrlFor(noteId: string, audioPath: string | null): Promise<string | null> {
     return fileUrl(noteId, audioPath);
+  },
+
+  /**
+   * Keep what a person has made of a take.
+   *
+   * The whole list is written at once because a reading only means anything
+   * beside the others — which one is active is a property of the set, not of
+   * any one entry.
+   */
+  async saveInterpretations(
+    noteId: string,
+    interpretations: readonly InterpretationDto[]
+  ): Promise<void> {
+    try {
+      await backend.collection(COLLECTIONS.notes).update(noteId, {
+        interpretations_json: interpretations
+      });
+    } catch (error) {
+      throw appError(AppErrorCode.Network, 'Failed to save your changes', error);
+    }
   },
 
   /**

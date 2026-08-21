@@ -25,7 +25,13 @@ import { notesToMidi, quantize, type NoteEvent } from 'logic';
 
 import { ChordTrack } from './ChordTrack';
 import { useChordBackdrop } from './useChordBackdrop';
+import type { InterpretationDto } from 'shared';
+
 import { useChordTrack } from './useChordTrack';
+import { useInterpretation } from './useInterpretation';
+
+/** Stable, so a note with no readings does not look like a new one each render. */
+const EMPTY_READINGS: InterpretationDto[] = [];
 
 import type { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme';
@@ -116,9 +122,17 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
     };
   }, [note, melody]);
 
+  // What this person has already made of the take, kept with the note so a
+  // decision outlives the screen it was made on (INV-NOTES-021).
+  const interpretation = useInterpretation(note?.id ?? null, note?.interpretations ?? EMPTY_READINGS);
+
   // The editable harmonic backdrop, derived from the same fitted grid the bar
-  // lines are drawn from, so chords and bars always agree.
-  const chords = useChordTrack(melody, grid);
+  // lines are drawn from, so chords and bars always agree. Inference runs
+  // first and kept decisions land on top of it.
+  const chords = useChordTrack(melody, grid, {
+    savedEdits: interpretation.savedEdits,
+    onEditsChanged: interpretation.update
+  });
   // Play sounds this backdrop with the take, or on its own, or not at all —
   // whichever the choice beside the play control is set to (INV-NOTES-019).
   const backdrop = useChordBackdrop(chords.progression);

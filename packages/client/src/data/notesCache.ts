@@ -14,6 +14,7 @@
 import type { NoteEventDto } from 'shared';
 
 import { getJSON } from './store';
+import type { InterpretationDto } from 'shared';
 
 /** MMKV key under which the whole `id -> NoteMeta` index is stored. */
 export const NOTES_INDEX_KEY = 'notes.index';
@@ -46,6 +47,14 @@ export interface NoteMeta {
   noteCount: number;
   rangeLowMidi?: number;
   rangeHighMidi?: number;
+  /**
+   * What a person has made of this take.
+   *
+   * Cached alongside the melody for the same reason: the screen that reads it
+   * must work without a round trip, and a decision that only appears once the
+   * network answers is a decision that looks lost.
+   */
+  interpretations?: InterpretationDto[];
 }
 
 type NoteIndex = Record<string, NoteMeta>;

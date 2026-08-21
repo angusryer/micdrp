@@ -9,15 +9,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
+  collectEdits,
   cycleQuality,
   detectKey,
   harmonizeToGrid,
+  replayEdits,
   revertSlot,
   transposeDiatonic,
   voiceChord,
   voiceProgression,
   type ChordPlayback,
   type ChordSlot,
+  type ChordSlotEdit,
   type MusicalGrid,
   type NoteEvent
 } from 'logic';
@@ -50,31 +53,51 @@ export interface ChordTrack {
   auditionMs: number;
 }
 
+export interface ChordTrackOptions {
+  /** Decisions already kept with the note, replayed onto fresh inference. */
+  savedEdits?: readonly ChordSlotEdit[];
+  /** Called with the differences whenever they change, for keeping. */
+  onEditsChanged?: (edits: ChordSlotEdit[]) => void;
+}
+
 export function useChordTrack(
   melody: readonly NoteEvent[],
-  grid: MusicalGrid
+  grid: MusicalGrid,
+  options: ChordTrackOptions = {}
 ): ChordTrack {
+  const { savedEdits, onEditsChanged } = options;
   const key = useMemo(() => detectKey(melody), [melody]);
   const inferred = useMemo(
     () => harmonizeToGrid(melody, grid, { key }),
     [melody, grid, key]
   );
-  const [slots, setSlots] = useState<ChordSlot[]>(inferred);
 
-  // Re-inferring replaces the working copy. Edits are deliberately not carried
-  // across: that only happens when the melody or the grid itself changed, at
-  // which point the old slots describe a different set of bars.
+  // Inference first, then a person's decisions on top of it — which is what
+  // makes what we store differences rather than a copy (INV-NOTES-022). A
+  // slot nobody overrode follows the analysis; a slot someone chose does not.
+  const restored = useMemo(
+    () => (savedEdits?.length ? replayEdits(inferred, savedEdits, key) : inferred),
+    [inferred, savedEdits, key]
+  );
+  const [slots, setSlots] = useState<ChordSlot[]>(restored);
+
+  // Re-inferring replaces the working copy, with saved decisions replayed onto
+  // it. Unsaved edits are deliberately not carried across: that only happens
+  // when the melody or the grid changed, at which point the old slots describe
+  // a different set of bars.
   useEffect(() => {
-    setSlots(inferred);
-  }, [inferred]);
+    setSlots(restored);
+  }, [restored]);
 
   const apply = useCallback(
     (index: number, change: (slot: ChordSlot) => ChordSlot) => {
-      setSlots((current) =>
-        current.map((slot, i) => (i === index ? change(slot) : slot))
-      );
+      setSlots((current) => {
+        const next = current.map((slot, i) => (i === index ? change(slot) : slot));
+        onEditsChanged?.(collectEdits(next));
+        return next;
+      });
     },
-    []
+    [onEditsChanged]
   );
 
   // Voiced here rather than at the player, so an edit made before pressing
@@ -104,7 +127,10 @@ export function useChordTrack(
         ),
       [apply, inferred]
     ),
-    revertAll: useCallback(() => setSlots(inferred), [inferred]),
+    revertAll: useCallback(() => {
+      setSlots(inferred);
+      onEditsChanged?.([]);
+    }, [inferred, onEditsChanged]),
     voicing: useCallback(
       (index) => {
         const slot = slots[index];

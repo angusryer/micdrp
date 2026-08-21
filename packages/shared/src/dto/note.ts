@@ -4,6 +4,7 @@
  * layer; it must not import logic). The client maps `logic`'s structurally
  * identical `NoteEvent` to/from {@link NoteEventDto}.
  */
+import type { InterpretationDto } from './interpretation';
 
 /** One segmented note in a melody — mirrors `logic`'s `NoteEvent` field-for-field. */
 export interface NoteEventDto {
@@ -40,6 +41,11 @@ export interface NoteDto {
   rangeLowMidi: number | null;
   /** Highest sung MIDI note, or null when empty. */
   rangeHighMidi: number | null;
+  /**
+   * What a person has made of this take. Empty on a note recorded before
+   * readings existed, which is not an error (INV-NOTES-022).
+   */
+  interpretations: InterpretationDto[];
 }
 
 /** Fields supplied by the client when creating a note. */
