@@ -60,3 +60,23 @@ invariants:
       changes as you drag over it, under your own thumb, so you cannot
       see the thing you are choosing until you let go. Placement you
       cannot watch is placement by trial and error.
+
+  - id: INV-NOTES-026
+    description: A take can be heard as sung or as written down
+    severity: high
+    check: >
+      Playing a take as sung uses the pitch and timing that were
+      detected, unrounded and unsnapped. Playing it as written uses the
+      notated pitch and the grid. Verified by asserting the two differ
+      for a take that was neither exactly in tune nor exactly in time,
+      and agree for one that was.
+
+      These answer different questions and conflating them hides both.
+      Heard as sung, a mismatch is the detector's fault and worth
+      chasing. Heard as written, a mismatch is what transcription costs —
+      a pure major third is fourteen cents from a tempered one, and no
+      amount of better detection will change that.
+
+      Being able to hear the difference is what makes the pitch detector
+      testable at all: without it, every complaint about playback is
+      ambiguous between the two.

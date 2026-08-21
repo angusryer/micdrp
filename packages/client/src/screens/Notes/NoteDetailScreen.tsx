@@ -21,9 +21,16 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { notesToMidi, quantize, type NoteEvent } from 'logic';
+import {
+  notesToMidi,
+  playbackTargets,
+  quantize,
+  type NoteEvent,
+  type PlaybackMode
+} from 'logic';
 
 import { ChordTrack } from './ChordTrack';
+import { HearItAs } from './HearItAs';
 import { useChordBackdrop } from './useChordBackdrop';
 import type { InterpretationDto } from 'shared';
 
@@ -151,6 +158,14 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   // Tap a note to hear its pitch.
   const tonePlayer = useMemo(() => createReferenceTonePlayer(), []);
   useEffect(() => () => tonePlayer.stop(), [tonePlayer]);
+
+  // Two questions, not one. As sung, a wrong note is the detector's doing; as
+  // written, it is what transcription costs (INV-NOTES-026).
+  const [playbackMode, setPlaybackMode] = useState<PlaybackMode>('as-sung');
+  const playMelody = useCallback(() => {
+    tonePlayer.stop();
+    tonePlayer.play(playbackTargets(melody, quantized.notes, playbackMode));
+  }, [tonePlayer, melody, quantized.notes, playbackMode]);
   const playNote = useCallback(
     (midi: number) => {
       tonePlayer.play([{ midi, startMs: 0, endMs: TAP_NOTE_MS }]);
@@ -251,6 +266,15 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
                 />
               )}
             </View>
+
+            <View style={styles.hearAs}>
+              <HearItAs
+                mode={playbackMode}
+                onChange={setPlaybackMode}
+                onPlay={playMelody}
+                canNotate={hasGrid}
+              />
+            </View>
             {/* Say when the bar lines are an assumption rather than a reading.
                 A short sung idea often does not state its metre, and drawing
                 confident bar lines over one would be inventing information. */}
@@ -339,6 +363,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
+  hearAs: { marginTop: 12 },
   safe: { flex: 1 },
   content: { padding: 20, gap: 14 },
   title: { fontSize: 24, fontWeight: '700' },
