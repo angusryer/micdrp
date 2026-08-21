@@ -29,6 +29,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { AudioContext } from './audioApi';
 import type { AudioBufferSourceNodeLike, AudioContextLike } from './audioApi';
+import { usePlaybackClock } from './usePlaybackClock';
 
 export type PlaybackState = 'stopped' | 'loading' | 'playing' | 'error';
 
@@ -38,24 +39,26 @@ export interface UsePlaybackOptions {
    * embeds is fresh. Returning null means the audio could not be resolved.
    */
   resolveAudioUri: () => Promise<string | null>;
-  /**
-   * Start on mount, for a caller whose own control already meant "play"
-   * (INT-NOTES-010).
-   */
-  shouldAutoPlay?: boolean;
 }
 
 export interface Playback {
   state: PlaybackState;
+  /**
+   * How far into the take playback has run, in ms; 0 in every other state.
+   * Unclamped — the view holds the take's length and bounds it against that
+   * (INV-NOTES-016).
+   */
+  positionMs: number;
   play(): Promise<void>;
   stop(): Promise<void>;
 }
 
 export function usePlayback({
-  resolveAudioUri,
-  shouldAutoPlay = false
+  resolveAudioUri
 }: UsePlaybackOptions): Playback {
   const [state, setState] = useState<PlaybackState>('stopped');
+  // Runs only while audio is running, and resets itself the moment it isn't.
+  const positionMs = usePlaybackClock(state === 'playing');
   const ctxRef = useRef<AudioContextLike | null>(null);
   const sourceRef = useRef<AudioBufferSourceNodeLike | null>(null);
 
@@ -135,16 +138,5 @@ export function usePlayback({
     setState('stopped');
   }, [teardown]);
 
-  // Fire once, not on every re-render: play's identity changes with state, so
-  // the ref — not the dependency list — is what bounds this.
-  const autoPlayed = useRef(false);
-  useEffect(() => {
-    if (!shouldAutoPlay || autoPlayed.current) {
-      return;
-    }
-    autoPlayed.current = true;
-    void play();
-  }, [shouldAutoPlay, play]);
-
-  return { state, play, stop };
+  return { state, positionMs, play, stop };
 }

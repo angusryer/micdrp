@@ -121,10 +121,16 @@ interactions:
     steps:
       - Press play on the note's card
     outcome: >
-      That press starts the capture playing. The singer is not asked to
-      press a second control to make sound.
+      That press starts the capture playing and the control itself
+      becomes the playing state, offering stop. The line directly above
+      the control counts the position while the take runs and returns to
+      the length alone once it stops. The singer is not asked to press a
+      second control to make sound, and is never handed a close control
+      to dismiss a player they did not ask to open.
     error_handling: >
       A note whose upload never completed shows no play control at all,
-      so there is no press that does nothing.
+      so there is no press that does nothing. A take that cannot be
+      decoded says so beside the control, which returns to offering
+      play.
     maps_to:
       capability: notes.play

@@ -1,0 +1,112 @@
+# Hearing a kept take back — from the list card and from the detail view.
+# Split out of library.yml, which crossed the 150-line spec-file budget.
+acceptance:
+  - id: ACC-NOTES-024
+    interface: ui
+    title: A note with stored audio plays from its resolved URL
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio
+    when:
+      - singer S calls notes.play on note N
+    then:
+      - the call succeeds
+    maps_to:
+      capability: notes.play
+      invariants: [INV-NOTES-012]
+      interaction: INT-NOTES-008
+
+  - id: ACC-NOTES-026
+    interface: ui
+    title: A note kept since before the last sync still plays
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio
+      - the audio token minted at sync time has expired
+    when:
+      - singer S calls notes.play on note N
+    then:
+      - the call succeeds
+    maps_to:
+      capability: notes.play
+      invariants: [INV-NOTES-014]
+
+  - id: ACC-NOTES-027
+    interface: ui
+    title: The list's play control starts playback on the press itself
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio
+    when:
+      - singer S presses play on note N's card in the list
+    then:
+      - the note field playbackStarted is true
+      - the note field pressesToStartPlayback is 1
+    maps_to:
+      capability: notes.play
+      interaction: INT-NOTES-010
+
+  - id: ACC-NOTES-028
+    interface: ui
+    title: A card with no stored audio shows no play control
+    given:
+      - a signed-in singer S
+      - singer S has a note N with no stored audio
+    when:
+      - singer S views note N's card in the list
+    then:
+      - the note field playControlShown is false
+    maps_to:
+      capability: notes.play
+      invariants: [INV-NOTES-004]
+      interaction: INT-NOTES-010
+
+  - id: ACC-NOTES-029
+    interface: ui
+    title: Pressing play transitions the control, offering no close
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio
+    when:
+      - singer S presses play on note N's card in the list
+    then:
+      - the note field playbackStarted is true
+      - the note field closeControlShown is false
+      - the note field playbackControlsShown is 1
+    maps_to:
+      capability: notes.play
+      invariants: [INV-NOTES-015]
+      interaction: INT-NOTES-010
+
+  - id: ACC-NOTES-030
+    interface: ui
+    title: The line above play is the take's length before any press
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio
+    when:
+      - singer S views note N's card in the list
+    then:
+      - the note field playbackCounterShown is 1
+      - the note field playbackCounterRunning is false
+    maps_to:
+      capability: notes.play
+      invariants: [INV-NOTES-016]
+      interaction: INT-NOTES-010
+
+  - id: ACC-NOTES-031
+    interface: ui
+    title: That same line counts the position while the take plays
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio
+    when:
+      - singer S presses play on note N's card in the list
+    then:
+      - the note field playbackCounterShown is 1
+      - the note field playbackCounterRunning is true
+      - the note field playbackCounterExceedsLength is false
+    maps_to:
+      capability: notes.play
+      invariants: [INV-NOTES-016]
+      interaction: INT-NOTES-010

@@ -1,36 +1,40 @@
 /**
  * NoteCardActions — the button row under a note card.
  *
- * Play is the singer's press to hear the take: it opens the card's playback
- * bar, which starts on mount, so this press is the press that makes sound
- * (INT-NOTES-010). A note whose audio was never stored gets no play button at
- * all rather than one that opens an empty row.
+ * Play is the singer's press to hear the take, and it is the only playback
+ * control the card has: the press starts the audio and moves this same button
+ * into its playing state, from which it stops the take (INT-NOTES-010,
+ * INV-NOTES-015). It never becomes a Close, because nothing was opened. A note
+ * whose audio was never stored gets no play button at all.
  *
- * The take's length sits on its own line directly above the row, aligned with
- * Play: it is the fact a singer wants right as they decide whether to press.
+ * The take's clock sits on its own line directly above the row, aligned with
+ * Play — the space the close control used to occupy. Before the press it is the
+ * take's length, the fact a singer wants as they decide whether to play; while
+ * the take runs it counts the position against that length (INV-NOTES-016).
  */
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
+import type { PlaybackState } from './usePlayback';
 
 export interface NoteCardActionsProps {
-  /** Whether the playback bar is open — Play reads as Close while it is. */
-  isPlayerOpen: boolean;
+  /** Where the take is: the button reads and behaves as this state. */
+  playbackState: PlaybackState;
   /** False when the note has no stored audio: no play button is offered. */
   canPlay: boolean;
-  /** The take's length, e.g. "0:12", shown above the row. */
-  durationLabel: string;
+  /** The take's clock: "0:12" at rest, "0:03 / 0:12" while it plays. */
+  timeLabel: string;
   onTogglePlay(): void;
   onOpen(): void;
   onDelete(): void;
 }
 
 export function NoteCardActions({
-  isPlayerOpen,
+  playbackState,
   canPlay,
-  durationLabel,
+  timeLabel,
   onTogglePlay,
   onOpen,
   onDelete
@@ -38,10 +42,15 @@ export function NoteCardActions({
   const { colors } = useTheme();
   const { t } = useTranslation();
 
+  const isPlaying = playbackState === 'playing';
+  const isLoading = playbackState === 'loading';
+
   return (
     <View testID='note-card-actions'>
-      <Text style={[styles.duration, { color: colors.gray300 }]}>
-        {durationLabel}
+      <Text
+        testID='note-card-time'
+        style={[styles.time, { color: colors.gray300 }]}>
+        {timeLabel}
       </Text>
 
       <View style={styles.actions}>
@@ -49,25 +58,28 @@ export function NoteCardActions({
           <Pressable
             accessibilityRole='button'
             accessibilityLabel={
-              isPlayerOpen ? t('notes.closePlayer') : t('notes.playNote')
+              isPlaying ? t('notes.stopNote') : t('notes.playNote')
             }
+            accessibilityState={{ selected: isPlaying, busy: isLoading }}
             onPress={onTogglePlay}
             style={[
               styles.actionButton,
               {
-                backgroundColor: isPlayerOpen
-                  ? colors.neutral300
+                backgroundColor: isPlaying
+                  ? colors.primary300
                   : colors.primary500
               }
             ]}>
-            <Text
-              style={[
-                styles.actionLabel,
-                { color: isPlayerOpen ? colors.typography : colors.white }
-              ]}>
-              {isPlayerOpen ? t('common.close') : t('common.play')}
+            <Text style={[styles.actionLabel, { color: colors.white }]}>
+              {isPlaying ? t('common.stop') : t('common.play')}
             </Text>
           </Pressable>
+        ) : null}
+
+        {playbackState === 'error' ? (
+          <Text style={[styles.playbackError, { color: colors.error }]}>
+            {t('notes.playbackFailed')}
+          </Text>
         ) : null}
 
         <Pressable
@@ -104,9 +116,11 @@ const styles = StyleSheet.create({
     marginTop: 4
   },
   // Left-aligned so it reads as belonging to Play, the row's first button.
-  duration: {
+  // Tabular figures keep the counter from shifting the line as it ticks.
+  time: {
     fontSize: 12,
-    fontWeight: '500'
+    fontWeight: '500',
+    fontVariant: ['tabular-nums']
   },
   actionButton: {
     paddingHorizontal: 14,
@@ -124,5 +138,8 @@ const styles = StyleSheet.create({
   actionLabel: {
     fontSize: 13,
     fontWeight: '600'
+  },
+  playbackError: {
+    fontSize: 12
   }
 });

@@ -2,24 +2,28 @@
  * NoteCard — a single row in the Notes list.
  *
  * The card frame and what it composes: NoteCardMeta for the title and the
- * descriptive line, an optional melody shape, the playback bar, and
- * NoteCardActions for the take's length and the button row. Tapping the body
- * opens the note's detail/analysis; Delete is delegated to the parent.
+ * descriptive line, an optional melody shape, and NoteCardActions for the
+ * take's clock and the button row. Tapping the body opens the note's
+ * detail/analysis; Delete is delegated to the parent.
  *
- * Pressing Play opens the playback bar already playing (INT-NOTES-010) — one
- * press to hear the take, not two.
+ * The card plays the take itself rather than disclosing a player to play it:
+ * pressing Play starts the audio and turns that button into Stop
+ * (INT-NOTES-010, INV-NOTES-015). One press to hear the take, and no Close to
+ * dismiss a bar the singer never asked to open. The line the Close vacated
+ * carries the take's clock, counting the position while it runs
+ * (INV-NOTES-016).
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { MelodyView } from '../../components/MelodyView';
 import type { NoteMeta } from '../../data/notesCache';
-import { PlaybackBar } from './PlaybackBar';
+import { usePlayback } from './usePlayback';
 import { NoteCardActions } from './NoteCardActions';
 import { NoteCardMeta } from './NoteCardMeta';
-import { formatDuration } from './noteCardFormat';
+import { formatPlaybackCounter } from './noteCardFormat';
 import { notesRepo } from '../../data/notesRepo';
 
 /** Horizontal space consumed by the list padding (16) + card padding (14) each side. */
@@ -36,7 +40,6 @@ export function NoteCard({ note, onOpen, onDelete }: NoteCardProps) {
   const { colors, dimensions } = useTheme();
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
-  const [expanded, setExpanded] = useState(false);
 
   // Mint the audio URL when Play is pressed rather than here: the token it
   // carries is good for about two minutes (INV-NOTES-014).
@@ -45,9 +48,15 @@ export function NoteCard({ note, onOpen, onDelete }: NoteCardProps) {
     [note.id, note.audioPath]
   );
 
-  // Press play → the bar mounts already playing. Press again → it unmounts,
-  // and its cleanup stops the audio.
-  const handleTogglePlay = useCallback((): void => setExpanded((v) => !v), []);
+  const { state, positionMs, play, stop } = usePlayback({
+    resolveAudioUri: resolveAudio
+  });
+
+  // Press play → the take starts and the button reads Stop. Press again → the
+  // audio stops and it reads Play. There is no third thing to press.
+  const handleTogglePlay = useCallback((): void => {
+    void (state === 'playing' ? stop() : play());
+  }, [state, play, stop]);
   const handleOpen = useCallback(
     (): void => onOpen(note.id),
     [onOpen, note.id]
@@ -86,17 +95,13 @@ export function NoteCard({ note, onOpen, onDelete }: NoteCardProps) {
         ) : null}
       </Pressable>
 
-      {expanded && canPlay ? (
-        <View style={styles.playbackWrap}>
-          {/* No durationLabel: the length is shown once, above the play button. */}
-          <PlaybackBar resolveAudioUri={resolveAudio} shouldAutoPlay />
-        </View>
-      ) : null}
-
       <NoteCardActions
-        isPlayerOpen={expanded}
+        playbackState={state}
         canPlay={canPlay}
-        durationLabel={formatDuration(note.durationMs)}
+        timeLabel={formatPlaybackCounter(
+          note.durationMs,
+          state === 'playing' ? positionMs : null
+        )}
         onTogglePlay={handleTogglePlay}
         onOpen={handleOpen}
         onDelete={handleDelete}
@@ -113,6 +118,5 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 8
   },
-  melodyWrap: { marginTop: 10 },
-  playbackWrap: { paddingVertical: 4 }
+  melodyWrap: { marginTop: 10 }
 });

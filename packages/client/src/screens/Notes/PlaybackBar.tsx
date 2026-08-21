@@ -4,9 +4,9 @@
  * The view only. Decoding, the AudioContext lifecycle, and the URL-resolution
  * rules live in `usePlayback`, which this renders.
  *
- * `shouldAutoPlay` exists because the Notes list card's play button already means
- * "play": mounting this bar silently and waiting for a second press on the
- * bar's own button is what the singer flagged (INT-NOTES-010).
+ * The note detail view's player. The Notes list card does not use this: its own
+ * play button is its player, so a bar there would be a second control for the
+ * same take (INV-NOTES-015).
  */
 import React from 'react';
 import {
@@ -30,17 +30,14 @@ export interface PlaybackBarProps {
   resolveAudioUri: () => Promise<string | null>;
   /** Optional override duration label (e.g. "1:23"). */
   durationLabel?: string;
-  /** Start on mount, for a caller whose own control already meant "play". */
-  shouldAutoPlay?: boolean;
 }
 
 export function PlaybackBar({
   resolveAudioUri,
-  durationLabel,
-  shouldAutoPlay = false
+  durationLabel
 }: PlaybackBarProps) {
   const { colors } = useTheme();
-  const { state, play, stop } = usePlayback({ resolveAudioUri, shouldAutoPlay });
+  const { state, play, stop } = usePlayback({ resolveAudioUri });
 
   const isPlaying = state === 'playing';
   const isLoading = state === 'loading';

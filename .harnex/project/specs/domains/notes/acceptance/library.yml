@@ -1,4 +1,4 @@
-# Listing, ownership, deletion, playback, export.
+# Listing, ownership, deletion, export. Playback lives in playback.yml.
 acceptance:
   - id: ACC-NOTES-008
     interface: ui
@@ -124,63 +124,3 @@ acceptance:
       capability: notes.export_midi
       invariants: [INV-NOTES-003]
 
-  - id: ACC-NOTES-024
-    interface: ui
-    title: A note with stored audio plays from its resolved URL
-    given:
-      - a signed-in singer S
-      - singer S has a note N with stored audio
-    when:
-      - singer S calls notes.play on note N
-    then:
-      - the call succeeds
-    maps_to:
-      capability: notes.play
-      invariants: [INV-NOTES-012]
-      interaction: INT-NOTES-008
-
-
-  - id: ACC-NOTES-026
-    interface: ui
-    title: A note kept since before the last sync still plays
-    given:
-      - a signed-in singer S
-      - singer S has a note N with stored audio
-      - the audio token minted at sync time has expired
-    when:
-      - singer S calls notes.play on note N
-    then:
-      - the call succeeds
-    maps_to:
-      capability: notes.play
-      invariants: [INV-NOTES-014]
-
-  - id: ACC-NOTES-027
-    interface: ui
-    title: The list's play control starts playback on the press itself
-    given:
-      - a signed-in singer S
-      - singer S has a note N with stored audio
-    when:
-      - singer S presses play on note N's card in the list
-    then:
-      - the note field playbackStarted is true
-      - the note field pressesToStartPlayback is 1
-    maps_to:
-      capability: notes.play
-      interaction: INT-NOTES-010
-
-  - id: ACC-NOTES-028
-    interface: ui
-    title: A card with no stored audio shows no play control
-    given:
-      - a signed-in singer S
-      - singer S has a note N with no stored audio
-    when:
-      - singer S views note N's card in the list
-    then:
-      - the note field playControlShown is false
-    maps_to:
-      capability: notes.play
-      invariants: [INV-NOTES-004]
-      interaction: INT-NOTES-010

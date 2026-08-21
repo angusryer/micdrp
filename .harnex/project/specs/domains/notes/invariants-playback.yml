@@ -1,0 +1,60 @@
+# Playback invariants — hearing a kept take back, from either surface.
+# Split from invariants.yml to keep both files inside the 150-line budget.
+
+invariants:
+  - id: INV-NOTES-012
+    description: Playback plays whatever the resolved audio URL points at
+    severity: major
+    check: >
+      A note's playback source is the resolved audio URL, which is remote
+      while the note is served from the backend and local only for a capture
+      that has not synced. Playback must accept both. Treating the resolved
+      URL as a local filesystem path fails every backend-served note, which
+      is every note after a sync.
+
+  - id: INV-NOTES-014
+    description: A note's audio URL is minted for playback, never stored
+    severity: critical
+    check: >
+      The cached note record holds the audio's durable server-side path,
+      not a URL. The URL is built at the moment playback starts and is
+      never persisted. Verified by asserting the cache contains no
+      token-bearing URL after a sync, and that starting playback requests
+      a fresh one.
+
+      A PocketBase file token is valid for roughly two minutes. Storing a
+      signed URL in the on-disk cache and refreshing it only on sync meant
+      every note played more than two minutes after the last sync fetched
+      with a dead token, which is every note in ordinary use.
+
+  - id: INV-NOTES-015
+    description: The list card's play control is the player
+    severity: major
+    check: >
+      Pressing play on a note card transitions that control through the
+      playback states — play, loading, stop — and produces no second
+      control, no disclosed player, and no close or dismiss affordance
+      anywhere on the card. Verified by asserting the card renders
+      exactly one playback control before and after the press, and that
+      no close control exists in either state.
+
+      Opening a bar the singer then had to close made the card carry two
+      play buttons and asked for a press that only undid a press.
+
+  - id: INV-NOTES-016
+    description: The line above the card's play control is the take's clock
+    severity: minor
+    check: >
+      While a take plays, the line directly above that card's play
+      control reports the running position against the take's length,
+      and the position never exceeds the length. In every other state
+      the line is the length alone. Exactly one such line exists on a
+      card, in the block that holds the play control. Verified by
+      asserting the line reads the length before the press, reads a
+      position against the length while playing, and is the length alone
+      again after stopping.
+
+      The counter stands where the card's close control used to: the
+      space above Play was freed when the disclosed player went away
+      (INV-NOTES-015), and the fact a singer wants there is how far into
+      the take they are.

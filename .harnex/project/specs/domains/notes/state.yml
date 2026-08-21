@@ -1,17 +1,33 @@
 # Domain Development State — overwrite each meaningful change
-updated_at: "2026-08-20T00:00:00Z"
+updated_at: "2026-08-20T23:30:00Z"
 updated_by: agent
 phase: specifying
 phase_detail: >
   Specs written from a crawl of screens/Notes, analysis/note.ts, the
   data layer, and the notes table in migration 0001. 10 capabilities,
-  14 invariants, 28 acceptance tests, 2 views, 10 interactions.
+  16 invariants, 31 acceptance tests, 2 views, 10 interactions.
 
-  The list card's play button now starts playback on the press itself
-  (INT-NOTES-010): it opens a PlaybackBar mounted with shouldAutoPlay
-  rather than a silent bar awaiting a second press. A card whose note
-  has no audioPath shows no play button at all, which is what the
-  capability already promised. NoteCard and PlaybackBar were split —
+  The line above a card's play control is the take's clock
+  (INV-NOTES-016, ACC-NOTES-030/031): the length at rest, the running
+  position against that length while the take plays. It stands in the
+  space the close control vacated. usePlaybackClock owns the ticking —
+  wall clock, not the audio clock, since audioApi.ts types no position —
+  and usePlayback exposes it as positionMs; formatPlaybackCounter bounds
+  it by the take's length. Playback specs were split out
+  (invariants-playback.yml, acceptance/playback.yml) and the NoteCard
+  suite with them (NoteCardTime.test.tsx, playbackCounter.test.ts, over
+  shared __fixtures__), all to hold the 150-line budget.
+
+  The list card's play button is the card's player (INT-NOTES-010,
+  INV-NOTES-015): NoteCard holds usePlayback directly, so the press
+  starts the take and turns that same button into Stop. It no longer
+  discloses a PlaybackBar — which meant a second play button and a
+  Close for a player the singer never opened — and shouldAutoPlay,
+  whose only consumer that was, is gone. A decode failure now reads as
+  a line beside the control. A card whose note has no audioPath shows
+  no play button at all, which is what the capability already
+  promised. PlaybackBar remains the note detail view's player.
+  NoteCard and PlaybackBar were split —
   NoteCardMeta, NoteCardActions, noteCardFormat, usePlayback, audioApi
   — to bring both back under the 150-line budget.
 

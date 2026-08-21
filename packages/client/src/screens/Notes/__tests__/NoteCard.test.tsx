@@ -1,88 +1,44 @@
 /**
- * NoteCard play control — INT-NOTES-010 / ACC-NOTES-027 / ACC-NOTES-028.
+ * NoteCard play control — INT-NOTES-010 / INV-NOTES-015 / ACC-NOTES-027 /
+ * ACC-NOTES-028 / ACC-NOTES-029.
  *
- * The card's Play button used to only toggle the playback bar into view; the
- * singer then had to press the bar's own Play to hear anything. One press now
- * has to reach the decoder.
- *
- * Render pattern: `await waitFor(() => render(...))` before touching `screen`,
- * matching CaptureSection.test.tsx — a bare render leaves `screen` unbound here.
+ * One press has to reach the decoder, and the button pressed has to become the
+ * running take's Stop — not a Close for a player nobody opened. The clock above
+ * that button is NoteCardTime.test.tsx.
  */
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within
-} from '@testing-library/react-native';
-import React from 'react';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-const mockDecode = jest.fn();
-const mockStart = jest.fn();
-
-jest.mock('react-native-audio-api', () => ({
-  AudioContext: jest.fn().mockImplementation(() => ({
-    destination: {},
-    decodeAudioData: mockDecode,
-    createBufferSource: () => ({
-      buffer: null,
-      connect: jest.fn(),
-      start: mockStart,
-      stop: jest.fn(),
-      onended: null
-    }),
-    close: jest.fn().mockResolvedValue(undefined)
-  }))
-}));
-
-// Called through an arrow, not passed directly: the factory is hoisted above
-// this const, so a direct reference captures undefined.
-const mockAudioUrlFor = jest.fn();
-jest.mock('../../../data/notesRepo', () => ({
-  notesRepo: {
-    audioUrlFor: (id: string, path: string | null): Promise<string | null> =>
-      mockAudioUrlFor(id, path) as Promise<string | null>
-  }
-}));
-
-import { I18nProvider } from '../../../i18n';
-import { ThemeProvider } from '../../../theme';
-import type { NoteMeta } from '../../../data/notesCache';
-import { NoteCard } from '../NoteCard';
-
-const REMOTE =
-  'https://micdrp-backend.fly.dev/api/files/notes/abc123/audio.caf?token=t0ken';
-
-const noteWith = (audioPath: string | null): NoteMeta =>
-  ({
-    id: 'n1',
-    title: 'Hook idea',
-    createdAtMs: 1_700_000_000_000,
-    durationMs: 12_000,
-    melody: [],
-    audioPath
-  }) as unknown as NoteMeta;
-
-const renderCard = (note: NoteMeta) =>
-  waitFor(() =>
-    render(
-      <I18nProvider>
-        <ThemeProvider>
-          <NoteCard note={note} onOpen={jest.fn()} onDelete={jest.fn()} />
-        </ThemeProvider>
-      </I18nProvider>
+// Required from inside the factory, not imported above it: jest.mock is
+// hoisted, so anything it names has to be resolved at call time.
+jest.mock('react-native-audio-api', () =>
+  jest
+    .requireActual<typeof import('../__fixtures__/noteCardMocks')>(
+      '../__fixtures__/noteCardMocks'
     )
-  );
+    .audioApiMock()
+);
+jest.mock('../../../data/notesRepo', () =>
+  jest
+    .requireActual<typeof import('../__fixtures__/noteCardMocks')>(
+      '../__fixtures__/noteCardMocks'
+    )
+    .notesRepoMock()
+);
+
+import {
+  REMOTE,
+  mockAudioUrlFor,
+  mockDecode,
+  mockStart,
+  resetNoteCardMocks
+} from '../__fixtures__/noteCardMocks';
+import { noteWith, renderNoteCard } from '../__fixtures__/renderNoteCard';
 
 describe('NoteCard play control', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockDecode.mockResolvedValue({ duration: 12 });
-    mockAudioUrlFor.mockResolvedValue(REMOTE);
-  });
+  beforeEach(resetNoteCardMocks);
 
   it('starts playback on the first press, with no second press', async () => {
-    await renderCard(noteWith('notes/n1/audio.caf'));
+    await renderNoteCard(noteWith('notes/n1/audio.caf'));
 
     await fireEvent.press(screen.getByLabelText('Play note'));
 
@@ -93,7 +49,7 @@ describe('NoteCard play control', () => {
   });
 
   it('does not resolve or decode anything before the press', async () => {
-    await renderCard(noteWith('notes/n1/audio.caf'));
+    await renderNoteCard(noteWith('notes/n1/audio.caf'));
 
     expect(screen.getByLabelText('Play note')).toBeTruthy();
     // INV-NOTES-014: a token minted at render is dead by the time it is used.
@@ -101,32 +57,25 @@ describe('NoteCard play control', () => {
     expect(mockDecode).not.toHaveBeenCalled();
   });
 
-  it('shows the take length once, in the block that holds the play button', async () => {
-    const { getAllByText, getByTestId } = await renderCard(
-      noteWith('notes/n1/audio.caf')
-    );
-
-    // One "0:12" on the card — the fact line at the top no longer carries it.
-    expect(getAllByText('0:12')).toHaveLength(1);
-
-    const actions = within(getByTestId('note-card-actions'));
-    expect(actions.getByText('0:12')).toBeTruthy();
-    expect(actions.getByLabelText('Play note')).toBeTruthy();
-  });
-
-  it('does not repeat the length once the playback bar is open', async () => {
-    const { getAllByText, getByLabelText } = await renderCard(
-      noteWith('notes/n1/audio.caf')
-    );
+  it('becomes the take’s stop control, never a close control', async () => {
+    const { getByLabelText, queryByLabelText, queryByText } =
+      await renderNoteCard(noteWith('notes/n1/audio.caf'));
 
     await fireEvent.press(getByLabelText('Play note'));
 
-    await waitFor(() => expect(mockStart).toHaveBeenCalled());
-    expect(getAllByText('0:12')).toHaveLength(1);
+    // The pressed control transitions in place: Play → Stop, one control.
+    await waitFor(() => expect(getByLabelText('Stop note')).toBeTruthy());
+    expect(queryByLabelText('Play note')).toBeNull();
+    expect(queryByLabelText('Close player')).toBeNull();
+    expect(queryByText('Close')).toBeNull();
+
+    // And back, so stopping is what the second press means.
+    await fireEvent.press(getByLabelText('Stop note'));
+    await waitFor(() => expect(getByLabelText('Play note')).toBeTruthy());
   });
 
   it('offers no play control when the note has no stored audio', async () => {
-    await renderCard(noteWith(null));
+    await renderNoteCard(noteWith(null));
 
     expect(screen.getByLabelText('Delete note')).toBeTruthy();
     expect(screen.queryByLabelText('Play note')).toBeNull();
