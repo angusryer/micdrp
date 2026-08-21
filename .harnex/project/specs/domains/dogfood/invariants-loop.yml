@@ -130,3 +130,15 @@ invariants:
       failed publish left three pushed changes recorded as unbuilt, and
       the next run set about making them again — against a tree that
       already had them.
+
+  - id: INV-DOG-024
+    description: Reporting progress never costs the work it reports on
+    severity: high
+    check: >
+      A failure to write progress is swallowed, and the run carries on.
+      Verified by making every progress write fail and asserting the clip
+      is still built and delivered.
+
+      Progress is a convenience. A loop that abandoned real work because
+      it could not describe itself would be worse than one that says
+      nothing at all.

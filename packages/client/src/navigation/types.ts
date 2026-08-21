@@ -28,6 +28,8 @@ export type RootStackParamList = {
   NoteDetail: { id: string };
   /** Consolidated Account & Settings, reached from a header button. */
   Account: undefined;
+  /** What the agent loop is doing with the feedback already sent. */
+  FeedbackQueue: undefined;
 };
 
 /** Unauthenticated stack, shown when there is no Supabase session. */

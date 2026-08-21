@@ -162,7 +162,7 @@ function clamp(value: number, min: number, max: number): number {
 // Screen
 // ---------------------------------------------------------------------------
 
-export default function AccountScreen(_props: Props): React.JSX.Element {
+export default function AccountScreen(props: Props): React.JSX.Element {
   const { colors, palette, setPalette } = useTheme();
   const { t } = useTranslation();
 
@@ -528,14 +528,21 @@ export default function AccountScreen(_props: Props): React.JSX.Element {
               {install?.eligibility.reason ?? '—'}
             </Text>
           </View>
-          <View style={[styles.row, { borderBottomColor: 'transparent' }]}>
+          {/* The count says how many are waiting to go up; tapping says what
+              the loop is doing with the ones that already have. */}
+          <TouchableOpacity
+            testID="open-feedback-queue"
+            accessibilityRole="button"
+            onPress={() => props.navigation.navigate('FeedbackQueue')}
+            style={[styles.row, { borderBottomColor: 'transparent' }]}
+          >
             <Text style={[styles.rowLabel, { color: colors.typography }]}>
               {t('settings.about.feedbackQueue')}
             </Text>
-            <Text style={[styles.rowValue, { color: colors.gray300 }]}>
-              {install ? String(install.queuedClips) : '—'}
+            <Text style={[styles.rowValue, { color: colors.primary500 }]}>
+              {install ? String(install.queuedClips) : '—'} ›
             </Text>
-          </View>
+          </TouchableOpacity>
           {install?.lastRecordingError ? (
             <View style={[styles.row, { borderBottomColor: 'transparent' }]}>
               <Text style={[styles.rowLabel, { color: colors.typography }]}>

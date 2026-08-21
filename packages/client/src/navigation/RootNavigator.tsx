@@ -21,6 +21,7 @@ import NotesScreen from '../screens/Notes/NotesScreen';
 import PracticeScreen from '../screens/Practice/PracticeScreen';
 import PracticeSessionScreen from '../screens/Practice/PracticeSessionScreen';
 import ResultsScreen from '../screens/Results/ResultsScreen';
+import { FeedbackQueueScreen } from '../dogfood/FeedbackQueueScreen';
 import type {
   AuthStackParamList,
   MainTabParamList,
@@ -176,6 +177,15 @@ export default function RootNavigator() {
               headerShown: true,
               title: t('notes.detailTitle'),
               headerRight: () => <HeaderControls />
+            }}
+          />
+          <Stack.Screen
+            name="FeedbackQueue"
+            component={FeedbackQueueScreen}
+            options={{
+              headerShown: true,
+              title: 'Feedback queue',
+              presentation: 'modal'
             }}
           />
           <Stack.Screen

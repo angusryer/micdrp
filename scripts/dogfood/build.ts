@@ -9,6 +9,7 @@
 import { gateRequest, type ChangeRequestDto } from '../../packages/shared/src/dto/dogfood.ts';
 
 import { executeRequest } from './execute.ts';
+import type { Report } from './progress.ts';
 import { checkpoint } from './tree.ts';
 
 /**
@@ -19,8 +20,11 @@ import { checkpoint } from './tree.ts';
  */
 export async function buildRequests(
   requests: ChangeRequestDto[],
-  dryRun: boolean
+  dryRun: boolean,
+  report?: Report
 ): Promise<ChangeRequestDto[]> {
+  const buildable = requests.filter((r) => gateRequest(r).mayBuild);
+  let attempted = 0;
   const built: ChangeRequestDto[] = [];
   for (const request of requests) {
     // A resumed clip must not build again what it already shipped. Its
@@ -39,6 +43,11 @@ export async function buildRequests(
       console.log(`  would build (${verdict.route}): ${request.summary}`);
       continue;
     }
+    // Reported per request: a clip carrying four of them should move the bar
+    // four times rather than sit at one number for twenty minutes.
+    // eslint-disable-next-line no-await-in-loop -- one change at a time, by design
+    await report?.('building', `building ${attempted + 1} of ${buildable.length}`, attempted, buildable.length);
+    attempted += 1;
     // eslint-disable-next-line no-await-in-loop -- one change at a time, by design
     const outcome = await executeRequest(request);
     if (!outcome.built) {

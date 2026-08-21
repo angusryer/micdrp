@@ -151,3 +151,18 @@ capabilities:
     permissions:
       - role: maintainer
         notes: Runs as the maintainer, with their credentials.
+
+  - name: dogfood.report_progress
+    description: >
+      Say how far a clip has got, so the maintainer can watch from the
+      app rather than from a log on a machine they are not at.
+    actor: agent
+    implemented_by: scripts/dogfood/progress.ts
+    parameters:
+      required: [clipId, percent, note]
+    preconditions:
+      - the clip is claimed by this run
+    postconditions:
+      - the percentage never goes backwards within a run
+      - reporting failure never fails the run that was reporting
+      - a clip that reaches a conclusion reports one hundred
