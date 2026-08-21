@@ -12,10 +12,15 @@ interactions:
       bar after it change length and are relabelled; the audio, the beat
       grid and every note stay exactly where they were.
 
-      While the drag is live a readout follows the finger, showing where
-      the line will land and what the two bars either side will become.
-      It sits above the finger and to one side, never under it: a person
-      cannot judge a placement they are covering with their own hand.
+      While the drag is live the line itself moves with the finger, from
+      grid step to grid step, and stops against its neighbours rather
+      than crossing them. Releasing leaves it exactly where it was last
+      drawn, so nothing jumps at the end of the gesture.
+
+      A readout follows the finger too, showing where the line will land
+      and what the two bars either side will become. It sits above the
+      finger and to one side, never under it: a person cannot judge a
+      placement they are covering with their own hand.
     maps_to:
       capability: transcription.move_bar_line
 

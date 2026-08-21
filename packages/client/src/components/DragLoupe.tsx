@@ -12,11 +12,18 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../theme';
-import { placeLoupe, type LoupeBounds } from './loupePosition';
+import { LOUPE_OFFSET, placeLoupe, type LoupeBounds } from './loupePosition';
 
 /** Big enough for two signatures and a caption, small enough to see past. */
 export const LOUPE_WIDTH = 150;
 export const LOUPE_HEIGHT = 58;
+
+/**
+ * Headroom a surface needs above a touch for the loupe to clear the finger.
+ * A surface shorter than this should let the loupe overhang it by setting
+ * `bounds.top` to `-LOUPE_CLEARANCE` (INV-NOTES-025).
+ */
+export const LOUPE_CLEARANCE = LOUPE_HEIGHT + LOUPE_OFFSET;
 
 export interface DragLoupeProps {
   /** Hidden entirely when no drag is in flight. */

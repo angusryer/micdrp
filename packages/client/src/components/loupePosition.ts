@@ -20,6 +20,13 @@ export interface LoupeBounds {
   /** The area it must stay inside, usually the screen or the graph. */
   width: number;
   height: number;
+  /**
+   * The highest the readout may rise, in the surface's own coordinates.
+   * Negative when the surface is too short to hold the readout clear of
+   * the finger and nothing above it clips: the readout overhangs the
+   * surface rather than settling level with the thumb (INV-NOTES-025).
+   */
+  top?: number;
 }
 
 export interface LoupeOptions {
@@ -30,7 +37,7 @@ export interface LoupeOptions {
 }
 
 /** Enough that a fingertip does not overlap the readout's lower edge. */
-const DEFAULT_OFFSET = 56;
+export const LOUPE_OFFSET = 56;
 
 function clamp(value: number, low: number, high: number): number {
   return Math.min(Math.max(value, low), high);
@@ -51,7 +58,8 @@ export function placeLoupe(
   options: LoupeOptions
 ): LoupePlacement {
   const { loupeWidth, loupeHeight } = options;
-  const offset = options.offset ?? DEFAULT_OFFSET;
+  const offset = options.offset ?? LOUPE_OFFSET;
+  const top = bounds.top ?? 0;
 
   // Sideways: prefer the right of the finger, flip when that would not fit.
   const wantRight = touchX + offset / 2 + loupeWidth <= bounds.width;
@@ -61,13 +69,15 @@ export function placeLoupe(
     : touchX - offset / 2 - loupeWidth;
 
   // Vertically: above by default, below when there is no room above. Either
-  // way it clears the finger by the full offset.
+  // way it clears the finger by the full offset. "Room above" is measured
+  // against bounds.top, which a short surface sets negative so the readout
+  // can overhang it instead of dropping onto the thumb.
   const above = touchY - offset - loupeHeight;
-  const rawY = above >= 0 ? above : touchY + offset;
+  const rawY = above >= top ? above : touchY + offset;
 
   return {
     x: clamp(rawX, 0, Math.max(0, bounds.width - loupeWidth)),
-    y: clamp(rawY, 0, Math.max(0, bounds.height - loupeHeight)),
+    y: clamp(rawY, top, Math.max(top, bounds.height - loupeHeight)),
     side
   };
 }

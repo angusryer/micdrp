@@ -6,64 +6,83 @@
  * hold a line to merge. The take is never touched — only where the bars fall
  * across it (INV-TRANS-012).
  *
- * While a drag is live the readout follows the finger from above and to one
- * side. A person cannot judge a placement they are covering with their own
- * hand (INV-NOTES-025).
+ * While a drag is live the line moves with the finger, step by step, and the
+ * readout follows from above and to one side. The line has to move: it is the
+ * thing being placed (INV-NOTES-028). The readout has to keep clear: a person
+ * cannot judge a placement they are covering with their own hand
+ * (INV-NOTES-025).
  */
 import React, { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 
-import { DragLoupe } from '../../components/DragLoupe';
+import { DragLoupe, LOUPE_CLEARANCE } from '../../components/DragLoupe';
 import { useTheme } from '../../theme';
-import type { BarHandle } from './barRulerModel';
+import { BarLineHandle } from './BarLineHandle';
+import type { BarDrop, BarHandle } from './barRulerModel';
 
 export interface BarRulerProps {
   handles: readonly BarHandle[];
   width: number;
   height: number;
-  /** Turn an x into a grid step, so a drag knows where it is going. */
+  /** Turn an x into a grid step, so a hold knows where it is splitting. */
   stepAtX: (x: number) => number;
-  /** What the bars either side would read as, were the line dropped here. */
-  previewAt: (lineIndex: number, step: number) => string;
+  /** Where the line would go if dropped here, and what that would read as. */
+  dropAt: (lineIndex: number, x: number) => BarDrop;
   onMove: (lineIndex: number, step: number) => void;
   onSplit: (step: number) => void;
   onMerge: (lineIndex: number) => void;
 }
 
-/** Wide enough to grab without the lines themselves becoming heavy. */
-const GRAB_WIDTH = 44;
+interface LiveDrag {
+  lineIndex: number;
+  /** The finger, which is what the readout keeps clear of, not the line: a
+   * line stopped against its neighbour is no longer where the thumb is. */
+  touchX: number;
+  touchY: number;
+  drop: BarDrop;
+}
+
+/** The drag in flight, and the two things a dragging finger reports. */
+function useLineDrag(
+  dropAt: BarRulerProps['dropAt'],
+  onMove: BarRulerProps['onMove']
+) {
+  const [drag, setDrag] = useState<LiveDrag | null>(null);
+
+  return {
+    drag,
+    showDrag: useCallback(
+      (lineIndex: number, x: number, y: number) => {
+        setDrag({ lineIndex, touchX: x, touchY: y, drop: dropAt(lineIndex, x) });
+      },
+      [dropAt]
+    ),
+    // The drop commits the step the line was last drawn at, so letting go
+    // changes nothing a person could see.
+    endDrag: useCallback(
+      (lineIndex: number, x: number) => {
+        setDrag(null);
+        onMove(lineIndex, dropAt(lineIndex, x).step);
+      },
+      [dropAt, onMove]
+    )
+  };
+}
 
 export function BarRuler({
   handles,
   width,
   height,
   stepAtX,
-  previewAt,
+  dropAt,
   onMove,
   onSplit,
   onMerge
 }: BarRulerProps): React.JSX.Element {
   const { colors } = useTheme();
-  const [drag, setDrag] = useState<{ x: number; y: number; label: string } | null>(
-    null
-  );
-
-  const showDrag = useCallback(
-    (lineIndex: number, x: number, y: number) => {
-      setDrag({ x, y, label: previewAt(lineIndex, stepAtX(x)) });
-    },
-    [previewAt, stepAtX]
-  );
-
-  const endDrag = useCallback(
-    (lineIndex: number, x: number) => {
-      setDrag(null);
-      onMove(lineIndex, stepAtX(x));
-    },
-    [onMove, stepAtX]
-  );
+  const { drag, showDrag, endDrag } = useLineDrag(dropAt, onMove);
 
   // Holding anywhere that is not a line splits the bar there. It is on the
   // backdrop rather than on each bar so a split can land anywhere.
@@ -80,7 +99,9 @@ export function BarRuler({
       {handles.map((handle) => (
         <BarLineHandle
           key={handle.lineIndex}
-          handle={handle}
+          lineIndex={handle.lineIndex}
+          x={drag?.lineIndex === handle.lineIndex ? drag.drop.x : handle.x}
+          restX={handle.x}
           height={height}
           color={colors.primary700}
           onDrag={showDrag}
@@ -91,59 +112,17 @@ export function BarRuler({
 
       <DragLoupe
         isVisible={drag != null}
-        touchX={drag?.x ?? 0}
-        touchY={drag?.y ?? 0}
-        bounds={{ width, height }}
-        value={drag?.label ?? ''}
+        touchX={drag?.touchX ?? 0}
+        touchY={drag?.touchY ?? 0}
+        // The ruler is a short strip and nothing above it clips, so the
+        // readout may ride above it: clamped inside the strip it would
+        // settle level with the thumb, under the hand (INV-NOTES-025).
+        bounds={{ width, height, top: -LOUPE_CLEARANCE }}
+        value={drag?.drop.label ?? ''}
         caption="drag to move · hold to join"
       />
     </View>
   );
 }
-
-interface HandleProps {
-  handle: BarHandle;
-  height: number;
-  color: string;
-  onDrag: (lineIndex: number, x: number, y: number) => void;
-  onDrop: (lineIndex: number, x: number) => void;
-  onMerge: (lineIndex: number) => void;
-}
-
-function BarLineHandle({
-  handle,
-  height,
-  color,
-  onDrag,
-  onDrop,
-  onMerge
-}: HandleProps): React.JSX.Element {
-  const { lineIndex, x } = handle;
-
-  const pan = Gesture.Pan()
-    .withTestId(`bar-line-pan-${lineIndex}`)
-    .onUpdate((event) => runOnJS(onDrag)(lineIndex, event.absoluteX, event.absoluteY))
-    .onEnd((event) => runOnJS(onDrop)(lineIndex, event.absoluteX));
-
-  const merge = Gesture.LongPress()
-    .withTestId(`bar-line-merge-${lineIndex}`)
-    .onStart(() => runOnJS(onMerge)(lineIndex));
-
-  return (
-    <GestureDetector gesture={Gesture.Exclusive(pan, merge)}>
-      <View
-        style={[styles.grab, { left: x - GRAB_WIDTH / 2, height }]}
-        testID={`bar-line-${lineIndex}`}
-      >
-        <View style={[styles.line, { backgroundColor: color }]} />
-      </View>
-    </GestureDetector>
-  );
-}
-
-const styles = StyleSheet.create({
-  grab: { position: 'absolute', top: 0, width: GRAB_WIDTH, alignItems: 'center' },
-  line: { width: 2, height: '100%', opacity: 0.9 }
-});
 
 export default BarRuler;

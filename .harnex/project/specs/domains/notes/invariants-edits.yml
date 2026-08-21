@@ -61,6 +61,17 @@ invariants:
       see the thing you are choosing until you let go. Placement you
       cannot watch is placement by trial and error.
 
+      The surface being dragged over can be shorter than the readout
+      needs: the melody strip is 150 points tall, and the readout plus
+      the clearance that keeps it off the fingertip is nearly all of
+      that. Clamped inside such a surface, every placement settles level
+      with the thumb — offset to the side by the letter of this rule,
+      under the hand in fact. Where nothing above the surface clips, the
+      readout rises above it instead: the bound it must stay inside is
+      the screen, not the strip. Verified by placing on a surface too
+      short to hold the readout and asserting it still clears the finger
+      vertically rather than sitting beside it at thumb height.
+
   - id: INV-NOTES-026
     description: A take can be heard as sung or as written down
     severity: high
@@ -97,3 +108,24 @@ invariants:
       Mixing is done by ear while listening, so the level has to move
       what is already sounding rather than only what is scheduled next.
       Everything a player sounds passes through one gain for that reason.
+
+  - id: INV-NOTES-028
+    description: The thing being dragged moves with the finger dragging it
+    severity: high
+    check: >
+      While a bar-line drag is live, the line is drawn at the step it
+      would land on if the finger let go now — not at the step it started
+      from. Releasing puts it exactly where it was last drawn. Verified by
+      dragging a line and asserting both its drawn position and the step
+      the drop commits follow the finger.
+
+      The readout already followed the finger (INV-NOTES-025) while the
+      line stayed behind, which left the one thing being placed as the one
+      thing that did not move. A gesture whose subject is frozen reads as
+      a gesture that was not registered, and a person presses harder
+      rather than further.
+
+      Where it would land, not where the finger is: the line stops against
+      its neighbours instead of crossing them, and what the drop commits
+      is the step the drag last drew — a line that snaps back on release
+      is worse than one that never moved, because it lies twice.

@@ -11,7 +11,7 @@ import React, { useCallback, useMemo } from 'react';
 import { layoutMelody, type MelodyGrid, type MelodyNote } from '../../components/melodyLayout';
 import type { BarArrangement } from './useBarLayout';
 import { BarRuler } from './BarRuler';
-import { barHandles, previewSignatures, stepAtX } from './barRulerModel';
+import { barHandles, dropAtX, stepAtX } from './barRulerModel';
 
 export interface BarRulerOverlayProps {
   bars: BarArrangement;
@@ -47,10 +47,12 @@ export function BarRulerOverlay({
     (x: number) => (geometry ? stepAtX(x, geometry) : 0),
     [geometry]
   );
-  const preview = useCallback(
-    (lineIndex: number, step: number) =>
-      previewSignatures(bars.layout, bars.totalSteps, lineIndex, step),
-    [bars.layout, bars.totalSteps]
+  const drop = useCallback(
+    (lineIndex: number, x: number) =>
+      geometry
+        ? dropAtX(bars.layout, bars.totalSteps, geometry, lineIndex, x)
+        : { step: 0, x: 0, label: '' },
+    [bars.layout, bars.totalSteps, geometry]
   );
 
   if (!geometry) {
@@ -63,7 +65,7 @@ export function BarRulerOverlay({
       width={width}
       height={height}
       stepAtX={toStep}
-      previewAt={preview}
+      dropAt={drop}
       onMove={bars.move}
       onSplit={bars.split}
       onMerge={bars.merge}

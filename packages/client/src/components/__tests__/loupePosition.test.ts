@@ -5,10 +5,16 @@
  * the finger, and it must never end up off the screen either. Testing the
  * math rather than the pixels is what makes the corners checkable at all.
  */
-import { coversTouch, placeLoupe } from '../loupePosition';
+import { coversTouch, LOUPE_OFFSET, placeLoupe } from '../loupePosition';
 
 const SCREEN = { width: 390, height: 844 };
 const SIZE = { loupeWidth: 140, loupeHeight: 56 };
+/** A melody strip: shorter than the readout plus its clearance. */
+const STRIP = {
+  width: 356,
+  height: 150,
+  top: -(SIZE.loupeHeight + LOUPE_OFFSET)
+};
 
 describe('placeLoupe', () => {
   it('INV-NOTES-025: never sits under the finger', () => {
@@ -57,6 +63,19 @@ describe('placeLoupe', () => {
   it('still clears the finger in the corners', () => {
     for (const [x, y] of [[0, 0], [389, 0], [0, 843], [389, 843]]) {
       expect(coversTouch(placeLoupe(x, y, SCREEN, SIZE), x, y, SIZE)).toBe(false);
+    }
+  });
+
+  it('rises above a surface too short to hold it clear of the finger', () => {
+    // Clamped inside the strip it would settle level with the thumb —
+    // offset sideways by the letter of INV-NOTES-025, under the hand in
+    // fact. With top granted, it clears the finger vertically everywhere.
+    for (let x = 0; x <= STRIP.width; x += 10) {
+      for (let y = 0; y <= STRIP.height; y += 10) {
+        const placement = placeLoupe(x, y, STRIP, SIZE);
+        expect(placement.y + SIZE.loupeHeight).toBeLessThan(y);
+        expect(placement.y).toBeGreaterThanOrEqual(STRIP.top);
+      }
     }
   });
 
