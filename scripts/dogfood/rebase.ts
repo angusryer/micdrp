@@ -24,7 +24,10 @@ export /**
 async function rebaseOntoMain(): Promise<{ ok: boolean; reason: string }> {
   await run('git', ['fetch', 'origin', 'main'], { cwd: WORKTREE });
   try {
-    await run('git', ['rebase', 'origin/main'], { cwd: WORKTREE });
+    // FETCH_HEAD, not origin/main: fetching a named branch does not reliably
+    // move the remote-tracking ref, and rebasing onto a stale one lands the
+    // batch exactly where it was rejected from.
+    await run('git', ['rebase', 'FETCH_HEAD'], { cwd: WORKTREE });
   } catch {
     await run('git', ['rebase', '--abort'], { cwd: WORKTREE }).catch(() => undefined);
     return { ok: false, reason: 'main moved and these changes conflict with it' };
