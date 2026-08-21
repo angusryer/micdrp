@@ -75,3 +75,14 @@ export async function feedbackQueue(nowMs = Date.now()): Promise<QueuedClip[]> {
     };
   });
 }
+
+/**
+ * Remove a remark, and the audio attached to it.
+ *
+ * The record takes its attachment with it, so there is no separate sweep and
+ * nothing left behind. It cannot be undone, which is why the screen asks
+ * first rather than offering to reverse it afterwards.
+ */
+export async function discardClip(clipId: string): Promise<void> {
+  await backend.collection(COLLECTION).delete(clipId);
+}

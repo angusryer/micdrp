@@ -16,8 +16,8 @@ import {
 } from 'react-native';
 
 import { useTheme } from '../theme';
+import { QueueRow } from './QueueRow';
 import { useFeedbackQueue } from './useFeedbackQueue';
-import type { QueuedClip } from './queue';
 
 export function FeedbackQueueScreen(): React.JSX.Element {
   const { colors } = useTheme();
@@ -51,57 +51,14 @@ export function FeedbackQueueScreen(): React.JSX.Element {
           Nothing sent yet. Record a remark from any screen.
         </Text>
       }
-      renderItem={({ item }) => <QueueRow clip={item} />}
+      renderItem={({ item }) => <QueueRow clip={item} onRemoved={refresh} />}
     />
-  );
-}
-
-function QueueRow({ clip }: { clip: QueuedClip }): React.JSX.Element {
-  const { colors } = useTheme();
-  const percent = clip.progress?.percent ?? 0;
-  const isDone = clip.state === 'delivered' || percent >= 100;
-
-  return (
-    <View style={[styles.row, { backgroundColor: colors.neutral100 }]}>
-      <Text numberOfLines={2} style={[styles.label, { color: colors.typography }]}>
-        {clip.label ?? `Recorded ${new Date(clip.recordedAtMs).toLocaleTimeString()}`}
-      </Text>
-
-      <View style={[styles.track, { backgroundColor: colors.neutral500 }]}>
-        <View
-          style={[
-            styles.fill,
-            {
-              width: `${Math.max(2, percent)}%`,
-              // Stalled reads differently from failed: it may yet finish, but
-              // it has not said anything for a long time.
-              backgroundColor: clip.isStalled
-                ? colors.error
-                : isDone
-                  ? colors.primary300
-                  : colors.primary500
-            }
-          ]}
-        />
-      </View>
-
-      <Text style={[styles.note, { color: colors.gray500 }]}>
-        {clip.isStalled
-          ? `${percent}% · silent for a while`
-          : `${percent}% · ${clip.progress?.note ?? clip.state}`}
-      </Text>
-    </View>
   );
 }
 
 const styles = StyleSheet.create({
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: 16, gap: 12 },
-  row: { borderRadius: 12, padding: 14, gap: 8 },
-  label: { fontSize: 15, fontWeight: '600' },
-  track: { height: 6, borderRadius: 3, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 3 },
-  note: { fontSize: 12 },
   empty: { textAlign: 'center', marginTop: 40, fontSize: 14 },
   error: { fontSize: 13, marginBottom: 8 }
 });

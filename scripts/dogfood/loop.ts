@@ -16,7 +16,7 @@ import { claimOldest, connect, markDelivered, signIn, storeRequests } from './cl
 import { deliverBatch } from './deliver.ts';
 import { progressReporter } from './progress.ts';
 import { understand } from './understand.ts';
-import { isTransient, withRetry } from './transient.ts';
+import { isGone, isTransient, withRetry } from './transient.ts';
 import { describeOutcome } from './report.ts';
 import { buildRequests } from './build.ts';
 import { installDeps, prepareWorktree } from './worktree.ts';
@@ -115,6 +115,12 @@ export async function guardedRun(options: Options): Promise<void> {
     // two of three during one routine deploy (INV-DOG-025).
     if (isTransient(error)) {
       console.error(`dogfood: backend unreachable, will try again — ${String(error)}`);
+      return;
+    }
+    // Someone removed the remark while it was being worked on. That is a
+    // decision, not a fault, and must not spend a life (INV-DOG-026).
+    if (isGone(error)) {
+      console.log('dogfood: the clip was removed; stopping work on it');
       return;
     }
     const failures = readFailures() + 1;

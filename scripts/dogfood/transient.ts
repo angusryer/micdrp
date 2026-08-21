@@ -6,9 +6,9 @@
  */
 // Imported by file rather than through the barrel: Node's ESM loader needs
 // explicit extensions.
-import { isTransient } from '../../packages/shared/src/transient.ts';
+import { isGone, isTransient } from '../../packages/shared/src/transient.ts';
 
-export { isTransient };
+export { isGone, isTransient };
 
 /**
  * Do something, trying again while the backend is the thing at fault.

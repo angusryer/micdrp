@@ -111,3 +111,22 @@ capabilities:
     postconditions:
       - clips in state pending_upload are returned oldest first
       - they survive a relaunch
+
+  - name: dogfood.discard_clip
+    description: >
+      Remove a remark from the queue and from the server, once it is no
+      longer worth keeping.
+    actor: maintainer
+    implemented_by: packages/client/src/dogfood/queue.ts
+    parameters:
+      required: [clipId]
+    preconditions:
+      - the clip belongs to the maintainer
+    postconditions:
+      - the record and the audio attached to it are both gone
+      - removal is confirmed first, because the audio cannot be recovered
+      - a clip the loop is working on may still be removed; the run finds
+        it gone and stops rather than failing
+    permissions:
+      - role: maintainer
+        notes: Their own remark about their own app.

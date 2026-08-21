@@ -156,3 +156,15 @@ invariants:
       restarting is not that: nothing was attempted and nothing was
       damaged. Counting it spent two of three lives during one routine
       deploy, which is a thing that happens on an ordinary afternoon.
+
+  - id: INV-DOG-026
+    description: A clip removed underneath a run stops it, and costs nothing
+    severity: high
+    check: >
+      A run whose clip is deleted while it works stops without counting a
+      failure. Verified by removing a claimed clip mid-run and asserting
+      the loop neither halts nor records a failure.
+
+      Removing a remark is a decision, not a fault. Treating the
+      disappearance as an error would spend the loop's lives on the
+      maintainer tidying their own list.

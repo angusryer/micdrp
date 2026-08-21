@@ -50,3 +50,18 @@ export function isTransient(error: unknown): boolean {
   }
   return typeof e.message === 'string' && /fetch failed|network request failed/i.test(e.message);
 }
+
+/**
+ * Whether a failure says the thing being worked on is simply no longer there.
+ *
+ * Distinct from transient: asking again will not bring it back. It means
+ * someone removed it, which is a decision rather than a fault, and a loop
+ * that counted it would spend its lives on a maintainer tidying their list
+ * (INV-DOG-026).
+ */
+export function isGone(error: unknown): boolean {
+  if (error == null || typeof error !== 'object') {
+    return false;
+  }
+  return (error as { status?: unknown }).status === 404;
+}

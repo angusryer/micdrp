@@ -6,11 +6,14 @@
  * older work answers the question wrongly.
  */
 const mockGetFullList = jest.fn();
+const mockDelete = jest.fn();
 jest.mock('../../lib/backend', () => ({
-  backend: { collection: () => ({ getFullList: mockGetFullList }) }
+  backend: {
+    collection: () => ({ getFullList: mockGetFullList, delete: mockDelete })
+  }
 }));
 
-import { feedbackQueue } from '../queue';
+import { discardClip, feedbackQueue } from '../queue';
 
 const row = (over: Record<string, unknown> = {}) => ({
   id: 'c1',
@@ -24,7 +27,10 @@ const row = (over: Record<string, unknown> = {}) => ({
   ...over
 });
 
-beforeEach(() => mockGetFullList.mockReset());
+beforeEach(() => {
+  mockGetFullList.mockReset();
+  mockDelete.mockReset();
+});
 
 describe('feedbackQueue', () => {
   it('reads progress the loop has reported', async () => {
@@ -89,5 +95,20 @@ describe('feedbackQueue', () => {
     expect(clip.progress).toBeNull();
     expect(clip.durationMs).toBe(0);
     expect(clip.state).toBe('unknown');
+  });
+});
+
+describe('discardClip', () => {
+  it('removes the record, which takes its audio with it', async () => {
+    mockDelete.mockResolvedValue(undefined);
+    await discardClip('c1');
+    expect(mockDelete).toHaveBeenCalledWith('c1');
+  });
+
+  it('lets a failure surface, so the screen can say it did not work', async () => {
+    // Swallowing this would leave a row on screen that the person believes
+    // is gone, which is worse than telling them.
+    mockDelete.mockRejectedValue(new Error('offline'));
+    await expect(discardClip('c1')).rejects.toThrow('offline');
   });
 });

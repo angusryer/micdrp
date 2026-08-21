@@ -6,7 +6,7 @@
  * deploy; getting it wrong in the other means a loop genuinely broken keeps
  * running forever. So both directions are pinned.
  */
-import { isTransient } from '../transient';
+import { isGone, isTransient } from '../transient';
 
 describe('isTransient', () => {
   it('recognises an unreachable backend, which is what started this', () => {
@@ -58,5 +58,22 @@ describe('isTransient', () => {
     const circular: { cause?: unknown; message: string } = { message: 'x' };
     circular.cause = circular;
     expect(isTransient(circular)).toBe(false);
+  });
+});
+
+describe('isGone', () => {
+  it('recognises a thing that is no longer there', () => {
+    expect(isGone({ status: 404 })).toBe(true);
+  });
+
+  it('is not the same as the backend being away', () => {
+    // Asking again will not bring it back, so it must not be retried.
+    expect(isGone({ status: 0 })).toBe(false);
+    expect(isTransient({ status: 404 })).toBe(false);
+  });
+
+  it('handles things that are not errors', () => {
+    expect(isGone(null)).toBe(false);
+    expect(isGone('gone')).toBe(false);
   });
 });
