@@ -4,7 +4,12 @@
  * The property that matters: shifting a whole take must not change how in
  * tune it is with itself. Someone humming an idea has nothing to tune to.
  */
-import { relativeCents, tuningCentre, type NoteEvent } from '../index';
+import {
+  recentreNotes,
+  relativeCents,
+  tuningCentre,
+  type NoteEvent
+} from '../index';
 
 /** Notes at a given set of deviations, all the same length. */
 function take(cents: number[], durationMs = 500): NoteEvent[] {
@@ -104,5 +109,60 @@ describe('relativeCents', () => {
 
   it('changes nothing when the take is already at concert pitch', () => {
     expect(relativeCents(12, 0)).toBe(12);
+  });
+});
+
+describe('recentreNotes', () => {
+  /** A note at a given fractional pitch. */
+  function at(pitch: number, i = 0): NoteEvent {
+    const midi = Math.round(pitch);
+    return {
+      midi,
+      startMs: i * 500,
+      endMs: (i + 1) * 500,
+      durationMs: 500,
+      cents: Math.round((pitch - midi) * 100),
+      clarity: 0.95
+    };
+  }
+
+  it('keeps the intervals a person actually sang', () => {
+    // The whole point. A rising major third is a major third wherever the
+    // singer happened to be centred.
+    const sung = [60.45, 64.45, 67.45].map((p, i) => at(p, i));
+    const { notes } = recentreNotes(sung);
+    const intervals = notes.slice(1).map((n, i) => n.midi - notes[i].midi);
+    expect(intervals).toEqual([4, 3]);
+  });
+
+  it('stops the same scale degree landing on different semitones', () => {
+    // A take sitting either side of a rounding boundary used to split one
+    // degree across two semitones, which is what corrupts the key estimate.
+    const sung = [60.48, 60.52, 60.49, 60.51].map((p, i) => at(p, i));
+    const before = new Set(sung.map((n) => n.midi));
+    const after = new Set(recentreNotes(sung).notes.map((n) => n.midi));
+    expect(before.size).toBe(2);
+    expect(after.size).toBe(1);
+  });
+
+  it('reports where the take sat, so playback can put it back', () => {
+    const { centre } = recentreNotes([60.4, 64.4, 67.4].map((p, i) => at(p, i)));
+    expect(centre.offsetCents).toBeCloseTo(40, 0);
+  });
+
+  it('leaves a take already at concert pitch alone', () => {
+    const sung = [60, 64, 67].map((p, i) => at(p, i));
+    expect(recentreNotes(sung).notes.map((n) => n.midi)).toEqual([60, 64, 67]);
+  });
+
+  it('changes nothing when there is no centre to be found', () => {
+    expect(recentreNotes([]).notes).toEqual([]);
+  });
+
+  it('never moves a note by more than a semitone', () => {
+    for (const p of [60.1, 60.3, 60.49, 59.6, 59.9]) {
+      const { notes } = recentreNotes([at(p), at(p + 4, 1), at(p + 7, 2)]);
+      expect(Math.abs(notes[0].midi - Math.round(p))).toBeLessThanOrEqual(1);
+    }
   });
 });

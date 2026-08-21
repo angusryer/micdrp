@@ -87,3 +87,38 @@ export function relativeCents(cents: number, offsetCents: number): number {
   }
   return relative;
 }
+
+/**
+ * Re-read a take's notes against the centre it was actually sung at.
+ *
+ * This is where relative hearing stops being a display detail and becomes the
+ * reading itself. Rounding to a semitone against concert pitch means a take
+ * sitting near a boundary — say forty-five cents sharp — has the same scale
+ * degree landing on different semitones from one note to the next. Key
+ * detection reads those numbers, and harmony is built on the key, so an error
+ * of less than a semitone propagates into which chords get suggested.
+ *
+ * Shifting every note by the same amount before rounding removes the
+ * question. What comes back is the melody as intervals, which is what someone
+ * humming an idea meant; the offset comes back with it, so playback can put
+ * the take back where it was sung if it wants to (INV-PITCH-014).
+ */
+export function recentreNotes(notes: readonly NoteEvent[]): {
+  notes: NoteEvent[];
+  centre: TuningCentre;
+} {
+  const centre = tuningCentre(notes);
+  if (centre.confidence === 0) {
+    return { notes: [...notes], centre };
+  }
+
+  const shift = centre.offsetCents / 100;
+  return {
+    notes: notes.map((note) => {
+      const core = note.midi + note.cents / 100 - shift;
+      const midi = Math.round(core);
+      return { ...note, midi, cents: Math.round((core - midi) * 100) };
+    }),
+    centre
+  };
+}

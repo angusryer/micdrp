@@ -132,6 +132,12 @@ invariants:
       cents sharp was being reported as thirty cents wrong on every note,
       which is true and useless.
 
+      Applied before anything rounds to a semitone, not after. A take
+      sitting near a rounding boundary otherwise has one scale degree
+      landing on two different semitones from note to note; the key
+      estimate reads those numbers and the harmony is built on the key,
+      so an error smaller than a semitone reaches the chords.
+
       The centre is measured with circular statistics, as the pulse is.
       Deviations wrap at half a semitone, so a take sitting at +48 and
       one at -48 are nearly the same take, and an ordinary average of

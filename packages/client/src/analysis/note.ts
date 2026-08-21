@@ -15,6 +15,7 @@ import {
   detectKey,
   estimateTempo,
   scorePitch,
+  recentreNotes,
   segmentNotes,
   smoothPitch,
   type NoteEvent,
@@ -48,7 +49,11 @@ function selfTargets(notes: readonly NoteEvent[]): TargetNote[] {
  */
 export function analyzeCapture(handle: RecordingHandle): CaptureAnalysis {
   const smoothed = smoothPitch(handle.samples);
-  const notes = segmentNotes(smoothed, segmentOptions());
+  // Read against the centre this take was sung at, before anything rounds to
+  // a semitone. A take sitting near a boundary otherwise splits one scale
+  // degree across two semitones, and the key estimate — and so the harmony
+  // built on it — inherits that (INV-PITCH-013).
+  const { notes } = recentreNotes(segmentNotes(smoothed, segmentOptions()));
   const hasNotes = notes.length > 0;
 
   // Intonation steadiness: how cleanly each sustained pitch was held (no grade).

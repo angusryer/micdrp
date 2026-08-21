@@ -21,6 +21,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   notesToMidi,
   scorePitch,
+  recentreNotes,
   segmentNotes,
   smoothPitch,
   type NoteEvent,
@@ -85,7 +86,11 @@ export function analyzeHandle(
   targets?: readonly TargetNote[]
 ): ResultsAnalysis {
   const smoothed = smoothPitch(handle.samples);
-  const notes = segmentNotes(smoothed, segmentOptions());
+  // Read against the centre this take was sung at, before anything rounds to
+  // a semitone. A take sitting near a boundary otherwise splits one scale
+  // degree across two semitones, and the key estimate — and so the harmony
+  // built on it — inherits that (INV-PITCH-013).
+  const { notes } = recentreNotes(segmentNotes(smoothed, segmentOptions()));
   const midi = notesToMidi(notes);
   const grid = targets && targets.length > 0 ? [...targets] : selfTargets(notes);
   const score = scorePitch(smoothed, grid);

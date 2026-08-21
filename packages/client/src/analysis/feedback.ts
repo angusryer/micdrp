@@ -24,12 +24,11 @@ import {
   detectKey,
   estimateTempo,
   scorePitch,
+  recentreNotes,
   segmentNotes,
   smoothPitch,
   DEFAULT_TOLERANCE_CENTS,
   INTONATION_TOLERANCE_CENTS,
-  relativeCents,
-  tuningCentre,
   type KeyEstimate,
   type NoteEvent,
   type PitchFrame,
@@ -99,21 +98,18 @@ function perTargetFeedback(
 
 /** Per-note feedback from the segmentation (mean cents deviation per note). */
 function perNoteFeedback(notes: readonly NoteEvent[]): NoteFeedback[] {
-  // Against the centre this take was actually sung at, not concert A.
-  // Someone humming an idea has nothing to tune to; what matters is whether
-  // the notes agree with one another (INV-PITCH-013).
-  const centre = tuningCentre(notes);
-
+  // The notes arrive already read against the centre they were sung at, so
+  // their deviation is the relative one. Re-centring here would be a second
+  // answer to a question that has one (Axiom 2).
   const out: NoteFeedback[] = [];
   // Index is part of each NoteFeedback, so this loop keeps the counter.
   for (let i = 0; i < notes.length; i++) {
     const n = notes[i];
-    const error = relativeCents(n.cents, centre.offsetCents);
     out.push({
       index: i,
       midi: n.midi,
-      centsError: error,
-      inTune: Math.abs(error) <= INTONATION_TOLERANCE_CENTS
+      centsError: n.cents,
+      inTune: Math.abs(n.cents) <= INTONATION_TOLERANCE_CENTS
     });
   }
   return out;
@@ -211,7 +207,11 @@ export function computeFeedback(
   externalTargets?: readonly TargetNote[]
 ): FeedbackDto {
   const smoothed = smoothPitch(handle.samples);
-  const notes = segmentNotes(smoothed, segmentOptions());
+  // Read against the centre this take was sung at, before anything rounds to
+  // a semitone. A take sitting near a boundary otherwise splits one scale
+  // degree across two semitones, and the key estimate — and so the harmony
+  // built on it — inherits that (INV-PITCH-013).
+  const { notes } = recentreNotes(segmentNotes(smoothed, segmentOptions()));
   const usingTargets = externalTargets != null && externalTargets.length > 0;
   const targets = usingTargets ? [...externalTargets] : selfTargets(notes);
   const score = scorePitch(smoothed, targets);
