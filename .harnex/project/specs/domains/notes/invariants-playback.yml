@@ -112,3 +112,18 @@ invariants:
       space above Play was freed when the disclosed player went away
       (INV-NOTES-015), and the fact a singer wants there is how far into
       the take they are.
+
+  - id: INV-NOTES-030
+    description: A bundle never assumes the binary can hear it
+    severity: critical
+    check: >
+      Every tone player works on a binary that lacks the native synth
+      module: when the module is absent, playback falls back to the
+      per-context players rather than going silent or throwing. Verified
+      by exercising the player factory with no native module registered
+      and asserting notes still schedule through the fallback.
+
+      JavaScript ships over the air to binaries built before the synth
+      existed. A bundle that reaches for a module the binary never had
+      does not degrade — it silences every screen that makes sound, on
+      exactly the installs that cannot be rebuilt to fix it.

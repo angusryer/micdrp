@@ -16,7 +16,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 
 import type { ChordPlayback, TargetNote } from 'logic';
 
-import { createReferenceTonePlayer } from '../../audio/referenceTone';
+import { createTonePlayer, SynthBus } from '../../audio/synthPlayer';
 
 /** Peak gain per backdrop tone — several sound at once, under the take. */
 const BACKDROP_PEAK_GAIN = 0.06;
@@ -87,7 +87,7 @@ export function useChordBackdrop(
   progression: readonly ChordPlayback[]
 ): ChordBackdrop {
   const player = useMemo(
-    () => createReferenceTonePlayer({ peakGain: BACKDROP_PEAK_GAIN }),
+    () => createTonePlayer(SynthBus.Chords, { peakGain: BACKDROP_PEAK_GAIN }),
     []
   );
   const tones = useMemo(() => backdropTones(progression), [progression]);

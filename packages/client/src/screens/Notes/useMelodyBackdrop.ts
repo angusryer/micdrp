@@ -13,7 +13,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import type { TargetNote } from 'logic';
 
-import { createReferenceTonePlayer } from '../../audio/referenceTone';
+import { createTonePlayer, SynthBus } from '../../audio/synthPlayer';
 import { shiftTones } from './useChordBackdrop';
 
 /**
@@ -33,7 +33,7 @@ export interface MelodyBackdrop {
 export function useMelodyBackdrop(
   tones: readonly TargetNote[]
 ): MelodyBackdrop {
-  const player = useMemo(() => createReferenceTonePlayer(), []);
+  const player = useMemo(() => createTonePlayer(SynthBus.Melody), []);
   const level = useRef(DEFAULT_MELODY_LEVEL);
 
   useEffect(() => {

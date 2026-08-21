@@ -18,7 +18,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { findMelody, melodyDurationMs, type TargetNote } from 'logic';
 import { type SharedValue } from 'react-native-reanimated';
 
-import { createReferenceTonePlayer } from '../../audio/referenceTone';
+import { createTonePlayer, SynthBus } from '../../audio/synthPlayer';
 import { detectHeadphonesConnected } from '../../audio/outputRoute';
 import {
   DEFAULT_ENGINE_CONFIG,
@@ -78,7 +78,7 @@ export function usePracticeSession(
 
   const durationMs = useMemo(() => melodyDurationMs(targets), [targets]);
 
-  const playerRef = useRef(createReferenceTonePlayer());
+  const playerRef = useRef(createTonePlayer(SynthBus.Melody));
   const cancelledRef = useRef(false);
   const [phase, setPhase] = useState<PracticePhase>('idle');
 

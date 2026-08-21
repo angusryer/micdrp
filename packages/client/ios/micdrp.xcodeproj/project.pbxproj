@@ -15,6 +15,9 @@
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
 		1933D748D5F3E4026E5387AA /* mpm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DF912EB0FAD01209D28881AA /* mpm.cpp */; };
 		33F9A61EE3BC9A916E1D82E8 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B06DFC5A1521D1B52F8C216B /* PrivacyInfo.xcprivacy */; };
+		51A2B3C4D5E6F70819202122 /* SynthModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202123 /* SynthModule.mm */; };
+		51A2B3C4D5E6F70819202125 /* synth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202126 /* synth.cpp */; };
+		51A2B3C4D5E6F70819202128 /* synth_mailbox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202129 /* synth_mailbox.cpp */; };
 		64FE505DA0AB8147C0E9A420 /* AudioEngineModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = 8AA58FD71262417B94E79C03 /* AudioEngineModule.mm */; };
 		7699B88040F8A987B510C191 /* libPods-micdrp-micdrpTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19F6CBCC0A4E27FBF8BF4A61 /* libPods-micdrp-micdrpTests.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
@@ -45,6 +48,12 @@
 		19F6CBCC0A4E27FBF8BF4A61 /* libPods-micdrp-micdrpTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-micdrp-micdrpTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		31A3F1DA1B4AD9D5214AEBC3 /* mpm.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = mpm.h; path = ../cpp/dsp/mpm.h; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-micdrp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-micdrp.debug.xcconfig"; path = "Target Support Files/Pods-micdrp/Pods-micdrp.debug.xcconfig"; sourceTree = "<group>"; };
+		51A2B3C4D5E6F70819202123 /* SynthModule.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = SynthModule.mm; sourceTree = "<group>"; };
+		51A2B3C4D5E6F70819202124 /* SynthModule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = SynthModule.h; sourceTree = "<group>"; };
+		51A2B3C4D5E6F70819202126 /* synth.cpp */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.cpp; name = synth.cpp; path = ../cpp/dsp/synth.cpp; sourceTree = "<group>"; };
+		51A2B3C4D5E6F70819202127 /* synth.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = synth.h; path = ../cpp/dsp/synth.h; sourceTree = "<group>"; };
+		51A2B3C4D5E6F70819202129 /* synth_mailbox.cpp */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.cpp; name = synth_mailbox.cpp; path = ../cpp/dsp/synth_mailbox.cpp; sourceTree = "<group>"; };
+		51A2B3C4D5E6F7081920212A /* synth_mailbox.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = synth_mailbox.h; path = ../cpp/dsp/synth_mailbox.h; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-micdrp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-micdrp.release.xcconfig"; path = "Target Support Files/Pods-micdrp/Pods-micdrp.release.xcconfig"; sourceTree = "<group>"; };
 		5B7EB9410499542E8C5724F5 /* Pods-micdrp-micdrpTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-micdrp-micdrpTests.debug.xcconfig"; path = "Target Support Files/Pods-micdrp-micdrpTests/Pods-micdrp-micdrpTests.debug.xcconfig"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-micdrp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-micdrp.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -125,6 +134,12 @@
 				31A3F1DA1B4AD9D5214AEBC3 /* mpm.h */,
 				9562B779ABDCD05E23FEB32B /* notes.cpp */,
 				DCE7820ABC08442729B30AF3 /* notes.h */,
+				51A2B3C4D5E6F70819202124 /* SynthModule.h */,
+				51A2B3C4D5E6F70819202123 /* SynthModule.mm */,
+				51A2B3C4D5E6F70819202126 /* synth.cpp */,
+				51A2B3C4D5E6F70819202127 /* synth.h */,
+				51A2B3C4D5E6F70819202129 /* synth_mailbox.cpp */,
+				51A2B3C4D5E6F7081920212A /* synth_mailbox.h */,
 			);
 			name = AudioEngine;
 			sourceTree = SOURCE_ROOT;
@@ -456,6 +471,9 @@
 				AA11BB22CC33DD44EE55FF66 /* InstallInfoModule.mm in Sources */,
 				1933D748D5F3E4026E5387AA /* mpm.cpp in Sources */,
 				0730E62C3B640AEB23864E9A /* notes.cpp in Sources */,
+				51A2B3C4D5E6F70819202122 /* SynthModule.mm in Sources */,
+				51A2B3C4D5E6F70819202125 /* synth.cpp in Sources */,
+				51A2B3C4D5E6F70819202128 /* synth_mailbox.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

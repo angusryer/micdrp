@@ -25,3 +25,5 @@ export type {
   ReferenceToneOptions,
   AudioContextLike
 } from './referenceTone';
+export { createTonePlayer, SynthBus } from './synthPlayer';
+export type { SynthBusValue } from './synthPlayer';

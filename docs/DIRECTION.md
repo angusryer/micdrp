@@ -99,10 +99,17 @@ Three pieces are moving to C++, in this order:
    `__tests__/synth_test.cpp`, prints `SYNTH OK` — because a core that
    produces samples can be checked without an audio device.
 
-   Still to do: the ObjC++ layer feeding an `AVAudioEngine` source node, the
-   TurboModule spec and Xcode registration, and the JS binding that replaces
-   the three `createReferenceTonePlayer` instances. **This needs a new
-   TestFlight binary; it cannot ship over the air.**
+   The platform layer is written: `ios/SynthModule.mm` feeds the core to an
+   `AVAudioSourceNode` (JS calls cross to the audio thread through the
+   lock-free `synth_mailbox.h`, so render never takes a lock), the
+   TurboModule is specced in `src/specs/NativeSynth.ts`, and
+   `src/audio/synthPlayer.ts` replaced all six `createReferenceTonePlayer`
+   call sites — falling back to the old per-context players on binaries
+   without the module (INV-NOTES-030), since bundles ship over the air to
+   binaries built before it existed. Still to do: **a TestFlight build, then
+   ears on a device** — nothing on this path has been heard, and playback
+   starting before a capture (session category change under a running
+   engine) is the untested edge.
 
 2. **Analysis off the JS thread.** Opening a note currently runs `quantize`,
    `harmonizeToGrid`, `detectKey` and `recentreNotes` synchronously in JS.

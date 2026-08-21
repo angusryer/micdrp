@@ -18,7 +18,7 @@ import { findMelody, type TargetNote } from 'logic';
 import type { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
-import { createReferenceTonePlayer } from '../../audio/referenceTone';
+import { createTonePlayer, SynthBus } from '../../audio/synthPlayer';
 import { ExportSheet } from './ExportSheet';
 import { FeedbackCard } from './FeedbackCard';
 import { NoteList } from './NoteList';
@@ -55,7 +55,7 @@ export default function ResultsScreen({ route }: Props) {
   const title = melody?.name ?? t('results.take');
 
   // Tap a note to hear its true pitch (reuses the practice reference-tone player).
-  const tonePlayer = useMemo(() => createReferenceTonePlayer(), []);
+  const tonePlayer = useMemo(() => createTonePlayer(SynthBus.Audition), []);
   useEffect(() => () => tonePlayer.stop(), [tonePlayer]);
   const playNote = useCallback(
     (midi: number) => {

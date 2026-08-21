@@ -46,7 +46,7 @@ const EMPTY_READINGS: InterpretationDto[] = [];
 import type { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
-import { createReferenceTonePlayer } from '../../audio/referenceTone';
+import { createTonePlayer, SynthBus } from '../../audio/synthPlayer';
 import { cachedNotes } from '../../data/notesSync';
 import { notesRepo } from '../../data/notesRepo';
 import { writeMidi } from '../../data/files';
@@ -184,7 +184,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
     [melodyVoice, isOverTake, melodyTones]
   );
   // Tap a note to hear its pitch.
-  const tonePlayer = useMemo(() => createReferenceTonePlayer(), []);
+  const tonePlayer = useMemo(() => createTonePlayer(SynthBus.Audition), []);
   useEffect(() => () => tonePlayer.stop(), [tonePlayer]);
 
   // Two questions, not one. As sung, a wrong note is the detector's doing; as

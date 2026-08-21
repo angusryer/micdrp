@@ -27,7 +27,7 @@ import { midiSequenceToTargets, type Fragment } from 'logic';
 
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
-import { createReferenceTonePlayer } from '../../audio/referenceTone';
+import { createTonePlayer, SynthBus } from '../../audio/synthPlayer';
 import { MelodyView } from '../../components/MelodyView';
 import { useDashboard } from './useDashboard';
 import { TrendChart } from './TrendChart';
@@ -43,7 +43,7 @@ export function DashboardScreen(): React.JSX.Element {
   const { width } = useWindowDimensions();
   const { analysis, progress, noteCount, loading, refresh } = useDashboard();
 
-  const tonePlayer = useMemo(() => createReferenceTonePlayer(), []);
+  const tonePlayer = useMemo(() => createTonePlayer(SynthBus.Audition), []);
   useEffect(() => () => tonePlayer.stop(), [tonePlayer]);
   const playFragment = useCallback(
     (fragment: Fragment) => {

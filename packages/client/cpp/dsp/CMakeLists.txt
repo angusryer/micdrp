@@ -17,6 +17,7 @@
 # host test, which needs no fixtures and no audio device:
 #
 #   ./build/dsp_synth_test       # prints "SYNTH OK", exit 0
+#   ./build/dsp_mailbox_test     # prints "MAILBOX OK", exit 0
 
 cmake_minimum_required(VERSION 3.16)
 project(micdrp_dsp_core LANGUAGES CXX)
@@ -36,6 +37,7 @@ add_library(micdrp_dsp STATIC
   ring_buffer.cpp
   pitch_engine.cpp
   synth.cpp
+  synth_mailbox.cpp
 )
 target_include_directories(micdrp_dsp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -53,6 +55,13 @@ target_link_libraries(dsp_parity_test PRIVATE micdrp_dsp)
 add_executable(dsp_synth_test __tests__/synth_test.cpp)
 target_link_libraries(dsp_synth_test PRIVATE micdrp_dsp)
 
+# Host test for the cross-thread command ring.
+add_executable(dsp_mailbox_test __tests__/synth_mailbox_test.cpp)
+target_link_libraries(dsp_mailbox_test PRIVATE micdrp_dsp)
+find_package(Threads REQUIRED)
+target_link_libraries(dsp_mailbox_test PRIVATE Threads::Threads)
+
 enable_testing()
 add_test(NAME dsp_parity COMMAND dsp_parity_test)
 add_test(NAME dsp_synth COMMAND dsp_synth_test)
+add_test(NAME dsp_mailbox COMMAND dsp_mailbox_test)
