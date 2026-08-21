@@ -9,7 +9,7 @@
 //      -> feed Float32 frames into the shared C++ PitchEngine (cpp/dsp)
 //      -> PitchEngine runs MPM (mpm.h) + note conversion (notes.h) over hops
 //      -> emit throttled PitchSample dictionaries to JS via RCTEventEmitter
-//    Raw PCM never crosses into JS. Captured audio is written to a .caf file
+//    Raw PCM never crosses into JS. Captured audio is written to a .wav file
 //    for the RecordingHandle uri; the full (un-throttled) analysis is returned
 //    from stop().
 //
@@ -258,11 +258,33 @@ static double NowMs() {
                                              attributes:nil
                                                   error:nil];
   NSString *path = [dir stringByAppendingPathComponent:
-                    [NSString stringWithFormat:@"%@.caf", _recordingId]];
+                    [NSString stringWithFormat:@"%@.wav", _recordingId]];
   _captureURL = [NSURL fileURLWithPath:path];
+
+  // WAV holding 16-bit PCM, not CAF holding Float32 (INV-PITCH-012).
+  //
+  // CAF/Float32 is the natural choice here — it is what the hardware format
+  // already is, so writing it costs nothing. But playback decodes through
+  // miniaudio, which opens WAV, MP3 and FLAC and hands only .mp4, .m4a and
+  // .aac to ffmpeg. CAF matched nothing, so every note ever recorded failed
+  // to open and the UI said only "Playback failed".
+  //
+  // 16-bit is deliberate too: it is what every decoder agrees on, and it
+  // halves what has to be uploaded. `commonFormat` stays Float32 because
+  // that is what the tap delivers; AVAudioFile converts on write.
+  NSDictionary *captureSettings = @{
+    AVFormatIDKey: @(kAudioFormatLinearPCM),
+    AVSampleRateKey: @(hwFormat.sampleRate),
+    AVNumberOfChannelsKey: @(hwFormat.channelCount),
+    AVLinearPCMBitDepthKey: @16,
+    AVLinearPCMIsFloatKey: @NO,
+    AVLinearPCMIsBigEndianKey: @NO,
+    AVLinearPCMIsNonInterleaved: @NO
+  };
+
   NSError *fileErr = nil;
   _captureFile = [[AVAudioFile alloc] initForWriting:_captureURL
-                                            settings:hwFormat.settings
+                                            settings:captureSettings
                                         commonFormat:AVAudioPCMFormatFloat32
                                          interleaved:NO
                                                error:&fileErr];

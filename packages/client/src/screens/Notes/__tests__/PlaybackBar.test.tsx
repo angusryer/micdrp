@@ -43,8 +43,8 @@ import { ThemeProvider } from '../../../theme';
 import { PlaybackBar } from '../PlaybackBar';
 
 const REMOTE =
-  'https://micdrp-backend.fly.dev/api/files/notes/abc123/audio.caf?token=t0ken';
-const LOCAL = 'file:///var/mobile/tmp/micdrp-abc.caf';
+  'https://micdrp-backend.fly.dev/api/files/notes/abc123/audio.wav?token=t0ken';
+const LOCAL = 'file:///var/mobile/tmp/micdrp-abc.wav';
 
 const renderBar = (audioUri: string | null) =>
   waitFor(() =>

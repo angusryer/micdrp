@@ -13,7 +13,7 @@ export const mockStart = jest.fn();
 export const mockAudioUrlFor = jest.fn();
 
 export const REMOTE =
-  'https://micdrp-backend.fly.dev/api/files/notes/abc123/audio.caf?token=t0ken';
+  'https://micdrp-backend.fly.dev/api/files/notes/abc123/audio.wav?token=t0ken';
 
 /** Replacement for react-native-audio-api. */
 export const audioApiMock = () => ({

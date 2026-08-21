@@ -38,18 +38,18 @@ describe('NoteCard play control', () => {
   beforeEach(resetNoteCardMocks);
 
   it('starts playback on the first press, with no second press', async () => {
-    await renderNoteCard(noteWith('notes/n1/audio.caf'));
+    await renderNoteCard(noteWith('notes/n1/audio.wav'));
 
     await fireEvent.press(screen.getByLabelText('Play note'));
 
     // One press: the URL is minted and the decoded buffer is started.
     await waitFor(() => expect(mockStart).toHaveBeenCalled());
-    expect(mockAudioUrlFor).toHaveBeenCalledWith('n1', 'notes/n1/audio.caf');
+    expect(mockAudioUrlFor).toHaveBeenCalledWith('n1', 'notes/n1/audio.wav');
     expect(mockDecode).toHaveBeenCalledWith(REMOTE);
   });
 
   it('does not resolve or decode anything before the press', async () => {
-    await renderNoteCard(noteWith('notes/n1/audio.caf'));
+    await renderNoteCard(noteWith('notes/n1/audio.wav'));
 
     expect(screen.getByLabelText('Play note')).toBeTruthy();
     // INV-NOTES-014: a token minted at render is dead by the time it is used.
@@ -59,7 +59,7 @@ describe('NoteCard play control', () => {
 
   it('becomes the take’s stop control, never a close control', async () => {
     const { getByLabelText, queryByLabelText, queryByText } =
-      await renderNoteCard(noteWith('notes/n1/audio.caf'));
+      await renderNoteCard(noteWith('notes/n1/audio.wav'));
 
     await fireEvent.press(getByLabelText('Play note'));
 

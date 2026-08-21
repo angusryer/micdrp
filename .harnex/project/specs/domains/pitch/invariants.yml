@@ -97,3 +97,22 @@ invariants:
       passed to the engine, so the path is defined in one place rather than
       once in JavaScript and again in native code.
 
+
+  - id: INV-PITCH-012
+    description: Captured audio is written in a format playback can open
+    severity: critical
+    check: >
+      A capture is written in a container and sample format the app's
+      own decoder can open. Verified by recording a take and decoding
+      the file it produced, not merely by asserting the file exists.
+
+      Every note ever recorded was unplayable because of this. Capture
+      wrote CAF holding Float32 PCM — correct for Core Audio and correct
+      for the analysis path — while playback decodes through miniaudio,
+      which reads WAV, MP3 and FLAC and routes only .mp4, .m4a and .aac
+      to ffmpeg. CAF matched nothing, so every decode failed and the UI
+      said "Playback failed" without ever naming the format.
+
+      Writing a file and reading it back are two halves of one contract.
+      A test that only proves the first half proves nothing a user cares
+      about.

@@ -19,7 +19,7 @@ import type { RecordingHandle } from '../../audio/contract';
 
 const handle: RecordingHandle = {
   id: 'rec-1',
-  uri: 'file:///tmp/rec-1.caf',
+  uri: 'file:///tmp/rec-1.wav',
   sampleRateHz: 44100,
   durationMs: 1234,
   samples: [

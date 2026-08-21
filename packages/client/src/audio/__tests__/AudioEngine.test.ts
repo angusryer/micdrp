@@ -37,7 +37,7 @@ const mockNative = {
   stop: jest.fn(() =>
     Promise.resolve({
       id: 'rec-1',
-      uri: 'file:///tmp/rec-1.caf',
+      uri: 'file:///tmp/rec-1.wav',
       sampleRateHz: 44100,
       durationMs: 1234,
       samples: [
@@ -161,7 +161,7 @@ describe('AudioEngine (Tier 1 — native present)', () => {
   it('returns a RecordingHandle with normalized samples on stop', async () => {
     const handle = await audioEngine.stop();
     expect(handle.id).toBe('rec-1');
-    expect(handle.uri).toBe('file:///tmp/rec-1.caf');
+    expect(handle.uri).toBe('file:///tmp/rec-1.wav');
     expect(handle.samples).toHaveLength(2);
     expect(handle.samples[1].midi).toBeNull();
   });

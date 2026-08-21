@@ -33,7 +33,7 @@ describe('NoteCard take clock', () => {
 
   it('shows one clock, reading the take length, above the play button', async () => {
     const { getAllByText, getAllByTestId, getByTestId } = await renderNoteCard(
-      noteWith('notes/n1/audio.caf')
+      noteWith('notes/n1/audio.wav')
     );
 
     // One "0:12" on the card — the fact line at the top no longer carries it.
@@ -48,7 +48,7 @@ describe('NoteCard take clock', () => {
 
   it('counts the position against the length while the take plays', async () => {
     const { getAllByTestId, getByTestId, getByLabelText } =
-      await renderNoteCard(noteWith('notes/n1/audio.caf'));
+      await renderNoteCard(noteWith('notes/n1/audio.wav'));
 
     await fireEvent.press(getByLabelText('Play note'));
     await waitFor(() =>
