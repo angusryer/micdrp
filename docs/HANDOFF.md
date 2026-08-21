@@ -1,5 +1,9 @@
 # micdrp — Handoff
 
+> **Stale.** This snapshot predates the move off Supabase; the backend is now
+> PocketBase on fly.io. For current intent, the autonomous build pipeline, and
+> the work still ahead, read [DIRECTION.md](./DIRECTION.md).
+
 Status snapshot for picking the project back up. Everything described here is
 merged to `main` unless marked **Phase V** (needs a real dev machine) or
 **Deferred**.
