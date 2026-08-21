@@ -7,6 +7,8 @@
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
 import { ThemeProvider } from '../../../theme';
 import { MelodyMix } from '../MelodyMix';
 
@@ -15,15 +17,17 @@ const setup = async (over: Partial<React.ComponentProps<typeof MelodyMix>> = {})
   const onLevelChange = jest.fn();
   const utils = await waitFor(() =>
     render(
-      <ThemeProvider>
-        <MelodyMix
-          isOverTake
-          onOverTakeChange={onOverTakeChange}
-          level={0.5}
-          onLevelChange={onLevelChange}
-          {...over}
-        />
-      </ThemeProvider>
+      <GestureHandlerRootView>
+        <ThemeProvider>
+          <MelodyMix
+            isOverTake
+            onOverTakeChange={onOverTakeChange}
+            level={0.5}
+            onLevelChange={onLevelChange}
+            {...over}
+          />
+        </ThemeProvider>
+      </GestureHandlerRootView>
     )
   );
   return { ...utils, onOverTakeChange, onLevelChange };
@@ -32,35 +36,25 @@ const setup = async (over: Partial<React.ComponentProps<typeof MelodyMix>> = {})
 describe('MelodyMix', () => {
   it('turns hearing them together on and off', async () => {
     const { getByTestId, onOverTakeChange } = await setup({ isOverTake: false });
-    await fireEvent.press(getByTestId('hear-over-take'));
+    await fireEvent(getByTestId('hear-over-take'), 'valueChange', true);
     expect(onOverTakeChange).toHaveBeenCalledWith(true);
   });
 
   it('offers no level to set when nothing is playing over the take', async () => {
     const { queryByTestId } = await setup({ isOverTake: false });
-    expect(queryByTestId('hear-level-up')).toBeNull();
+    expect(queryByTestId('level-slider')).toBeNull();
   });
 
-  it('makes the melody louder and quieter', async () => {
-    const { getByTestId, onLevelChange } = await setup({ level: 0.5 });
-    await fireEvent.press(getByTestId('hear-level-up'));
-    expect(onLevelChange).toHaveBeenCalledWith(expect.closeTo(0.6, 5));
-
-    const down = await setup({ level: 0.5 });
-    await fireEvent.press(down.getByTestId('hear-level-down'));
-    expect(down.onLevelChange).toHaveBeenCalledWith(expect.closeTo(0.4, 5));
+  it('shows a slider once something is playing over the take', async () => {
+    const { getByTestId } = await setup({ isOverTake: true });
+    expect(getByTestId('level-slider')).toBeTruthy();
   });
 
-  it('stops at silent rather than going below it', async () => {
-    const { getByTestId, onLevelChange } = await setup({ level: 0 });
-    await fireEvent.press(getByTestId('hear-level-down'));
-    expect(onLevelChange).not.toHaveBeenCalled();
-  });
-
-  it('stops at full rather than going past it', async () => {
-    const { getByTestId, onLevelChange } = await setup({ level: 1 });
-    await fireEvent.press(getByTestId('hear-level-up'));
-    expect(onLevelChange).not.toHaveBeenCalled();
+  it('reports where the level sits, for a screen reader too', async () => {
+    const { getByTestId } = await setup({ level: 0.3 });
+    expect(getByTestId('level-slider').props.accessibilityValue).toMatchObject({
+      now: 30
+    });
   });
 
   it('says how loud it is', async () => {

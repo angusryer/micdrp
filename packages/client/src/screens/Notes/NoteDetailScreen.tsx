@@ -168,26 +168,20 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
 
   const backdrop = useChordBackdrop(chords.progression);
 
-  // Chords and melody ride the take together: the transport starts and stops
-  // one accompaniment, whatever is switched on inside it.
-  const accompaniment = useMemo(
+  // The melody follows the take itself; the chords follow the mix choice.
+  // Hanging one off the other made the melody a passenger on a decision about
+  // harmony, and it fell silent whenever chords were off (INV-NOTES-027).
+  const melodyVoiceMix = useMemo(
     () => ({
       start: (offsetMs = 0) => {
-        backdrop.start(offsetMs);
         if (isOverTake) {
           melodyVoice.start(offsetMs);
         }
       },
-      stop: () => {
-        backdrop.stop();
-        melodyVoice.stop();
-      },
-      durationMs: Math.max(
-        backdrop.durationMs,
-        isOverTake ? melodyTones[melodyTones.length - 1]?.endMs ?? 0 : 0
-      )
+      stop: () => melodyVoice.stop(),
+      durationMs: melodyTones[melodyTones.length - 1]?.endMs ?? 0
     }),
-    [backdrop, melodyVoice, isOverTake, melodyTones]
+    [melodyVoice, isOverTake, melodyTones]
   );
   // Tap a note to hear its pitch.
   const tonePlayer = useMemo(() => createReferenceTonePlayer(), []);
@@ -263,7 +257,8 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
           <PlaybackBar
             resolveAudioUri={resolveAudio}
             durationLabel={formatDuration(note.durationMs)}
-            accompaniment={accompaniment}
+            accompaniment={backdrop}
+            voice={melodyVoiceMix}
           />
         ) : null}
 

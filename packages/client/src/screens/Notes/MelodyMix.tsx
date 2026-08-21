@@ -9,12 +9,10 @@
  * loudly you hear it.
  */
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Switch, Text, View } from 'react-native';
 
+import { LevelSlider } from '../../components/LevelSlider';
 import { useTheme } from '../../theme';
-
-/** Coarse enough to reach either end quickly, fine enough to sit it right. */
-const LEVEL_STEP = 0.1;
 
 export interface MelodyMixProps {
   /** Whether the melody sounds over the take when the take is played. */
@@ -36,53 +34,37 @@ export function MelodyMix({
     <View>
       {/* Heard apart, each is plausible; heard together, you find out whether
           they are the same thing (INV-NOTES-027). */}
-      <TouchableOpacity
-        testID="hear-over-take"
-        accessibilityRole="switch"
-        accessibilityState={{ checked: isOverTake }}
-        onPress={() => onOverTakeChange(!isOverTake)}
-        style={styles.togetherRow}
-      >
+      {/* Heard apart, each is plausible; heard together, you find out whether
+          they are the same thing (INV-NOTES-027). */}
+      <View style={styles.togetherRow}>
         <Text style={[styles.together, { color: colors.typography }]}>
           Play over the recording
         </Text>
-        <Text style={[styles.together, { color: colors.primary500 }]}>
-          {isOverTake ? 'on' : 'off'}
-        </Text>
-      </TouchableOpacity>
+        <Switch
+          testID="hear-over-take"
+          accessibilityLabel="Play the melody over the recording"
+          value={isOverTake}
+          onValueChange={onOverTakeChange}
+        />
+      </View>
 
       {isOverTake && (
-        <View style={styles.togetherRow}>
-          <Text style={[styles.together, { color: colors.gray500 }]}>
-            Melody level
-          </Text>
-          <View style={styles.levelRow}>
-            <TouchableOpacity
-              testID="hear-level-down"
-              accessibilityRole="button"
-              accessibilityLabel="Quieter"
-              disabled={level <= 0}
-              onPress={() => onLevelChange(Math.max(0, level - LEVEL_STEP))}
-            >
-              <Text style={[styles.step, { color: level <= 0 ? colors.gray300 : colors.primary500 }]}>
-                −
-              </Text>
-            </TouchableOpacity>
+        <View>
+          <View style={styles.togetherRow}>
+            <Text style={[styles.together, { color: colors.gray500 }]}>
+              Melody level
+            </Text>
             <Text style={[styles.levelText, { color: colors.typography }]}>
               {Math.round(level * 100)}%
             </Text>
-            <TouchableOpacity
-              testID="hear-level-up"
-              accessibilityRole="button"
-              accessibilityLabel="Louder"
-              disabled={level >= 1}
-              onPress={() => onLevelChange(Math.min(1, level + LEVEL_STEP))}
-            >
-              <Text style={[styles.step, { color: level >= 1 ? colors.gray300 : colors.primary500 }]}>
-                +
-              </Text>
-            </TouchableOpacity>
           </View>
+          {/* Continuous, and reported while the finger is down: the balance
+              is found by hearing it move, not by tapping and re-listening. */}
+          <LevelSlider
+            value={level}
+            onChange={onLevelChange}
+            accessibilityLabel="Melody level"
+          />
         </View>
       )}
     </View>
@@ -97,9 +79,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6
   },
   together: { fontSize: 14, fontWeight: '600' },
-  levelRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  levelText: { fontSize: 14, minWidth: 44, textAlign: 'center' },
-  step: { fontSize: 22, fontWeight: '700', paddingHorizontal: 6 }
+  levelText: { fontSize: 14, minWidth: 44, textAlign: 'right' }
 });
 
 export default MelodyMix;

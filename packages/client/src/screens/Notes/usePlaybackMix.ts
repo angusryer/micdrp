@@ -36,6 +36,16 @@ export interface UsePlaybackMixOptions {
   resolveAudioUri: () => Promise<string | null>;
   mix: PlaybackMix;
   accompaniment?: MixAccompaniment;
+  /**
+   * A voice that follows the take itself rather than the chord choice.
+   *
+   * The detected melody belongs here. Hanging it off the accompaniment made
+   * it a passenger on a decision about chords: with the mix on take-only the
+   * accompaniment never starts, so the melody was silent however loud it was
+   * set (INV-NOTES-027). Whether you want to hear what was read is a separate
+   * question from whether you want harmony under it.
+   */
+  voice?: MixAccompaniment;
 }
 
 export interface MixedPlayback {
@@ -47,7 +57,8 @@ export interface MixedPlayback {
 export function usePlaybackMix({
   resolveAudioUri,
   mix,
-  accompaniment
+  accompaniment,
+  voice
 }: UsePlaybackMixOptions): MixedPlayback {
   const {
     state: takeState,
@@ -89,6 +100,21 @@ export function usePlaybackMix({
   useEffect(() => {
     takeWanted.current = wantsTake;
   }, [wantsTake]);
+
+  const latestVoice = useRef(voice);
+  useEffect(() => {
+    latestVoice.current = voice;
+  }, [voice]);
+
+  // Follows the take, not the chord choice.
+  useEffect(() => {
+    if (state === 'playing' && takeWanted.current) {
+      latestVoice.current?.start(takeElapsedMs());
+    } else {
+      latestVoice.current?.stop();
+    }
+  }, [state, takeElapsedMs]);
+
   useEffect(() => {
     if (state === 'playing' && wantsChords) {
       // The take is already running by the time this commits, so the backdrop

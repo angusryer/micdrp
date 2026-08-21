@@ -42,12 +42,15 @@ export interface PlaybackBarProps {
    * (INV-NOTES-018).
    */
   accompaniment?: MixAccompaniment;
+  /** Follows the take itself rather than the chord choice. */
+  voice?: MixAccompaniment;
 }
 
 export function PlaybackBar({
   resolveAudioUri,
   durationLabel,
-  accompaniment
+  accompaniment,
+  voice
 }: PlaybackBarProps) {
   const { colors } = useTheme();
   const [mix, setMix] = useState<PlaybackMix>('both');
@@ -56,7 +59,8 @@ export function PlaybackBar({
   const { state, play, stop } = usePlaybackMix({
     resolveAudioUri,
     mix: hasChords ? mix : 'take',
-    accompaniment
+    accompaniment,
+    voice
   });
 
   return (
