@@ -45,3 +45,18 @@ invariants:
       has either accepted the loss or kept the current reading aside.
       Verified by re-analysing an edited note and asserting nothing
       changes without that decision.
+
+  - id: INV-NOTES-025
+    description: A person can see what they are placing
+    severity: high
+    check: >
+      While a drag that places something is live, the readout for it is
+      never underneath the finger doing the dragging. Verified by
+      asserting the readout's position is offset from the touch point,
+      and that it moves to the other side rather than off-screen when the
+      touch is near an edge.
+
+      Chord editing already has this problem the other way round: a slot
+      changes as you drag over it, under your own thumb, so you cannot
+      see the thing you are choosing until you let go. Placement you
+      cannot watch is placement by trial and error.

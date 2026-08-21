@@ -30,8 +30,12 @@ const NEW_READING = (): InterpretationDto => ({
 export interface Interpretation {
   /** Decisions already kept, to replay onto fresh inference. */
   savedEdits: readonly ChordSlotEdit[];
+  /** An arrangement of bars already kept, if a person has made one. */
+  savedBarLines: readonly number[] | undefined;
   /** Record a new set of differences; written shortly afterwards. */
   update: (edits: ChordSlotEdit[]) => void;
+  /** Record a new arrangement of bars; written shortly afterwards. */
+  updateBarLines: (lines: number[]) => void;
   /** True once a write has failed, so a screen can say so. */
   failed: boolean;
 }
@@ -43,6 +47,9 @@ export function useInterpretation(
   const active = activeInterpretation(stored) ?? NEW_READING();
   const [savedEdits, setSavedEdits] = useState<readonly ChordSlotEdit[]>(
     active.chords as ChordSlotEdit[]
+  );
+  const [savedBarLines, setSavedBarLines] = useState<readonly number[] | undefined>(
+    active.barLines
   );
   const [failed, setFailed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -59,9 +66,16 @@ export function useInterpretation(
     };
   }, []);
 
-  const update = useCallback(
-    (edits: ChordSlotEdit[]) => {
-      setSavedEdits(edits);
+  // Both halves of a reading go through one writer: which chords were chosen
+  // and where the bars fall are one answer about one take, and writing them
+  // separately would race each other to the same field.
+  const latest = useRef<{ chords: ChordSlotEdit[]; barLines?: number[] }>({
+    chords: active.chords as ChordSlotEdit[],
+    ...(active.barLines ? { barLines: [...active.barLines] } : {})
+  });
+
+  const schedule = useCallback(
+    () => {
       if (noteId == null) {
         return;
       }
@@ -76,7 +90,7 @@ export function useInterpretation(
         void notesRepo
           .saveInterpretations(noteId, [
             ...frozen.current,
-            { ...NEW_READING(), chords: edits }
+            { ...NEW_READING(), ...latest.current }
           ])
           .then(() => setFailed(false))
           .catch(() => setFailed(true));
@@ -87,5 +101,23 @@ export function useInterpretation(
     [noteId]
   );
 
-  return { savedEdits, update, failed };
+  const update = useCallback(
+    (edits: ChordSlotEdit[]) => {
+      setSavedEdits(edits);
+      latest.current = { ...latest.current, chords: edits };
+      schedule();
+    },
+    [schedule]
+  );
+
+  const updateBarLines = useCallback(
+    (lines: number[]) => {
+      setSavedBarLines(lines);
+      latest.current = { ...latest.current, barLines: lines };
+      schedule();
+    },
+    [schedule]
+  );
+
+  return { savedEdits, savedBarLines, update, updateBarLines, failed };
 }

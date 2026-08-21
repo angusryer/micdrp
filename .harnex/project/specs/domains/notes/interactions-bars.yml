@@ -1,0 +1,44 @@
+# Correcting how a take is written down. Split from interactions.yml.
+interactions:
+  - id: INT-NOTES-012
+    name: Pull a bar line to where the bar really starts
+    view: VIEW-NOTES-002
+    steps:
+      - Press a bar line on the melody
+      - Drag it left or right
+      - Release
+    outcome: >
+      The line lands on the nearest grid step. The bar before it and the
+      bar after it change length and are relabelled; the audio, the beat
+      grid and every note stay exactly where they were.
+
+      While the drag is live a readout follows the finger, showing where
+      the line will land and what the two bars either side will become.
+      It sits above the finger and to one side, never under it: a person
+      cannot judge a placement they are covering with their own hand.
+    maps_to:
+      capability: transcription.move_bar_line
+
+  - id: INT-NOTES-013
+    name: Split a bar in two
+    view: VIEW-NOTES-002
+    steps:
+      - Press and hold inside a bar, away from its lines
+    outcome: >
+      A new bar line appears at the nearest grid step, splitting that bar.
+      Moving lines alone cannot change how many bars there are, so this is
+      what makes every arrangement reachable.
+    maps_to:
+      capability: transcription.add_bar_line
+
+  - id: INT-NOTES-014
+    name: Join two bars
+    view: VIEW-NOTES-002
+    steps:
+      - Press and hold a bar line
+    outcome: >
+      The line goes and the bars either side become one. The last
+      remaining line cannot be removed, because a take with no bars is
+      one nothing downstream can describe.
+    maps_to:
+      capability: transcription.remove_bar_line

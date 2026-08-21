@@ -25,6 +25,19 @@ export interface MelodyGrid {
   /** Time of the first bar line, in ms. */
   offsetMs: number;
   beatsPerBar: number;
+  /**
+   * Grid steps to a beat. Needed only when `barSteps` is given, since a bar
+   * line sits on a step rather than on a beat.
+   */
+  stepsPerBeat?: number;
+  /**
+   * Where the bars actually begin, as grid step indices.
+   *
+   * Supplied once a person has arranged them. Without it the bars are evenly
+   * spaced by `beatsPerBar`, which is what detection proposes — and which
+   * cannot express a take whose bars differ from one another.
+   */
+  barSteps?: readonly number[];
 }
 
 /** A vertical rule behind the melody: a bar line or a plain beat. */
@@ -34,6 +47,11 @@ export interface GridLine {
   isBar: boolean;
   /** 1-based bar number, set only on bar lines. */
   bar: number | null;
+  /**
+   * Grid step this line sits on, set only on bar lines from an arrangement.
+   * A drag needs it to say which line it is moving.
+   */
+  step?: number;
 }
 
 export interface MelodyLayoutOptions {
@@ -68,6 +86,13 @@ export interface MelodyLayout {
   midiHigh: number;
   /** Bar and beat rules, empty unless a grid was supplied. */
   gridLines: GridLine[];
+  /**
+   * How time maps onto the x axis, so a caller can turn a touch back into a
+   * moment. Exposed rather than recomputed: a drag that used a slightly
+   * different mapping from the one that drew the lines would land beside them
+   * rather than on them.
+   */
+  timeAxis: { t0: number; span: number; pad: number; innerW: number };
 }
 
 /**
@@ -106,6 +131,28 @@ function layoutGridLines(
   const beatsFit = totalBeats <= MAX_GRID_LINES;
 
   const lines: GridLine[] = [];
+
+  // An arrangement someone has made replaces the even spacing entirely: its
+  // bars differ from one another, which is the whole point of arranging them.
+  if (grid.barSteps && grid.stepsPerBeat && grid.stepsPerBeat > 0) {
+    const stepMs = beatMs / grid.stepsPerBeat;
+    let bar = 0;
+    for (const step of grid.barSteps) {
+      const timeMs = grid.offsetMs + step * stepMs;
+      if (timeMs < t0 || timeMs > t1) {
+        continue;
+      }
+      bar += 1;
+      lines.push({
+        x: pad + ((timeMs - t0) / span) * innerW,
+        isBar: true,
+        bar,
+        step
+      });
+    }
+    return lines;
+  }
+
   const firstBeat = Math.ceil((t0 - grid.offsetMs) / beatMs);
   const lastBeat = Math.floor((t1 - grid.offsetMs) / beatMs);
   for (let beat = firstBeat; beat <= lastBeat; beat++) {
@@ -205,5 +252,5 @@ export function layoutMelody(
       ? layoutGridLines(options.grid, t0, span, pad, innerW)
       : [];
 
-  return { rects, midiLow, midiHigh, gridLines };
+  return { rects, midiLow, midiHigh, gridLines, timeAxis: { t0, span, pad, innerW } };
 }

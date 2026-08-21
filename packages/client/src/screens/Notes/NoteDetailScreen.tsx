@@ -29,6 +29,7 @@ import type { InterpretationDto } from 'shared';
 
 import { useChordTrack } from './useChordTrack';
 import { useInterpretation } from './useInterpretation';
+import { useBarLayout } from './useBarLayout';
 
 /** Stable, so a note with no readings does not look like a new one each render. */
 const EMPTY_READINGS: InterpretationDto[] = [];
@@ -41,6 +42,7 @@ import { cachedNotes } from '../../data/notesSync';
 import { notesRepo } from '../../data/notesRepo';
 import { writeMidi } from '../../data/files';
 import { MelodyView } from '../../components/MelodyView';
+import { BarRulerOverlay } from './BarRulerOverlay';
 import { ExportSheet } from '../Results/ExportSheet';
 import { NoteList, midiToLabel } from '../Results/NoteList';
 import { PlaybackBar } from './PlaybackBar';
@@ -88,16 +90,30 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   const grid = quantized.grid;
   const hasGrid = grid.bpm > 0 && melody.length > 1;
   const meterIsStated = grid.meterIsStated;
+  // What this person has already made of the take, kept with the note so a
+  // decision outlives the screen it was made on (INV-NOTES-021).
+  const interpretation = useInterpretation(note?.id ?? null, note?.interpretations ?? EMPTY_READINGS);
+
+  // Where the bars fall. Detection proposes; a person arranges (INT-NOTES-012).
+  const bars = useBarLayout(grid, note?.durationMs ?? 0, {
+    savedLines: interpretation.savedBarLines,
+    onArranged: interpretation.updateBarLines
+  });
+
   const gridForView = useMemo(
     () =>
       hasGrid
         ? {
             bpm: grid.bpm,
             offsetMs: grid.offsetMs,
-            beatsPerBar: grid.beatsPerBar
+            beatsPerBar: grid.beatsPerBar,
+            stepsPerBeat: grid.stepsPerBeat,
+            // Only once someone has arranged them: before that the even
+            // spacing detection proposed is what should be drawn.
+            ...(bars.isArranged ? { barSteps: bars.layout.lines } : {})
           }
         : undefined,
-    [hasGrid, grid.bpm, grid.offsetMs, grid.beatsPerBar]
+    [hasGrid, grid.bpm, grid.offsetMs, grid.beatsPerBar, grid.stepsPerBeat, bars.isArranged, bars.layout.lines]
   );
 
   // Generate + write the MIDI for export from the stored symbolic melody.
@@ -121,10 +137,6 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
       cancelled = true;
     };
   }, [note, melody]);
-
-  // What this person has already made of the take, kept with the note so a
-  // decision outlives the screen it was made on (INV-NOTES-021).
-  const interpretation = useInterpretation(note?.id ?? null, note?.interpretations ?? EMPTY_READINGS);
 
   // The editable harmonic backdrop, derived from the same fitted grid the bar
   // lines are drawn from, so chords and bars always agree. Inference runs
@@ -227,6 +239,17 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
                 height={MELODY_VIEW_HEIGHT}
                 grid={gridForView}
               />
+              {/* Over the melody rather than beside it: the bars are a claim
+                  about this take, and correcting one means seeing both. */}
+              {gridForView != null && (
+                <BarRulerOverlay
+                  bars={bars}
+                  notes={melody}
+                  grid={gridForView}
+                  width={width - 2 * CONTENT_PADDING - 2}
+                  height={MELODY_VIEW_HEIGHT}
+                />
+              )}
             </View>
             {/* Say when the bar lines are an assumption rather than a reading.
                 A short sung idea often does not state its metre, and drawing
