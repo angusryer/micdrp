@@ -34,6 +34,7 @@ import { practiceProgressRepo } from '../../data/practiceProgressRepo';
 import { writeMidi } from '../../data/files';
 import type { RecordingHandle } from '../../audio/contract';
 import type { PracticeParams } from '../../navigation/types';
+import { segmentOptions } from '../../analysis/vibratoSetting';
 
 /** Persistence status for the one-shot progress write + MIDI write. */
 export type PersistStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -84,7 +85,7 @@ export function analyzeHandle(
   targets?: readonly TargetNote[]
 ): ResultsAnalysis {
   const smoothed = smoothPitch(handle.samples);
-  const notes = segmentNotes(smoothed);
+  const notes = segmentNotes(smoothed, segmentOptions());
   const midi = notesToMidi(notes);
   const grid = targets && targets.length > 0 ? [...targets] : selfTargets(notes);
   const score = scorePitch(smoothed, grid);

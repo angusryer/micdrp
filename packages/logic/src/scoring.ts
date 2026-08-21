@@ -23,6 +23,20 @@ export interface TargetNote {
  */
 export const DEFAULT_TOLERANCE_CENTS = 50;
 
+/**
+ * How near the tempered grid a note counts as cleanly pitched.
+ *
+ * Distinct from {@link DEFAULT_TOLERANCE_CENTS}, which asks whether the right
+ * note was hit and so allows anything nearer the target than its neighbours.
+ * This asks a different question — was the note in tune — and half a semitone
+ * cannot answer it: a note is by definition within half a semitone of the
+ * nearest one, so that threshold calls everything in tune.
+ *
+ * Twenty-five cents is about where mistuning stops being a colour and starts
+ * being a mistake.
+ */
+export const INTONATION_TOLERANCE_CENTS = 25;
+
 export interface ScoreOptions {
   /** Cents within which a frame counts as "in tune" (default {@link DEFAULT_TOLERANCE_CENTS}). */
   toleranceCents?: number;

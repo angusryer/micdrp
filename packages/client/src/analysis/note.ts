@@ -23,6 +23,7 @@ import {
 import type { CreateNoteInput } from 'shared';
 
 import type { RecordingHandle } from '../audio/contract';
+import { segmentOptions } from './vibratoSetting';
 
 /** detectKey confidence below which the key is too weak to assert. */
 const MIN_KEY_CONFIDENCE = 0.04;
@@ -47,7 +48,7 @@ function selfTargets(notes: readonly NoteEvent[]): TargetNote[] {
  */
 export function analyzeCapture(handle: RecordingHandle): CaptureAnalysis {
   const smoothed = smoothPitch(handle.samples);
-  const notes = segmentNotes(smoothed);
+  const notes = segmentNotes(smoothed, segmentOptions());
   const hasNotes = notes.length > 0;
 
   // Intonation steadiness: how cleanly each sustained pitch was held (no grade).

@@ -38,6 +38,12 @@ import { describeInstall, type InstallDescription } from '../../updates';
 import { useProfile } from './useProfile';
 import { useSettings } from './useSettings';
 import { useAnalysisSettings } from './useAnalysisSettings';
+import {
+  MAX_VIBRATO_SEMITONES,
+  MIN_VIBRATO_SEMITONES,
+  setVibratoSemitones,
+  vibratoSemitones
+} from '../../analysis/vibratoSetting';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Account'>;
 
@@ -164,6 +170,9 @@ function clamp(value: number, min: number, max: number): number {
 
 export default function AccountScreen(props: Props): React.JSX.Element {
   const { colors, palette, setPalette } = useTheme();
+  // How wide a wobble still counts as one note. Held here so the stepper
+  // redraws; the value itself lives with the analysis that uses it.
+  const [vibrato, setVibrato] = useState(vibratoSemitones);
   const { t } = useTranslation();
 
   // What this install actually is. Read here rather than shown from
@@ -449,6 +458,18 @@ export default function AccountScreen(props: Props): React.JSX.Element {
               />
             );
           })}
+          {/* Not an engine setting: the engine reports pitch, and this is
+              how that reading is read. Voices differ more than any one
+              default covers (INV-PITCH-015). */}
+          <StepperRow
+            label={t('settings.engine.vibratoWidth')}
+            value={vibrato}
+            display={`±${Math.round(vibrato * 100)} cents`}
+            atMin={vibrato <= MIN_VIBRATO_SEMITONES}
+            atMax={vibrato >= MAX_VIBRATO_SEMITONES}
+            onDecrease={() => setVibrato(setVibratoSemitones(vibrato - 0.05))}
+            onIncrease={() => setVibrato(setVibratoSemitones(vibrato + 0.05))}
+          />
           <View style={styles.resetRow}>
             <TouchableOpacity
               onPress={resetEngineConfig}

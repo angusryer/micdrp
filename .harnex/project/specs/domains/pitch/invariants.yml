@@ -148,3 +148,35 @@ invariants:
       trustworthy. A singer who wants to know they are consistently sharp
       should be able to find that out; they should just not be told their
       phrase is wrong because of it.
+
+  - id: INV-PITCH-015
+    description: Vibrato is one note, not several
+    severity: high
+    check: >
+      A held note with vibrato either side of a semitone boundary is
+      segmented as a single note. Verified by feeding an oscillating
+      pitch and asserting one note comes out, at the centre of the
+      oscillation.
+
+      A note used to end the instant a frame rounded to a different
+      semitone. Vibrato of more than half a semitone crosses that
+      boundary several times a second, so a single held note came out as
+      a string of fragments, most then discarded for being too short —
+      the steadier and more expressive the singing, the worse the
+      reading.
+
+      A pitch that moves and stays moved is a new note; a pitch that
+      moves and comes back is the same one. Telling those apart is a
+      question of how long it stayed, not of which semitone it touched.
+
+  - id: INV-PITCH-016
+    description: A note is the pitch it was mostly sung at
+    severity: high
+    check: >
+      A note's pitch is taken from the middle of its frames rather than
+      their mean. Verified with a take that scoops into the note,
+      asserting the reported pitch is where it settled.
+
+      Singers slide into notes and vibrato is rarely symmetrical. An
+      average is dragged by both; the middle value is not moved by how
+      far the approach travelled, only by how long it lasted.

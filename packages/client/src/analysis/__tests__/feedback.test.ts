@@ -91,7 +91,10 @@ describe('computeFeedback', () => {
   it('flags improvements and suggestions for an off-pitch take', () => {
     // Sit ~80 cents sharp on every note: still the same MIDI notes, but the
     // self-target frame scoring punishes the steady offset.
-    const fb = computeFeedback(makeHandle(melodyFixture([80, 80, 80, 80])));
+    // 40 cents is genuinely between two semitones. 80 was not off pitch at
+    // all — it is 20 cents below the next note up, and the segmenter now
+    // says so rather than reporting a deviation larger than half a step.
+    const fb = computeFeedback(makeHandle(melodyFixture([40, 40, 40, 40])));
 
     expect(fb.overallScore).toBeLessThan(90);
     expect(fb.improvements.length).toBeGreaterThan(0);

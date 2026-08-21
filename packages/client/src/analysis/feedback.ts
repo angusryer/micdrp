@@ -27,6 +27,7 @@ import {
   segmentNotes,
   smoothPitch,
   DEFAULT_TOLERANCE_CENTS,
+  INTONATION_TOLERANCE_CENTS,
   type KeyEstimate,
   type NoteEvent,
   type PitchFrame,
@@ -36,6 +37,7 @@ import {
 import { type FeedbackDto, type NoteFeedback } from 'shared';
 
 import type { RecordingHandle } from '../audio/contract';
+import { segmentOptions } from './vibratoSetting';
 
 /** Score above which intonation is praised rather than flagged. */
 const STRONG_SCORE = 85;
@@ -103,7 +105,7 @@ function perNoteFeedback(notes: readonly NoteEvent[]): NoteFeedback[] {
       index: i,
       midi: n.midi,
       centsError: n.cents,
-      inTune: Math.abs(n.cents) <= DEFAULT_TOLERANCE_CENTS
+      inTune: Math.abs(n.cents) <= INTONATION_TOLERANCE_CENTS
     });
   }
   return out;
@@ -201,7 +203,7 @@ export function computeFeedback(
   externalTargets?: readonly TargetNote[]
 ): FeedbackDto {
   const smoothed = smoothPitch(handle.samples);
-  const notes = segmentNotes(smoothed);
+  const notes = segmentNotes(smoothed, segmentOptions());
   const usingTargets = externalTargets != null && externalTargets.length > 0;
   const targets = usingTargets ? [...externalTargets] : selfTargets(notes);
   const score = scorePitch(smoothed, targets);
