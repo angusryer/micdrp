@@ -166,3 +166,18 @@ capabilities:
       - the percentage never goes backwards within a run
       - reporting failure never fails the run that was reporting
       - a clip that reaches a conclusion reports one hundred
+
+  - name: dogfood.name_clip
+    description: >
+      Give a remark a few words naming what it is about, so a queue reads
+      as a list of things rather than a wall of speech.
+    actor: agent
+    implemented_by: scripts/dogfood/interpret.ts
+    parameters:
+      required: [clipId, title]
+    preconditions:
+      - the clip has been read
+    postconditions:
+      - the title names the subject rather than describing the request
+      - an empty title is not written, since no name beats a blank one
+      - a title is bounded, because it is read in a list on a phone

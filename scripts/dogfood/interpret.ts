@@ -71,34 +71,51 @@ Rules:
   There is no packages/app. Guessing a path that does not exist is worse than
   naming none, because the paths are checked against what must not be touched.
 
+Also give the whole remark a title: at most six words, naming what it is
+about rather than describing it. "Record button styling", not "The user would
+like the record button to be changed". It is read in a list on a phone.
+
 Reply with JSON only — no prose, no code fence — shaped:
-{"requests":[{"summary":"","quote":"","route":null,"confidence":0,
+{"title":"","requests":[{"summary":"","quote":"","route":null,"confidence":0,
 "blastRadius":"javascript","paths":[]}]}`;
 
+/** What a transcript turned out to be: a name for it, and the asks in it. */
+export interface Reading {
+  /** At most a few words, for reading in a list. Empty when none was given. */
+  title: string;
+  requests: Interpreted[];
+}
+
 /** Strip a code fence if the model wrapped the JSON in one anyway. */
-function parseRequests(raw: string): Interpreted[] {
+function parseReading(raw: string): Reading {
   const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/, '');
   const start = cleaned.indexOf('{');
   const end = cleaned.lastIndexOf('}');
   if (start < 0 || end < start) {
-    return [];
+    return { title: '', requests: [] };
   }
   try {
     const parsed = JSON.parse(cleaned.slice(start, end + 1)) as {
+      title?: unknown;
       requests?: Interpreted[];
     };
-    return parsed.requests ?? [];
+    return {
+      // Bounded here rather than trusted: a title is shown in a list, and one
+      // that runs on defeats the point of having it.
+      title: typeof parsed.title === 'string' ? parsed.title.trim().slice(0, 60) : '',
+      requests: parsed.requests ?? []
+    };
   } catch {
     // A reply we cannot read is not a reason to invent work.
-    return [];
+    return { title: '', requests: [] };
   }
 }
 
-/** Split one transcript into requests, in the order they were spoken. */
+/** Read one transcript: what to call it, and the requests in it. */
 export async function interpret(
   transcript: string,
   trail: ScreenVisit[]
-): Promise<Interpreted[]> {
+): Promise<Reading> {
   const context = trail.length
     ? trail.map((v) => `${Math.round(v.atMs / 1000)}s: ${v.route}`).join('\n')
     : '(no screens recorded)';
@@ -113,5 +130,5 @@ export async function interpret(
     timeout: 5 * 60 * 1000,
     maxBuffer: 10 * 1024 * 1024
   });
-  return parseRequests(stdout);
+  return parseReading(stdout);
 }

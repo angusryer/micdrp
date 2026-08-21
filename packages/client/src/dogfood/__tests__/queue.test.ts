@@ -33,8 +33,20 @@ describe('feedbackQueue', () => {
     expect(clip.progress).toEqual({ percent: 30, note: 'building 1 of 2', atMs: 5000 });
   });
 
-  it('names a clip by what was said in it', async () => {
+  it('prefers the name the loop gave the remark', async () => {
+    // A list of titles reads as a list of things; a list of transcripts reads
+    // as a wall of speech.
+    mockGetFullList.mockResolvedValue([row({ title: 'Record button styling' })]);
+    expect((await feedbackQueue())[0].label).toBe('Record button styling');
+  });
+
+  it('falls back to what was said, before the loop has read it', async () => {
     mockGetFullList.mockResolvedValue([row()]);
+    expect((await feedbackQueue())[0].label).toBe('make the record button smaller');
+  });
+
+  it('ignores a blank title rather than showing an empty row', async () => {
+    mockGetFullList.mockResolvedValue([row({ title: '   ' })]);
     expect((await feedbackQueue())[0].label).toBe('make the record button smaller');
   });
 

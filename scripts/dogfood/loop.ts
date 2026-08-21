@@ -12,14 +12,15 @@
 import { gateRequest, type ChangeRequestDto } from '../../packages/shared/src/dto/dogfood.ts';
 
 import { halt, isHalted, readFailures, releaseLock, takeLock, writeFailures, HALT_AFTER } from './guard.ts';
-import { audioUrl, claimOldest, connect, markDelivered, signIn, storeRequests, storeTranscript } from './clips.ts';
+import { claimOldest, connect, markDelivered, signIn, storeRequests } from './clips.ts';
 import { deliverBatch } from './deliver.ts';
 import { progressReporter } from './progress.ts';
+import { understand } from './understand.ts';
+import { isTransient, withRetry } from './transient.ts';
 import { describeOutcome } from './report.ts';
 import { buildRequests } from './build.ts';
 import { installDeps, prepareWorktree } from './worktree.ts';
-import { interpret } from './interpret.ts';
-import { transcribe } from './transcribe.ts';
+
 
 type Options = { dryRun: boolean; noDeliver: boolean };
 
@@ -37,9 +38,9 @@ export async function runOnce(options: Options): Promise<boolean> {
   }
 
   const pb = connect();
-  await signIn(pb);
+  await withRetry(() => signIn(pb));
   const runId = `run-${Date.now()}`;
-  const clip = await claimOldest(pb, runId);
+  const clip = await withRetry(() => claimOldest(pb, runId));
   if (!clip) {
     // One line even when idle. A silent log is indistinguishable from a loop
     // that has stopped, and the whole value of this running unattended is
@@ -51,27 +52,7 @@ export async function runOnce(options: Options): Promise<boolean> {
   const report = progressReporter(pb, clip.id);
   await report('claimed', 'picked up');
 
-  // Transcribe once and keep it: a re-run must not pay again (INV-DOG-013).
-  let transcript = clip.transcript;
-  if (!transcript) {
-    await report('transcribing', 'listening');
-    const heard = await transcribe(audioUrl(pb, clip));
-    transcript = heard.text;
-    await storeTranscript(pb, clip.id, heard.text, heard.confidence);
-  }
-
-  // Reading it is paid for once too (INV-DOG-016). A run reclaimed after it
-  // died mid-build already has its requests; re-reading the same words would
-  // cost again and could land on a different split of them.
-  await report('interpreting', 'reading it');
-  const requests: ChangeRequestDto[] = clip.requests?.length
-    ? clip.requests
-    : (await interpret(transcript, clip.screen_trail ?? [])).map((r, i) => ({
-        ...r,
-        id: `${clip.id}-${i}`,
-        clipId: clip.id,
-        state: 'proposed'
-      }));
+  const requests = await understand(pb, clip, report);
   await storeRequests(pb, clip.id, requests);
 
   const buildable = requests.filter((r) => gateRequest(r).mayBuild);
@@ -128,6 +109,14 @@ export async function guardedRun(options: Options): Promise<void> {
     await runOnce(options);
     writeFailures(0);
   } catch (error) {
+    // A backend that is restarting is not a loop that is failing at its job.
+    // Nothing was attempted and nothing was damaged, and the next tick will
+    // do the same work successfully — so it costs no lives. Counting it spent
+    // two of three during one routine deploy (INV-DOG-025).
+    if (isTransient(error)) {
+      console.error(`dogfood: backend unreachable, will try again — ${String(error)}`);
+      return;
+    }
     const failures = readFailures() + 1;
     writeFailures(failures);
     console.error(`dogfood: run failed (${failures}) — ${String(error)}`);

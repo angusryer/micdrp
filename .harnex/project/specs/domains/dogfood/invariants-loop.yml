@@ -142,3 +142,17 @@ invariants:
       Progress is a convenience. A loop that abandoned real work because
       it could not describe itself would be worse than one that says
       nothing at all.
+
+  - id: INV-DOG-025
+    description: A backend that is briefly away costs the loop nothing
+    severity: high
+    check: >
+      A failure that says the backend was unreachable does not count
+      toward the halt, and the work is retried rather than abandoned.
+      Verified by failing every backend call with an unreachable error
+      and asserting the failure count is unchanged.
+
+      The halt exists to stop a loop failing at its job. A backend
+      restarting is not that: nothing was attempted and nothing was
+      damaged. Counting it spent two of three lives during one routine
+      deploy, which is a thing that happens on an ordinary afternoon.

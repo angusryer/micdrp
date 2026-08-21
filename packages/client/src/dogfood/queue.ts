@@ -15,7 +15,13 @@ export interface QueuedClip {
   recordedAtMs: number;
   durationMs: number;
   state: string;
-  /** The first words of the transcript, once there are any. */
+  /**
+   * What to call this remark in a list.
+   *
+   * The name the loop gave it when it read it, or failing that the opening
+   * words of the transcript. A list of titles reads as a list of things; a
+   * list of transcripts reads as a wall of speech.
+   */
   label: string | null;
   progress: ClipProgressDto | null;
   isStalled: boolean;
@@ -60,7 +66,10 @@ export async function feedbackQueue(nowMs = Date.now()): Promise<QueuedClip[]> {
       recordedAtMs: typeof row.recorded_at_ms === 'number' ? row.recorded_at_ms : 0,
       durationMs: typeof row.duration_ms === 'number' ? row.duration_ms : 0,
       state: typeof row.state === 'string' ? row.state : 'unknown',
-      label: labelOf(row.transcript),
+      label:
+        typeof row.title === 'string' && row.title.trim().length > 0
+          ? row.title.trim()
+          : labelOf(row.transcript),
       progress,
       isStalled: looksStalled(progress, nowMs)
     };

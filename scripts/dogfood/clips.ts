@@ -36,6 +36,7 @@ export interface Clip {
   app_version: string;
   build_number: number;
   bundle_id: string | null;
+  title: string | null;
   transcript: string | null;
   requests: ChangeRequestDto[] | null;
   state: string;
@@ -94,6 +95,21 @@ export async function storeTranscript(
     transcript_confidence: confidence,
     state: 'interpreted'
   });
+}
+
+/**
+ * Name a remark, so the queue reads as a list of things rather than of
+ * transcripts. An empty title is not written: no name is better than a blank.
+ */
+export async function storeTitle(
+  pb: PocketBase,
+  clipId: string,
+  title: string
+): Promise<void> {
+  if (title.trim().length === 0) {
+    return;
+  }
+  await pb.collection(COLLECTION).update(clipId, { title: title.trim() });
 }
 
 export async function storeRequests(

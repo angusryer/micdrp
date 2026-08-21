@@ -9,4 +9,5 @@ export * from './dto/audioFormat';
 export * from './dto/interpretation';
 export * from './dto/clipProgress';
 export * from './errors';
+export * from './transient';
 export * from './constants';
