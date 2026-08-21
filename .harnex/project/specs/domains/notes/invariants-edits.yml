@@ -1,0 +1,47 @@
+# What must hold of a person's readings of a take. Split by concern.
+invariants:
+  - id: INV-NOTES-021
+    description: A person's decisions outlive the screen they were made on
+    severity: high
+    check: >
+      An edit survives leaving the note and returning to it. Verified by
+      editing, navigating away, and asserting the edit is still there.
+
+      Chord editing shipped without this and every change was lost the
+      moment the screen closed, which made the feature feel broken while
+      being exactly as designed.
+
+  - id: INV-NOTES-022
+    description: The active reading is differences, never a copy
+    severity: critical
+    check: >
+      The active interpretation stores only what a person overrode, and
+      is replayed against whatever analysis currently infers. Verified by
+      changing the inference and asserting an untouched slot follows it
+      while an edited slot does not.
+
+      The melody is the source of truth and the analysis is derived from
+      it. Storing the analysis would make a second source that goes stale
+      the moment detection improves (Axiom 2), and nothing would say so.
+
+  - id: INV-NOTES-023
+    description: A frozen reading never changes
+    severity: critical
+    check: >
+      Re-analysis leaves every frozen interpretation byte-identical, and
+      a frozen interpretation is never replayed against new inference.
+      Verified by freezing one, re-analysing, and asserting it is
+      unchanged.
+
+      This is the one case where storing the whole reading is right
+      rather than wrong: its purpose is to survive detection changing
+      underneath it. A working copy replays; a commit does not.
+
+  - id: INV-NOTES-024
+    description: Re-analysis never discards work silently
+    severity: critical
+    check: >
+      Re-analysis that would overwrite edits is refused until a person
+      has either accepted the loss or kept the current reading aside.
+      Verified by re-analysing an edited note and asserting nothing
+      changes without that decision.

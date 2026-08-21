@@ -1,0 +1,69 @@
+# What a person made of a take, as distinct from what analysis inferred.
+# Split from entities.yml to stay inside the file budget.
+entities:
+  - name: Interpretation
+    description: >
+      One reading of a take. A note carries several and one is active.
+
+      The active interpretation stores differences from what analysis
+      currently infers. A frozen one stores the whole reading, because
+      its purpose is to survive detection changing underneath it — the
+      distinction between a working copy and a commit.
+    properties:
+      - name: id
+        type: string
+        required: true
+        description: Stable identifier, unique within the note.
+      - name: name
+        type: string
+        required: true
+        description: What to call it in a list, for example "Original".
+      - name: createdAtMs
+        type: number
+        required: true
+        description: When this reading was made.
+      - name: isFrozen
+        type: boolean
+        required: true
+        description: >
+          True once kept aside from re-analysis. A frozen interpretation
+          is never replayed against new inference and never changes.
+      - name: chords
+        type: array
+        items: ChordSlotEdit
+        required: true
+        description: >
+          Chords a person chose. On the active interpretation these are
+          differences from inference; on a frozen one, the whole
+          progression.
+      - name: barLines
+        type: array
+        items: number
+        required: false
+        description: >
+          Grid step indices where bars begin. Absent means the bars are
+          as detection proposed. Steps rather than beats because a bar of
+          seven or thirteen eighths does not divide into whole beats, and
+          those metres have to be expressible.
+
+  - name: ChordSlotEdit
+    description: One chord a person chose, anchored to a moment.
+    properties:
+      - name: atMs
+        type: number
+        required: true
+        description: >
+          A time inside the slot this applies to. Anchored in time, not
+          by bar number, because bar boundaries are themselves editable —
+          an edit tied to "bar 3" would silently move when a bar line
+          did, while audio and beats never move.
+      - name: rootPc
+        type: number
+        required: true
+        description: The chord root the person chose.
+        constraints: ["is within 0 and 11 inclusive"]
+      - name: quality
+        type: string
+        required: true
+        description: The chord shape the person chose.
+        constraints: ["is one of maj, min, dim, aug, maj7, dom7, min7, m7b5, dim7"]
