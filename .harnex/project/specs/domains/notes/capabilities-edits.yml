@@ -1,0 +1,77 @@
+# Keeping and restoring what a person made of a take.
+capabilities:
+  - name: notes.save_interpretation
+    description: >
+      Keep the active reading with the note, so a decision outlives the
+      screen it was made on.
+    actor: singer
+    implemented_by: packages/client/src/data/notesRepo.ts
+    parameters:
+      required: [noteId, interpretation]
+    preconditions:
+      - the note belongs to the singer
+    postconditions:
+      - only what a person overrode is written, never the inferred result
+      - a reading with no overrides at all is stored as empty rather than
+        as a copy of what inference happened to say
+      - saving replaces the active reading and leaves frozen ones alone
+    permissions:
+      - role: singer
+        notes: A person's own readings of their own take.
+
+  - name: notes.load_interpretations
+    description: >
+      Read back what a person made of a take, ready to replay against
+      whatever analysis now infers.
+    actor: singer
+    implemented_by: packages/client/src/data/notesRepo.ts
+    parameters:
+      required: [noteId]
+    preconditions:
+      - the note belongs to the singer
+    postconditions:
+      - a note saved before readings existed loads as having none, not
+        as an error
+      - a reading that cannot be parsed is discarded rather than allowed
+        to break the screen
+    permissions:
+      - role: singer
+
+  - name: notes.replay_edits
+    description: >
+      Put a person's decisions back on top of freshly inferred chords.
+      This is what makes the active reading a set of differences rather
+      than a copy: inference runs first and edits land on it.
+    actor: agent
+    implemented_by: packages/logic/src/interpretation.ts
+    parameters:
+      required: [inferred, edits]
+    preconditions:
+      - inferred is the progression analysis currently produces
+    postconditions:
+      - a slot with no edit against it is exactly as inferred
+      - a slot with an edit carries the person's chord and is marked edited
+      - an edit whose anchor falls in no slot is dropped, not guessed at
+      - replaying an empty edit set returns the inferred progression
+        unchanged
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: notes.collect_edits
+    description: >
+      Reduce an edited progression to just the differences, which is what
+      gets stored.
+    actor: agent
+    implemented_by: packages/logic/src/interpretation.ts
+    parameters:
+      required: [slots]
+    preconditions:
+      - slots is a progression
+    postconditions:
+      - only slots marked edited are collected
+      - each carries a time anchor inside the slot it came from
+      - collecting then replaying returns the same progression
+    permissions:
+      - role: visitor
+        notes: Pure computation.

@@ -10,3 +10,4 @@ export * from './melodies';
 export * from './analysis';
 export * from './quantize';
 export * from './harmony';
+export * from './interpretation';
