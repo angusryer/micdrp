@@ -116,3 +116,35 @@ invariants:
       Writing a file and reading it back are two halves of one contract.
       A test that only proves the first half proves nothing a user cares
       about.
+
+  - id: INV-PITCH-013
+    description: A take is judged against its own pitch centre, not concert A
+    severity: high
+    check: >
+      A phrase sung consistently in tune with itself scores as in tune
+      however far its centre sits from A440. Verified by shifting a whole
+      take by a fixed number of cents and asserting the score does not
+      change.
+
+      Someone humming an idea has no reference to tune to. What matters
+      to them is whether the notes agree with one another, not whether
+      they agree with a tuning fork — a take sung beautifully thirty
+      cents sharp was being reported as thirty cents wrong on every note,
+      which is true and useless.
+
+      The centre is measured with circular statistics, as the pulse is.
+      Deviations wrap at half a semitone, so a take sitting at +48 and
+      one at -48 are nearly the same take, and an ordinary average of
+      them lands at zero — the answer that is exactly wrong.
+
+  - id: INV-PITCH-014
+    description: What the pitch centre is gets reported, never silently applied
+    severity: medium
+    check: >
+      The measured offset is carried alongside the score. Verified by
+      asserting a take centred away from concert pitch reports how far.
+
+      Adjusting a reading without saying so is how a tool stops being
+      trustworthy. A singer who wants to know they are consistently sharp
+      should be able to find that out; they should just not be told their
+      phrase is wrong because of it.
