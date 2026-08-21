@@ -6,7 +6,7 @@
  * itself (INV-DOG-024).
  */
 import { backend } from '../lib/backend';
-import { looksStalled, type ClipProgressDto } from 'shared';
+import { CANCELLED, isInFlight, looksStalled, type ClipProgressDto } from 'shared';
 
 const COLLECTION = 'dogfood_clips';
 
@@ -15,6 +15,8 @@ export interface QueuedClip {
   recordedAtMs: number;
   durationMs: number;
   state: string;
+  /** Withdrawn, and waiting for the run holding it to let go. */
+  isCancelling: boolean;
   /**
    * What to call this remark in a list.
    *
@@ -66,6 +68,7 @@ export async function feedbackQueue(nowMs = Date.now()): Promise<QueuedClip[]> {
       recordedAtMs: typeof row.recorded_at_ms === 'number' ? row.recorded_at_ms : 0,
       durationMs: typeof row.duration_ms === 'number' ? row.duration_ms : 0,
       state: typeof row.state === 'string' ? row.state : 'unknown',
+      isCancelling: row.state === CANCELLED,
       label:
         typeof row.title === 'string' && row.title.trim().length > 0
           ? row.title.trim()
@@ -77,12 +80,24 @@ export async function feedbackQueue(nowMs = Date.now()): Promise<QueuedClip[]> {
 }
 
 /**
- * Remove a remark, and the audio attached to it.
+ * Withdraw a remark.
  *
- * The record takes its attachment with it, so there is no separate sweep and
- * nothing left behind. It cannot be undone, which is why the screen asks
- * first rather than offering to reverse it afterwards.
+ * If nobody is working on it, it goes outright — there is no one to tell, and
+ * the record takes its audio with it.
+ *
+ * If a run holds it, it is marked cancelled instead. Taking something away
+ * from the agent mid-task and leaving it to work out what happened is the
+ * wrong shape: a missing record could as easily be a fault as a decision, and
+ * those want opposite responses. The run reads the state as an instruction,
+ * stops, and removes the clip itself (INV-DOG-026).
  */
-export async function discardClip(clipId: string): Promise<void> {
-  await backend.collection(COLLECTION).delete(clipId);
+export async function discardClip(clip: {
+  id: string;
+  state: string;
+}): Promise<void> {
+  if (isInFlight(clip.state)) {
+    await backend.collection(COLLECTION).update(clip.id, { state: CANCELLED });
+    return;
+  }
+  await backend.collection(COLLECTION).delete(clip.id);
 }

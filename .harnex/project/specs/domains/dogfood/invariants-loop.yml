@@ -165,6 +165,18 @@ invariants:
       failure. Verified by removing a claimed clip mid-run and asserting
       the loop neither halts nor records a failure.
 
-      Removing a remark is a decision, not a fault. Treating the
-      disappearance as an error would spend the loop's lives on the
-      maintainer tidying their own list.
+      Cancelling is said, not inferred. A clip nobody is working on is
+      simply removed — there is no one to tell. A clip a run holds is
+      marked cancelled, and the run reads that as an instruction and
+      tidies up after itself.
+
+      Taking something away from the agent mid-task and leaving it to
+      work out what happened is the wrong shape: a missing record could
+      as easily be a fault as a decision, and the two want opposite
+      responses. A state that says "stop, this was withdrawn" cannot be
+      misread.
+
+      Noticed between requests rather than only at the end. A clip
+      carrying four of them is half an hour of work, and building all of
+      it for a remark already withdrawn is the same waste whether or not
+      anything ships. Nothing built for a cancelled clip is delivered.

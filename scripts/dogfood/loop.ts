@@ -13,6 +13,7 @@ import { gateRequest, type ChangeRequestDto } from '../../packages/shared/src/dt
 
 import { halt, isHalted, readFailures, releaseLock, takeLock, writeFailures, HALT_AFTER } from './guard.ts';
 import { claimOldest, connect, markDelivered, signIn, storeRequests } from './clips.ts';
+import { discardCancelled, isStillWanted } from './withdraw.ts';
 import { deliverBatch } from './deliver.ts';
 import { progressReporter } from './progress.ts';
 import { understand } from './understand.ts';
@@ -63,7 +64,18 @@ export async function runOnce(options: Options): Promise<boolean> {
     await installDeps();
   }
 
-  const built = await buildRequests(requests, options.dryRun, report);
+  const built = await buildRequests(requests, options.dryRun, report, () =>
+    isStillWanted(pb, clip.id)
+  );
+
+  // Asked plainly rather than left to a write failing: whether work ships is
+  // too consequential to learn from an exception. Anything built for a
+  // withdrawn clip is discarded with the checkout on the next run.
+  if (!(await isStillWanted(pb, clip.id))) {
+    console.log('dogfood: the remark was withdrawn; nothing will be delivered');
+    await discardCancelled(pb, clip.id);
+    return true;
+  }
 
   await storeRequests(pb, clip.id, requests);
 

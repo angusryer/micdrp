@@ -70,3 +70,17 @@ export function looksStalled(
   }
   return nowMs - progress.atMs > stallAfterMs;
 }
+
+/**
+ * The state that says a remark was withdrawn while a run held it.
+ *
+ * Named here so the app writing it and the loop reading it cannot disagree.
+ * It is an instruction rather than a description: a run that finds it stops
+ * and clears up, and does not treat it as something having gone wrong.
+ */
+export const CANCELLED = 'cancelled';
+
+/** Whether a clip is in the hands of a run, and so has someone to tell. */
+export function isInFlight(state: string): boolean {
+  return state === 'claimed' || state === 'interpreted';
+}

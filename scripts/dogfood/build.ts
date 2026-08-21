@@ -21,7 +21,8 @@ import { checkpoint } from './tree.ts';
 export async function buildRequests(
   requests: ChangeRequestDto[],
   dryRun: boolean,
-  report?: Report
+  report?: Report,
+  stillWanted?: () => Promise<boolean>
 ): Promise<ChangeRequestDto[]> {
   const buildable = requests.filter((r) => gateRequest(r).mayBuild);
   let attempted = 0;
@@ -43,6 +44,15 @@ export async function buildRequests(
       console.log(`  would build (${verdict.route}): ${request.summary}`);
       continue;
     }
+    // Asked between requests, not only at the end. A clip carrying four of
+    // them is half an hour of work, and building all of it for a remark
+    // somebody has already discarded is the same waste either way
+    // (INV-DOG-026).
+    // eslint-disable-next-line no-await-in-loop -- one change at a time, by design
+    if (stillWanted && !(await stillWanted())) {
+      break;
+    }
+
     // Reported per request: a clip carrying four of them should move the bar
     // four times rather than sit at one number for twenty minutes.
     // eslint-disable-next-line no-await-in-loop -- one change at a time, by design

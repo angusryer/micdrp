@@ -7,9 +7,14 @@
  */
 const mockGetFullList = jest.fn();
 const mockDelete = jest.fn();
+const mockUpdate = jest.fn();
 jest.mock('../../lib/backend', () => ({
   backend: {
-    collection: () => ({ getFullList: mockGetFullList, delete: mockDelete })
+    collection: () => ({
+      getFullList: mockGetFullList,
+      delete: mockDelete,
+      update: mockUpdate
+    })
   }
 }));
 
@@ -30,6 +35,7 @@ const row = (over: Record<string, unknown> = {}) => ({
 beforeEach(() => {
   mockGetFullList.mockReset();
   mockDelete.mockReset();
+  mockUpdate.mockReset();
 });
 
 describe('feedbackQueue', () => {
@@ -99,9 +105,29 @@ describe('feedbackQueue', () => {
 });
 
 describe('discardClip', () => {
-  it('removes the record, which takes its audio with it', async () => {
+  it('removes a clip nobody is working on, taking its audio with it', async () => {
     mockDelete.mockResolvedValue(undefined);
-    await discardClip('c1');
+    await discardClip({ id: 'c1', state: 'uploaded' });
+    expect(mockDelete).toHaveBeenCalledWith('c1');
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it.each(['claimed', 'interpreted'])(
+    'tells the run holding a %s clip rather than pulling it away',
+    async (state) => {
+      // Taking something away mid-task and leaving the agent to work out what
+      // happened is the wrong shape: a missing record could as easily be a
+      // fault as a decision, and those want opposite responses.
+      mockUpdate.mockResolvedValue(undefined);
+      await discardClip({ id: 'c1', state });
+      expect(mockUpdate).toHaveBeenCalledWith('c1', { state: 'cancelled' });
+      expect(mockDelete).not.toHaveBeenCalled();
+    }
+  );
+
+  it('removes a delivered clip outright, since no run holds it', async () => {
+    mockDelete.mockResolvedValue(undefined);
+    await discardClip({ id: 'c1', state: 'delivered' });
     expect(mockDelete).toHaveBeenCalledWith('c1');
   });
 
@@ -109,6 +135,6 @@ describe('discardClip', () => {
     // Swallowing this would leave a row on screen that the person believes
     // is gone, which is worse than telling them.
     mockDelete.mockRejectedValue(new Error('offline'));
-    await expect(discardClip('c1')).rejects.toThrow('offline');
+    await expect(discardClip({ id: 'c1', state: 'uploaded' })).rejects.toThrow('offline');
   });
 });

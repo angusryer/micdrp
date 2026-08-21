@@ -123,10 +123,14 @@ capabilities:
     preconditions:
       - the clip belongs to the maintainer
     postconditions:
-      - the record and the audio attached to it are both gone
       - removal is confirmed first, because the audio cannot be recovered
-      - a clip the loop is working on may still be removed; the run finds
-        it gone and stops rather than failing
+      - a clip nobody is working on is removed outright, taking the audio
+        with it
+      - a clip a run holds is marked cancelled instead, which the run
+        reads as an instruction to stop and then tidies up after itself
+      - nothing built for a cancelled clip is delivered
+      - cancelling costs the loop no lives; withdrawing a remark is a
+        decision, not a fault
     permissions:
       - role: maintainer
         notes: Their own remark about their own app.

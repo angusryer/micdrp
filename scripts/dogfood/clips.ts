@@ -6,6 +6,7 @@
  * claim carries the time it was made and becomes reclaimable once stale.
  */
 import PocketBase from 'pocketbase';
+
 // Imported by file rather than through the `shared` barrel: Node's ESM
 // loader needs explicit extensions, and the barrel's own imports are
 // extensionless for Metro's benefit. This is the only file the loop needs.
@@ -111,6 +112,7 @@ export async function storeTitle(
   }
   await pb.collection(COLLECTION).update(clipId, { title: title.trim() });
 }
+
 
 export async function storeRequests(
   pb: PocketBase,

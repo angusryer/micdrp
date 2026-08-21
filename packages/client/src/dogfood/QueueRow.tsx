@@ -8,6 +8,8 @@ import React from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { useTheme } from '../theme';
+import { isInFlight } from 'shared';
+
 import { discardClip, type QueuedClip } from './queue';
 
 export function QueueRow({
@@ -24,14 +26,18 @@ export function QueueRow({
   const confirmRemove = (): void => {
     Alert.alert(
       'Remove this remark?',
-      'The recording goes too, and cannot be brought back.',
+      clip.isCancelling
+        ? 'It is already being withdrawn.'
+        : isInFlight(clip.state)
+          ? 'It is being worked on now. The work will stop and the recording goes too.'
+          : 'The recording goes too, and cannot be brought back.',
       [
         { text: 'Keep', style: 'cancel' },
         {
           text: 'Remove',
           style: 'destructive',
           onPress: () => {
-            void discardClip(clip.id)
+            void discardClip(clip)
               .then(onRemoved)
               .catch(() => Alert.alert('Could not remove it', 'Try again in a moment.'));
           }
@@ -79,9 +85,11 @@ export function QueueRow({
       </View>
 
       <Text style={[styles.note, { color: colors.gray500 }]}>
-        {clip.isStalled
-          ? `${percent}% · silent for a while`
-          : `${percent}% · ${clip.progress?.note ?? clip.state}`}
+        {clip.isCancelling
+          ? 'withdrawing…'
+          : clip.isStalled
+            ? `${percent}% · silent for a while`
+            : `${percent}% · ${clip.progress?.note ?? clip.state}`}
       </Text>
     </View>
   );

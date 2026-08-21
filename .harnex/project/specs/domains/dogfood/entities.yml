@@ -67,6 +67,11 @@ entities:
         description: Transcribed and split into tasks.
       - name: delivered
         description: Every task it produced reached a conclusion.
+      - name: cancelled
+        description: >
+          Withdrawn by the maintainer while a run held it. An
+          instruction to the run that holds it, not a description of
+          something that happened to it.
     transitions:
       - from: recording
         to: paused
@@ -86,6 +91,11 @@ entities:
       - from: uploaded
         to: claimed
         trigger: dogfood.claim_clip
+      - from: claimed, or interpreted
+        to: cancelled
+        trigger: >
+          dogfood.discard_clip, when a run holds the clip. A clip nobody
+          holds is removed outright instead: there is no one to tell.
       - from: claimed
         to: interpreted
         trigger: dogfood.interpret_clip
