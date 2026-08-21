@@ -14,7 +14,7 @@
  *
  * The bucket is private, so reads return short-lived signed URLs for playback.
  */
-import { AppErrorCode, appError, parseInterpretations } from 'shared';
+import { AppErrorCode, appError, audioExtensionOf, parseInterpretations } from 'shared';
 import type {
   CreateNoteInput,
   InterpretationDto,
@@ -73,16 +73,6 @@ function rowToDto(row: NoteRow): NoteDto {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Lowercase file extension of a path/URI, without the dot; '' if none. */
-function extOf(uri: string): string {
-  const q = uri.split('?')[0];
-  const dot = q.lastIndexOf('.');
-  const slash = q.lastIndexOf('/');
-  if (dot <= slash) {
-    return '';
-  }
-  return q.slice(dot + 1).toLowerCase();
-}
 
 /**
  * A short-lived private URL for a note's audio, or null when it has none.
@@ -143,7 +133,7 @@ export const notesRepo = {
     if (input.rangeHighMidi != null)
       form.append('range_high_midi', String(input.rangeHighMidi));
 
-    const audioExt = extOf(blobs.audioUri) || 'wav';
+    const audioExt = audioExtensionOf(blobs.audioUri) || 'wav';
     // React Native's FormData accepts a {uri,name,type} descriptor and streams
     // the file off disk; the DOM lib types only know about Blob.
     form.append(

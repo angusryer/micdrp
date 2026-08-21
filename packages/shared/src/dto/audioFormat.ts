@@ -43,7 +43,10 @@ export function audioExtensionOf(pathOrUrl: string): string {
   // looking at the end of the name.
   const withoutQuery = pathOrUrl.split(/[?#]/)[0];
   const lastDot = withoutQuery.lastIndexOf('.');
-  return lastDot === -1 ? '' : withoutQuery.slice(lastDot + 1).toLowerCase();
+  // A dot earlier in the path belongs to a directory, not to the file: the
+  // name in "/takes/v1.2/recording" has no extension at all.
+  const lastSlash = withoutQuery.lastIndexOf('/');
+  return lastDot <= lastSlash ? '' : withoutQuery.slice(lastDot + 1).toLowerCase();
 }
 
 /** Whether the decoder can open what sits at this path or URL. */

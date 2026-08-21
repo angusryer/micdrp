@@ -58,6 +58,15 @@ describe('isPlayableAudioPath', () => {
 });
 
 describe('audioExtensionOf', () => {
+  it('ignores a dot that belongs to a directory, not the file', () => {
+    expect(audioExtensionOf('/takes/v1.2/recording')).toBe('');
+    expect(audioExtensionOf('/takes/v1.2/recording.wav')).toBe('wav');
+  });
+
+  it('is empty for a name with no dot at all', () => {
+    expect(audioExtensionOf('recording')).toBe('');
+  });
+
   it('strips a query string before reading the extension', () => {
     expect(audioExtensionOf('https://x/a.wav?token=abc')).toBe('wav');
   });
