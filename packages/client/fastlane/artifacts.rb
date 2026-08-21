@@ -12,6 +12,8 @@
 # the next build immediately allocates again.
 require "fileutils"
 
+# FastlaneCore::UI is already loaded by the time the Fastfile imports this;
+# requiring it here would break anything that loads the file on its own.
 module Artifacts
   # How many past builds' artefacts to keep, newest first. Enough to hand
   # someone a previous IPA or symbolicate a crash from a build or two back.
@@ -25,7 +27,7 @@ module Artifacts
     return unless path && File.exist?(path)
 
     FileUtils.rm_rf(path)
-    UI.message("cleaned up archive #{File.basename(path)}")
+    FastlaneCore::UI.message("cleaned up archive #{File.basename(path)}")
   end
 
   # Drop empty date directories Xcode leaves behind once their archives go.
@@ -56,7 +58,7 @@ module Artifacts
 
       found.drop(KEEP).each do |stale|
         File.delete(stale)
-        UI.message("cleaned up #{File.basename(stale)}")
+        FastlaneCore::UI.message("cleaned up #{File.basename(stale)}")
       end
     end
   end
