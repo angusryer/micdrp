@@ -234,7 +234,7 @@
       "bundle": "JS bundle",
       "bundleEmbedded": "Built in",
       "updates": "Updates",
-      "feedbackQueue": "Feedback queued",
+      "feedbackQueue": "Feedback",
       "feedbackError": "Last upload",
       "feedbackRecording": "Last recording"
     }

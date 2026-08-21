@@ -12,6 +12,26 @@ import { isInFlight } from 'shared';
 
 import { discardClip, type QueuedClip } from './queue';
 
+export /**
+ * The one line under the bar.
+ *
+ * A remark nobody has picked up yet is waiting, not stuck: it has said
+ * nothing because nothing has happened to it, which is a different thing from
+ * having gone quiet mid-task.
+ */
+function statusOf(clip: QueuedClip): string {
+  if (clip.isCancelling) {
+    return 'withdrawing…';
+  }
+  if (clip.progress == null) {
+    return clip.state === 'uploaded' ? 'waiting to be picked up' : clip.state;
+  }
+  if (clip.isStalled) {
+    return `${clip.progress.percent}% · silent for a while`;
+  }
+  return `${clip.progress.percent}% · ${clip.progress.note || clip.state}`;
+}
+
 export function QueueRow({
   clip,
   onRemoved
@@ -85,11 +105,7 @@ export function QueueRow({
       </View>
 
       <Text style={[styles.note, { color: colors.gray500 }]}>
-        {clip.isCancelling
-          ? 'withdrawing…'
-          : clip.isStalled
-            ? `${percent}% · silent for a while`
-            : `${percent}% · ${clip.progress?.note ?? clip.state}`}
+        {statusOf(clip)}
       </Text>
     </View>
   );

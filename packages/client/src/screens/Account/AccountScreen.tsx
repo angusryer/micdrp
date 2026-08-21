@@ -539,8 +539,13 @@ export default function AccountScreen(props: Props): React.JSX.Element {
             <Text style={[styles.rowLabel, { color: colors.typography }]}>
               {t('settings.about.feedbackQueue')}
             </Text>
+            {/* The count is what is still waiting to upload, which is zero
+                moments after recording — reading it as "nothing sent" is the
+                obvious mistake, so it only appears when there is something. */}
             <Text style={[styles.rowValue, { color: colors.primary500 }]}>
-              {install ? String(install.queuedClips) : '—'} ›
+              {install && install.queuedClips > 0
+                ? `${String(install.queuedClips)} uploading ›`
+                : 'View queue ›'}
             </Text>
           </TouchableOpacity>
           {install?.lastRecordingError ? (

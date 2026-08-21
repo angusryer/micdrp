@@ -40,13 +40,18 @@ function labelOf(transcript: unknown): string | null {
 
 function progressOf(row: Record<string, unknown>): ClipProgressDto | null {
   const percent = row.progress_percent;
-  if (typeof percent !== 'number') {
+  const atMs = row.progress_at_ms;
+  // A number column with nothing in it reads as 0, not as absent — so a clip
+  // that has never been touched looks like one that reported 0% at the epoch,
+  // which then reads as having been silent for fifty-six years. The report
+  // time is what says whether anything was ever said at all.
+  if (typeof percent !== 'number' || typeof atMs !== 'number' || atMs <= 0) {
     return null;
   }
   return {
     percent,
     note: typeof row.progress_note === 'string' ? row.progress_note : '',
-    atMs: typeof row.progress_at_ms === 'number' ? row.progress_at_ms : 0
+    atMs
   };
 }
 

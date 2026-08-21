@@ -180,3 +180,36 @@ invariants:
       carrying four of them is half an hour of work, and building all of
       it for a remark already withdrawn is the same waste whether or not
       anything ships. Nothing built for a cancelled clip is delivered.
+
+  - id: INV-DOG-027
+    description: Work is not lost because main moved while it was being done
+    severity: critical
+    check: >
+      A batch is rebased onto whatever main is now, and verified again,
+      before it is pushed. Verified by moving main during a run and
+      asserting the batch still lands.
+
+      A run takes the better part of an hour and the maintainer pushes
+      while it works, so main has usually moved by the time it finishes.
+      A rejected push cost a full run's work once: the clip was later
+      reclaimed as stale and built again from the start, which is both
+      the hour and the appearance of going backwards.
+
+      Rebasing alone is not enough. Two changes that each passed alone
+      can fail together, which is why the batch is checked again
+      afterwards. A conflict is given back rather than resolved: an
+      unattended merge is a guess about intent.
+
+  - id: INV-DOG-028
+    description: A remark nobody has picked up is waiting, not stuck
+    severity: medium
+    check: >
+      A clip that has never been reported on is shown as waiting.
+      Verified by listing a clip with no progress and asserting it does
+      not read as having gone quiet.
+
+      A number column with nothing in it reads as zero rather than as
+      absent, so a clip nobody had touched looked like one that reported
+      no progress at the epoch — and therefore silent for fifty-six
+      years. Whether anything was ever said is a question about the time
+      it was said at, not about the number.

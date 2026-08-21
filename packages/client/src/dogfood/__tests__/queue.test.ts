@@ -74,6 +74,25 @@ describe('feedbackQueue', () => {
     expect((await feedbackQueue())[0].label).toBeNull();
   });
 
+  it('INV-DOG-028: a clip nobody has picked up has no progress, not zero', async () => {
+    // A number column with nothing in it reads as 0 rather than as absent, so
+    // an untouched clip looked like one that reported 0% at the epoch — and
+    // therefore as having been silent for fifty-six years.
+    mockGetFullList.mockResolvedValue([
+      row({ progress_percent: 0, progress_note: '', progress_at_ms: 0, state: 'uploaded' })
+    ]);
+    const [clip] = await feedbackQueue(Date.now());
+    expect(clip.progress).toBeNull();
+    expect(clip.isStalled).toBe(false);
+  });
+
+  it('keeps a genuine zero once something has actually been reported', async () => {
+    mockGetFullList.mockResolvedValue([
+      row({ progress_percent: 0, progress_at_ms: 5000 })
+    ]);
+    expect((await feedbackQueue(6000))[0].progress?.percent).toBe(0);
+  });
+
   it('shows a clip recorded before progress existed, rather than hiding it', async () => {
     mockGetFullList.mockResolvedValue([
       row({ progress_percent: undefined, progress_note: undefined, progress_at_ms: undefined })
@@ -83,13 +102,15 @@ describe('feedbackQueue', () => {
     expect(clip.state).toBe('claimed');
   });
 
-  it('marks a clip that has been silent too long', async () => {
-    mockGetFullList.mockResolvedValue([row({ progress_at_ms: 0 })]);
+  it('marks a clip that reported, then went quiet for too long', async () => {
+    // A real report, long ago — as distinct from never having reported at
+    // all, which is what progress_at_ms of 0 now means.
+    mockGetFullList.mockResolvedValue([row({ progress_at_ms: 1000 })]);
     expect((await feedbackQueue(60 * 60 * 1000))[0].isStalled).toBe(true);
   });
 
   it('never marks a finished clip as stuck', async () => {
-    mockGetFullList.mockResolvedValue([row({ progress_percent: 100, progress_at_ms: 0 })]);
+    mockGetFullList.mockResolvedValue([row({ progress_percent: 100, progress_at_ms: 1000 })]);
     expect((await feedbackQueue(60 * 60 * 1000))[0].isStalled).toBe(false);
   });
 

@@ -14,6 +14,7 @@ import { promisify } from 'node:util';
 import { shouldPublishBundle, type ChangeRequestDto } from '../../packages/shared/src/dto/dogfood.ts';
 
 import { preflight } from './execute.ts';
+import { rebaseOntoMain } from './rebase.ts';
 import { changedSince, restoreTree } from './tree.ts';
 import { commitMessage } from './report.ts';
 import { WORKTREE } from './worktree.ts';
@@ -76,6 +77,22 @@ export async function deliverBatch(
   await run('git', ['add', '-A'], { cwd: WORKTREE });
   await run('git', ['reset', '--soft', 'origin/main'], { cwd: WORKTREE });
   await run('git', ['commit', '--no-verify', '-m', commitMessage(batch)], { cwd: WORKTREE });
+  // Main has usually moved: a run takes the better part of an hour, and the
+  // maintainer pushes while it works. Rebasing onto what is there now is the
+  // difference between delivering and losing the lot — a rejected push cost a
+  // full run's work, which was then redone from the start (INV-DOG-027).
+  const landed = await rebaseOntoMain();
+  if (!landed.ok) {
+    await restoreTree();
+    return {
+      delivered: false,
+      pushed: false,
+      published: false,
+      route: null,
+      reason: landed.reason
+    };
+  }
+
   // The worktree sits on its own branch; main is what the maintainer pulls.
   await run('git', ['push', 'origin', 'HEAD:main'], { cwd: WORKTREE });
 
