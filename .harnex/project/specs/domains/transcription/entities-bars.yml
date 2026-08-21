@@ -1,0 +1,65 @@
+# Bars as an arrangement of the beat grid, rather than something detected.
+entities:
+  - name: BarLayout
+    description: >
+      Where the bars fall across a take.
+
+      Metre stops being an inference and becomes an arrangement. The beat
+      grid is fixed — it comes from tempo, which is measured well — and a
+      bar line can only sit on one of its steps. A bar's time signature
+      is then read off the distance between its lines rather than
+      detected, which is what makes correcting it possible at all.
+
+      Detection proposes an opening arrangement. Everything after that is
+      a person moving lines, adding them, or taking them away.
+    properties:
+      - name: lines
+        type: array
+        items: number
+        required: true
+        description: >
+          Grid step indices where bars begin, ascending and without
+          repeats. Steps rather than beats because seven or thirteen
+          eighths is not a whole number of beats in any grouping, and
+          those metres have to be expressible.
+      - name: stepsPerBeat
+        type: number
+        required: true
+        description: Grid steps to a beat, carried from the fitted grid.
+      - name: isCompound
+        type: boolean
+        required: true
+        description: >
+          Whether the beat divides in three. Decides only how a bar is
+          written down: three quarters and six eighths are the same
+          length and different feels, so arithmetic alone cannot choose.
+
+  - name: Bar
+    description: One bar, as it falls out of the arrangement of lines.
+    properties:
+      - name: index
+        type: number
+        required: true
+        description: 1-based position among the bars. A pickup is 0.
+      - name: startStep
+        type: number
+        required: true
+        description: Grid step this bar begins on.
+      - name: steps
+        type: number
+        required: true
+        description: How many grid steps long it is.
+      - name: timeSignature
+        type: string
+        required: true
+        description: >
+          Read off the length, in the coarsest note value that divides it
+          evenly — quarters if it divides into whole quarters, otherwise
+          eighths, otherwise sixteenths.
+      - name: isPickup
+        type: boolean
+        required: true
+        description: >
+          True for the incomplete bar before the first line. Singers
+          start mid-bar constantly; calling that bar one would put every
+          downbeat after it in the wrong place.

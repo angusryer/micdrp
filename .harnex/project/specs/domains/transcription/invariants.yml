@@ -91,3 +91,37 @@ invariants:
       gridDurationMs is at least one grid step for every note, so a note
       shorter than a step is notated as the shortest available value
       rather than disappearing from the score.
+
+  - id: INV-TRANS-012
+    description: Arranging bars never moves the take
+    severity: critical
+    check: >
+      Moving, adding or removing a bar line leaves the audio, the beat
+      grid and every note's onset exactly as they were. Verified by
+      rearranging bars and asserting the onsets are unchanged.
+
+      This is the whole premise. A person is correcting how a take is
+      written down, not editing what they sang, and the two must never be
+      confused for one another.
+
+  - id: INV-TRANS-013
+    description: Every metre a singer can perform can be written down
+    severity: high
+    check: >
+      A bar of any whole number of grid steps renders a signature.
+      Verified across simple, compound and odd lengths — seven quarters,
+      thirteen eighths, fifteen eighths — with no length falling back to
+      a default.
+
+      Bar lines sit on steps rather than beats precisely for this: seven
+      eighths is not a whole number of beats in any grouping, so a model
+      built on beats cannot express it at all.
+
+  - id: INV-TRANS-014
+    description: Bars stay in order and cover the take
+    severity: critical
+    check: >
+      Bar lines are ascending and without repeats after any operation,
+      and the bars they define tile the take with no gap and no overlap.
+      Verified by applying arbitrary sequences of moves, adds and removes
+      and asserting both properties hold throughout.

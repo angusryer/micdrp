@@ -1,0 +1,89 @@
+# Arranging bars over a fixed beat grid.
+capabilities:
+  - name: transcription.propose_bars
+    description: >
+      Turn a fitted grid into an opening arrangement of bar lines, which
+      a person is then free to change.
+    actor: agent
+    implemented_by: packages/logic/src/bars.ts
+    parameters:
+      required: [grid, durationMs]
+    preconditions:
+      - grid is a MusicalGrid
+    postconditions:
+      - lines are spaced by the grid's own bar length
+      - the arrangement covers the whole take
+      - a take shorter than one bar still yields one bar
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: transcription.read_bars
+    description: >
+      Read the bars, and their time signatures, out of an arrangement of
+      lines. This is what replaces detecting a metre.
+    actor: agent
+    implemented_by: packages/logic/src/bars.ts
+    parameters:
+      required: [layout, totalSteps]
+    preconditions:
+      - layout is a BarLayout
+    postconditions:
+      - each bar runs from its line to the next, and the last to the end
+      - steps before the first line are a pickup bar, numbered zero
+      - bar numbering starts at one after any pickup
+      - a signature is the coarsest note value dividing the bar evenly
+      - compound metre is written in eighths, so six eighths is not
+        rendered as three quarters
+    permissions:
+      - role: visitor
+        notes: Pure computation.
+
+  - name: transcription.move_bar_line
+    description: >
+      Drag one bar line to another step. The bar before it and the bar
+      after it change length; nothing else does, and the take is not
+      touched.
+    actor: singer
+    implemented_by: packages/logic/src/bars.ts
+    parameters:
+      required: [layout, index, toStep]
+    preconditions:
+      - index names a line that exists
+    postconditions:
+      - a line never crosses its neighbours, so bars keep their order
+      - a move onto a neighbour is refused rather than collapsing a bar
+      - the total number of steps is unchanged
+      - moving to where it already is returns the layout unchanged
+    permissions:
+      - role: singer
+
+  - name: transcription.add_bar_line
+    description: >
+      Split a bar by putting a line inside it. Moving lines alone cannot
+      change how many bars there are, and some arrangements need that.
+    actor: singer
+    implemented_by: packages/logic/src/bars.ts
+    parameters:
+      required: [layout, atStep]
+    preconditions:
+      - atStep is a grid step
+    postconditions:
+      - a line where one already exists changes nothing
+      - lines stay in order
+    permissions:
+      - role: singer
+
+  - name: transcription.remove_bar_line
+    description: Merge two bars by taking the line between them away.
+    actor: singer
+    implemented_by: packages/logic/src/bars.ts
+    parameters:
+      required: [layout, index]
+    preconditions:
+      - index names a line that exists
+    postconditions:
+      - the two bars either side become one
+      - removing the only line is refused; a take has at least one bar
+    permissions:
+      - role: singer
