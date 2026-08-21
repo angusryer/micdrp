@@ -1,0 +1,61 @@
+# Hearing a kept take back — from the list card and from the detail view.
+# Split from interactions.yml to keep both files inside the 150-line budget.
+
+interactions:
+  - id: INT-NOTES-008
+    name: Play the take back
+    view: VIEW-NOTES-002
+    precondition: The note has stored audio.
+    steps:
+      - Press play
+    outcome: >
+      The capture plays and its position is shown while it runs. The
+      chord backdrop sounds under it, each chord across its own slot and
+      in step with the take, and stops when the take stops. A note whose
+      melody implies no chords plays on its own.
+    error_handling: >
+      A note whose upload never completed shows no playback bar at all.
+      A take that fails to decode leaves no backdrop sounding.
+    maps_to:
+      capability: notes.play
+
+  - id: INT-NOTES-011
+    name: Choose what play sounds
+    view: VIEW-NOTES-002
+    precondition: The note has stored audio and its melody implied chords.
+    steps:
+      - Choose take, chords, or both beside the play control
+      - Press play
+    outcome: >
+      Play sounds exactly what was chosen: the recorded take alone, the
+      chord backdrop alone, or the two together, which is what a note
+      offers before anything is chosen. Chords alone run to the end of
+      the progression and hand the control back to play. Changing the
+      choice while something is sounding stops it, so the next press
+      starts the mix that is now chosen.
+    error_handling: >
+      A note whose melody implied no chords offers no choice and plays
+      the take alone.
+    maps_to:
+      capability: notes.set_playback_mix
+
+  - id: INT-NOTES-010
+    name: Play a kept idea from the list
+    view: VIEW-NOTES-001
+    precondition: The note has stored audio.
+    steps:
+      - Press play on the note's card
+    outcome: >
+      That press starts the capture playing and the control itself
+      becomes the playing state, offering stop. The line directly above
+      the control counts the position while the take runs and returns to
+      the length alone once it stops. The singer is not asked to press a
+      second control to make sound, and is never handed a close control
+      to dismiss a player they did not ask to open.
+    error_handling: >
+      A note whose upload never completed shows no play control at all,
+      so there is no press that does nothing. A take that cannot be
+      decoded says so beside the control, which returns to offering
+      play.
+    maps_to:
+      capability: notes.play

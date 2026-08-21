@@ -1,0 +1,34 @@
+# The chord backdrop sounding under a take — notes.play_backdrop.
+# Split out of playback.yml, which was over the 150-line spec-file budget.
+acceptance:
+  - id: ACC-NOTES-032
+    interface: ui
+    title: Playing a take sounds the chord backdrop with it
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio
+    when:
+      - singer S calls notes.play_backdrop on note N
+    then:
+      - the call succeeds
+    maps_to:
+      capability: notes.play_backdrop
+      invariants: [INV-NOTES-018]
+      view: VIEW-NOTES-002
+
+  - id: ACC-NOTES-035
+    interface: ui
+    title: The backdrop lands where the take has already reached
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio
+      - the take has been running for some of the progression already
+    when:
+      - singer S calls notes.play_backdrop on note N
+    then:
+      - the note field backdropSoundsFinishedSlots is false
+      - the note field backdropFollowsTakePosition is true
+    maps_to:
+      capability: notes.play_backdrop
+      invariants: [INV-NOTES-020]
+      view: VIEW-NOTES-002

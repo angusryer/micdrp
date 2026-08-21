@@ -11,7 +11,7 @@
  * Owned by its own module so `usePlayback` stays the audio machine and stays
  * inside the file budget.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 /** Re-read the clock twice a second — a counter shown to the second needs no more. */
 const TICK_MS = 500;
@@ -37,4 +37,36 @@ export function usePlaybackClock(running: boolean): number {
   }, [running]);
 
   return elapsedMs;
+}
+
+/**
+ * The instant the audio itself started, and how far past it we are now.
+ *
+ * Read at the moment something else has to be lined up with a take already
+ * running — the chord backdrop, which is scheduled a render and an audio
+ * context after the take began (INV-NOTES-020). A ref, not state: the reader
+ * wants the value as it is when it asks, and marking the anchor must not
+ * re-render the transport that just started.
+ */
+export interface TakeAnchor {
+  /** Record that the audio has just started. */
+  mark: () => void;
+  /** Milliseconds since the last mark; 0 before the first one. */
+  elapsedMs: () => number;
+}
+
+export function useTakeAnchor(): TakeAnchor {
+  const startedAt = useRef<number | null>(null);
+  return useMemo(
+    () => ({
+      mark: () => {
+        startedAt.current = Date.now();
+      },
+      elapsedMs: () =>
+        startedAt.current === null
+          ? 0
+          : Math.max(0, Date.now() - startedAt.current)
+    }),
+    []
+  );
 }

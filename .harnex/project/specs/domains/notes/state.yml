@@ -1,11 +1,59 @@
 # Domain Development State — overwrite each meaningful change
-updated_at: "2026-08-20T23:30:00Z"
+updated_at: "2026-08-21T00:00:00Z"
 updated_by: agent
 phase: specifying
 phase_detail: >
   Specs written from a crawl of screens/Notes, analysis/note.ts, the
-  data layer, and the notes table in migration 0001. 10 capabilities,
-  16 invariants, 31 acceptance tests, 2 views, 10 interactions.
+  data layer, and the notes table in migration 0001. 12 capabilities,
+  20 invariants, 35 acceptance tests, 2 views, 11 interactions.
+
+  Play on the detail view sounds the take and the chord backdrop
+  together (notes.play_backdrop, INV-NOTES-018, ACC-NOTES-032), and
+  sounds it where the take already is (INV-NOTES-020, ACC-NOTES-035).
+  The chords cannot be scheduled in the instant the audio starts — a
+  render commits and an audio context is built first — so usePlayback
+  marks the take's start (useTakeAnchor, beside usePlaybackClock) and
+  usePlaybackMix hands that elapsed reading to the backdrop, which
+  shifts the progression onto it: a slot already passed is dropped, the
+  one underway starts where the take is and still ends where it ends.
+  Chords sounded alone are given 0, having nothing to catch up to.
+  Backdrop specs were split into acceptance/backdrop.yml for the
+  150-line budget.
+  useChordTrack voices the whole track once, from the same floor an
+  audition uses, so an edit made before the press is the chord that
+  plays; useChordBackdrop flattens those slots into reference tones on
+  the take's own clock — melody and audio are both measured from the
+  capture's start, so no second clock is needed — at a lower per-tone
+  gain than an audition, on its own AudioContext so a tap does not cut
+  it off.
+
+  What a press sounds is chosen beside it — take, chords, or both
+  (notes.set_playback_mix, INV-NOTES-019, INT-NOTES-011,
+  ACC-NOTES-033/034). usePlaybackMix is the single transport over both
+  sources: it wraps usePlayback for anything with a take in it, and for
+  chords alone it makes the backdrop the transport, ending it on a
+  timer the length of the progression (useChordBackdrop now reports
+  durationMs). Chords alone never calls the resolver, so a press that
+  plays no take mints no file token. The backdrop is still driven from
+  the transport through a ref, so re-voicing mid-take cannot restart
+  it, and a choice made mid-playback stops what is sounding rather than
+  half-applying. PlaybackBar holds the choice and hides it when the
+  melody implied no chords; PlaybackMixToggle is the control.
+  PlaybackButton was split out of the bar, playback interactions into
+  interactions-playback.yml, and the bar's rendering into
+  __fixtures__/renderPlaybackBar, all for the 150-line and 40-line
+  budgets.
+
+  A chord slot answers only vertical drags and taps (INV-NOTES-017,
+  INT-NOTES-005). The card used to lock an axis mid-drag and read
+  sideways movement as a shape change, which meant the horizontal
+  scroll view holding the track never saw that drag: later bars were
+  unreachable and trying to reach them edited a chord. Shape now steps
+  on a double tap, which wraps, so one gesture reaches every quality.
+  ChordCard was split out of ChordTrack for the 150-line budget and
+  ChordCard.test.tsx pins the gesture axes; the shared reanimated mock
+  gained useEvent and setGestureState, without which rendering any
+  GestureDetector under jest throws.
 
   The line above a card's play control is the take's clock
   (INV-NOTES-016, ACC-NOTES-030/031): the length at rest, the running
@@ -42,6 +90,12 @@ blockers:
     adapter with a fake engine and a row-level-security-enforcing fake
     backend client is wired.
 known_conflicts:
+  - >
+    usePlayback.play() is 49 lines, over the 40-line function budget. It
+    was already 47 before the backdrop was aligned to the take's clock;
+    splitting it would move the decode-and-start sequence, which two
+    separate playback fixes already turned over, and pushes the file past
+    150 lines. Left as it is, deliberately.
   - >
     test-extensions.yml is 160 lines, over the 150-line spec-file
     budget. The framework loads exactly one test-extensions.yml per

@@ -29,7 +29,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { AudioContext } from './audioApi';
 import type { AudioBufferSourceNodeLike, AudioContextLike } from './audioApi';
-import { usePlaybackClock } from './usePlaybackClock';
+import { usePlaybackClock, useTakeAnchor } from './usePlaybackClock';
 
 export type PlaybackState = 'stopped' | 'loading' | 'playing' | 'error';
 
@@ -49,6 +49,11 @@ export interface Playback {
    * (INV-NOTES-016).
    */
   positionMs: number;
+  /**
+   * Milliseconds since the audio started — what a backdrop scheduled against
+   * a take already running lines itself up with (INV-NOTES-020).
+   */
+  elapsedMs: () => number;
   play(): Promise<void>;
   stop(): Promise<void>;
 }
@@ -59,6 +64,7 @@ export function usePlayback({
   const [state, setState] = useState<PlaybackState>('stopped');
   // Runs only while audio is running, and resets itself the moment it isn't.
   const positionMs = usePlaybackClock(state === 'playing');
+  const anchor = useTakeAnchor();
   const ctxRef = useRef<AudioContextLike | null>(null);
   const sourceRef = useRef<AudioBufferSourceNodeLike | null>(null);
 
@@ -120,6 +126,8 @@ export function usePlayback({
         ctxRef.current = null;
       };
       source.start(0);
+      // The take's clock starts here, not at the press — decode sits between.
+      anchor.mark();
       sourceRef.current = source;
       setState('playing');
     } catch (err) {
@@ -131,12 +139,12 @@ export function usePlayback({
       ctxRef.current = null;
       sourceRef.current = null;
     }
-  }, [resolveAudioUri, state]);
+  }, [anchor, resolveAudioUri, state]);
 
   const stop = useCallback(async (): Promise<void> => {
     await teardown();
     setState('stopped');
   }, [teardown]);
 
-  return { state, positionMs, play, stop };
+  return { state, positionMs, elapsedMs: anchor.elapsedMs, play, stop };
 }

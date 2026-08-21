@@ -41,6 +41,12 @@ jest.mock('react-native-reanimated', () => {
     cancelAnimation: () => {},
     runOnJS: (fn) => fn,
     runOnUI: (fn) => fn,
+    // GestureDetector asks reanimated for an event handler object and for the
+    // worklet that sets gesture state. Neither does anything on the host —
+    // RNGH's jest utilities deliver events through DeviceEventEmitter instead —
+    // but both must exist or rendering any GestureDetector throws.
+    useEvent: () => ({}),
+    setGestureState: () => {},
     interpolate: () => 0,
     Extrapolate: { CLAMP: 'clamp', EXTEND: 'extend', IDENTITY: 'identity' },
     Extrapolation: { CLAMP: 'clamp', EXTEND: 'extend', IDENTITY: 'identity' },

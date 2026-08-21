@@ -61,10 +61,12 @@ interactions:
     precondition: The note's chord track has at least one slot.
     steps:
       - Drag a chord slot up or down to move it through the key
-      - Or step its shape to change the chord quality
+      - Or double-tap a slot to step its shape through the qualities
     outcome: >
       The slot takes the new chord, is marked as chosen, and later
-      inference leaves it alone.
+      inference leaves it alone. A sideways drag is not an edit at all:
+      it scrolls the track, so a progression longer than the screen can
+      be reached.
     maps_to:
       capability: notes.edit_chord
 
@@ -91,17 +93,8 @@ interactions:
     maps_to:
       capability: notes.audition_chord
 
-  - id: INT-NOTES-008
-    name: Play the take back
-    view: VIEW-NOTES-002
-    precondition: The note has stored audio.
-    steps:
-      - Press play
-    outcome: The capture plays and its position is shown while it runs.
-    error_handling: >
-      A note whose upload never completed shows no playback bar at all.
-    maps_to:
-      capability: notes.play
+  # Playing a take back — INT-NOTES-008, INT-NOTES-010, INT-NOTES-011 —
+  # lives in interactions-playback.yml.
 
   - id: INT-NOTES-009
     name: Take the idea elsewhere
@@ -113,24 +106,3 @@ interactions:
       the singer.
     maps_to:
       capability: notes.export_midi
-
-  - id: INT-NOTES-010
-    name: Play a kept idea from the list
-    view: VIEW-NOTES-001
-    precondition: The note has stored audio.
-    steps:
-      - Press play on the note's card
-    outcome: >
-      That press starts the capture playing and the control itself
-      becomes the playing state, offering stop. The line directly above
-      the control counts the position while the take runs and returns to
-      the length alone once it stops. The singer is not asked to press a
-      second control to make sound, and is never handed a close control
-      to dismiss a player they did not ask to open.
-    error_handling: >
-      A note whose upload never completed shows no play control at all,
-      so there is no press that does nothing. A take that cannot be
-      decoded says so beside the control, which returns to offering
-      play.
-    maps_to:
-      capability: notes.play

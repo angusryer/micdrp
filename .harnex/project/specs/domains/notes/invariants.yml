@@ -74,9 +74,21 @@ invariants:
     description: The chord backdrop sits below the sung line
     severity: minor
     check: >
-      Every audition voicing is placed at or above the backdrop's floor
-      note, so the harmony supports the melody rather than competing
-      with it.
+      Every voicing the backdrop sounds — a tapped chord or the whole
+      progression played under a take — is placed at or above the
+      backdrop's floor note, so the harmony supports the melody rather
+      than competing with it. Played under a take the backdrop is also
+      quieter per tone than an audition, which is heard on its own.
+
+  - id: INV-NOTES-017
+    description: A chord slot never eats a sideways drag
+    severity: major
+    check: >
+      No gesture on a chord slot activates on horizontal movement, so a
+      sideways drag always reaches the scrolling track underneath. A slot
+      that answered a sideways drag with an edit made the rest of a long
+      progression unreachable and changed a chord the singer never meant
+      to touch.
 
   - id: INV-NOTES-010
     description: Analysis never runs on the live audio path

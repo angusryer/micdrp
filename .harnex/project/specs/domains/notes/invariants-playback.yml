@@ -41,6 +41,60 @@ invariants:
       Opening a bar the singer then had to close made the card carry two
       play buttons and asked for a press that only undid a press.
 
+  - id: INV-NOTES-018
+    description: The chord backdrop follows the one transport
+    severity: major
+    check: >
+      The backdrop sounds only while the transport says it should: it is
+      scheduled when playback starts, and silenced when playback is
+      stopped, ends on its own, fails to decode, or the view goes away.
+      Playing the chords alone makes the backdrop the thing the
+      transport runs, and it still ends itself when the progression runs
+      out. Verified by asserting nothing is scheduled before the press,
+      that stopping silences every scheduled tone, and that unmounting
+      leaves nothing sounding.
+
+      Chords still running after the take stopped would be a second
+      transport with no control to stop it.
+
+  - id: INV-NOTES-020
+    description: The backdrop is scheduled on the take's clock, not on its own
+    severity: major
+    check: >
+      A backdrop scheduled after the take has already begun is placed
+      against where the take has reached, not against the moment it was
+      scheduled. A slot the take has already passed is not sounded, a
+      slot underway starts at the take's current position and still ends
+      where the slot ends, and every later slot keeps its own place.
+      Sounding the chords alone starts them from the top, since there is
+      no take for them to be behind. Verified by asserting that a
+      backdrop started with the take some way in schedules no tone for a
+      finished slot, shortens the one in progress, and leaves the rest
+      untouched.
+
+      The backdrop cannot be scheduled in the same instant the take
+      starts: a render commits and an audio context is built first.
+      Starting the progression from zero at that later instant puts every
+      chord that gap behind the voice for the whole take, which is heard
+      as harmony trailing the line rather than sitting under it.
+
+  - id: INV-NOTES-019
+    description: Play sounds the chosen mix and nothing else
+    severity: major
+    check: >
+      The mix chosen beside the play control decides what a press
+      sounds: the take alone, the chord backdrop alone, or both. Take
+      alone schedules no backdrop; chords alone resolves no audio URL
+      and decodes nothing, so a press that plays no take asks the server
+      for nothing. Changing the choice while something is sounding stops
+      it. Verified by asserting no decode on a chords-alone press, no
+      backdrop on a take-alone press, and silence after the choice
+      changes mid-playback.
+
+      A control that only half-applies — chords added to a take already
+      running, or a take left running under a chords-only choice — would
+      make what is heard depend on when it was pressed.
+
   - id: INV-NOTES-016
     description: The line above the card's play control is the take's clock
     severity: minor

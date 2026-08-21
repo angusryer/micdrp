@@ -3,9 +3,12 @@
  *
  * A note is a musical-idea memo, so this is *analysis*, not a grade: detected
  * key, natural tempo, vocal range and intonation steadiness — plus the note list
- * (tap to hear each pitch) and a MIDI export. The symbolic melody is read
- * straight from the cache; the audio is never re-touched. MIDI is generated
- * on-the-fly from the stored melody so export works without a server round-trip.
+ * (tap to hear each pitch) and a MIDI export. Play sounds the take and the chord
+ * backdrop together, so the singer hears the harmony their line implied rather
+ * than the bare recording — or either of them alone, whichever the choice beside
+ * the play control is set to. The symbolic melody is read straight from the cache;
+ * the audio is never re-touched. MIDI is generated on-the-fly from the stored
+ * melody so export works without a server round-trip.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -21,6 +24,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { notesToMidi, quantize, type NoteEvent } from 'logic';
 
 import { ChordTrack } from './ChordTrack';
+import { useChordBackdrop } from './useChordBackdrop';
 import { useChordTrack } from './useChordTrack';
 
 import type { RootStackParamList } from '../../navigation/types';
@@ -115,6 +119,9 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   // The editable harmonic backdrop, derived from the same fitted grid the bar
   // lines are drawn from, so chords and bars always agree.
   const chords = useChordTrack(melody, grid);
+  // Play sounds this backdrop with the take, or on its own, or not at all —
+  // whichever the choice beside the play control is set to (INV-NOTES-019).
+  const backdrop = useChordBackdrop(chords.progression);
   // Tap a note to hear its pitch.
   const tonePlayer = useMemo(() => createReferenceTonePlayer(), []);
   useEffect(() => () => tonePlayer.stop(), [tonePlayer]);
@@ -182,6 +189,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
           <PlaybackBar
             resolveAudioUri={resolveAudio}
             durationLabel={formatDuration(note.durationMs)}
+            accompaniment={backdrop}
           />
         ) : null}
 

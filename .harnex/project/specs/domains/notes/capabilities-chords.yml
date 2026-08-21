@@ -79,3 +79,58 @@ capabilities:
     permissions:
       - role: singer
         notes: Local playback only.
+
+  - name: notes.play_backdrop
+    description: >
+      Sound the whole backdrop under the take, so pressing play gives the
+      singer their line and the harmony it implied together rather than
+      the bare recording.
+    actor: singer
+    implemented_by: packages/client/src/screens/Notes/useChordBackdrop.ts
+    parameters:
+      required: [progression]
+      optional: [elapsedMs]
+    preconditions:
+      - the take is playing
+    postconditions:
+      - each chord sounds across its own slot, on the take's own clock,
+        because melody and audio are measured from the same capture start
+      - the progression is placed against how far the take has already
+        run, so the gap between the audio starting and the backdrop being
+        scheduled does not put the harmony behind the line
+      - a slot the take has already passed is not sounded, and the slot
+        underway starts where the take is and ends where the slot ends
+      - the backdrop uses the voicing an audition of that slot would use
+      - the backdrop sounds quieter than an audition, which is heard alone
+      - a slot the grid places before the take begins is clamped to its
+        start rather than scheduled in the past
+      - a track with no slots plays the take alone
+    permissions:
+      - role: singer
+        notes: Local playback only.
+
+  - name: notes.set_playback_mix
+    description: >
+      Choose what pressing play sounds — the take alone, the chord
+      backdrop alone, or both — so the harmony a line implied can be
+      heard without the line sitting on top of it.
+    actor: singer
+    implemented_by: packages/client/src/screens/Notes/usePlaybackMix.ts
+    parameters:
+      required: [mix]
+    preconditions:
+      - the note has stored audio
+      - the note's melody implied at least one chord
+    postconditions:
+      - the choice is take, chords, or both, and both is what a note
+        offers before anything is chosen
+      - a press sounds exactly the chosen sources and nothing else
+      - choosing the chords alone mints no audio URL and decodes no take
+      - the chords alone end when the progression runs out, handing the
+        control back to offering play
+      - changing the choice while something is sounding stops it, so no
+        mix is ever half-applied
+      - a melody that implied no chords offers no choice at all
+    permissions:
+      - role: singer
+        notes: Local playback only.

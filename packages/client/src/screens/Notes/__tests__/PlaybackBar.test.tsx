@@ -13,12 +13,11 @@
  * before — meant every note played more than two minutes later fetched with a
  * dead token, which is why playback still failed after the first fix.
  *
- * Note the render pattern: `await waitFor(() => render(...))` before touching
- * `screen`, matching ErrorBoundary.test.tsx. A bare render() leaves `screen`
- * unbound in this setup and every query throws notImplemented.
+ * Rendering goes through __fixtures__/renderPlaybackBar, which holds the
+ * providers and the `await waitFor(() => render(...))` this setup needs before
+ * any query is touched. What a press sounds is playbackMix.test.tsx.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import React from 'react';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 const mockDecode = jest.fn();
 const mockClose = jest.fn().mockResolvedValue(undefined);
@@ -39,21 +38,14 @@ jest.mock('react-native-audio-api', () => ({
   }))
 }));
 
-import { ThemeProvider } from '../../../theme';
-import { PlaybackBar } from '../PlaybackBar';
+import { backdrop, renderPlaybackBar } from '../__fixtures__/renderPlaybackBar';
 
 const REMOTE =
   'https://micdrp-backend.fly.dev/api/files/notes/abc123/audio.wav?token=t0ken';
 const LOCAL = 'file:///var/mobile/tmp/micdrp-abc.wav';
 
-const renderBar = (audioUri: string | null) =>
-  waitFor(() =>
-    render(
-      <ThemeProvider>
-        <PlaybackBar resolveAudioUri={() => Promise.resolve(audioUri)} />
-      </ThemeProvider>
-    )
-  );
+const renderBar = (audioUri: string | null, chords?: ReturnType<typeof backdrop>) =>
+  renderPlaybackBar(() => Promise.resolve(audioUri), chords);
 
 describe('PlaybackBar', () => {
   beforeEach(() => {
@@ -93,6 +85,49 @@ describe('PlaybackBar', () => {
       REMOTE,
       expect.any(Error)
     );
+    warn.mockRestore();
+  });
+});
+
+describe('PlaybackBar accompaniment', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockDecode.mockResolvedValue({ duration: 3 });
+  });
+
+  it('sounds the backdrop with the take, not before it', async () => {
+    const chords = backdrop();
+    await renderBar(REMOTE, chords);
+    expect(chords.start).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByLabelText('Play'));
+
+    await waitFor(() => expect(chords.start).toHaveBeenCalledTimes(1));
+  });
+
+  it('silences the backdrop when the take is stopped', async () => {
+    const chords = backdrop();
+    await renderBar(REMOTE, chords);
+    await fireEvent.press(screen.getByLabelText('Play'));
+    await waitFor(() => expect(chords.start).toHaveBeenCalled());
+    chords.stop.mockClear();
+
+    await fireEvent.press(screen.getByLabelText('Pause'));
+
+    await waitFor(() => expect(chords.stop).toHaveBeenCalled());
+  });
+
+  it('leaves no backdrop sounding when the take cannot be decoded', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    mockDecode.mockRejectedValue(new Error('unsupported format'));
+    const chords = backdrop();
+    await renderBar(REMOTE, chords);
+    chords.stop.mockClear();
+
+    await fireEvent.press(screen.getByLabelText('Play'));
+
+    await waitFor(() => expect(chords.stop).toHaveBeenCalled());
+    expect(chords.start).not.toHaveBeenCalled();
     warn.mockRestore();
   });
 });

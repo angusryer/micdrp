@@ -47,6 +47,8 @@ views:
       - notes.list
       - notes.open_chord_track
       - notes.play
+      - notes.play_backdrop
+      - notes.set_playback_mix
       - notes.export_midi
     elements:
       - The note's title
@@ -55,8 +57,16 @@ views:
         the metre was not measured
       - The descriptive analysis — key, tempo, range, steadiness — with no
         headline score
-      - A chord track under the melody, one slot per bar
-      - Controls on each chord slot to nudge it, reshape it, and revert it
+      - A chord track under the melody, one slot per bar, scrolled
+        sideways when the progression runs past the screen
+      - Controls on each chord slot to nudge it, reshape it, and revert
+        it, none of which claim a sideways drag
       - A revert-all control, shown only once something has been edited
-      - A playback bar, absent when the note has no stored audio
+      - A playback bar, absent when the note has no stored audio, whose
+        play control sounds the chord backdrop under the take as well as
+        the take itself, and silences it again on stop
+      - A choice beside that play control of what it sounds — the take,
+        the chords, or both, which is what is offered until something
+        else is chosen — shown only when the melody implied chords to
+        choose between
       - An export control offering the melody as a MIDI file

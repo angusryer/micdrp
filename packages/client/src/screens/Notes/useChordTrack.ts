@@ -15,6 +15,8 @@ import {
   revertSlot,
   transposeDiatonic,
   voiceChord,
+  voiceProgression,
+  type ChordPlayback,
   type ChordSlot,
   type MusicalGrid,
   type NoteEvent
@@ -39,6 +41,12 @@ export interface ChordTrack {
   revertAll: () => void;
   /** MIDI notes for a slot, for playback. */
   voicing: (index: number) => number[];
+  /**
+   * The whole track voiced on the melody's own clock, for sounding under a
+   * take. Same floor as {@link voicing}, so what plays under the take is what
+   * an audition of each slot would give.
+   */
+  progression: ChordPlayback[];
   auditionMs: number;
 }
 
@@ -69,8 +77,16 @@ export function useChordTrack(
     []
   );
 
+  // Voiced here rather than at the player, so an edit made before pressing
+  // play is the chord that plays.
+  const progression = useMemo(
+    () => voiceProgression(slots, { bottomMidi: VOICING_BOTTOM_MIDI }),
+    [slots]
+  );
+
   return {
     slots,
+    progression,
     hasEdits: slots.some((s) => s.isEdited),
     nudge: useCallback(
       (index, degrees) =>

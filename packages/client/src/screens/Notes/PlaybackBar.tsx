@@ -1,26 +1,31 @@
 /**
- * PlaybackBar — play/pause a note's captured audio.
+ * PlaybackBar — play/pause a note, and choose what playing it sounds.
  *
- * The view only. Decoding, the AudioContext lifecycle, and the URL-resolution
- * rules live in `usePlayback`, which this renders.
+ * The view of a transport, plus the choice that transport honours: the take
+ * alone, the chord backdrop alone, or both, which is what a note offers until
+ * something else is chosen (INV-NOTES-019). The choice only appears when there
+ * are chords to choose — a melody that implied none offers no decision. The
+ * transport itself, the accompaniment's lifecycle, decoding and the
+ * URL-resolution rules live in `usePlaybackMix` and `usePlayback`.
  *
  * The note detail view's player. The Notes list card does not use this: its own
  * play button is its player, so a bar there would be a second control for the
  * same take (INV-NOTES-015).
  */
-import React from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View
-} from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../theme';
-import { usePlayback } from './usePlayback';
+import { PlaybackButton } from './PlaybackButton';
+import { PlaybackMixToggle } from './PlaybackMixToggle';
+import {
+  usePlaybackMix,
+  type MixAccompaniment,
+  type PlaybackMix
+} from './usePlaybackMix';
 
 export type { PlaybackState } from './usePlayback';
+export type { PlaybackMix };
 
 export interface PlaybackBarProps {
   /**
@@ -30,55 +35,53 @@ export interface PlaybackBarProps {
   resolveAudioUri: () => Promise<string | null>;
   /** Optional override duration label (e.g. "1:23"). */
   durationLabel?: string;
+  /**
+   * The note's chord backdrop. Sounds with the take, or on its own when the
+   * chords are what was chosen, and is silenced whenever the transport is not
+   * playing — including when a take ends by itself or fails to decode
+   * (INV-NOTES-018).
+   */
+  accompaniment?: MixAccompaniment;
 }
 
 export function PlaybackBar({
   resolveAudioUri,
-  durationLabel
+  durationLabel,
+  accompaniment
 }: PlaybackBarProps) {
   const { colors } = useTheme();
-  const { state, play, stop } = usePlayback({ resolveAudioUri });
-
-  const isPlaying = state === 'playing';
-  const isLoading = state === 'loading';
-  const isError = state === 'error';
+  const [mix, setMix] = useState<PlaybackMix>('both');
+  // Nothing to choose between without chords, so the take is all there is.
+  const hasChords = (accompaniment?.durationMs ?? 0) > 0;
+  const { state, play, stop } = usePlaybackMix({
+    resolveAudioUri,
+    mix: hasChords ? mix : 'take',
+    accompaniment
+  });
 
   return (
-    <View style={styles.container}>
-      {isLoading ? (
-        <ActivityIndicator
-          size="small"
-          color={colors.primary500}
-          accessibilityLabel="Loading audio"
+    <View style={styles.stack}>
+      <View style={styles.container}>
+        <PlaybackButton
+          state={state}
+          onPlay={() => void play()}
+          onStop={() => void stop()}
         />
-      ) : (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={isPlaying ? 'Pause' : 'Play'}
-          accessibilityState={{ selected: isPlaying }}
-          onPress={isPlaying ? stop : play}
-          style={[
-            styles.button,
-            { backgroundColor: isPlaying ? colors.primary300 : colors.primary500 }
-          ]}
-        >
-          <Text style={[styles.buttonLabel, { color: colors.white }]}>
-            {isPlaying ? 'Pause' : 'Play'}
+
+        {durationLabel != null ? (
+          <Text style={[styles.duration, { color: colors.gray300 }]}>
+            {durationLabel}
           </Text>
-        </Pressable>
-      )}
+        ) : null}
 
-      {durationLabel != null ? (
-        <Text style={[styles.duration, { color: colors.gray300 }]}>
-          {durationLabel}
-        </Text>
-      ) : null}
+        {state === 'error' ? (
+          <Text style={[styles.error, { color: colors.error }]}>
+            Playback failed
+          </Text>
+        ) : null}
+      </View>
 
-      {isError ? (
-        <Text style={[styles.error, { color: colors.error }]}>
-          Playback failed
-        </Text>
-      ) : null}
+      {hasChords ? <PlaybackMixToggle value={mix} onChange={setMix} /> : null}
     </View>
   );
 }
@@ -86,22 +89,11 @@ export function PlaybackBar({
 export default PlaybackBar;
 
 const styles = StyleSheet.create({
+  stack: { gap: 8 },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12
-  },
-  button: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 64
-  },
-  buttonLabel: {
-    fontSize: 13,
-    fontWeight: '600'
   },
   duration: {
     fontSize: 13

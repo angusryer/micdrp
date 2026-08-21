@@ -8,7 +8,7 @@
 import { act, renderHook } from '@testing-library/react-native';
 
 import { formatPlaybackCounter } from '../noteCardFormat';
-import { usePlaybackClock } from '../usePlaybackClock';
+import { usePlaybackClock, useTakeAnchor } from '../usePlaybackClock';
 
 describe('formatPlaybackCounter', () => {
   it('is the take length alone when nothing is playing', () => {
@@ -66,5 +66,41 @@ describe('usePlaybackClock', () => {
     await rerender({ running: false });
 
     expect(result.current).toBe(0);
+  });
+});
+
+describe('useTakeAnchor', () => {
+  // Same reason as above: RNTL flushes through a real setImmediate.
+  beforeEach(() => jest.useFakeTimers({ doNotFake: ['setImmediate'] }));
+  afterEach(() => jest.useRealTimers());
+
+  it('is 0 until the audio has actually started', async () => {
+    const { result } = await renderHook(() => useTakeAnchor());
+
+    jest.advanceTimersByTime(5_000);
+
+    expect(result.current.elapsedMs()).toBe(0);
+  });
+
+  it('reports the gap between the audio starting and being asked', async () => {
+    // This gap is what the backdrop is scheduled against (INV-NOTES-020): the
+    // render and the audio context that sit between the two moments.
+    const { result } = await renderHook(() => useTakeAnchor());
+
+    result.current.mark();
+    jest.advanceTimersByTime(120);
+
+    expect(result.current.elapsedMs()).toBe(120);
+  });
+
+  it('starts again from the moment of the next press', async () => {
+    const { result } = await renderHook(() => useTakeAnchor());
+
+    result.current.mark();
+    jest.advanceTimersByTime(9_000);
+    result.current.mark();
+    jest.advanceTimersByTime(40);
+
+    expect(result.current.elapsedMs()).toBe(40);
   });
 });
