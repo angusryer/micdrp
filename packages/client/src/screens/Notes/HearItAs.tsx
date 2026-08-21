@@ -89,6 +89,7 @@ export function HearItAs({
       </TouchableOpacity>
 
       <Text style={[styles.hint, { color: colors.gray500 }]}>{active.hint}</Text>
+
     </View>
   );
 }

@@ -20,9 +20,11 @@ interface ScheduledOsc {
 function makeFakeContext(): {
   ctx: AudioContextLike;
   oscs: ScheduledOsc[];
+  gains: { gain: { value: number } }[];
   closed: () => boolean;
 } {
   const oscs: ScheduledOsc[] = [];
+  const gains: { gain: { value: number } }[] = [];
   let isClosed = false;
   const param = () => ({
     value: 0,
@@ -53,12 +55,16 @@ function makeFakeContext(): {
         })
       };
     },
-    createGain: () => ({ gain: param(), connect: jest.fn() }),
+    createGain: () => {
+      const node = { gain: param(), connect: jest.fn() };
+      gains.push(node);
+      return node;
+    },
     close: () => {
       isClosed = true;
     }
   };
-  return { ctx, oscs, closed: () => isClosed };
+  return { ctx, oscs, gains, closed: () => isClosed };
 }
 
 const MELODY: TargetNote[] = [
@@ -101,5 +107,39 @@ describe('createReferenceTonePlayer', () => {
     player.stop();
     expect(fake.closed()).toBe(true);
     expect(() => player.stop()).not.toThrow();
+  });
+});
+
+describe('level — INV-NOTES-027', () => {
+  /** The master is made first, before any note's own gain. */
+  const master = (fake: ReturnType<typeof makeFakeContext>) => fake.gains[0].gain.value;
+
+  it('moves what is already sounding, not only what is scheduled next', () => {
+    // Mixing a reference against a take is done by ear while listening. A
+    // level that only applied to the next playback would mean guessing and
+    // starting again.
+    const fake = makeFakeContext();
+    const player = createReferenceTonePlayer({ createContext: () => fake.ctx });
+    player.play(MELODY);
+    player.setLevel(0.25);
+    expect(master(fake)).toBe(0.25);
+  });
+
+  it('keeps a level set before anything played', () => {
+    const fake = makeFakeContext();
+    const player = createReferenceTonePlayer({ createContext: () => fake.ctx });
+    player.setLevel(0.4);
+    player.play(MELODY);
+    expect(master(fake)).toBe(0.4);
+  });
+
+  it('holds the level to the range rather than distorting', () => {
+    const fake = makeFakeContext();
+    const player = createReferenceTonePlayer({ createContext: () => fake.ctx });
+    player.play(MELODY);
+    player.setLevel(9);
+    expect(master(fake)).toBe(1);
+    player.setLevel(-3);
+    expect(master(fake)).toBe(0);
   });
 });

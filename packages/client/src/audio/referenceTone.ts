@@ -56,6 +56,15 @@ export interface ReferenceToneOptions {
 export interface ReferenceTonePlayer {
   /** Schedule and start playing the melody from the beginning. */
   play(notes: readonly TargetNote[]): void;
+  /**
+   * Set how loud this player is, 0..1, taking effect immediately.
+   *
+   * Everything runs through one gain node so a level set mid-playback moves
+   * what is already sounding. Mixing a reference against a take is a thing
+   * done by ear while listening, not by guessing and starting again
+   * (INV-NOTES-027).
+   */
+  setLevel(level: number): void;
   /** Stop playback and release the audio graph. Safe to call repeatedly. */
   stop(): void;
 }
@@ -87,6 +96,9 @@ export function createReferenceTonePlayer(
 
   let ctx: AudioContextLike | null = null;
   let oscillators: OscillatorLike[] = [];
+  /** Everything passes through here, so a level change reaches live tones. */
+  let master: GainLike | null = null;
+  let level = 1;
 
   function stop(): void {
     if (ctx) {
@@ -101,7 +113,15 @@ export function createReferenceTonePlayer(
       void ctx.close();
     }
     oscillators = [];
+    master = null;
     ctx = null;
+  }
+
+  function setLevel(next: number): void {
+    level = Math.min(Math.max(next, 0), 1);
+    if (master) {
+      master.gain.value = level;
+    }
   }
 
   function play(notes: readonly TargetNote[]): void {
@@ -114,6 +134,10 @@ export function createReferenceTonePlayer(
       return; // package unavailable — inert no-op
     }
     ctx = context;
+
+    master = context.createGain();
+    master.gain.value = level;
+    master.connect(context.destination);
 
     const t0 = context.currentTime;
     for (const note of notes) {
@@ -134,14 +158,14 @@ export function createReferenceTonePlayer(
       gain.gain.linearRampToValueAtTime(0, endAt);
 
       osc.connect(gain);
-      gain.connect(context.destination);
+      gain.connect(master);
       osc.start(startAt);
       osc.stop(endAt);
       oscillators.push(osc);
     }
   }
 
-  return { play, stop };
+  return { play, stop, setLevel };
 }
 
 export default createReferenceTonePlayer;

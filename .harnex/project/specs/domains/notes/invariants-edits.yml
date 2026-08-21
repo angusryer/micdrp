@@ -80,3 +80,20 @@ invariants:
       Being able to hear the difference is what makes the pitch detector
       testable at all: without it, every complaint about playback is
       ambiguous between the two.
+
+  - id: INV-NOTES-027
+    description: The take and what was read from it can be heard together
+    severity: high
+    check: >
+      The detected melody sounds over the take, on the take's own clock,
+      and its level can be changed while both are playing. Verified by
+      starting mid-take and asserting the melody lands where the voice
+      is, and that a level set during playback moves what is sounding.
+
+      Hearing them apart says each is plausible; hearing them together
+      says whether they are the same. A note read a semitone out, or a
+      beat late, is obvious against the voice and easy to miss beside it.
+
+      Mixing is done by ear while listening, so the level has to move
+      what is already sounding rather than only what is scheduled next.
+      Everything a player sounds passes through one gain for that reason.

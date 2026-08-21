@@ -31,6 +31,8 @@ import {
 
 import { ChordTrack } from './ChordTrack';
 import { HearItAs } from './HearItAs';
+import { MelodyMix } from './MelodyMix';
+import { DEFAULT_MELODY_LEVEL, useMelodyBackdrop } from './useMelodyBackdrop';
 import { useChordBackdrop } from './useChordBackdrop';
 import type { InterpretationDto } from 'shared';
 
@@ -154,18 +156,49 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   });
   // Play sounds this backdrop with the take, or on its own, or not at all —
   // whichever the choice beside the play control is set to (INV-NOTES-019).
+  const [playbackMode, setPlaybackMode] = useState<PlaybackMode>('as-sung');
+  const [isOverTake, setIsOverTake] = useState(false);
+  const [melodyLevel, setMelodyLevel] = useState(DEFAULT_MELODY_LEVEL);
+  const melodyTones = useMemo(
+    () => playbackTargets(melody, quantized.notes, playbackMode),
+    [melody, quantized.notes, playbackMode]
+  );
+  const melodyVoice = useMelodyBackdrop(melodyTones);
+  useEffect(() => melodyVoice.setLevel(melodyLevel), [melodyVoice, melodyLevel]);
+
   const backdrop = useChordBackdrop(chords.progression);
+
+  // Chords and melody ride the take together: the transport starts and stops
+  // one accompaniment, whatever is switched on inside it.
+  const accompaniment = useMemo(
+    () => ({
+      start: (offsetMs = 0) => {
+        backdrop.start(offsetMs);
+        if (isOverTake) {
+          melodyVoice.start(offsetMs);
+        }
+      },
+      stop: () => {
+        backdrop.stop();
+        melodyVoice.stop();
+      },
+      durationMs: Math.max(
+        backdrop.durationMs,
+        isOverTake ? melodyTones[melodyTones.length - 1]?.endMs ?? 0 : 0
+      )
+    }),
+    [backdrop, melodyVoice, isOverTake, melodyTones]
+  );
   // Tap a note to hear its pitch.
   const tonePlayer = useMemo(() => createReferenceTonePlayer(), []);
   useEffect(() => () => tonePlayer.stop(), [tonePlayer]);
 
   // Two questions, not one. As sung, a wrong note is the detector's doing; as
   // written, it is what transcription costs (INV-NOTES-026).
-  const [playbackMode, setPlaybackMode] = useState<PlaybackMode>('as-sung');
   const playMelody = useCallback(() => {
     tonePlayer.stop();
-    tonePlayer.play(playbackTargets(melody, quantized.notes, playbackMode));
-  }, [tonePlayer, melody, quantized.notes, playbackMode]);
+    tonePlayer.play(melodyTones);
+  }, [tonePlayer, melodyTones]);
   const playNote = useCallback(
     (midi: number) => {
       tonePlayer.play([{ midi, startMs: 0, endMs: TAP_NOTE_MS }]);
@@ -230,7 +263,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
           <PlaybackBar
             resolveAudioUri={resolveAudio}
             durationLabel={formatDuration(note.durationMs)}
-            accompaniment={backdrop}
+            accompaniment={accompaniment}
           />
         ) : null}
 
@@ -273,6 +306,12 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
                 onChange={setPlaybackMode}
                 onPlay={playMelody}
                 canNotate={hasGrid}
+              />
+              <MelodyMix
+                isOverTake={isOverTake}
+                onOverTakeChange={setIsOverTake}
+                level={melodyLevel}
+                onLevelChange={setMelodyLevel}
               />
             </View>
             {/* Say when the bar lines are an assumption rather than a reading.
