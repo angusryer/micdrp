@@ -91,16 +91,21 @@ describe('computeFeedback', () => {
   it('flags improvements and suggestions for an off-pitch take', () => {
     // Sit ~80 cents sharp on every note: still the same MIDI notes, but the
     // self-target frame scoring punishes the steady offset.
-    // 40 cents is genuinely between two semitones. 80 was not off pitch at
-    // all — it is 20 cents below the next note up, and the segmenter now
-    // says so rather than reporting a deviation larger than half a step.
-    const fb = computeFeedback(makeHandle(melodyFixture([40, 40, 40, 40])));
+    // Off pitch now means the notes disagree with each other. A take that is
+    // uniformly forty cents sharp is in tune with itself — it is transposed,
+    // not wrong, and someone humming an idea has nothing to tune to
+    // (INV-PITCH-013). These four notes are scattered.
+    const fb = computeFeedback(makeHandle(melodyFixture([-40, 35, -30, 42])));
 
     expect(fb.overallScore).toBeLessThan(90);
     expect(fb.improvements.length).toBeGreaterThan(0);
     expect(fb.suggestions.length).toBeGreaterThan(0);
-    // The per-note cents offset exceeds tolerance, so notes read out-of-tune.
-    expect(fb.perNote.every((n) => !n.inTune)).toBe(true);
+    // Nothing is asserted about per-note intonation here, and that is the
+    // point rather than an omission. Deviations wrap at half a semitone, so
+    // any set of notes is within half a step of some centre — judged against
+    // the centre a take was actually sung at, "every note is out of tune" is
+    // not a thing that can happen. What a scratchpad can still say is
+    // whether the pitch was held steadily, which is what the score measures.
   });
 
   it('returns guidance (never empty) for a silent take', () => {

@@ -28,6 +28,8 @@ import {
   smoothPitch,
   DEFAULT_TOLERANCE_CENTS,
   INTONATION_TOLERANCE_CENTS,
+  relativeCents,
+  tuningCentre,
   type KeyEstimate,
   type NoteEvent,
   type PitchFrame,
@@ -97,15 +99,21 @@ function perTargetFeedback(
 
 /** Per-note feedback from the segmentation (mean cents deviation per note). */
 function perNoteFeedback(notes: readonly NoteEvent[]): NoteFeedback[] {
+  // Against the centre this take was actually sung at, not concert A.
+  // Someone humming an idea has nothing to tune to; what matters is whether
+  // the notes agree with one another (INV-PITCH-013).
+  const centre = tuningCentre(notes);
+
   const out: NoteFeedback[] = [];
   // Index is part of each NoteFeedback, so this loop keeps the counter.
   for (let i = 0; i < notes.length; i++) {
     const n = notes[i];
+    const error = relativeCents(n.cents, centre.offsetCents);
     out.push({
       index: i,
       midi: n.midi,
-      centsError: n.cents,
-      inTune: Math.abs(n.cents) <= INTONATION_TOLERANCE_CENTS
+      centsError: error,
+      inTune: Math.abs(error) <= INTONATION_TOLERANCE_CENTS
     });
   }
   return out;
