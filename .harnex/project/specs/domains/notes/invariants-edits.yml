@@ -97,3 +97,31 @@ invariants:
       Mixing is done by ear while listening, so the level has to move
       what is already sounding rather than only what is scheduled next.
       Everything a player sounds passes through one gain for that reason.
+
+  - id: INV-NOTES-028
+    description: Everything the app sounds shares one clock
+    severity: critical
+    check: >
+      The take, the melody and the chords are rendered by one engine on
+      one sample counter, and a note scheduled for a given moment is
+      produced at that sample. Verified by rendering a schedule and
+      asserting each voice begins on the sample it was given.
+
+      Three separate audio graphs cannot agree on a moment. Alignment
+      went through a measured elapsed time passed between them, which is
+      as accurate as a render and a context creation allow — audible on
+      anything with a sharp attack. One counter makes it exact rather
+      than close.
+
+  - id: INV-NOTES-029
+    description: Playing a long take costs no more than playing a short one
+    severity: high
+    check: >
+      Rendering allocates nothing per note. Verified by rendering a
+      schedule of thousands of notes and asserting the voice pool is
+      fixed and bounded.
+
+      A node per note meant a minute-long take built hundreds of them
+      before a sound was made. A fixed pool of voices, each reused as
+      notes finish, is what keeps a long idea as cheap to hear as a
+      short one.
