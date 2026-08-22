@@ -2,15 +2,17 @@
  * NoteDetailScreen — a single note's reframed analysis.
  *
  * A note is a musical-idea memo, so this is *analysis*, not a grade: detected
- * key, natural tempo, vocal range and intonation steadiness — plus the note list
- * (tap to hear each pitch) and a MIDI export. Play sounds the take and the chord
- * backdrop together, so the singer hears the harmony their line implied rather
- * than the bare recording — or either of them alone, whichever the choice beside
- * the play control is set to. The symbolic melody is read straight from the cache;
- * the audio is never re-touched. MIDI is generated on-the-fly from the stored
- * melody so export works without a server round-trip.
+ * key, natural tempo, vocal range and intonation steadiness — plus the note
+ * list (tap to hear each pitch) and a MIDI export. Play sounds the take and
+ * the chord backdrop together, so the singer hears the harmony their line
+ * implied rather than the bare recording — or either alone, whichever the
+ * choice beside the play control is set to.
+ *
+ * Composition only. The state lives in useNoteDetail and each block of the
+ * page is its own piece, so the graph can be handed a whole screen sideways
+ * without any of this moving.
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -21,226 +23,34 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import {
-  notesToMidi,
-  playbackTargets,
-  quantize,
-  type NoteEvent,
-  type PlaybackMode
-} from 'logic';
-
-import { ChordTrack } from './ChordTrack';
-import { HearItAs } from './HearItAs';
-import { MelodyMix } from './MelodyMix';
-import { DEFAULT_MELODY_LEVEL, useMelodyBackdrop } from './useMelodyBackdrop';
-import { useChordBackdrop } from './useChordBackdrop';
-import type { InterpretationDto } from 'shared';
-
-import { useChordTrack } from './useChordTrack';
-import { useInterpretation } from './useInterpretation';
-import { useBarLayout } from './useBarLayout';
-
-/** Stable, so a note with no readings does not look like a new one each render. */
-const EMPTY_READINGS: InterpretationDto[] = [];
-
 import type { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
-import { createTonePlayer, SynthBus } from '../../audio/synthPlayer';
-import { cachedNotes } from '../../data/notesSync';
-import { notesRepo } from '../../data/notesRepo';
-import { writeMidi } from '../../data/files';
-import { MelodyView } from '../../components/MelodyView';
-import { ZoomableMelody } from '../../components/ZoomableMelody';
-import { ChordBand } from '../../components/ChordBand';
-import {
-  chordPitches,
-  HEADPHONE_FLOOR_MIDI,
-  SPEAKER_FLOOR_MIDI
-} from '../../components/chordLayout';
-import { BarRulerOverlay } from './BarRulerOverlay';
 import { ExportSheet } from '../Results/ExportSheet';
-import { NoteList, midiToLabel } from '../Results/NoteList';
+import { NoteList } from '../Results/NoteList';
+import { NoteHarmonySection } from './NoteHarmonySection';
+import { NoteShapeSection } from './NoteShapeSection';
+import { NoteStats, formatDuration } from './NoteStats';
 import { PlaybackBar } from './PlaybackBar';
+import { useNoteDetail } from './useNoteDetail';
 
 /** Side padding of the detail scroll content (keep in sync with styles.content). */
 const CONTENT_PADDING = 20;
-/** Height of the piano-roll melody view. */
+/** Height of the piano-roll melody view when it is a card in the column. */
 const MELODY_VIEW_HEIGHT = 150;
 
-/** How long a tapped reference note sounds, in ms. */
-const TAP_NOTE_MS = 700;
-
 type Props = NativeStackScreenProps<RootStackParamList, 'NoteDetail'>;
-
-/** Format ms duration as M:SS. */
-function formatDuration(ms: number): string {
-  const totalSec = Math.round(ms / 1000);
-  const min = Math.floor(totalSec / 60);
-  const sec = totalSec % 60;
-  return `${min}:${sec.toString().padStart(2, '0')}`;
-}
 
 export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
-  const { id } = route.params;
-
-  const note = useMemo(() => cachedNotes().find((n) => n.id === id), [id]);
-  const melody = (note?.melody ?? []) as NoteEvent[];
-
-  // Mint the audio URL when Play is pressed rather than here: the token it
-  // carries is good for about two minutes (INV-NOTES-014).
-  const audioPath = note?.audioPath ?? null;
-  const resolveAudio = useCallback(
-    () => notesRepo.audioUrlFor(id, audioPath),
-    [id, audioPath]
-  );
-
-  // Fit the metrical grid here rather than reading a stored one. The melody is
-  // persisted, so this costs nothing and needs no migration — and it means
-  // notes captured before the tempo estimator was fixed are re-read correctly
-  // instead of keeping a bpm that was often double what was actually sung.
-  const quantized = useMemo(() => quantize(melody), [melody]);
-  const grid = quantized.grid;
-  const hasGrid = grid.bpm > 0 && melody.length > 1;
-  const meterIsStated = grid.meterIsStated;
-  // What this person has already made of the take, kept with the note so a
-  // decision outlives the screen it was made on (INV-NOTES-021).
-  const interpretation = useInterpretation(note?.id ?? null, note?.interpretations ?? EMPTY_READINGS);
-
-  // Where the bars fall. Detection proposes; a person arranges (INT-NOTES-012).
-  const bars = useBarLayout(grid, note?.durationMs ?? 0, {
-    savedLines: interpretation.savedBarLines,
-    onArranged: interpretation.updateBarLines
-  });
-
-  const gridForView = useMemo(
-    () =>
-      hasGrid
-        ? {
-            bpm: grid.bpm,
-            offsetMs: grid.offsetMs,
-            beatsPerBar: grid.beatsPerBar,
-            stepsPerBeat: grid.stepsPerBeat,
-            // Only once someone has arranged them: before that the even
-            // spacing detection proposed is what should be drawn.
-            ...(bars.isArranged ? { barSteps: bars.layout.lines } : {})
-          }
-        : undefined,
-    [hasGrid, grid.bpm, grid.offsetMs, grid.beatsPerBar, grid.stepsPerBeat, bars.isArranged, bars.layout.lines]
-  );
-
-  // Generate + write the MIDI for export from the stored symbolic melody.
-  const [midiUri, setMidiUri] = useState<string | null>(null);
-  useEffect(() => {
-    if (!note || melody.length === 0) {
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      try {
-        const uri = await writeMidi(note.id, notesToMidi(melody));
-        if (!cancelled) {
-          setMidiUri(uri);
-        }
-      } catch {
-        // Export simply stays unavailable if the write fails.
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [note, melody]);
-
-  // The editable harmonic backdrop, derived from the same fitted grid the bar
-  // lines are drawn from, so chords and bars always agree. Inference runs
-  // first and kept decisions land on top of it.
-  // Where the backdrop sits, which is really a question about what you are
-  // listening on. A phone speaker has almost nothing in the low register, so
-  // chords voiced where a piano would put them are inaudible on one; lifted
-  // towards the melody they can be heard. On headphones the low voicing is
-  // the better sound. The same control moves them on the graph.
-  const [chordsLifted, setChordsLifted] = useState(true);
-  const floorMidi = chordsLifted ? SPEAKER_FLOOR_MIDI : HEADPHONE_FLOOR_MIDI;
-  const chords = useChordTrack(melody, grid, {
-    savedEdits: interpretation.savedEdits,
-    onEditsChanged: interpretation.update,
-    floorMidi
-  });
-  // Every pitch the chords occupy, so the graph's vertical window takes them
-  // in rather than letting them fall off the bottom of it.
-  const chordPitchesShown = useMemo(
-    () => chordPitches(chords.slots, floorMidi),
-    [chords.slots, floorMidi]
-  );
-  // Play sounds this backdrop with the take, or on its own, or not at all —
-  // whichever the choice beside the play control is set to (INV-NOTES-019).
-  const [playbackMode, setPlaybackMode] = useState<PlaybackMode>('as-sung');
-  const [isOverTake, setIsOverTake] = useState(false);
-  const [melodyLevel, setMelodyLevel] = useState(DEFAULT_MELODY_LEVEL);
-  const melodyTones = useMemo(
-    () => playbackTargets(melody, quantized.notes, playbackMode),
-    [melody, quantized.notes, playbackMode]
-  );
-  const melodyVoice = useMelodyBackdrop(melodyTones);
-  useEffect(() => melodyVoice.setLevel(melodyLevel), [melodyVoice, melodyLevel]);
-
-  const backdrop = useChordBackdrop(chords.progression);
-
-  // The melody follows the take itself; the chords follow the mix choice.
-  // Hanging one off the other made the melody a passenger on a decision about
-  // harmony, and it fell silent whenever chords were off (INV-NOTES-027).
-  const melodyVoiceMix = useMemo(
-    () => ({
-      start: (offsetMs = 0) => {
-        if (isOverTake) {
-          melodyVoice.start(offsetMs);
-        }
-      },
-      stop: () => melodyVoice.stop(),
-      durationMs: melodyTones[melodyTones.length - 1]?.endMs ?? 0
-    }),
-    [melodyVoice, isOverTake, melodyTones]
-  );
-  // Tap a note to hear its pitch.
-  const tonePlayer = useMemo(() => createTonePlayer(SynthBus.Audition), []);
-  useEffect(() => () => tonePlayer.stop(), [tonePlayer]);
-
-  // Two questions, not one. As sung, a wrong note is the detector's doing; as
-  // written, it is what transcription costs (INV-NOTES-026).
-  const playMelody = useCallback(() => {
-    tonePlayer.stop();
-    tonePlayer.play(melodyTones);
-  }, [tonePlayer, melodyTones]);
-  const playNote = useCallback(
-    (midi: number) => {
-      tonePlayer.play([{ midi, startMs: 0, endMs: TAP_NOTE_MS }]);
-    },
-    [tonePlayer]
-  );
-
-  // A chord is just its notes sounded together, which the reference player
-  // already supports: overlapping targets over the same span.
-  const auditionChord = useCallback(
-    (index: number) => {
-      const midis = chords.voicing(index);
-      if (midis.length === 0) {
-        return;
-      }
-      tonePlayer.play(
-        midis.map((midi) => ({ midi, startMs: 0, endMs: chords.auditionMs }))
-      );
-    },
-    [tonePlayer, chords]
-  );
+  const detail = useNoteDetail(route.params.id);
+  const { note, melody } = detail;
 
   if (!note) {
     return (
-      <SafeAreaView
-        style={[styles.safe, { backgroundColor: colors.neutral300 }]}
-      >
+      <SafeAreaView style={[styles.safe, { backgroundColor: colors.neutral300 }]}>
         <View style={styles.missing}>
           <Text style={{ color: colors.gray300 }}>{t('notes.notFound')}</Text>
         </View>
@@ -248,24 +58,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
     );
   }
 
-  const range =
-    note.rangeLowMidi != null && note.rangeHighMidi != null
-      ? `${midiToLabel(note.rangeLowMidi)}–${midiToLabel(note.rangeHighMidi)}`
-      : '—';
-  const steadiness =
-    note.inTuneRatio != null ? `${Math.round(note.inTuneRatio * 100)}%` : '—';
-  const tempo = hasGrid ? `${grid.bpm} BPM` : '—';
-  const meter = hasGrid ? grid.timeSignature : '—';
-
-  const stats: Array<{ label: string; value: string }> = [
-    { label: t('notes.stat.key'), value: note.key ?? '—' },
-    { label: t('notes.stat.tempo'), value: tempo },
-    { label: t('notes.stat.meter'), value: meter },
-    { label: t('notes.stat.range'), value: range },
-    { label: t('notes.stat.steadiness'), value: steadiness },
-    { label: t('notes.stat.notes'), value: String(note.noteCount) },
-    { label: t('notes.stat.length'), value: formatDuration(note.durationMs) }
-  ];
+  const graphWidth = width - 2 * CONTENT_PADDING - 2;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.neutral300 }]}>
@@ -276,10 +69,10 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
 
         {note.audioPath ? (
           <PlaybackBar
-            resolveAudioUri={resolveAudio}
+            resolveAudioUri={detail.resolveAudio}
             durationLabel={formatDuration(note.durationMs)}
-            accompaniment={backdrop}
-            voice={melodyVoiceMix}
+            accompaniment={detail.backdrop}
+            voice={detail.melodyVoiceMix}
           />
         ) : null}
 
@@ -288,205 +81,39 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
               {t('notes.shape')}
             </Text>
-            <View
-              style={[
-                styles.melodyCard,
-                {
-                  backgroundColor: colors.neutral50,
-                  borderColor: colors.neutral500
-                }
-              ]}
-            >
-              {/* A beat is a fixed width here and the take scrolls past the
-                  screen, so a bar is the same size in every take and wide
-                  enough to put a finger on (INV-NOTES-032). Without a grid
-                  there is no beat to hold, so it falls back to the fitted
-                  view. */}
-              {gridForView != null ? (
-                <ZoomableMelody
-                  notes={melody}
-                  grid={gridForView}
-                  width={width - 2 * CONTENT_PADDING - 2}
-                  height={MELODY_VIEW_HEIGHT}
-                  alsoShow={chordPitchesShown}
-                >
-                  {/* Over the melody rather than beside it: the bars are a
-                      claim about this take, and correcting one means seeing
-                      both. Same width and scale as what it sits on. */}
-                  {({ contentWidth, beatWidth, timeAxis, pitchAxis }) => (
-                    <>
-                      {/* The chords as individual notes, on the same pitch
-                          ruler as the line above them. */}
-                      <ChordBand
-                        slots={chords.slots}
-                        timeAxis={timeAxis}
-                        pitchAxis={pitchAxis}
-                        floorMidi={floorMidi}
-                        width={contentWidth}
-                        height={MELODY_VIEW_HEIGHT}
-                        onMoveTone={chords.moveTone}
-                        onToggleMute={chords.toggleTone}
-                      />
-                      <BarRulerOverlay
-                        bars={bars}
-                        notes={melody}
-                        grid={gridForView}
-                        width={contentWidth}
-                        height={MELODY_VIEW_HEIGHT}
-                        beatWidth={beatWidth}
-                      />
-                    </>
-                  )}
-                </ZoomableMelody>
-              ) : (
-                <MelodyView
-                  notes={melody}
-                  width={width - 2 * CONTENT_PADDING - 2}
-                  height={MELODY_VIEW_HEIGHT}
-                />
-              )}
-            </View>
+            <NoteShapeSection
+              detail={detail}
+              width={graphWidth}
+              height={MELODY_VIEW_HEIGHT}
+            />
 
-            <View style={styles.hearAs}>
-              <HearItAs
-                mode={playbackMode}
-                onChange={setPlaybackMode}
-                onPlay={playMelody}
-                canNotate={hasGrid}
-              />
-              <MelodyMix
-                isOverTake={isOverTake}
-                onOverTakeChange={setIsOverTake}
-                level={melodyLevel}
-                onLevelChange={setMelodyLevel}
-              />
-            </View>
-            {/* Say when the bar lines are an assumption rather than a reading.
-                A short sung idea often does not state its metre, and drawing
-                confident bar lines over one would be inventing information. */}
-            {hasGrid && !meterIsStated ? (
-              <Text style={[styles.caption, { color: colors.gray300 }]}>
-                {t('notes.gridAssumed')}
-              </Text>
-            ) : null}
-            {!hasGrid ? (
-              <Text style={[styles.caption, { color: colors.gray300 }]}>
-                {t('notes.gridNone')}
-              </Text>
-            ) : null}
-          </>
-        ) : null}
-
-        {melody.length > 0 ? (
-          <>
             <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
               {t('notes.harmony')}
             </Text>
-            {chords.slots.length > 0 ? (
-              <>
-                <ChordTrack
-                  slots={chords.slots}
-                  onNudge={chords.nudge}
-                  onReshape={chords.reshape}
-                  onAudition={auditionChord}
-                  onRevert={chords.revert}
-                />
-                <Text style={[styles.caption, { color: colors.gray300 }]}>
-                  {t('notes.harmonyHint')}
-                </Text>
-                <Text
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: chordsLifted }}
-                  onPress={() => setChordsLifted((on) => !on)}
-                  style={[styles.caption, { color: colors.primary500 }]}
-                >
-                  {t(chordsLifted ? 'notes.chordsLifted' : 'notes.chordsLow')}
-                </Text>
-                {chords.hasEdits ? (
-                  <Text
-                    accessibilityRole="button"
-                    onPress={chords.revertAll}
-                    style={[styles.action, { color: colors.primary500 }]}
-                  >
-                    {t('notes.harmonyReset')}
-                  </Text>
-                ) : null}
-              </>
-            ) : (
-              <Text style={[styles.caption, { color: colors.gray300 }]}>
-                {t('notes.harmonyNone')}
-              </Text>
-            )}
+            <NoteHarmonySection detail={detail} />
           </>
         ) : null}
 
         <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
           {t('notes.analysis')}
         </Text>
-        <View style={styles.statGrid}>
-          {stats.map((s) => (
-            <View
-              key={s.label}
-              style={[
-                styles.stat,
-                {
-                  backgroundColor: colors.neutral100,
-                  borderColor: colors.neutral500
-                }
-              ]}
-            >
-              <Text style={[styles.statLabel, { color: colors.gray300 }]}>
-                {s.label}
-              </Text>
-              <Text style={[styles.statValue, { color: colors.typography }]}>
-                {s.value}
-              </Text>
-            </View>
-          ))}
-        </View>
+        <NoteStats note={note} grid={detail.grid} hasGrid={detail.hasGrid} />
 
         <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
           {t('notes.notesTapToHear')}
         </Text>
-        <NoteList notes={melody} onPressNote={playNote} />
+        <NoteList notes={melody} onPressNote={detail.playNote} />
 
-        <ExportSheet midiUri={midiUri} title={note.title} />
+        <ExportSheet midiUri={detail.midiUri} title={note.title} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  hearAs: { marginTop: 12 },
   safe: { flex: 1 },
-  content: { padding: 20, gap: 14 },
-  title: { fontSize: 24, fontWeight: '700' },
-  sectionTitle: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5
-  },
-  melodyCard: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
-    padding: 8
-  },
-  statGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8
-  },
-  stat: {
-    flexGrow: 1,
-    flexBasis: '30%',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
-    padding: 12,
-    gap: 4
-  },
-  caption: { fontSize: 12, lineHeight: 17 },
-  action: { fontSize: 13, fontWeight: '700' },
-  statLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4 },
-  statValue: { fontSize: 16, fontWeight: '700' },
-  missing: { flex: 1, alignItems: 'center', justifyContent: 'center' }
+  content: { padding: CONTENT_PADDING, gap: 8 },
+  missing: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 22, fontWeight: '700' },
+  sectionTitle: { fontSize: 13, fontWeight: '600', marginTop: 18 }
 });
