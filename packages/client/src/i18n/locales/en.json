@@ -119,6 +119,20 @@
     "gridNone": "Not enough rhythm here to find a beat.",
     "harmony": "Chords",
     "harmonyHint": "Drag a chord up or down to move it through the key, double-tap to change its shape, tap to hear it. Hold to undo a change. Drag the row sideways for later bars.",
+    "barLine": "Bar line",
+    "role": {
+      "root": "root",
+      "third": "third",
+      "fifth": "fifth",
+      "seventh": "seventh",
+      "extension": "added note"
+    },
+    "action": {
+      "silence": "Silence",
+      "audition": "Hear",
+      "remove": "Remove",
+      "done": "Done"
+    },
     "barMoveHint": "drag to move · lift it away to remove",
     "barRemoveHint": "release to remove this line",
     "barRemoveLabel": "remove",

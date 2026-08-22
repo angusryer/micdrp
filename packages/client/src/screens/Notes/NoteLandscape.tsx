@@ -17,6 +17,7 @@ import { SafeAreaView, StyleSheet, View } from 'react-native';
 import { useTheme } from '../../theme';
 import { ChordTrack } from './ChordTrack';
 import { NoteShapeSection } from './NoteShapeSection';
+import { SelectionBar } from './SelectionBar';
 import type { useNoteDetail } from './useNoteDetail';
 
 /** Room for one row of chord cards under the graph. */
@@ -53,6 +54,13 @@ export function NoteLandscape({
           width={width - 2 * EDGE_PADDING}
           height={Math.max(120, graphHeight)}
           showControls={false}
+          selection={detail.selection}
+          onSelect={detail.setSelection}
+        />
+        <SelectionBar
+          detail={detail}
+          selection={detail.selection}
+          onSelect={detail.setSelection}
         />
         {hasChords ? (
           <View style={styles.strip}>

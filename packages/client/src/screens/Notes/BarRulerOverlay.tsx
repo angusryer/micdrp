@@ -6,12 +6,12 @@
  * lines rather than recomputing it is what stops a drag landing beside them
  * instead of on them.
  */
-import React, { useCallback, useMemo } from 'react';
+import React, { useMemo } from 'react';
 
 import { layoutMelody, type MelodyGrid, type MelodyNote } from '../../components/melodyLayout';
 import type { BarArrangement } from './useBarLayout';
 import { BarRuler } from './BarRuler';
-import { barHandles, previewSignatures, stepAtX } from './barRulerModel';
+import { barHandles } from './barRulerModel';
 
 export interface BarRulerOverlayProps {
   bars: BarArrangement;
@@ -24,6 +24,8 @@ export interface BarRulerOverlayProps {
    * or the handles sit beside the lines they move (INV-NOTES-034).
    */
   beatWidth?: number;
+  /** Which line is the chosen thing, drawn heavier. */
+  selectedLine: number | null;
 }
 
 export function BarRulerOverlay({
@@ -32,7 +34,8 @@ export function BarRulerOverlay({
   grid,
   width,
   height,
-  beatWidth
+  beatWidth,
+  selectedLine
 }: BarRulerOverlayProps): React.JSX.Element | null {
   const geometry = useMemo(() => {
     const { timeAxis } = layoutMelody(notes, { width, height, grid, beatWidth });
@@ -49,16 +52,6 @@ export function BarRulerOverlay({
     };
   }, [notes, width, height, grid, beatWidth]);
 
-  const toStep = useCallback(
-    (x: number) => (geometry ? stepAtX(x, geometry) : 0),
-    [geometry]
-  );
-  const preview = useCallback(
-    (lineIndex: number, step: number) =>
-      previewSignatures(bars.layout, bars.totalSteps, lineIndex, step),
-    [bars.layout, bars.totalSteps]
-  );
-
   if (!geometry) {
     return null;
   }
@@ -66,15 +59,9 @@ export function BarRulerOverlay({
   return (
     <BarRuler
       handles={barHandles(bars.layout, geometry)}
-      originX={geometry.originX}
-      stepWidth={geometry.stepWidth}
+      selectedLine={selectedLine}
       width={width}
       height={height}
-      stepAtX={toStep}
-      previewAt={preview}
-      onMove={bars.move}
-      onSplit={bars.split}
-      onMerge={bars.merge}
     />
   );
 }

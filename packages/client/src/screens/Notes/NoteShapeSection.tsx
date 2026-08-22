@@ -8,12 +8,12 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { ChordBand } from '../../components/ChordBand';
+import { GraphLayers } from './GraphLayers';
+import type { Selection } from '../../components/graphSelection';
 import { MelodyView } from '../../components/MelodyView';
 import { ZoomableMelody } from '../../components/ZoomableMelody';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
-import { BarRulerOverlay } from './BarRulerOverlay';
 import { HearItAs } from './HearItAs';
 import { MelodyMix } from './MelodyMix';
 import type { useNoteDetail } from './useNoteDetail';
@@ -24,13 +24,18 @@ export interface NoteShapeSectionProps {
   height: number;
   /** Sideways the graph is the view, so the controls under it are left off. */
   showControls?: boolean;
+  /** What is chosen on the graph, and how to choose something else. */
+  selection: Selection | null;
+  onSelect: (selection: Selection | null) => void;
 }
 
 export function NoteShapeSection({
   detail,
   width,
   height,
-  showControls = true
+  showControls = true,
+  selection,
+  onSelect
 }: NoteShapeSectionProps): React.JSX.Element {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -50,10 +55,7 @@ export function NoteShapeSection({
   const {
     melody,
     gridForView,
-    chords,
     chordPitchesShown,
-    floorMidi,
-    bars,
     hasGrid,
     meterIsStated
   } = detail;
@@ -80,30 +82,16 @@ export function NoteShapeSection({
             onScaleChange={onScaleChange}
           >
             {({ contentWidth, beatWidth, timeAxis, pitchAxis }) => (
-              <>
-                {/* The chords as individual notes, on the same pitch ruler as
-                    the line above them. */}
-                <ChordBand
-                  slots={chords.slots}
-                  timeAxis={timeAxis}
-                  pitchAxis={pitchAxis}
-                  floorMidi={floorMidi}
-                  width={contentWidth}
-                  height={height}
-                  onMoveTone={chords.moveTone}
-                  onToggleMute={chords.toggleTone}
-                />
-                {/* Over the melody rather than beside it: the bars are a claim
-                    about this take, and correcting one means seeing both. */}
-                <BarRulerOverlay
-                  bars={bars}
-                  notes={melody}
-                  grid={gridForView}
-                  width={contentWidth}
-                  height={height}
-                  beatWidth={beatWidth}
-                />
-              </>
+              <GraphLayers
+                detail={detail}
+                contentWidth={contentWidth}
+                beatWidth={beatWidth}
+                height={height}
+                timeAxis={timeAxis}
+                pitchAxis={pitchAxis}
+                selection={selection}
+                onSelect={onSelect}
+              />
             )}
           </ZoomableMelody>
         ) : (

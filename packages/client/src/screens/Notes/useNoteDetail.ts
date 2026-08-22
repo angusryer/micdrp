@@ -30,6 +30,7 @@ import { useBarLayout } from './useBarLayout';
 import { useChordTrack } from './useChordTrack';
 import { useInterpretation } from './useInterpretation';
 import { useExportedMidi } from './useExportedMidi';
+import type { Selection } from '../../components/graphSelection';
 import { useNotePlayback } from './useNotePlayback';
 
 /** Stable, so a note with no readings does not look like a new one each render. */
@@ -137,6 +138,10 @@ export function useNoteDetail(id: string) {
     [chords.slots, floorMidi]
   );
 
+  // What is chosen on the graph. Held here so the upright page and the
+  // sideways one are looking at the same thing (INT-NOTES-015).
+  const [selection, setSelection] = useState<Selection | null>(null);
+
   const playback = useNotePlayback(melody, quantized, chords);
 
   return {
@@ -155,6 +160,8 @@ export function useNoteDetail(id: string) {
     toggleChordsLifted: useCallback(() => setChordsLifted((on) => !on), []),
     resolveAudio,
     midiUri,
+    selection,
+    setSelection,
     ...playback
   };
 }

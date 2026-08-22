@@ -1,0 +1,44 @@
+# Choosing a thing on the graph, then doing something to it. Split from
+# interactions-bars.yml for the 150-line spec-file budget.
+interactions:
+  - id: INT-NOTES-015
+    name: Choose something on the graph
+    view: VIEW-NOTES-002
+    steps:
+      - Tap a bar line or one of a chord's notes
+    outcome: >
+      It becomes the chosen thing: it is drawn as chosen, and what can be
+      done to it appears below the graph, named, outside the drawing.
+      Tapping anywhere with nothing under it puts it down again, as does
+      tapping a different object, which takes its place.
+
+      Where two objects overlap, the nearer to the touch is chosen; a
+      chord note wins a tie, being the smaller target.
+
+      The graph is a small space carrying bar lines, chord notes and
+      soon the melody's own notes, several of which can sit at the same
+      moment. Every verb added as its own gesture made the next one
+      harder to reach and the whole surface harder to explain. Choosing
+      first says which thing is meant, so the verbs can be named
+      controls rather than remembered gestures — and there is room for
+      as many as the thing deserves.
+    maps_to:
+      capability: notes.open_chord_track
+
+  - id: INT-NOTES-016
+    name: Move what you have chosen
+    view: VIEW-NOTES-002
+    steps:
+      - Tap to choose an object
+      - Drag it
+    outcome: >
+      The chosen object follows the finger and lands where it is left. A
+      drag beginning anywhere else scrolls the take, and a pinch zooms,
+      both unchanged and both without a hold.
+
+      Only the chosen thing moves, so a drag no longer has to guess
+      whether a finger on a bar line meant to move it or to travel past
+      it. That is what lets the hold go: nothing is grabbed by accident
+      because nothing is grabbed that was not first chosen.
+    maps_to:
+      capability: transcription.move_bar_line
