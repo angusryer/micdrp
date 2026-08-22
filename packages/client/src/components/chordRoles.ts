@@ -1,18 +1,20 @@
 /**
  * chordRoles — which part of a chord a note is, and what colour says so.
  *
- * A chord's tones are listed root-first, so a note's index in that list is
- * the part it plays. Colouring by that index rather than by height is what
- * makes the root findable at a glance in a band of small rectangles — and
- * findable is what makes it draggable with intent (INV-NOTES-052).
+ * A chord's tones keep their place in its list however far they are dragged,
+ * so a note's index is a stable identity rather than a description of what it
+ * currently is. Colour attaches to that, and therefore never changes
+ * (INV-NOTES-052).
  *
- * It also makes a renaming legible. Pull the fifth of a C up to A and the
- * chord becomes A minor: the note under the finger turns from the fifth's
- * colour to the root's, so the reading shows up in the thing that changed
- * rather than only in a label somewhere else.
+ * Persistence is the point: these are three things you push around, and a
+ * thing that changes colour under your finger is not the same thing any more.
+ *
+ * The consequence is that the red one is not always the root. Carry it above
+ * the others and the chord is an inversion, named after whatever now sits at
+ * the bottom — the colour tracks the note, and the name tracks the sound.
  */
 
-/** What a note is to the chord it belongs to. */
+/** Which of a chord's notes this is, by the part it was built as. */
 export type ChordRole = 'root' | 'third' | 'fifth' | 'seventh' | 'extension';
 
 /**

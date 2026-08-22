@@ -109,27 +109,24 @@ invariants:
     description: A chord's notes are coloured by the part they play
     severity: major
     check: >
-      Every note of a chord is drawn in a colour fixed by which member
-      of the chord it is — root, third, fifth, seventh — and not by
-      where it sits on the screen. The colours run in spectrum order
-      from the root upward, so the ordering itself carries the meaning.
-      A silenced note keeps its colour and is drawn as an outline, and a
-      note in hand keeps it too. Verified by asserting the colour of a
-      note follows its position in the chord across renamings and
-      inversions.
+      Each of a chord's notes has a colour that never changes. The
+      colours run in spectrum order from the note the chord was built
+      from upward, and a note keeps its own however far it is dragged,
+      whatever the chord comes to be called, and whether it is sounding
+      or silenced. Verified by asserting a note's colour is unchanged by
+      moving it, by renaming the chord, and by carrying it past its
+      neighbours.
 
-      Colour is what makes the root findable at a glance in a band of
-      small rectangles, and findable is what makes it draggable with
-      intent. It also makes renaming legible: pull the fifth of a C up
-      to A and the chord becomes A minor, and the note being dragged
-      turns from the fifth's colour to the root's — the reading is
-      visible in the thing that changed rather than only in a label
-      elsewhere.
+      Persistence is the whole point: these are three things you push
+      around, and a thing that changes colour while under your finger is
+      not the same thing any more. Predictability is what lets someone
+      reach for the note they mean instead of counting.
 
-      By part and not by height, because the two only agree in root
-      position. Once a note has been moved, or a chord inverted, the
-      lowest thing on screen may not be the root — and it is the root
-      the eye is looking for.
+      This has a consequence worth stating. Because the colours stay
+      put, the red one is not always the root — carry it above the
+      others and the chord is an inversion, named after whatever now
+      sits at the bottom. That is correct: the colour tracks the note,
+      and the name tracks the sound.
 
       Colour reinforces; it never carries a fact alone. Vertical
       position remains the pitch and the label remains the name, since

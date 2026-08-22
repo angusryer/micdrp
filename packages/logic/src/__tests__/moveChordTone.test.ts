@@ -1,8 +1,9 @@
 /**
- * Moving a chord's note renames the slot to what it now spells
- * (INV-NOTES-036).
+ * The notes are stable things you push around; the name follows them
+ * (INV-NOTES-036, INV-NOTES-052).
  */
 import { moveChordTone, voiceChord, type ChordSlot } from '../harmony';
+import { identifyChord } from '../identifyChord';
 
 const KEY = { tonic: 0, tonicName: 'C', mode: 'major' as const, confidence: 1 };
 const FLOOR = 48;
@@ -22,51 +23,63 @@ function slot(over: Partial<ChordSlot> = {}): ChordSlot {
   };
 }
 
-describe('moving a note renames the chord', () => {
-  it('turns a major into a minor when the third comes down', () => {
-    // C major's tones are [root, third, fifth]; index 1 is the third.
+/** What a slot is actually sounding. */
+function sounding(s: ChordSlot): number[] {
+  return voiceChord(s.rootPc, s.quality, { bottomMidi: FLOOR, voicing: s.voicing });
+}
+
+describe('the name follows the notes', () => {
+  it('reads C major with a flattened third as C minor', () => {
     const moved = moveChordTone(slot(), KEY, 1, -1, FLOOR);
-    expect(moved.quality).toBe('min');
-    expect(moved.rootPc).toBe(0);
     expect(moved.label).toBe('Cm');
-    // The name came from the notes, so no alteration is left over.
-    expect(moved.voicing).toBeUndefined();
+    expect(identifyChord(sounding(moved))?.quality).toBe('min');
   });
 
-  it('gives the new chord a roman numeral in the key', () => {
+  it('gives it a roman numeral to match', () => {
     const moved = moveChordTone(slot(), KEY, 1, -1, FLOOR);
-    expect(moved.roman.length).toBeGreaterThan(0);
     expect(moved.roman).not.toBe(slot().roman);
+    expect(moved.roman.length).toBeGreaterThan(0);
   });
 
-  it('sounds what it says it is', () => {
-    const moved = moveChordTone(slot(), KEY, 1, -1, FLOOR);
-    const asNamed = voiceChord(moved.rootPc, moved.quality, { bottomMidi: FLOOR });
-    const asVoiced = voiceChord(moved.rootPc, moved.quality, {
-      bottomMidi: FLOOR,
-      voicing: moved.voicing
-    });
-    expect(asVoiced).toEqual(asNamed);
-  });
-
-  it('keeps the old name and marks it altered when the notes spell nothing', () => {
-    // Move the fifth down a semitone: C, E, F# is no chord with a name here.
+  it('keeps the last name when the notes spell nothing known', () => {
+    // C, E, F# is no chord this codebase names.
     const moved = moveChordTone(slot(), KEY, 2, -1, FLOOR);
-    expect(moved.quality).toBe('maj');
     expect(moved.label).toBe('C');
-    expect(moved.voicing?.offsets?.[2]).toBe(-1);
     expect(moved.isEdited).toBe(true);
   });
+});
 
-  it('is reversible through the names it passes', () => {
-    const minor = moveChordTone(slot(), KEY, 1, -1, FLOOR);
-    const backToMajor = moveChordTone(minor, KEY, 1, 1, FLOOR);
-    expect(backToMajor.quality).toBe('maj');
-    expect(backToMajor.rootPc).toBe(0);
+describe('the notes stay where they were put', () => {
+  it('leaves root and quality alone, so the notes are not renumbered', () => {
+    // Renumbering mid-drag would move a colour from one note to another.
+    const moved = moveChordTone(slot(), KEY, 1, -1, FLOOR);
+    expect(moved.rootPc).toBe(0);
+    expect(moved.quality).toBe('maj');
+    expect(moved.voicing?.offsets?.[1]).toBe(-1);
   });
 
-  it('marks the slot edited either way', () => {
-    expect(moveChordTone(slot(), KEY, 1, -1, FLOOR).isEdited).toBe(true);
-    expect(moveChordTone(slot(), KEY, 2, -1, FLOOR).isEdited).toBe(true);
+  it('does not shift the chord by an octave when the name changes', () => {
+    const before = sounding(slot());
+    const after = sounding(moveChordTone(slot(), KEY, 1, -1, FLOOR));
+    // Only the note that was dragged moved, and only by what was asked.
+    expect(after).toHaveLength(before.length);
+    expect(Math.min(...after)).toBe(Math.min(...before));
+  });
+
+  it('lets a note be carried past its neighbours into an inversion', () => {
+    // Take the root up a seventh: it clears the third and the fifth, and the
+    // chord is the same chord with something else at the bottom.
+    const inverted = moveChordTone(slot(), KEY, 0, 11, FLOOR);
+    const notes = sounding(inverted);
+    expect(identifyChord(notes)).not.toBeNull();
+    // The lowest note is no longer the one that started lowest.
+    expect(Math.min(...notes)).toBeGreaterThan(Math.min(...sounding(slot())));
+  });
+
+  it('is reversible: back the way it came is where it started', () => {
+    const there = moveChordTone(slot(), KEY, 1, -1, FLOOR);
+    const back = moveChordTone(there, KEY, 1, 1, FLOOR);
+    expect(sounding(back)).toEqual(sounding(slot()));
+    expect(back.label).toBe('C');
   });
 });

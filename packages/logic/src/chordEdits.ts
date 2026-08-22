@@ -11,7 +11,7 @@
  * twelve steps where seven are wanted turns a one-gesture change into a
  * fiddly one.
  */
-import type { ChordQuality } from './analysis';
+import { absoluteLabel, romanLabel, type ChordQuality } from './analysis';
 import { identifyChord } from './identifyChord';
 import type { KeyEstimate } from './key';
 import {
@@ -124,15 +124,24 @@ export function setChord(
 }
 
 /**
- * Move one of a chord's notes, and rename the slot to what it now spells.
+ * Move one of a chord's notes.
  *
- * The offset is kept against the chord tone as always, so transposing still
- * carries the voicing. What changes is the name: when the notes now spell a
- * chord this codebase knows, the slot becomes that chord and its voicing is
- * reset, since the notes are the chord rather than a departure from one. When
- * they spell nothing, the slot keeps its name and wears the offset as an
- * alteration — which says "you invented this" rather than guessing which
- * known chord was meant (INV-NOTES-036).
+ * The three notes are stable things you push around, and each keeps its
+ * place in the chord's list however far it travels — which is what lets a
+ * colour stay attached to it and makes dragging predictable (INV-NOTES-052).
+ * So the root and quality do not move: they are where this chord came from,
+ * and reordering them under the finger would renumber the notes mid-drag.
+ *
+ * What does follow the notes is the name. Whatever they now spell is what the
+ * slot is called, so pulling the third of a C down says Cm — the chord is
+ * read from the notes rather than asserted over them (INV-NOTES-036). Notes
+ * that spell nothing keep the last name and wear the move as an alteration,
+ * which says "you invented this" rather than guessing what was meant.
+ *
+ * An earlier version rewrote root and quality outright and cleared the
+ * voicing. That renumbered the notes, so a colour jumped from one to another
+ * as the name changed — and, worse, re-voicing from the floor moved the whole
+ * chord by an octave under the finger.
  */
 export function moveChordTone(
   slot: ChordSlot,
@@ -142,30 +151,38 @@ export function moveChordTone(
   floorMidi: number
 ): ChordSlot {
   const moved = moveVoicedTone(slot.voicing, slot.quality, toneIndex, semitones);
+  return relabelFromNotes({ ...slot, voicing: moved, isEdited: true }, key, floorMidi);
+}
+
+/**
+ * Name a slot after the notes it is actually sounding.
+ *
+ * Silenced notes are left out: a chord is what you can hear, and naming it
+ * after something inaudible would describe the wrong thing.
+ */
+export function relabelFromNotes(
+  slot: ChordSlot,
+  key: KeyEstimate,
+  floorMidi: number
+): ChordSlot {
   const rootMidi = rootMidiAtOrAbove(slot.rootPc, floorMidi);
-  const sounding = voicedTones(rootMidi, slot.quality, moved)
+  const sounding = voicedTones(rootMidi, slot.quality, slot.voicing)
     .filter((t) => !t.muted)
     .map((t) => t.midi);
-
-  const lowest = sounding.length > 0 ? Math.min(...sounding) : undefined;
-  const named = identifyChord(
-    sounding,
-    lowest == null ? undefined : ((lowest % 12) + 12) % 12
-  );
-  if (named) {
-    // The notes are the chord now, so the departure they described is spent.
-    return relabel(
-      {
-        ...slot,
-        rootPc: named.rootPc,
-        quality: named.quality,
-        voicing: undefined,
-        isEdited: true
-      },
-      key
-    );
+  if (sounding.length === 0) {
+    return slot;
   }
-  return { ...slot, voicing: moved, isEdited: true };
+  const lowest = Math.min(...sounding);
+  const named = identifyChord(sounding, ((lowest % 12) + 12) % 12);
+  if (!named) {
+    // Spells nothing known: keep the last name rather than invent one.
+    return slot;
+  }
+  return {
+    ...slot,
+    label: absoluteLabel(named.rootPc, named.quality),
+    roman: romanLabel(named.rootPc, named.quality, key)
+  };
 }
 
 /**
