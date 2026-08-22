@@ -138,3 +138,36 @@ invariants:
       Zoom is a place you can get lost in — several pinches deep on a
       long take, finding your way back by pinching is guesswork. One
       control makes the way back exact.
+
+  - id: INV-NOTES-045
+    description: What you are dragging moves under your thumb
+    severity: critical
+    check: >
+      While anything on the graph is being dragged — a bar line now, a
+      note later — the thing itself follows the finger, continuously,
+      driven without waiting on the app to re-render. A readout that
+      moves while the thing stays still does not count. Verified on a
+      device, since no test here can see a frame.
+
+      A drag you cannot see is a drag you cannot aim. Watching a number
+      change while the line stays put asks the singer to imagine the
+      result and then trust it, which is the opposite of direct
+      manipulation — and this graph is the one place in the app where
+      what you see is supposed to be exactly what you are editing.
+
+  - id: INV-NOTES-046
+    description: A drag commits to one direction and keeps it
+    severity: major
+    check: >
+      The first movement past a small deadzone decides whether a drag is
+      sideways or upward, and that decision holds for the rest of the
+      gesture: a sideways drag ignores later vertical wander, and an
+      upward one ignores horizontal. Verified by asserting the axis
+      chosen from a first movement does not change with later movement
+      in the other direction.
+
+      The two directions mean entirely different things here — where a
+      line goes, or whether it exists at all. A thumb travelling
+      sideways across a phone rises and falls by tens of pixels without
+      being asked to, and none of that drift should ever be read as an
+      instruction to delete something.

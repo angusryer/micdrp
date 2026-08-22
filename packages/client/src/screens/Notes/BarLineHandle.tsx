@@ -1,86 +1,85 @@
 /**
- * BarLineHandle — one bar line, and the hold that picks it up.
+ * BarLineHandle — one bar line, the hold that picks it up, and the drag that
+ * moves or discards it.
  *
  * Nothing happens until the line has been held: the graph is covered in bar
  * lines, so a swipe along the take or a pinch beginning on one is the common
  * case, and either would otherwise drag the metre out from under the singer
- * (INT-NOTES-012). Once held, sideways says where it goes and upward says
- * away (INT-NOTES-014).
+ * (INT-NOTES-012).
+ *
+ * Once held, the line follows the finger (INV-NOTES-045) and the first real
+ * movement decides the direction for the rest of the gesture (INV-NOTES-046):
+ * sideways says where it goes, upward says away. Everything that moves is a
+ * shared value driven on the UI thread — a drag rendered through React would
+ * lag the thumb it is supposed to be under.
  */
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
+import { StyleSheet, Text, View } from 'react-native';
+import { GestureDetector } from 'react-native-gesture-handler';
+import Animated from 'react-native-reanimated';
 
 import type { BarHandle } from './barRulerModel';
+import { useBarLineDrag } from './useBarLineDrag';
 
-/**
- * How long a line must be held before it is picked up.
- *
- * Long enough that a swipe along the take or a pinch beginning on a line is
- * plainly not a hold, short enough that picking one up deliberately does not
- * feel like waiting.
- */
-export const PICK_UP_MS = 220;
-
-/**
- * How far up a held line must be dragged before releasing it takes it away.
- *
- * Far enough that a sideways drag which wanders vertically does not delete a
- * bar line by accident — the two directions mean entirely different things.
- */
-export const SLIDE_AWAY_PX = 56;
+export { FLICK_VELOCITY, PICK_UP_MS, SLIDE_AWAY_PX } from './useBarLineDrag';
 
 /** Wide enough to grab without the lines themselves becoming heavy. */
 const GRAB_WIDTH = 44;
 
-interface HandleProps {
+export interface BarLineHandleProps {
   handle: BarHandle;
   height: number;
   color: string;
-  onDrag: (lineIndex: number, x: number, y: number, liftY: number) => void;
-  onDrop: (lineIndex: number, x: number, liftY: number) => void;
+  /** Colour a line takes on once releasing it would discard it. */
+  dangerColor: string;
+  /** Live position, for the readout that follows the finger. */
+  onDrag: (lineIndex: number, x: number, y: number, axis: number, armed: number) => void;
+  /** Released sideways: put the line at the step under the finger. */
+  onDrop: (lineIndex: number, x: number) => void;
+  /** Released upward: the line goes. */
+  onRemove: (lineIndex: number) => void;
 }
 
 export function BarLineHandle({
   handle,
   height,
   color,
+  dangerColor,
   onDrag,
-  onDrop
-}: HandleProps): React.JSX.Element {
+  onDrop,
+  onRemove
+}: BarLineHandleProps): React.JSX.Element {
   const { lineIndex, x } = handle;
 
-  // Nothing happens until the line has been picked up. The graph is covered
-  // in bar lines, so a swipe along the take or a pinch beginning on one is the
-  // common case — and either would otherwise drag the metre out from under
-  // the singer (INT-NOTES-012).
-  const pan = Gesture.Pan()
-    .withTestId(`bar-line-pan-${lineIndex}`)
-    .activateAfterLongPress(PICK_UP_MS)
-    .onUpdate((event) =>
-      runOnJS(onDrag)(
-        lineIndex,
-        event.absoluteX,
-        event.absoluteY,
-        event.translationY
-      )
-    )
-    .onEnd((event) =>
-      runOnJS(onDrop)(lineIndex, event.absoluteX, event.translationY)
-    );
+  const { pan, moving, danger } = useBarLineDrag({
+    lineIndex,
+    throwDistance: height + GRAB_WIDTH,
+    onDrag,
+    onDrop,
+    onRemove
+  });
 
   return (
     <GestureDetector gesture={pan}>
-      <View
-        style={[styles.grab, { left: x - GRAB_WIDTH / 2, height }]}
+      <Animated.View
+        style={[styles.grab, { left: x - GRAB_WIDTH / 2, height }, moving]}
         testID={`bar-line-${lineIndex}`}
       >
         <View style={[styles.line, { backgroundColor: color }]} />
-      </View>
+        {/* Says the line is going before the finger lifts, so the throw can
+            be taken back by bringing it down again (INT-NOTES-014). */}
+        <Animated.View style={[styles.danger, danger]} pointerEvents="none">
+          <View style={[styles.line, { backgroundColor: dangerColor }]} />
+          <View style={[styles.badge, { backgroundColor: dangerColor }]}>
+            <Text style={styles.badgeMark}>×</Text>
+          </View>
+        </Animated.View>
+      </Animated.View>
     </GestureDetector>
   );
 }
+
+export default BarLineHandle;
 
 const styles = StyleSheet.create({
   grab: {
@@ -89,5 +88,23 @@ const styles = StyleSheet.create({
     width: GRAB_WIDTH,
     alignItems: 'center'
   },
-  line: { width: 2, flex: 1 }
+  line: { width: 2, height: '100%', opacity: 0.9 },
+  danger: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center'
+  },
+  badge: {
+    position: 'absolute',
+    top: 4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  badgeMark: { color: '#fff', fontSize: 12, fontWeight: '700', lineHeight: 14 }
 });

@@ -42,14 +42,20 @@ interactions:
     view: VIEW-NOTES-002
     steps:
       - Press and hold a bar line until it lifts
-      - Drag it upward, out of the graph
+      - Drag or flick it upward
       - Release
     outcome: >
-      The line goes and the bars either side become one. Passing the
-      threshold says so before the finger is lifted, so the throw can be
-      taken back by dragging down again. The last remaining line cannot
-      be removed, because a take with no bars is one nothing downstream
-      can describe.
+      The line goes and the bars either side become one, and is thrown
+      clear as it goes rather than simply vanishing. A flick releases it
+      on speed alone; a slow drag releases it once it has been carried
+      far enough. Either way the line marks itself as doomed before the
+      finger lifts — it reddens and takes a cross — so the throw can be
+      taken back by bringing it down again. Honouring only speed would
+      leave a careful, slow removal failing after the line had already
+      said it was going.
+
+      The last remaining line cannot be removed, because a take with no
+      bars is one nothing downstream can describe.
 
       The same hold that picks a line up decides by direction what
       becomes of it: sideways is where it goes, upward is away. Asking

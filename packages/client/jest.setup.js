@@ -34,7 +34,14 @@ jest.mock('react-native-reanimated', () => {
     useAnimatedStyle: (fn) => (typeof fn === 'function' ? fn() : {}),
     useAnimatedProps: (fn) => (typeof fn === 'function' ? fn() : {}),
     useAnimatedReaction: () => {},
-    withTiming: (v) => v,
+    // Pass the completion through: a throw that removes a bar line does it
+    // from this callback, so dropping it would make the gesture untestable.
+    withTiming: (v, _config, cb) => {
+      if (typeof cb === 'function') {
+        cb(true);
+      }
+      return v;
+    },
     withSpring: (v) => v,
     withDelay: (_d, v) => v,
     withRepeat: (v) => v,

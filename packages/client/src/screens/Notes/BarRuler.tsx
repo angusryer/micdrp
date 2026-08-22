@@ -18,7 +18,7 @@ import { runOnJS } from 'react-native-reanimated';
 import { DragLoupe } from '../../components/DragLoupe';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
-import { BarLineHandle, SLIDE_AWAY_PX } from './BarLineHandle';
+import { BarLineHandle } from './BarLineHandle';
 import type { BarHandle } from './barRulerModel';
 
 export interface BarRulerProps {
@@ -61,10 +61,9 @@ export function BarRuler({
   } | null>(null);
 
   const showDrag = useCallback(
-    (lineIndex: number, x: number, y: number, liftY: number) => {
-      // Say it before the finger lifts, so a throw can be taken back by
-      // dragging down again (INT-NOTES-014).
-      const leaving = liftY <= -SLIDE_AWAY_PX;
+    (lineIndex: number, x: number, y: number, _axis: number, armed: number) => {
+      // The handle has already decided; the readout only reports it.
+      const leaving = armed === 1;
       setDrag({
         x,
         y,
@@ -76,15 +75,19 @@ export function BarRuler({
   );
 
   const endDrag = useCallback(
-    (lineIndex: number, x: number, liftY: number) => {
+    (lineIndex: number, x: number) => {
       setDrag(null);
-      if (liftY <= -SLIDE_AWAY_PX) {
-        onMerge(lineIndex);
-        return;
-      }
       onMove(lineIndex, stepAtX(x));
     },
-    [onMerge, onMove, stepAtX]
+    [onMove, stepAtX]
+  );
+
+  const removeLine = useCallback(
+    (lineIndex: number) => {
+      setDrag(null);
+      onMerge(lineIndex);
+    },
+    [onMerge]
   );
 
   // Only the touch position crosses; which grid step it landed on is worked
@@ -115,8 +118,10 @@ export function BarRuler({
           handle={handle}
           height={height}
           color={colors.primary700}
+          dangerColor={colors.error}
           onDrag={showDrag}
           onDrop={endDrag}
+          onRemove={removeLine}
         />
       ))}
 
