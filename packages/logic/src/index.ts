@@ -5,6 +5,7 @@ export * from './noteEdits';
 export * from './bends';
 export * from './midi';
 export * from './playback';
+export * from './transpose';
 export * from './scoring';
 export * from './tuning';
 export * from './smoothing';

@@ -8,14 +8,15 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { octaveLabel } from 'logic';
+
 import { GraphLayers } from './GraphLayers';
 import type { Selection } from '../../components/graphSelection';
 import { MelodyView } from '../../components/MelodyView';
 import { ZoomableMelody } from '../../components/ZoomableMelody';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
-import { HearItAs } from './HearItAs';
-import { MelodyMix } from './MelodyMix';
+import { NoteShapeControls } from './NoteShapeControls';
 import type { useNoteDetail } from './useNoteDetail';
 
 export interface NoteShapeSectionProps {
@@ -56,9 +57,12 @@ export function NoteShapeSection({
     melody,
     gridForView,
     chordPitchesShown,
-    hasGrid,
-    meterIsStated
+    octaves
   } = detail;
+  // The graph never moves for a transposition — the take was sung where it
+  // was sung. This is the only sign of it, and only while it is not zero
+  // (INV-NOTES-058).
+  const shifted = octaveLabel(octaves);
 
   return (
     <>
@@ -98,6 +102,18 @@ export function NoteShapeSection({
         ) : (
           <MelodyView notes={melody} width={width} height={height} />
         )}
+        {shifted != null ? (
+          <View
+            style={[styles.octaveBadge, { backgroundColor: colors.neutral100 }]}
+          >
+            <Text
+              accessibilityLabel={t('notes.octaveShifted', { label: shifted })}
+              style={[styles.octaveText, { color: colors.primary500 }]}
+            >
+              {shifted}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       {canReset ? (
@@ -110,37 +126,7 @@ export function NoteShapeSection({
         </Text>
       ) : null}
 
-      {showControls ? (
-        <>
-          <View style={styles.hearAs}>
-            <HearItAs
-              mode={detail.playbackMode}
-              onChange={detail.setPlaybackMode}
-              onPlay={detail.playMelody}
-              canNotate={hasGrid}
-            />
-            <MelodyMix
-              isOverTake={detail.isOverTake}
-              onOverTakeChange={detail.setIsOverTake}
-              level={detail.melodyLevel}
-              onLevelChange={detail.setMelodyLevel}
-            />
-          </View>
-          {/* Say when the bar lines are an assumption rather than a reading. A
-              short sung idea often does not state its metre, and drawing
-              confident bar lines over one would be inventing information. */}
-          {hasGrid && !meterIsStated ? (
-            <Text style={[styles.caption, { color: colors.gray300 }]}>
-              {t('notes.gridAssumed')}
-            </Text>
-          ) : null}
-          {!hasGrid ? (
-            <Text style={[styles.caption, { color: colors.gray300 }]}>
-              {t('notes.gridNone')}
-            </Text>
-          ) : null}
-        </>
-      ) : null}
+      {showControls ? <NoteShapeControls detail={detail} /> : null}
     </>
   );
 }
@@ -149,7 +135,15 @@ export default NoteShapeSection;
 
 const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: 12, overflow: 'hidden' },
-  hearAs: { marginTop: 12, gap: 12 },
-  caption: { fontSize: 12, marginTop: 8 },
+  octaveBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    opacity: 0.9
+  },
+  octaveText: { fontSize: 11, fontWeight: '700' },
   reset: { fontSize: 12, fontWeight: '600', marginTop: 8, alignSelf: 'flex-end' }
 });

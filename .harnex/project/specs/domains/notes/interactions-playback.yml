@@ -59,3 +59,28 @@ interactions:
       play.
     maps_to:
       capability: notes.play
+
+  - id: INT-NOTES-017
+    name: Move the melody into a register you can hear
+    view: VIEW-NOTES-002
+    precondition: The shift keeps the whole melody within MIDI range.
+    steps:
+      - Press up or down beside the melody controls
+    outcome: >
+      Everything that sounds the melody moves a whole octave — playing it
+      back, hearing it over the take, and tapping a single note to check
+      its pitch. The graph does not move: the take was sung where it was
+      sung, and the drawing is the record of that. Only a small +N or -N
+      sits on the graph while the offset is not zero, so a lifted melody
+      can never be mistaken for the melody itself.
+
+      A phone speaker has almost nothing in the low register, so a line
+      sung down there cannot be judged on one at all. The chords already
+      have their own answer to that, and this is the melody's; they move
+      separately because they run out of speaker at different pitches.
+    error_handling: >
+      A direction that would push any note out of MIDI range is not
+      offered, rather than clamping the notes that would leave it and
+      flattening the intervals.
+    maps_to:
+      capability: notes.transpose_playback

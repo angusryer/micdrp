@@ -112,3 +112,18 @@ capabilities:
     permissions:
       - role: singer
         notes: Export is offered only on the singer's own note.
+
+  - name: notes.transpose_playback
+    description: >
+      Move the melody up or down whole octaves for listening, so a line
+      sung low enough to be inaudible on a phone speaker can be heard
+      without changing what was read from the take.
+    actor: singer
+    implemented_by: packages/logic/src/transpose.ts
+    parameters:
+      required: [octaves]
+    preconditions:
+      - the shift keeps every note of the melody within MIDI range
+    postconditions:
+      - only sounding pitches move; the stored reading is untouched
+      - the offset is shown on the graph whenever it is not zero

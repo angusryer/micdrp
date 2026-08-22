@@ -1,0 +1,39 @@
+# Moving the melody into a register that can be heard. Its own file: the
+# playback invariants are at their line budget.
+invariants:
+  - id: INV-NOTES-058
+    description: Transposing moves what is heard and nothing else
+    severity: critical
+    check: >
+      A playback transposition shifts every sounding pitch by exactly
+      twelve semitones per octave and changes nothing else: the melody
+      held for the note, the corrections made to it, the chords read from
+      it, the bar lines, and the exported file are all identical before
+      and after. Verified by asserting the shifted targets differ from
+      the unshifted ones by exactly 12n while the note's own melody and
+      its export compare equal.
+
+      This is a listening aid, not an edit. A phone speaker has almost
+      nothing in the low register, so a line sung down there is inaudible
+      on one and needs lifting to be judged at all — but the take was
+      sung where it was sung, and a convenience for hearing it must never
+      quietly become the record of it. The same reasoning already governs
+      where the chords sit (INV-NOTES-039); this is the melody's half of
+      it, and the two move independently because they are inaudible for
+      different reasons.
+
+  - id: INV-NOTES-059
+    description: An octave that would push a note out of range is not offered
+    severity: major
+    check: >
+      The shifts on offer are only those that keep every note of the
+      melody within MIDI 0..127. A melody already near the top of the
+      range offers fewer octaves up than one in the middle, and a melody
+      spanning more than the range offers none. Verified by asserting the
+      offered range narrows as the melody approaches either end, and that
+      applying any offered shift leaves every pitch in range.
+
+      Clamping instead would be worse than refusing: a shift that pinned
+      the top notes at 127 while the rest moved would flatten the
+      intervals and play something the singer never sang, which is the
+      one thing playback must not do.

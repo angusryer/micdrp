@@ -9,6 +9,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   playbackTargets,
+  transposeMidi,
+  transposeTargets,
   type NoteEvent,
   type PlaybackMode,
   type quantize
@@ -21,6 +23,7 @@ const BASS_PEAK_GAIN = 0.09;
 import { useChordBackdrop } from './useChordBackdrop';
 import type { useChordTrack } from './useChordTrack';
 import { DEFAULT_MELODY_LEVEL, useMelodyBackdrop } from './useMelodyBackdrop';
+import { useOctaveShift } from './useOctaveShift';
 
 /** How long a tapped reference note sounds, in ms. */
 const TAP_NOTE_MS = 700;
@@ -35,10 +38,18 @@ export function useNotePlayback(
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>('as-sung');
   const [isOverTake, setIsOverTake] = useState(false);
   const [melodyLevel, setMelodyLevel] = useState(DEFAULT_MELODY_LEVEL);
+  // A listening aid, not an edit: this moves what sounds and nothing that is
+  // drawn, read, or kept (INV-NOTES-058).
+  const octave = useOctaveShift(melody);
+  const { octaves } = octave;
 
   const melodyTones = useMemo(
-    () => playbackTargets(melody, quantized.notes, playbackMode),
-    [melody, quantized, playbackMode]
+    () =>
+      transposeTargets(
+        playbackTargets(melody, quantized.notes, playbackMode),
+        octaves
+      ),
+    [melody, quantized, playbackMode, octaves]
   );
   const melodyVoice = useMelodyBackdrop(melodyTones);
   useEffect(() => melodyVoice.setLevel(melodyLevel), [melodyVoice, melodyLevel]);
@@ -95,9 +106,14 @@ export function useNotePlayback(
     tonePlayer.play(melodyTones);
   }, [tonePlayer, melodyTones]);
 
+  // Shifted like the rest: a tap that checks a pitch has to agree with what
+  // playing the melody sounds, or it is checking a different note.
   const playNote = useCallback(
-    (midi: number) => tonePlayer.play([{ midi, startMs: 0, endMs: TAP_NOTE_MS }]),
-    [tonePlayer]
+    (midi: number) =>
+      tonePlayer.play([
+        { midi: transposeMidi(midi, octaves), startMs: 0, endMs: TAP_NOTE_MS }
+      ]),
+    [tonePlayer, octaves]
   );
 
   // A chord is just its notes sounded together, which the reference player
@@ -121,6 +137,7 @@ export function useNotePlayback(
     setIsOverTake,
     melodyLevel,
     setMelodyLevel,
+    ...octave,
     backdrop: accompaniment,
     melodyVoiceMix,
     playMelody,

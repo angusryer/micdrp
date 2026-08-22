@@ -144,7 +144,12 @@
     "harmonyNone": "A backdrop needs a beat to sit on, and there is not enough rhythm here to find one.",
     "harmonyReset": "Reset chords",
     "chordCard": "{{chord}}, bar {{bar}}",
-    "sungNote": "Sung note"
+    "sungNote": "Sung note",
+    "octave": "Octave",
+    "octaveUp": "Move the melody up an octave",
+    "octaveDown": "Move the melody down an octave",
+    "octaveHint": "Playback only — the take is unchanged",
+    "octaveShifted": "Melody heard {{label}} octaves from the take"
   },
   "dashboard": {
     "title": "Dashboard",
