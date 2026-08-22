@@ -47,7 +47,7 @@ export function pitchBounds(
     if (midi > hi) hi = midi;
   }
   if (hi - lo < 2) {
-    // Near-monotone: widen so the contour has vertical room.
+    // Near-monotone: widen so the melody has vertical room.
     const mid = (hi + lo) / 2;
     return { low: Math.floor(mid - 2), high: Math.ceil(mid + 2) };
   }

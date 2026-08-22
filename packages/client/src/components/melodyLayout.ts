@@ -58,13 +58,13 @@ export interface MelodyLayoutOptions extends ScaleRequest {
   alsoShow?: readonly number[];
 }
 
-/** One positioned note bar plus the centre point used for the contour line. */
+/** One positioned note bar plus its centre, which is what a touch aims at. */
 export interface NoteRect {
   x: number;
   y: number;
   width: number;
   height: number;
-  /** Vertical centre of the bar (for the connecting contour). */
+  /** Vertical centre of the bar, so a touch can be matched to the nearest. */
   cy: number;
   midi: number;
 }

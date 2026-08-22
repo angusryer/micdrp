@@ -168,7 +168,6 @@ export function DashboardScreen(): React.JSX.Element {
                         )}
                         width={chartWidth * 0.5}
                         height={36}
-                        showContour={false}
                       />
                       <Text style={[styles.countText, { color: colors.gray300 }]}>
                         ×{fr.count} ▶
