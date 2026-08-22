@@ -4,6 +4,7 @@
  * thumbnail still shows the whole idea (INV-NOTES-032/033/034/035).
  */
 import {
+  anchorZoom,
   clampBeatWidth,
   layoutMelody,
   MIN_BEAT_WIDTH,
@@ -153,5 +154,37 @@ describe('a thumbnail still shows the whole idea at once (INV-NOTES-035)', () =>
       beatWidth: 40
     });
     expect(contentWidth).toBe(W);
+  });
+});
+
+describe('zooming holds the middle of the screen still', () => {
+  const PAD = 6;
+  const VIEW = 300;
+
+  it('keeps the centred moment centred when zooming in', () => {
+    // At 2x, whatever was under the middle must still be under the middle.
+    const before = 1000;
+    const after = anchorZoom(before, VIEW, PAD, 2);
+    const centreBefore = before + VIEW / 2 - PAD;
+    const centreAfter = after + VIEW / 2 - PAD;
+    expect(centreAfter).toBeCloseTo(centreBefore * 2, 6);
+  });
+
+  it('keeps it centred when zooming out too', () => {
+    const before = 2000;
+    const after = anchorZoom(before, VIEW, PAD, 0.5);
+    const centreBefore = before + VIEW / 2 - PAD;
+    const centreAfter = after + VIEW / 2 - PAD;
+    expect(centreAfter).toBeCloseTo(centreBefore * 0.5, 6);
+  });
+
+  it('never scrolls left of the first note', () => {
+    // Zooming far out near the start would otherwise ask for a negative offset.
+    expect(anchorZoom(0, VIEW, PAD, 0.1)).toBe(0);
+    expect(anchorZoom(50, VIEW, PAD, 0.05)).toBe(0);
+  });
+
+  it('stays put when the scale does not change', () => {
+    expect(anchorZoom(800, VIEW, PAD, 1)).toBeCloseTo(800, 6);
   });
 });

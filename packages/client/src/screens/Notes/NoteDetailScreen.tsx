@@ -51,6 +51,7 @@ import { cachedNotes } from '../../data/notesSync';
 import { notesRepo } from '../../data/notesRepo';
 import { writeMidi } from '../../data/files';
 import { MelodyView } from '../../components/MelodyView';
+import { ZoomableMelody } from '../../components/ZoomableMelody';
 import { BarRulerOverlay } from './BarRulerOverlay';
 import { ExportSheet } from '../Results/ExportSheet';
 import { NoteList, midiToLabel } from '../Results/NoteList';
@@ -276,19 +277,35 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
                 }
               ]}
             >
-              <MelodyView
-                notes={melody}
-                width={width - 2 * CONTENT_PADDING - 2}
-                height={MELODY_VIEW_HEIGHT}
-                grid={gridForView}
-              />
-              {/* Over the melody rather than beside it: the bars are a claim
-                  about this take, and correcting one means seeing both. */}
-              {gridForView != null && (
-                <BarRulerOverlay
-                  bars={bars}
+              {/* A beat is a fixed width here and the take scrolls past the
+                  screen, so a bar is the same size in every take and wide
+                  enough to put a finger on (INV-NOTES-032). Without a grid
+                  there is no beat to hold, so it falls back to the fitted
+                  view. */}
+              {gridForView != null ? (
+                <ZoomableMelody
                   notes={melody}
                   grid={gridForView}
+                  width={width - 2 * CONTENT_PADDING - 2}
+                  height={MELODY_VIEW_HEIGHT}
+                >
+                  {/* Over the melody rather than beside it: the bars are a
+                      claim about this take, and correcting one means seeing
+                      both. Same width and scale as what it sits on. */}
+                  {({ contentWidth, beatWidth }) => (
+                    <BarRulerOverlay
+                      bars={bars}
+                      notes={melody}
+                      grid={gridForView}
+                      width={contentWidth}
+                      height={MELODY_VIEW_HEIGHT}
+                      beatWidth={beatWidth}
+                    />
+                  )}
+                </ZoomableMelody>
+              ) : (
+                <MelodyView
+                  notes={melody}
                   width={width - 2 * CONTENT_PADDING - 2}
                   height={MELODY_VIEW_HEIGHT}
                 />

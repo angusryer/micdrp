@@ -63,6 +63,25 @@ export function clampBeatWidth(
   return Math.min(maxWidth, Math.max(MIN_BEAT_WIDTH, desired));
 }
 
+/**
+ * Where to scroll so that the moment in the middle of the screen is still in
+ * the middle of it after the scale changes by `ratio`.
+ *
+ * Zooming without this throws you somewhere else in the take, so you have to
+ * find your place again every time you look closer — which is exactly when
+ * you least want to lose it. Never negative: there is nothing left of the
+ * first note to scroll to.
+ */
+export function anchorZoom(
+  scrollX: number,
+  viewportWidth: number,
+  pad: number,
+  ratio: number
+): number {
+  const centreFromPad = scrollX + viewportWidth / 2 - pad;
+  return Math.max(0, pad + centreFromPad * ratio - viewportWidth / 2);
+}
+
 /** The sung span, or a unit span when nothing was sung. */
 export function timeBounds(
   notes: readonly { startMs: number; endMs: number }[]

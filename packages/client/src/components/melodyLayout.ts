@@ -22,6 +22,7 @@ import {
 
 export type { GridLine, MelodyGrid };
 export {
+  anchorZoom,
   clampBeatWidth,
   DEFAULT_BEAT_WIDTH,
   MIN_BEAT_WIDTH,
