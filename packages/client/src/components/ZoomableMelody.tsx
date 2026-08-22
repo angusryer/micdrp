@@ -7,7 +7,9 @@
  *
  * Anything drawn over the melody is given the drawing's width so it lines up
  * with what is under it, and shares its scale so a gesture lands where the
- * graph says (INV-NOTES-034).
+ * graph says (INV-NOTES-034). A footer travels in the same scroll, which is
+ * what lets the chord cards sit under the bars they describe rather than in a
+ * row of their own that drifts out of step (INV-NOTES-061).
  */
 import React, { useCallback, useRef } from 'react';
 import {
@@ -49,6 +51,16 @@ export interface ZoomableMelodyProps {
    * only shown once there is something to undo (INV-NOTES-044).
    */
   onScaleChange?: (state: { isDefault: boolean; reset: () => void }) => void;
+  /**
+   * Drawn beneath the melody and inside the same scroll, so it keeps step
+   * with the take at every scale and scroll position.
+   */
+  footer?: (frame: {
+    contentWidth: number;
+    timeAxis: MelodyLayout['timeAxis'];
+  }) => React.ReactNode;
+  /** How much room the footer takes, which the scroll has to account for. */
+  footerHeight?: number;
 }
 
 export function ZoomableMelody({
@@ -58,7 +70,9 @@ export function ZoomableMelody({
   height,
   alsoShow,
   children,
-  onScaleChange
+  onScaleChange,
+  footer,
+  footerHeight = 0
 }: ZoomableMelodyProps): React.JSX.Element {
   const scroller = useRef<ScrollView>(null);
   const scrollX = useRef(0);
@@ -83,7 +97,7 @@ export function ZoomableMelody({
       <ScrollView
         ref={scroller}
         horizontal
-        style={{ width, height }}
+        style={{ width, height: height + footerHeight }}
         showsHorizontalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
@@ -107,6 +121,22 @@ export function ZoomableMelody({
             rects: layout.rects
           })}
         </View>
+        {footer != null && footerHeight > 0 ? (
+          <View
+            style={{
+              position: 'absolute',
+              top: height,
+              left: 0,
+              width: layout.contentWidth,
+              height: footerHeight
+            }}
+          >
+            {footer({
+              contentWidth: layout.contentWidth,
+              timeAxis: layout.timeAxis
+            })}
+          </View>
+        ) : null}
       </ScrollView>
     </GestureDetector>
   );

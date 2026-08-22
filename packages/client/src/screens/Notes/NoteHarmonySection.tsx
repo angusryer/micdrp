@@ -1,17 +1,17 @@
 /**
- * NoteHarmonySection — the chord track, its hints, and where the backdrop
- * sits.
+ * NoteHarmonySection — what to say about the backdrop, and where it sits.
  *
- * The cards remain the way to change a whole chord: nudge it through the key,
- * step its shape, hear it, put it back. Moving one note of a chord happens on
- * the graph itself, where the note is.
+ * The cards themselves moved onto the graph, under the bars they describe
+ * (INV-NOTES-061); a second copy here would be a second thing to keep in step
+ * with the take. What is left is the reading that has no place on the drawing:
+ * how to change a chord, which register the backdrop occupies, and the way
+ * back to what was heard.
  */
 import React from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
-import { ChordTrack } from './ChordTrack';
 import type { useNoteDetail } from './useNoteDetail';
 
 export interface NoteHarmonySectionProps {
@@ -35,13 +35,6 @@ export function NoteHarmonySection({
 
   return (
     <>
-      <ChordTrack
-        slots={chords.slots}
-        onNudge={chords.nudge}
-        onReshape={chords.reshape}
-        onAudition={detail.auditionChord}
-        onRevert={chords.revert}
-      />
       <Text style={[styles.caption, { color: colors.gray300 }]}>
         {t('notes.harmonyHint')}
       </Text>

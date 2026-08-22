@@ -35,6 +35,8 @@ const DOUBLE_TAP_MS = 250;
 export interface ChordCardProps {
   slot: ChordSlot;
   index: number;
+  /** Set by the track, which sizes a card to the chord's own span. */
+  width?: number;
   onNudge: (index: number, degrees: number) => void;
   onReshape: (index: number, step: number) => void;
   onAudition: (index: number) => void;
@@ -44,6 +46,7 @@ export interface ChordCardProps {
 export function ChordCard({
   slot,
   index,
+  width,
   onNudge,
   onReshape,
   onAudition,
@@ -115,7 +118,10 @@ export function ChordCard({
               ? colors.primary100
               : colors.neutral100,
             borderColor: slot.isEdited ? colors.primary500 : colors.neutral500
-          }
+          },
+          // Sized to the chord it describes, so the left edge lands on the
+          // downbeat and the card covers what it is talking about.
+          width != null ? { width, minWidth: 0, paddingHorizontal: 4 } : null
         ]}
       >
         <Text style={[styles.bar, { color: colors.gray300 }]}>{slot.bar}</Text>

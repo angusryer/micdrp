@@ -39,6 +39,17 @@ export interface TimeAxis {
   pxPerMs: number;
 }
 
+/**
+ * Where a moment sits on the drawing.
+ *
+ * One implementation of the axis's own mapping. It was written out by hand
+ * wherever it was needed, and two copies of a mapping put whatever one of
+ * them draws beside whatever the other one touches (INV-NOTES-034).
+ */
+export function xForMs(axis: TimeAxis, timeMs: number): number {
+  return axis.pad + (timeMs - axis.t0) * axis.pxPerMs;
+}
+
 /** What the scale needs to know about the caller's request. */
 export interface ScaleRequest {
   /** The viewport, not the drawing: content may be wider. */

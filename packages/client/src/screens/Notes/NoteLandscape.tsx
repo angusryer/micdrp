@@ -3,10 +3,13 @@
  *
  * A sung idea is wide and short, which is the shape of a phone on its side
  * and the opposite of one held upright. Turning it is the cheapest way to see
- * more bars at a readable scale, so here the graph takes the height and the
- * chord track keeps a thin row beneath it — harmony stays visible and
- * editable against the line, and nothing else competes for the space
- * (INV-NOTES-041).
+ * more bars at a readable scale, so here the graph takes the height, with the
+ * chord cards riding in its own scroll under the bars they describe
+ * (INV-NOTES-061) and nothing else competing for the space (INV-NOTES-041).
+ *
+ * The transport comes with it. Sideways is where a take is actually studied,
+ * and being unable to hear the thing you are looking at meant turning the
+ * phone back to press play and losing the view to do it (INV-NOTES-062).
  *
  * It reads the same useNoteDetail as the upright page, so turning the phone
  * changes the presentation and nothing about the note.
@@ -27,13 +30,10 @@ import {
 } from 'react-native';
 
 import { useTheme } from '../../theme';
-import { ChordTrack } from './ChordTrack';
-import { NoteShapeSection } from './NoteShapeSection';
+import { MIN_GRAPH_HEIGHT, NoteShapeSection } from './NoteShapeSection';
+import { PlaybackBar } from './PlaybackBar';
 import { SelectionBar } from './SelectionBar';
 import type { useNoteDetail } from './useNoteDetail';
-
-/** Room for one row of chord cards under the graph. */
-const CHORD_STRIP_HEIGHT = 92;
 
 /** Breathing room at the edges; less than upright, since space is the point. */
 const EDGE_PADDING = 12;
@@ -41,8 +41,7 @@ const EDGE_PADDING = 12;
 /** The graph card's own border, which sits inside the space it is given. */
 const CARD_BORDER = 2;
 
-/** Below this the drawing is not a graph any more, so it scrolls instead. */
-const MIN_GRAPH_HEIGHT = 96;
+
 
 export interface NoteLandscapeProps {
   detail: ReturnType<typeof useNoteDetail>;
@@ -54,7 +53,7 @@ export function NoteLandscape({
   width
 }: NoteLandscapeProps): React.JSX.Element {
   const { colors } = useTheme();
-  const { chords } = detail;
+  const { note } = detail;
   // What the layout left for the graph once everything else had taken what
   // it needed. Measured rather than predicted, so a new row beneath it can
   // never silently push the bottom one off the screen.
@@ -64,8 +63,6 @@ export function NoteLandscape({
     []
   );
 
-  const hasChords = chords.slots.length > 0;
-
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.neutral300 }]}>
       <View style={styles.frame}>
@@ -73,8 +70,8 @@ export function NoteLandscape({
             needs and this takes what is left (INV-NOTES-060). */}
         <View testID="graph-room" style={styles.graph} onLayout={measure}>
           {room > 0 ? (
-            /* No controls under it: sideways the graph is the view, and the
-               transport lives on the upright page. */
+            /* No listening controls under it — those stay upright. The
+               transport is the exception: it is what the view is for. */
             <NoteShapeSection
               detail={detail}
               width={width - 2 * EDGE_PADDING}
@@ -90,16 +87,13 @@ export function NoteLandscape({
           selection={detail.selection}
           onSelect={detail.setSelection}
         />
-        {hasChords ? (
-          <View style={styles.strip}>
-            <ChordTrack
-              slots={chords.slots}
-              onNudge={chords.nudge}
-              onReshape={chords.reshape}
-              onAudition={detail.auditionChord}
-              onRevert={chords.revert}
-            />
-          </View>
+        {/* Everything together, without turning the phone back to reach it. */}
+        {note?.audioPath ? (
+          <PlaybackBar
+            resolveAudioUri={detail.resolveAudio}
+            accompaniment={detail.backdrop}
+            voice={detail.melodyVoiceMix}
+          />
         ) : null}
       </View>
     </SafeAreaView>
@@ -113,6 +107,5 @@ const styles = StyleSheet.create({
   frame: { flex: 1, padding: EDGE_PADDING },
   // minHeight lets it shrink below its content, which is what makes it the
   // piece that gives way rather than the piece that overflows.
-  graph: { flex: 1, minHeight: MIN_GRAPH_HEIGHT },
-  strip: { height: CHORD_STRIP_HEIGHT, justifyContent: 'center' }
+  graph: { flex: 1, minHeight: MIN_GRAPH_HEIGHT }
 });

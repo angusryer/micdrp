@@ -22,15 +22,25 @@ import { NoteLandscape } from '../NoteLandscape';
 const shapeHeights: number[] = [];
 
 jest.mock('../NoteShapeSection', () => ({
+  // The floor is the section's to declare, so the mock has to carry it too.
+  MIN_GRAPH_HEIGHT: 96,
   NoteShapeSection: ({ height }: { height: number }) => {
     shapeHeights.push(height);
     return null;
   }
 }));
+jest.mock('../PlaybackBar', () => {
+  const { View: Stub } = require('react-native');
+  return { PlaybackBar: () => <Stub testID="transport" /> };
+});
 jest.mock('../SelectionBar', () => ({ SelectionBar: () => null }));
 jest.mock('../ChordTrack', () => ({ ChordTrack: () => null }));
 
 const detail = {
+  note: { audioPath: 'takes/one.m4a' } as { audioPath: string } | null,
+  resolveAudio: jest.fn(),
+  backdrop: { durationMs: 4000 },
+  melodyVoiceMix: { durationMs: 4000 },
   chords: {
     slots: [{ label: 'C' }],
     nudge: jest.fn(),
@@ -40,13 +50,13 @@ const detail = {
   auditionChord: jest.fn(),
   selection: null,
   setSelection: jest.fn()
-} as never;
+};
 
 const renderSideways = () =>
   render(
     <I18nProvider>
       <ThemeProvider>
-        <NoteLandscape detail={detail} width={800} />
+        <NoteLandscape detail={detail as never} width={800} />
       </ThemeProvider>
     </I18nProvider>
   );
@@ -72,6 +82,25 @@ describe('a note held sideways', () => {
     );
     // Its own border sits inside that room, so the drawing is that much less.
     expect(shapeHeights[shapeHeights.length - 1]).toBe(258);
+  });
+
+  it('INV-NOTES-062: can sound the take from where it is being looked at', async () => {
+    await renderSideways();
+    expect(screen.queryByTestId('transport')).not.toBeNull();
+  });
+
+  it('offers no transport for a note whose audio never arrived', async () => {
+    await render(
+      <I18nProvider>
+        <ThemeProvider>
+          <NoteLandscape
+            detail={{ ...detail, note: null } as never}
+            width={800}
+          />
+        </ThemeProvider>
+      </I18nProvider>
+    );
+    expect(screen.queryByTestId('transport')).toBeNull();
   });
 
   it('gives way when there is less room, rather than overflowing', async () => {

@@ -16,12 +16,20 @@ import { MelodyView } from '../../components/MelodyView';
 import { ZoomableMelody } from '../../components/ZoomableMelody';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
+import { ChordTrack } from './ChordTrack';
 import { NoteShapeControls } from './NoteShapeControls';
 import type { useNoteDetail } from './useNoteDetail';
+
+/** Room for one row of chord cards under the drawing, inside the same card. */
+const CHORD_STRIP_HEIGHT = 84;
+
+/** Below this the drawing stops being a graph, so it refuses to shrink more. */
+export const MIN_GRAPH_HEIGHT = 96;
 
 export interface NoteShapeSectionProps {
   detail: ReturnType<typeof useNoteDetail>;
   width: number;
+  /** The whole card, chord strip included — not just the drawing. */
   height: number;
   /** Sideways the graph is the view, so the controls under it are left off. */
   showControls?: boolean;
@@ -57,8 +65,16 @@ export function NoteShapeSection({
     melody,
     gridForView,
     chordPitchesShown,
+    chords,
     octaves
   } = detail;
+  // The cards ride in the graph's own scroll so each one starts where its
+  // chord starts (INV-NOTES-061). They take their room out of the height this
+  // section was given rather than adding to it, so the drawing shrinks by
+  // exactly what they occupy and the section still fits its slot.
+  const hasChords = chords.slots.length > 0;
+  const stripHeight = hasChords ? CHORD_STRIP_HEIGHT : 0;
+  const graphHeight = Math.max(MIN_GRAPH_HEIGHT, height - stripHeight);
   // The graph never moves for a transposition — the take was sung where it
   // was sung. This is the only sign of it, and only while it is not zero
   // (INV-NOTES-058).
@@ -81,9 +97,21 @@ export function NoteShapeSection({
             notes={melody}
             grid={gridForView}
             width={width}
-            height={height}
+            height={graphHeight}
             alsoShow={chordPitchesShown}
             onScaleChange={onScaleChange}
+            footerHeight={stripHeight}
+            footer={({ contentWidth, timeAxis }) => (
+              <ChordTrack
+                slots={chords.slots}
+                timeAxis={timeAxis}
+                contentWidth={contentWidth}
+                onNudge={chords.nudge}
+                onReshape={chords.reshape}
+                onAudition={detail.auditionChord}
+                onRevert={chords.revert}
+              />
+            )}
           >
             {({ contentWidth, beatWidth, timeAxis, pitchAxis, rects }) => (
               <GraphLayers
@@ -91,7 +119,7 @@ export function NoteShapeSection({
                 noteRects={rects}
                 contentWidth={contentWidth}
                 beatWidth={beatWidth}
-                height={height}
+                height={graphHeight}
                 timeAxis={timeAxis}
                 pitchAxis={pitchAxis}
                 selection={selection}
@@ -100,7 +128,7 @@ export function NoteShapeSection({
             )}
           </ZoomableMelody>
         ) : (
-          <MelodyView notes={melody} width={width} height={height} />
+          <MelodyView notes={melody} width={width} height={graphHeight} />
         )}
         {shifted != null ? (
           <View

@@ -39,7 +39,11 @@ import { useNoteDetail } from './useNoteDetail';
 /** Side padding of the detail scroll content (keep in sync with styles.content). */
 const CONTENT_PADDING = 20;
 /** Height of the piano-roll melody view when it is a card in the column. */
-const MELODY_VIEW_HEIGHT = 150;
+/**
+ * The whole graph card upright: the drawing plus the row of chord cards that
+ * now rides in its scroll, so each card starts on its own downbeat.
+ */
+const MELODY_VIEW_HEIGHT = 236;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NoteDetail'>;
 

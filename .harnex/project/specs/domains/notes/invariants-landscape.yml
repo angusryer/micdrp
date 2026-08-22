@@ -21,3 +21,39 @@ invariants:
       a screen that had no room to spare in the first place. A budget
       kept in one place and spent by the layout cannot drift that way;
       a list of subtrahends always will.
+
+  - id: INV-NOTES-061
+    description: A chord card starts where its chord starts
+    severity: major
+    check: >
+      Each card of the chord track is positioned on the graph's own time
+      axis: its left edge sits at the same x as the downbeat that opens
+      that chord, and it is as wide as the chord lasts, down to a floor
+      that keeps it tappable. It travels in the graph's scroll, so the
+      alignment holds at every scroll position and every scale rather
+      than only at the start of the take. Verified by asserting a card's
+      left edge equals the axis's own mapping of its chord's start, from
+      one implementation of that mapping.
+
+      The cards used to scroll in a row of their own. Two scroll
+      positions over one timeline agree only where they both begin, so a
+      card and the bar it described drifted apart as soon as you moved
+      along the take — which made the strip a list of chords rather than
+      a reading of this one, and left no way to see which bar you were
+      about to hear.
+
+  - id: INV-NOTES-062
+    description: A take can be heard from wherever it is being looked at
+    severity: major
+    check: >
+      The transport is present in landscape as well as upright, so the
+      take, the backdrop, or both can be sounded without turning the
+      phone. Verified by asserting the sideways layout renders the
+      transport for a note that has audio, and none for one that does
+      not.
+
+      Sideways is where a take is actually studied, and hearing it is
+      most of studying it. Sending the singer back to portrait to press
+      play took away the view they had turned the phone to get, which
+      made the landscape layout something to leave rather than something
+      to work in.
