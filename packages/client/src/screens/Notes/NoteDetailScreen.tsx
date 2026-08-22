@@ -29,6 +29,7 @@ import { useTranslation } from '../../i18n';
 import { ExportSheet } from '../Results/ExportSheet';
 import { NoteList } from '../Results/NoteList';
 import { NoteHarmonySection } from './NoteHarmonySection';
+import { NoteLandscape } from './NoteLandscape';
 import { NoteShapeSection } from './NoteShapeSection';
 import { NoteStats, formatDuration } from './NoteStats';
 import { PlaybackBar } from './PlaybackBar';
@@ -44,7 +45,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'NoteDetail'>;
 export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const detail = useNoteDetail(route.params.id);
   const { note, melody } = detail;
 
@@ -56,6 +57,12 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
         </View>
       </SafeAreaView>
     );
+  }
+
+  // Sideways, the graph is the view (INV-NOTES-041). Same state either way,
+  // so turning the phone changes the presentation and nothing about the note.
+  if (width > height && melody.length > 0) {
+    return <NoteLandscape detail={detail} width={width} height={height} />;
   }
 
   const graphWidth = width - 2 * CONTENT_PADDING - 2;

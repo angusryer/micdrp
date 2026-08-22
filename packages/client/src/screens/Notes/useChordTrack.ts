@@ -8,6 +8,9 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { rootsOnly, withoutRoot } from './chordVoices';
+import { AUDITION_MS, VOICING_BOTTOM_MIDI } from './chordTrackDefaults';
+
 import {
   collectEdits,
   cycleQuality,
@@ -28,15 +31,6 @@ import {
   type NoteEvent
 } from 'logic';
 
-/** How long a chord sounds when tapped, in ms. */
-const AUDITION_MS = 1100;
-/**
- * Sits below a sung line without booming under it — the right register on
- * headphones. A caller listening on the phone's own speaker passes a higher
- * floor, since a built-in speaker has almost nothing down here.
- */
-const VOICING_BOTTOM_MIDI = 48;
-
 export interface ChordTrack {
   slots: ChordSlot[];
   /** True when any slot has been changed by hand. */
@@ -51,6 +45,13 @@ export interface ChordTrack {
   moveTone: (index: number, tone: number, semitones: number) => void;
   /** Silence one note of one chord, or bring it back. */
   toggleTone: (index: number, tone: number) => void;
+  /**
+   * The root of each chord on its own, so it can be mixed as a bass under the
+   * rest of the harmony rather than as another note inside it (INV-NOTES-040).
+   * Empty for a slot whose root has been silenced — one decision about
+   * whether a root sounds, not two.
+   */
+  bass: ChordPlayback[];
   /** Put every slot back. */
   revertAll: () => void;
   /** MIDI notes for a slot, for playback. */
@@ -117,15 +118,19 @@ export function useChordTrack(
   );
 
   // Voiced here rather than at the player, so an edit made before pressing
-  // play is the chord that plays.
+  // play is the chord that plays. The root is taken out and handed to its own
+  // bus, so the backdrop above it is the harmony and the bass is the ground it
+  // stands on (INV-NOTES-040).
   const progression = useMemo(
-    () => voiceProgression(slots, { bottomMidi: floorMidi }),
-    [slots]
+    () => withoutRoot(voiceProgression(slots, { bottomMidi: floorMidi }), slots, floorMidi),
+    [slots, floorMidi]
   );
+  const bass = useMemo(() => rootsOnly(slots, floorMidi), [slots, floorMidi]);
 
   return {
     slots,
     progression,
+    bass,
     // A voicing counts: someone can move a note of a chord they were happy
     // with, and the revert-all control has to know there is something to undo.
     hasEdits: slots.some((s) => s.isEdited || isAltered(s.voicing)),

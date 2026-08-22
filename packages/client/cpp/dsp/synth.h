@@ -36,7 +36,8 @@ enum class Bus : int {
   Melody = 1,   ///< the detected melody, played back
   Chords = 2,   ///< the harmonic backdrop
   Audition = 3, ///< a tapped note or chord, heard on its own
-  Count = 4
+  Bass = 4,     ///< the root of each chord, under the rest of it
+  Count = 5
 };
 
 /// One note to sound: a frequency on a bus, between two samples.
@@ -103,7 +104,8 @@ class Synth {
 
   double sampleRate_ = 48000.0;
   std::int64_t now_ = 0;
-  float busLevels_[static_cast<int>(Bus::Count)] = {1.0f, 1.0f, 1.0f, 1.0f};
+  float busLevels_[static_cast<int>(Bus::Count)] = {1.0f, 1.0f, 1.0f, 1.0f,
+                                                    1.0f};
   /// Fixed: a long take must cost no more to play than a short one.
   Voice voices_[kMaxVoices];
   /// Pending notes, kept sorted by start so admission is a walk from the front.

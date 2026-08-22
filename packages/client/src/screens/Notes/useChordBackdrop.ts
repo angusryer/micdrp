@@ -16,7 +16,11 @@ import { useCallback, useEffect, useMemo } from 'react';
 
 import type { ChordPlayback, TargetNote } from 'logic';
 
-import { createTonePlayer, SynthBus } from '../../audio/synthPlayer';
+import {
+  createTonePlayer,
+  SynthBus,
+  type SynthBusValue
+} from '../../audio/synthPlayer';
 
 /** Peak gain per backdrop tone — several sound at once, under the take. */
 const BACKDROP_PEAK_GAIN = 0.06;
@@ -83,12 +87,20 @@ export function shiftTones(
   return shifted;
 }
 
+/** Which voice this backdrop is, when it is not the chords themselves. */
+export interface ChordBackdropOptions {
+  bus?: SynthBusValue;
+  peakGain?: number;
+}
+
 export function useChordBackdrop(
-  progression: readonly ChordPlayback[]
+  progression: readonly ChordPlayback[],
+  options: ChordBackdropOptions = {}
 ): ChordBackdrop {
+  const { bus = SynthBus.Chords, peakGain = BACKDROP_PEAK_GAIN } = options;
   const player = useMemo(
-    () => createTonePlayer(SynthBus.Chords, { peakGain: BACKDROP_PEAK_GAIN }),
-    []
+    () => createTonePlayer(bus, { peakGain }),
+    [bus, peakGain]
   );
   const tones = useMemo(() => backdropTones(progression), [progression]);
   const durationMs = useMemo(

@@ -26,8 +26,9 @@ void check(bool ok, const char* what) {
 void testBusFromIndex() {
   check(micdrp::busFromIndex(0) == Bus::Take, "0 is Take");
   check(micdrp::busFromIndex(3) == Bus::Audition, "3 is Audition");
+  check(micdrp::busFromIndex(4) == Bus::Bass, "4 is Bass");
   // Out of range reads as Melody rather than indexing past the levels array.
-  check(micdrp::busFromIndex(4) == Bus::Melody, "4 falls back to Melody");
+  check(micdrp::busFromIndex(5) == Bus::Melody, "5 falls back to Melody");
   check(micdrp::busFromIndex(-1) == Bus::Melody, "-1 falls back to Melody");
   check(micdrp::busFromIndex(1.9) == Bus::Melody, "1.9 truncates to Melody");
 }

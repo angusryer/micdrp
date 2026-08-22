@@ -32,87 +32,12 @@
 // MPM detector + note conversion (golden-parity tested against the TS oracle).
 // This bridge owns only the *streaming* shell (hop buffering + throttling); the
 // math lives in cpp/dsp so there is a single source of truth.
-#include "mpm.h"    // micdrp::dsp::Mpm, EngineConfig, PitchResult
-#include "notes.h"  // micdrp::dsp::frequencyToNote, NoteReading
+#include "StreamingPitch.h"
 
-namespace {
+using micdrp::bridge::EngineConfig;
+using micdrp::bridge::PitchEngine;
+using micdrp::bridge::PitchSample;
 
-// Engine config (mirrors DEFAULT_ENGINE_CONFIG in contract.ts).
-struct EngineConfig {
-  double sampleRateHz = 44100.0;
-  int frameSize = 2048;
-  int hopSize = 1024;
-  double minFrequencyHz = 70.0;
-  double maxFrequencyHz = 1200.0;
-  double clarityThreshold = 0.9;
-  double emitRateHz = 60.0;
-};
-
-// One analysed hop (matches the contract PitchSample; `voiced` flags null midi/cents).
-struct PitchSample {
-  double timestampMs = 0;
-  double frequencyHz = 0;
-  double clarity = 0;
-  int midi = 0;
-  int cents = 0;
-  bool voiced = false;
-};
-
-// Streaming MPM over a sliding frame: buffers PCM into `frameSize` windows,
-// advancing by `hopSize`, and appends one PitchSample per full window. Pure C++
-// so it stays off any managed runtime.
-class PitchEngine {
- public:
-  explicit PitchEngine(const EngineConfig &cfg) : cfg_(cfg) {
-    buffer_.reserve(static_cast<size_t>(cfg.frameSize) * 2);
-    micdrp::dsp::EngineConfig dsp;
-    dsp.sampleRateHz = cfg.sampleRateHz;
-    dsp.frameSize = static_cast<std::size_t>(cfg.frameSize);
-    dsp.hopSize = static_cast<std::size_t>(cfg.hopSize);
-    dsp.minFrequencyHz = cfg.minFrequencyHz;
-    dsp.maxFrequencyHz = cfg.maxFrequencyHz;
-    dsp.clarityThreshold = cfg.clarityThreshold;
-    dsp.emitRateHz = cfg.emitRateHz;
-    mpm_.configure(dsp);
-  }
-
-  // Append `count` mono float samples captured at `tMs`; emit completed frames.
-  void push(const float *mono, int count, double tMs, std::vector<PitchSample> &out) {
-    for (int i = 0; i < count; ++i) {
-      buffer_.push_back(mono[i]);
-    }
-    while (static_cast<int>(buffer_.size()) >= cfg_.frameSize) {
-      analyzeWindow(tMs, out);
-      // Advance by hopSize.
-      const int hop = cfg_.hopSize > 0 ? cfg_.hopSize : cfg_.frameSize;
-      buffer_.erase(buffer_.begin(), buffer_.begin() + hop);
-    }
-  }
-
- private:
-  void analyzeWindow(double tMs, std::vector<PitchSample> &out) {
-    micdrp::dsp::PitchResult r =
-        mpm_.detect(buffer_.data(), static_cast<std::size_t>(cfg_.frameSize));
-
-    PitchSample s;
-    s.timestampMs = tMs;
-    s.clarity = r.clarity;
-    if (r.voiced && r.clarity >= cfg_.clarityThreshold) {
-      micdrp::dsp::NoteReading note = micdrp::dsp::frequencyToNote(r.frequencyHz);
-      s.frequencyHz = r.frequencyHz;
-      s.midi = note.midi;
-      s.cents = note.cents;
-      s.voiced = true;
-    }
-    out.push_back(s);
-  }
-
-  EngineConfig cfg_;
-  micdrp::dsp::Mpm mpm_;
-  std::vector<float> buffer_;
-};
-
-}  // namespace
 
 @implementation AudioEngineModule {
   AVAudioEngine *_engine;
@@ -252,46 +177,10 @@ static double NowMs() {
   // to reclaim it — which would leave a saved note pointing at audio that had
   // silently vanished. INV-PITCH-011.
   _recordingId = [[NSUUID UUID] UUIDString];
-  NSString *dir = captureDir.length > 0 ? captureDir : NSTemporaryDirectory();
-  [[NSFileManager defaultManager] createDirectoryAtPath:dir
-                            withIntermediateDirectories:YES
-                                             attributes:nil
-                                                  error:nil];
-  NSString *path = [dir stringByAppendingPathComponent:
-                    [NSString stringWithFormat:@"%@.wav", _recordingId]];
-  _captureURL = [NSURL fileURLWithPath:path];
-
-  // WAV holding 16-bit PCM, not CAF holding Float32 (INV-PITCH-012).
-  //
-  // CAF/Float32 is the natural choice here — it is what the hardware format
-  // already is, so writing it costs nothing. But playback decodes through
-  // miniaudio, which opens WAV, MP3 and FLAC and hands only .mp4, .m4a and
-  // .aac to ffmpeg. CAF matched nothing, so every note ever recorded failed
-  // to open and the UI said only "Playback failed".
-  //
-  // 16-bit is deliberate too: it is what every decoder agrees on, and it
-  // halves what has to be uploaded. `commonFormat` stays Float32 because
-  // that is what the tap delivers; AVAudioFile converts on write.
-  NSDictionary *captureSettings = @{
-    AVFormatIDKey: @(kAudioFormatLinearPCM),
-    AVSampleRateKey: @(hwFormat.sampleRate),
-    AVNumberOfChannelsKey: @(hwFormat.channelCount),
-    AVLinearPCMBitDepthKey: @16,
-    AVLinearPCMIsFloatKey: @NO,
-    AVLinearPCMIsBigEndianKey: @NO,
-    AVLinearPCMIsNonInterleaved: @NO
-  };
-
-  NSError *fileErr = nil;
-  _captureFile = [[AVAudioFile alloc] initForWriting:_captureURL
-                                            settings:captureSettings
-                                        commonFormat:AVAudioPCMFormatFloat32
-                                         interleaved:NO
-                                               error:&fileErr];
-  if (fileErr) {
-    RCTLogWarn(@"AudioEngineModule: capture file open failed: %@", fileErr.localizedDescription);
-    _captureFile = nil;  // analysis still works without persisted audio
-  }
+  NSURL *captureURL = nil;
+  _captureFile =
+      MicdrpOpenCaptureFile(captureDir, _recordingId, hwFormat, &captureURL);
+  _captureURL = captureURL;
 
   __weak AudioEngineModule *weakSelf = self;
   [input installTapOnBus:0

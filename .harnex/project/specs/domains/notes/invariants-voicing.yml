@@ -64,3 +64,19 @@ invariants:
       and a voicing is a difference like any other. Applying an orphaned
       one to whichever chord happened to move into its place would put
       notes the singer never chose into a chord they never edited.
+
+  - id: INV-NOTES-040
+    description: The root has a voice of its own
+    severity: major
+    check: >
+      The root of each chord sounds on its own bus, apart from the rest
+      of the chord, so it can be mixed or silenced without touching them.
+      Silencing the root's note in the chord silences that voice too —
+      there is one decision about whether a root sounds, not two.
+      Verified by asserting the root bus carries one note per slot at the
+      chord's root, and nothing when that note is silenced.
+
+      A bass under a line is heard as the ground the harmony stands on
+      rather than as another note in it, and it is the one voice a phone
+      speaker struggles with most. Giving it its own level is what lets
+      it be turned up on headphones and down when it is only rattling.

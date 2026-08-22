@@ -2,7 +2,7 @@
  * synthPlayer — tone players backed by the one native synth.
  *
  * Every player made here schedules into the same native engine: one sample
- * clock, one voice pool, four busses (INV-NOTES-028/029). The player keeps
+ * clock, one voice pool, five busses (INV-NOTES-028/029). The player keeps
  * the ReferenceTonePlayer shape so call sites do not change; what changes is
  * that "three things sounding at once" is three busses of one graph rather
  * than three AudioContexts that cannot agree on a moment.
@@ -26,7 +26,8 @@ export const SynthBus = {
   Take: 0,
   Melody: 1,
   Chords: 2,
-  Audition: 3
+  Audition: 3,
+  Bass: 4
 } as const;
 export type SynthBusValue = (typeof SynthBus)[keyof typeof SynthBus];
 

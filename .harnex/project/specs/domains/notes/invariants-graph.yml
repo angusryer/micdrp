@@ -64,3 +64,22 @@ invariants:
       spacing there would show the first two seconds of everything, so
       every row would look alike, which is the one thing a list must not
       do.
+
+  - id: INV-NOTES-041
+    description: Turned sideways, the graph is the view
+    severity: major
+    check: >
+      Held in landscape, a note's detail gives the graph the height and
+      keeps the chord track as a thin row beneath it, so the harmony
+      stays visible and editable against the line. Nothing else competes
+      for the space. Turning back upright restores the full page with
+      everything where it was, and the take's own scroll position and
+      scale survive the turn. Verified by asserting the same note renders
+      the graph and the chord track in landscape and the whole page in
+      portrait, from one piece of state.
+
+      A sung idea is wide and short, which is the shape of a phone on its
+      side and the opposite of one held upright. Turning it is the
+      cheapest way to see more bars at a readable scale, and the reading
+      is what the screen is for — everything else on the page is about
+      the take rather than in it.

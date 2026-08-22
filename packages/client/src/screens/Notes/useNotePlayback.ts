@@ -15,6 +15,9 @@ import {
 } from 'logic';
 
 import { createTonePlayer, SynthBus } from '../../audio/synthPlayer';
+
+/** Quieter than the chords: a bass is felt more than it is listened to. */
+const BASS_PEAK_GAIN = 0.09;
 import { useChordBackdrop } from './useChordBackdrop';
 import type { useChordTrack } from './useChordTrack';
 import { DEFAULT_MELODY_LEVEL, useMelodyBackdrop } from './useMelodyBackdrop';
@@ -41,10 +44,33 @@ export function useNotePlayback(
   useEffect(() => melodyVoice.setLevel(melodyLevel), [melodyVoice, melodyLevel]);
 
   const backdrop = useChordBackdrop(chords.progression);
+  // The root on its own bus, under the rest of the harmony (INV-NOTES-040).
+  // Its own player, so its level can be moved without touching the chords —
+  // it is the voice a phone speaker struggles with most.
+  const bassVoice = useChordBackdrop(chords.bass, {
+    bus: SynthBus.Bass,
+    peakGain: BASS_PEAK_GAIN
+  });
 
   // The melody follows the take itself; the chords follow the mix choice.
   // Hanging one off the other made the melody a passenger on a decision about
   // harmony, and it fell silent whenever chords were off (INV-NOTES-027).
+  // One transport: the bass starts and stops with the chords it belongs to.
+  const accompaniment = useMemo(
+    () => ({
+      start: (offsetMs = 0) => {
+        backdrop.start(offsetMs);
+        bassVoice.start(offsetMs);
+      },
+      stop: () => {
+        backdrop.stop();
+        bassVoice.stop();
+      },
+      durationMs: Math.max(backdrop.durationMs, bassVoice.durationMs)
+    }),
+    [backdrop, bassVoice]
+  );
+
   const melodyVoiceMix = useMemo(
     () => ({
       start: (offsetMs = 0) => {
@@ -95,7 +121,7 @@ export function useNotePlayback(
     setIsOverTake,
     melodyLevel,
     setMelodyLevel,
-    backdrop,
+    backdrop: accompaniment,
     melodyVoiceMix,
     playMelody,
     playNote,
