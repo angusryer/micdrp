@@ -29,6 +29,7 @@ export type { GridLine, MelodyGrid };
 export { pitchBounds, yForMidi, midiForY, type PitchAxis } from './melodyPitch';
 export {
   anchorZoom,
+  beatWidthShowingAll,
   clampBeatWidth,
   DEFAULT_BEAT_WIDTH,
   MIN_BEAT_WIDTH,

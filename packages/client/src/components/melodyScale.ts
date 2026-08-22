@@ -56,30 +56,55 @@ export interface ScaleRequest {
 export function clampBeatWidth(
   desired: number,
   viewportWidth: number,
-  beatsPerBar: number
+  beatsPerBar: number,
+  floor: number = MIN_BEAT_WIDTH
 ): number {
   const bars = beatsPerBar > 0 ? beatsPerBar : 4;
-  const maxWidth = Math.max(MIN_BEAT_WIDTH, viewportWidth / bars);
-  return Math.min(maxWidth, Math.max(MIN_BEAT_WIDTH, desired));
+  // Never below what shows the whole take, and never so wide that a bar has
+  // left the screen entirely.
+  const low = Math.max(MIN_BEAT_WIDTH, floor);
+  const high = Math.max(low, viewportWidth / bars);
+  return Math.min(high, Math.max(low, desired));
 }
 
 /**
- * Where to scroll so that the moment in the middle of the screen is still in
- * the middle of it after the scale changes by `ratio`.
+ * Where to scroll so that the moment under `focalX` is still under it after
+ * the scale changes by `ratio`.
  *
- * Zooming without this throws you somewhere else in the take, so you have to
- * find your place again every time you look closer — which is exactly when
- * you least want to lose it. Never negative: there is nothing left of the
- * first note to scroll to.
+ * The focal point is the midpoint between the two fingers of a pinch
+ * (INV-NOTES-043). Anchoring anywhere else means the take slides under the
+ * fingers doing the pinching, so the thing being looked at is the thing that
+ * moves away. Never negative: there is nothing left of the first note to
+ * scroll to.
  */
 export function anchorZoom(
   scrollX: number,
-  viewportWidth: number,
+  focalX: number,
   pad: number,
   ratio: number
 ): number {
-  const centreFromPad = scrollX + viewportWidth / 2 - pad;
-  return Math.max(0, pad + centreFromPad * ratio - viewportWidth / 2);
+  const focalFromPad = scrollX + focalX - pad;
+  return Math.max(0, pad + focalFromPad * ratio - focalX);
+}
+
+/**
+ * The widest a beat may be drawn and still leave the whole take on screen.
+ *
+ * This is the floor for zooming out (INV-NOTES-044): past the whole take
+ * there is nothing further to see, only the take getting smaller in the
+ * middle of an empty screen. Derived per take rather than fixed, because
+ * "everything at once" means something different for eight bars than for two
+ * minutes.
+ */
+export function beatWidthShowingAll(
+  span: number,
+  innerW: number,
+  beatMs: number
+): number {
+  if (!(span > 0) || !(beatMs > 0)) {
+    return MIN_BEAT_WIDTH;
+  }
+  return (innerW / span) * beatMs;
 }
 
 /** The sung span, or a unit span when nothing was sung. */

@@ -5,7 +5,7 @@
  * takes its own size rather than reading the window: upright it is a card in
  * a scrolling column, sideways it is the view.
  */
-import React from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ChordBand } from '../../components/ChordBand';
@@ -34,6 +34,19 @@ export function NoteShapeSection({
 }: NoteShapeSectionProps): React.JSX.Element {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  // Offered only once the scale has been moved off the one the take opened
+  // at, since a reset that does nothing is noise (INV-NOTES-044). Kept as a
+  // boolean rather than the callback itself: React drops a set that does not
+  // change the value, so a pinch that stays zoomed re-renders nothing.
+  const [canReset, setCanReset] = useState(false);
+  const resetScale = useRef<() => void>(() => {});
+  const onScaleChange = useCallback(
+    (state: { isDefault: boolean; reset: () => void }) => {
+      resetScale.current = state.reset;
+      setCanReset(!state.isDefault);
+    },
+    []
+  );
   const {
     melody,
     gridForView,
@@ -64,6 +77,7 @@ export function NoteShapeSection({
             width={width}
             height={height}
             alsoShow={chordPitchesShown}
+            onScaleChange={onScaleChange}
           >
             {({ contentWidth, beatWidth, timeAxis, pitchAxis }) => (
               <>
@@ -96,6 +110,16 @@ export function NoteShapeSection({
           <MelodyView notes={melody} width={width} height={height} />
         )}
       </View>
+
+      {canReset ? (
+        <Text
+          accessibilityRole="button"
+          onPress={() => resetScale.current()}
+          style={[styles.reset, { color: colors.primary500 }]}
+        >
+          {t('notes.zoomReset')}
+        </Text>
+      ) : null}
 
       {showControls ? (
         <>
@@ -137,5 +161,6 @@ export default NoteShapeSection;
 const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: 12, overflow: 'hidden' },
   hearAs: { marginTop: 12, gap: 12 },
-  caption: { fontSize: 12, marginTop: 8 }
+  caption: { fontSize: 12, marginTop: 8 },
+  reset: { fontSize: 12, fontWeight: '600', marginTop: 8, alignSelf: 'flex-end' }
 });

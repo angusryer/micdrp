@@ -5,6 +5,7 @@
  */
 import {
   anchorZoom,
+  beatWidthShowingAll,
   clampBeatWidth,
   layoutMelody,
   MIN_BEAT_WIDTH,
@@ -157,34 +158,68 @@ describe('a thumbnail still shows the whole idea at once (INV-NOTES-035)', () =>
   });
 });
 
-describe('zooming holds the middle of the screen still', () => {
+describe('a pinch zooms about the point between the fingers (INV-NOTES-043)', () => {
   const PAD = 6;
-  const VIEW = 300;
 
-  it('keeps the centred moment centred when zooming in', () => {
-    // At 2x, whatever was under the middle must still be under the middle.
+  it.each([
+    ['left of centre', 40],
+    ['centre', 150],
+    ['right of centre', 280]
+  ])('keeps the moment under the focal point when zooming in at %s', (_n, focalX) => {
     const before = 1000;
-    const after = anchorZoom(before, VIEW, PAD, 2);
-    const centreBefore = before + VIEW / 2 - PAD;
-    const centreAfter = after + VIEW / 2 - PAD;
-    expect(centreAfter).toBeCloseTo(centreBefore * 2, 6);
+    const after = anchorZoom(before, focalX, PAD, 2);
+    // Content position under the finger midpoint, before and after.
+    const underBefore = before + focalX - PAD;
+    const underAfter = after + focalX - PAD;
+    expect(underAfter).toBeCloseTo(underBefore * 2, 6);
   });
 
-  it('keeps it centred when zooming out too', () => {
+  it('keeps it anchored when zooming out too', () => {
     const before = 2000;
-    const after = anchorZoom(before, VIEW, PAD, 0.5);
-    const centreBefore = before + VIEW / 2 - PAD;
-    const centreAfter = after + VIEW / 2 - PAD;
-    expect(centreAfter).toBeCloseTo(centreBefore * 0.5, 6);
+    const focalX = 90;
+    const after = anchorZoom(before, focalX, PAD, 0.5);
+    expect(after + focalX - PAD).toBeCloseTo((before + focalX - PAD) * 0.5, 6);
   });
 
   it('never scrolls left of the first note', () => {
-    // Zooming far out near the start would otherwise ask for a negative offset.
-    expect(anchorZoom(0, VIEW, PAD, 0.1)).toBe(0);
-    expect(anchorZoom(50, VIEW, PAD, 0.05)).toBe(0);
+    expect(anchorZoom(0, 150, PAD, 0.1)).toBe(0);
+    expect(anchorZoom(50, 150, PAD, 0.05)).toBe(0);
   });
 
   it('stays put when the scale does not change', () => {
-    expect(anchorZoom(800, VIEW, PAD, 1)).toBeCloseTo(800, 6);
+    expect(anchorZoom(800, 150, PAD, 1)).toBeCloseTo(800, 6);
+  });
+});
+
+describe('zooming out stops at the whole take (INV-NOTES-044)', () => {
+  it('finds the beat width that lays the take out at exactly the width', () => {
+    // 60 beats of 500ms across 288 inner px.
+    const span = 30000;
+    const innerW = 288;
+    const floor = beatWidthShowingAll(span, innerW, 500);
+    expect(floor).toBeCloseTo((innerW / span) * 500, 6);
+    // At that width the whole span lands inside the viewport.
+    expect(span * (floor / 500)).toBeCloseTo(innerW, 6);
+  });
+
+  it('is a floor the clamp will not go under', () => {
+    const floor = 20;
+    expect(clampBeatWidth(1, W, 4, floor)).toBe(floor);
+    expect(clampBeatWidth(MIN_BEAT_WIDTH, W, 4, floor)).toBe(floor);
+    // And a wider ask still passes through.
+    expect(clampBeatWidth(40, W, 4, floor)).toBe(40);
+  });
+
+  it('falls back rather than dividing by a span or tempo of nothing', () => {
+    expect(beatWidthShowingAll(0, 300, 500)).toBe(MIN_BEAT_WIDTH);
+    expect(beatWidthShowingAll(1000, 300, 0)).toBe(MIN_BEAT_WIDTH);
+  });
+
+  it('never traps a take whose floor exceeds the zoom-in ceiling', () => {
+    // A very short take wants a huge beat width; the ceiling still wins, and
+    // the result stays a usable number rather than an inverted range.
+    const result = clampBeatWidth(10, 300, 4, 9999);
+    expect(Number.isFinite(result)).toBe(true);
+    expect(result).toBeGreaterThan(0);
   });
 });

@@ -1,16 +1,22 @@
 # Correcting how a take is written down. Split from interactions.yml.
 interactions:
   - id: INT-NOTES-012
-    name: Pull a bar line to where the bar really starts
+    name: Pick a bar line up, then move it
     view: VIEW-NOTES-002
     steps:
-      - Press a bar line on the melody
+      - Press and hold a bar line until it lifts
       - Drag it left or right
       - Release
     outcome: >
       The line lands on the nearest grid step. The bar before it and the
       bar after it change length and are relabelled; the audio, the beat
       grid and every note stay exactly where they were.
+
+      Nothing moves until the line has been picked up. A press alone does
+      not take hold of it, so a swipe along the take or a pinch that
+      happens to begin on a line scrolls or zooms rather than dragging
+      the metre out from under the singer — the graph is covered in bar
+      lines, so landing on one is the common case, not the rare one.
 
       While the drag is live a readout follows the finger, showing where
       the line will land and what the two bars either side will become.
@@ -32,13 +38,23 @@ interactions:
       capability: transcription.add_bar_line
 
   - id: INT-NOTES-014
-    name: Join two bars
+    name: Slide a bar line away
     view: VIEW-NOTES-002
     steps:
-      - Press and hold a bar line
+      - Press and hold a bar line until it lifts
+      - Drag it upward, out of the graph
+      - Release
     outcome: >
-      The line goes and the bars either side become one. The last
-      remaining line cannot be removed, because a take with no bars is
-      one nothing downstream can describe.
+      The line goes and the bars either side become one. Passing the
+      threshold says so before the finger is lifted, so the throw can be
+      taken back by dragging down again. The last remaining line cannot
+      be removed, because a take with no bars is one nothing downstream
+      can describe.
+
+      The same hold that picks a line up decides by direction what
+      becomes of it: sideways is where it goes, upward is away. Asking
+      instead to "join two bars" never said which two — the one being
+      touched with the bar ahead of it, or with the bar behind — while
+      taking a line out says exactly one thing.
     maps_to:
       capability: transcription.remove_bar_line

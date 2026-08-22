@@ -25,14 +25,20 @@ invariants:
       Zooming changes how many pixels a beat occupies, within bounds,
       and changes nothing else: every note, bar line and chord is still
       present, still in the same musical position, and still in the same
-      order. The scale is clamped so a beat can never collapse to
-      nothing or grow past the point where a bar has left the screen
-      entirely. Verified by asserting the set of laid-out elements is
+      order. Verified by asserting the set of laid-out elements is
       unchanged across zoom levels and only their coordinates move.
+
+      Zooming out stops when the whole take fits, counting the pickup
+      before the first sung note, and never goes past it. Zooming in
+      stops before a bar has left the screen entirely. Verified by
+      asserting the floor for a given take lays that take out at exactly
+      the width it has.
 
       A zoom that dropped detail as it went would make the graph a
       different picture at every scale, and the singer could not trust
-      that what they were editing was what they had sung.
+      that what they were editing was what they had sung. Past the
+      whole take there is nothing further to see, only the take getting
+      smaller in the middle of an empty screen.
 
   - id: INV-NOTES-034
     description: A finger lands where the graph says it is
@@ -104,3 +110,31 @@ invariants:
       did exactly that — it converted a touch to a grid step inside the
       callback — while holding on a line, which passed only its index,
       was fine.
+
+  - id: INV-NOTES-043
+    description: A pinch zooms about the point between the fingers
+    severity: major
+    check: >
+      The moment under the midpoint of the two touches when a pinch
+      begins is the moment still under that midpoint as the pinch runs,
+      whichever way it goes. Verified by asserting the content position
+      under a given focal point is unchanged by a scale change anchored
+      there.
+
+      Anchoring to the middle of the screen instead means the take slides
+      under the fingers doing the pinching, so the thing being looked at
+      is the thing that moves away. A pinch is a statement about a place,
+      and the place is between the fingers.
+
+  - id: INV-NOTES-044
+    description: The scale can always be put back
+    severity: minor
+    check: >
+      A control returns the graph to the scale it opened at, from
+      wherever it has been taken, and is offered only once the scale has
+      actually been changed. Verified by asserting the beat width after
+      a reset equals the width a freshly opened take is given.
+
+      Zoom is a place you can get lost in — several pinches deep on a
+      long take, finding your way back by pinching is guesswork. One
+      control makes the way back exact.

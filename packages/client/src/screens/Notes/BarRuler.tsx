@@ -17,6 +17,8 @@ import { runOnJS } from 'react-native-reanimated';
 
 import { DragLoupe } from '../../components/DragLoupe';
 import { useTheme } from '../../theme';
+import { useTranslation } from '../../i18n';
+import { BarLineHandle, SLIDE_AWAY_PX } from './BarLineHandle';
 import type { BarHandle } from './barRulerModel';
 
 export interface BarRulerProps {
@@ -32,8 +34,9 @@ export interface BarRulerProps {
   onMerge: (lineIndex: number) => void;
 }
 
-/** Wide enough to grab without the lines themselves becoming heavy. */
-const GRAB_WIDTH = 44;
+
+
+
 
 export function BarRuler({
   handles,
@@ -46,23 +49,42 @@ export function BarRuler({
   onMerge
 }: BarRulerProps): React.JSX.Element {
   const { colors } = useTheme();
-  const [drag, setDrag] = useState<{ x: number; y: number; label: string } | null>(
-    null
-  );
+  const { t } = useTranslation();
+  const removeLabel = t('notes.barRemoveLabel');
+  const moveCaption = t('notes.barMoveHint');
+  const removeCaption = t('notes.barRemoveHint');
+  const [drag, setDrag] = useState<{
+    x: number;
+    y: number;
+    label: string;
+    leaving: boolean;
+  } | null>(null);
 
   const showDrag = useCallback(
-    (lineIndex: number, x: number, y: number) => {
-      setDrag({ x, y, label: previewAt(lineIndex, stepAtX(x)) });
+    (lineIndex: number, x: number, y: number, liftY: number) => {
+      // Say it before the finger lifts, so a throw can be taken back by
+      // dragging down again (INT-NOTES-014).
+      const leaving = liftY <= -SLIDE_AWAY_PX;
+      setDrag({
+        x,
+        y,
+        leaving,
+        label: leaving ? removeLabel : previewAt(lineIndex, stepAtX(x))
+      });
     },
-    [previewAt, stepAtX]
+    [previewAt, removeLabel, stepAtX]
   );
 
   const endDrag = useCallback(
-    (lineIndex: number, x: number) => {
+    (lineIndex: number, x: number, liftY: number) => {
       setDrag(null);
+      if (liftY <= -SLIDE_AWAY_PX) {
+        onMerge(lineIndex);
+        return;
+      }
       onMove(lineIndex, stepAtX(x));
     },
-    [onMove, stepAtX]
+    [onMerge, onMove, stepAtX]
   );
 
   // Only the touch position crosses; which grid step it landed on is worked
@@ -95,7 +117,6 @@ export function BarRuler({
           color={colors.primary700}
           onDrag={showDrag}
           onDrop={endDrag}
-          onMerge={onMerge}
         />
       ))}
 
@@ -105,55 +126,10 @@ export function BarRuler({
         touchY={drag?.y ?? 0}
         bounds={{ width, height }}
         value={drag?.label ?? ''}
-        caption="drag to move · hold to join"
+        caption={drag?.leaving ? removeCaption : moveCaption}
       />
     </View>
   );
 }
-
-interface HandleProps {
-  handle: BarHandle;
-  height: number;
-  color: string;
-  onDrag: (lineIndex: number, x: number, y: number) => void;
-  onDrop: (lineIndex: number, x: number) => void;
-  onMerge: (lineIndex: number) => void;
-}
-
-function BarLineHandle({
-  handle,
-  height,
-  color,
-  onDrag,
-  onDrop,
-  onMerge
-}: HandleProps): React.JSX.Element {
-  const { lineIndex, x } = handle;
-
-  const pan = Gesture.Pan()
-    .withTestId(`bar-line-pan-${lineIndex}`)
-    .onUpdate((event) => runOnJS(onDrag)(lineIndex, event.absoluteX, event.absoluteY))
-    .onEnd((event) => runOnJS(onDrop)(lineIndex, event.absoluteX));
-
-  const merge = Gesture.LongPress()
-    .withTestId(`bar-line-merge-${lineIndex}`)
-    .onStart(() => runOnJS(onMerge)(lineIndex));
-
-  return (
-    <GestureDetector gesture={Gesture.Exclusive(pan, merge)}>
-      <View
-        style={[styles.grab, { left: x - GRAB_WIDTH / 2, height }]}
-        testID={`bar-line-${lineIndex}`}
-      >
-        <View style={[styles.line, { backgroundColor: color }]} />
-      </View>
-    </GestureDetector>
-  );
-}
-
-const styles = StyleSheet.create({
-  grab: { position: 'absolute', top: 0, width: GRAB_WIDTH, alignItems: 'center' },
-  line: { width: 2, height: '100%', opacity: 0.9 }
-});
 
 export default BarRuler;
