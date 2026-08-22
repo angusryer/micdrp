@@ -111,9 +111,10 @@ Three pieces are moving to C++, in this order:
    the clock (INV-NOTES-031) — taking the hardware rate would mean headphones
    stopped the music.
 
-   Still to do: **a TestFlight build, then ears on a device** — nothing on
-   this path has been heard. Playback started before a capture (a session
-   category change under a running engine) is the untested order.
+   Shipped in build 13 and heard. A fifth bus was added in 14 for the root
+   of each chord, mixed under the rest of it. Playback started *before* a
+   capture (a session category change under a running engine) is still the
+   untested order.
 
 2. **Analysis off the JS thread.** Opening a note currently runs `quantize`,
    `harmonizeToGrid`, `detectKey` and `recentreNotes` synchronously in JS.
@@ -139,18 +140,28 @@ it is preserved here in their terms — in several cases they rejected the
 options I proposed and described something better, so do not re-derive from
 first principles.
 
-### Editable time signatures, by dragging bar lines
+### Editable time signatures — superseded, see below
 
-Their model, which is the one to build:
+The original model was that dragging a bar line changed the metre of the bars
+either side, conserving the total beat count. That has been **replaced**, by
+the maintainer, and the replacement is better:
 
-> Allowing the user to pull the downbeat of a bar — so you could pull the
-> downbeat back a beat and it would snap to wherever the beat would land in the
-> tempo, and that would reduce the number of beats in the bar to the left and
-> increase the number of beats in the bar to the right, maintaining the correct
-> aggregated number of beats without having to infer things.
+> A bar as we have it today really should represent the introduction of a new
+> chord — not necessarily a different chord, but a new space for the downbeat
+> of a chord to start.
 
-The bar line is the handle; the meter is the consequence. Nothing is inferred,
-and the total beat count is conserved by construction.
+A line on the graph is a **downbeat**: a place a new chord may start. Any
+number of them, unevenly spaced, each opening a chord slot that runs to the
+next. Metre is no longer an input at all — it is read back afterwards from the
+spacing, kept for export, and never surfaced in the editing surface.
+
+The pipeline is now: **pulse is detected → grouping is placed by the human →
+metre is read back.** Built and shipped; see INV-NOTES-048/049/050. Two things
+to preserve if this is revisited. The metre reading takes the *largest
+consistent grouping* rather than the raw gap, or a chord every two beats reads
+as 2/4 instead of 4/4. And it must never be authoritative — three half notes
+meant as a bar of four are six beats to any arithmetic, so a person's final say
+comes before anything is written out. That adjustment UI is not built yet.
 
 **Odd meters are in scope, not an edge case** — "what about 15/8, or 11/4 or
 7/4, or 13/8 or 13/4 — we need to support them all". This is why bar lines sit
