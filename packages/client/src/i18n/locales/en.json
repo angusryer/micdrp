@@ -106,7 +106,8 @@
       "steadiness": "In tune",
       "notes": "Notes",
       "length": "Length",
-      "meter": "Time"
+      "meter": "Time",
+      "chords": "Chords"
     },
     "mix": {
       "label": "What play sounds",

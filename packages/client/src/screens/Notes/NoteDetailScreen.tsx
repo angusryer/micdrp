@@ -104,7 +104,12 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
         <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
           {t('notes.analysis')}
         </Text>
-        <NoteStats note={note} grid={detail.grid} hasGrid={detail.hasGrid} />
+        <NoteStats
+          note={note}
+          grid={detail.grid}
+          hasGrid={detail.hasGrid}
+          chordCount={detail.chords.slots.length}
+        />
 
         <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
           {t('notes.notesTapToHear')}

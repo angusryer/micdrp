@@ -9,9 +9,14 @@
  * Nothing here re-touches the audio: the symbolic melody is read from the
  * cache and everything else is derived from it (INV-NOTES-003).
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
-import { notesToMidi, quantize, type NoteEvent } from 'logic';
+import {
+  proposeDownbeats,
+  quantize,
+  readMetre,
+  type NoteEvent
+} from 'logic';
 import type { InterpretationDto } from 'shared';
 
 import {
@@ -21,10 +26,10 @@ import {
 } from '../../components/chordLayout';
 import { cachedNotes } from '../../data/notesSync';
 import { notesRepo } from '../../data/notesRepo';
-import { writeMidi } from '../../data/files';
 import { useBarLayout } from './useBarLayout';
 import { useChordTrack } from './useChordTrack';
 import { useInterpretation } from './useInterpretation';
+import { useExportedMidi } from './useExportedMidi';
 import { useNotePlayback } from './useNotePlayback';
 
 /** Stable, so a note with no readings does not look like a new one each render. */
@@ -57,10 +62,20 @@ export function useNoteDetail(id: string) {
     note?.interpretations ?? EMPTY_READINGS
   );
 
-  // Where the bars fall. Detection proposes; a person arranges (INT-NOTES-012).
+  // Where the harmony turns over, which is what a downbeat marks. The take
+  // opens on these rather than on an even division counted out from the
+  // tempo (INV-NOTES-049).
+  const readDownbeats = useMemo(
+    () => proposeDownbeats(melody, grid),
+    [melody, grid]
+  );
+
+  // Where the downbeats fall. Detection proposes; a person arranges
+  // (INT-NOTES-012).
   const bars = useBarLayout(grid, note?.durationMs ?? 0, {
     savedLines: interpretation.savedBarLines,
-    onArranged: interpretation.updateBarLines
+    onArranged: interpretation.updateBarLines,
+    proposed: readDownbeats
   });
 
   const gridForView = useMemo(
@@ -85,6 +100,15 @@ export function useNoteDetail(id: string) {
       bars.isArranged,
       bars.layout.lines
     ]
+  );
+
+  // Read back from where the downbeats ended up, rather than constraining
+  // them. Nothing in the editing surface consumes it — it is for what gets
+  // written out, and it wants a person's last word before it does
+  // (INV-NOTES-050).
+  const metre = useMemo(
+    () => readMetre(bars.layout.lines, grid),
+    [bars.layout.lines, grid]
   );
 
   const midiUri = useExportedMidi(note?.id ?? null, melody);
@@ -121,6 +145,7 @@ export function useNoteDetail(id: string) {
     grid,
     hasGrid,
     gridForView,
+    metre,
     meterIsStated: grid.meterIsStated,
     bars,
     chords,
@@ -134,30 +159,3 @@ export function useNoteDetail(id: string) {
   };
 }
 
-/** Generate and write the MIDI for export from the stored symbolic melody. */
-function useExportedMidi(
-  noteId: string | null,
-  melody: readonly NoteEvent[]
-): string | null {
-  const [midiUri, setMidiUri] = useState<string | null>(null);
-  useEffect(() => {
-    if (!noteId || melody.length === 0) {
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      try {
-        const uri = await writeMidi(noteId, notesToMidi(melody as NoteEvent[]));
-        if (!cancelled) {
-          setMidiUri(uri);
-        }
-      } catch {
-        // Export simply stays unavailable if the write fails.
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [noteId, melody]);
-  return midiUri;
-}

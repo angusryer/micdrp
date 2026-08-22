@@ -35,12 +35,15 @@ export interface NoteStatsProps {
   note: NoteStatsSubject;
   grid: MusicalGrid;
   hasGrid: boolean;
+  /** How many chords the take was given, which is a fact about this take. */
+  chordCount: number;
 }
 
 export function NoteStats({
   note,
   grid,
-  hasGrid
+  hasGrid,
+  chordCount
 }: NoteStatsProps): React.JSX.Element {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -55,7 +58,10 @@ export function NoteStats({
   const stats: Array<{ label: string; value: string }> = [
     { label: t('notes.stat.key'), value: note.key ?? '—' },
     { label: t('notes.stat.tempo'), value: hasGrid ? `${grid.bpm} BPM` : '—' },
-    { label: t('notes.stat.meter'), value: hasGrid ? grid.timeSignature : '—' },
+    // Not the time signature. A hummed idea does not state one, and the app
+    // saying "4/4" over a take nobody has arranged is a guess presented as a
+    // reading (INV-NOTES-050). How many chords it was given is a fact.
+    { label: t('notes.stat.chords'), value: chordCount > 0 ? String(chordCount) : '—' },
     { label: t('notes.stat.range'), value: range },
     { label: t('notes.stat.steadiness'), value: steadiness },
     { label: t('notes.stat.notes'), value: String(note.noteCount) },

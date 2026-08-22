@@ -33,6 +33,12 @@ export interface BarLayoutOptions {
   savedLines?: readonly number[];
   /** Called with the new arrangement whenever it changes, for keeping. */
   onArranged?: (lines: number[]) => void;
+  /**
+   * Downbeats read from the music, which open a take that nobody has
+   * arranged yet. Without them the even division is used, which is a guess
+   * about metre rather than a reading of the harmony (INV-NOTES-049).
+   */
+  proposed?: readonly number[];
 }
 
 export function useBarLayout(
@@ -40,7 +46,7 @@ export function useBarLayout(
   durationMs: number,
   options: BarLayoutOptions = {}
 ): BarArrangement {
-  const { savedLines, onArranged } = options;
+  const { savedLines, onArranged, proposed: readFromMusic } = options;
 
   const beatMs = grid.bpm > 0 ? 60000 / grid.bpm : 0;
   const totalSteps = useMemo(() => {
@@ -51,10 +57,23 @@ export function useBarLayout(
     return Math.max(1, Math.ceil((durationMs - grid.offsetMs) / stepMs));
   }, [beatMs, grid.stepsPerBeat, grid.offsetMs, durationMs]);
 
-  const proposed = useMemo(
-    () => proposeBars(grid.beatsPerBar, grid.stepsPerBeat, grid.isCompound, totalSteps),
-    [grid.beatsPerBar, grid.stepsPerBeat, grid.isCompound, totalSteps]
-  );
+  const proposed = useMemo<BarLayout>(() => {
+    const even = proposeBars(
+      grid.beatsPerBar,
+      grid.stepsPerBeat,
+      grid.isCompound,
+      totalSteps
+    );
+    // What the music says, when it says anything; the even division is the
+    // fallback rather than the default.
+    return readFromMusic?.length ? { ...even, lines: [...readFromMusic] } : even;
+  }, [
+    grid.beatsPerBar,
+    grid.stepsPerBeat,
+    grid.isCompound,
+    totalSteps,
+    readFromMusic
+  ]);
 
   // A kept arrangement replaces the proposal outright. Unlike a chord, a bar
   // line is not a difference from anything — it is a position, and the
