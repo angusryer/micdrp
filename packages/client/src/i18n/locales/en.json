@@ -118,6 +118,8 @@
     "gridNone": "Not enough rhythm here to find a beat.",
     "harmony": "Chords",
     "harmonyHint": "Drag a chord up or down to move it through the key, double-tap to change its shape, tap to hear it. Hold to undo a change. Drag the row sideways for later bars.",
+    "chordsLifted": "Chords lifted for the speaker — tap for headphones",
+    "chordsLow": "Chords low for headphones — tap for the speaker",
     "harmonyNone": "A backdrop needs a beat to sit on, and there is not enough rhythm here to find one.",
     "harmonyReset": "Reset chords",
     "chordCard": "{{chord}}, bar {{bar}}"

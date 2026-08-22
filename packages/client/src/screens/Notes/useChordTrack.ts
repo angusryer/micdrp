@@ -16,6 +16,9 @@ import {
   replayEdits,
   revertSlot,
   transposeDiatonic,
+  isAltered,
+  moveTone as moveVoicedTone,
+  toggleMute as toggleVoicedMute,
   voiceChord,
   voiceProgression,
   type ChordPlayback,
@@ -27,7 +30,11 @@ import {
 
 /** How long a chord sounds when tapped, in ms. */
 const AUDITION_MS = 1100;
-/** Sits below a sung line without booming under it. */
+/**
+ * Sits below a sung line without booming under it — the right register on
+ * headphones. A caller listening on the phone's own speaker passes a higher
+ * floor, since a built-in speaker has almost nothing down here.
+ */
 const VOICING_BOTTOM_MIDI = 48;
 
 export interface ChordTrack {
@@ -40,6 +47,10 @@ export interface ChordTrack {
   reshape: (index: number, step: number) => void;
   /** Put one slot back to what the melody implied. */
   revert: (index: number) => void;
+  /** Move one note of one chord against its chord tone, in semitones. */
+  moveTone: (index: number, tone: number, semitones: number) => void;
+  /** Silence one note of one chord, or bring it back. */
+  toggleTone: (index: number, tone: number) => void;
   /** Put every slot back. */
   revertAll: () => void;
   /** MIDI notes for a slot, for playback. */
@@ -58,6 +69,11 @@ export interface ChordTrackOptions {
   savedEdits?: readonly ChordSlotEdit[];
   /** Called with the differences whenever they change, for keeping. */
   onEditsChanged?: (edits: ChordSlotEdit[]) => void;
+  /**
+   * Lowest MIDI note the chords may use. Raising it lifts the whole backdrop
+   * towards the melody, which is what makes it audible on a phone speaker.
+   */
+  floorMidi?: number;
 }
 
 export function useChordTrack(
@@ -65,7 +81,7 @@ export function useChordTrack(
   grid: MusicalGrid,
   options: ChordTrackOptions = {}
 ): ChordTrack {
-  const { savedEdits, onEditsChanged } = options;
+  const { savedEdits, onEditsChanged, floorMidi = VOICING_BOTTOM_MIDI } = options;
   const key = useMemo(() => detectKey(melody), [melody]);
   const inferred = useMemo(
     () => harmonizeToGrid(melody, grid, { key }),
@@ -103,14 +119,16 @@ export function useChordTrack(
   // Voiced here rather than at the player, so an edit made before pressing
   // play is the chord that plays.
   const progression = useMemo(
-    () => voiceProgression(slots, { bottomMidi: VOICING_BOTTOM_MIDI }),
+    () => voiceProgression(slots, { bottomMidi: floorMidi }),
     [slots]
   );
 
   return {
     slots,
     progression,
-    hasEdits: slots.some((s) => s.isEdited),
+    // A voicing counts: someone can move a note of a chord they were happy
+    // with, and the revert-all control has to know there is something to undo.
+    hasEdits: slots.some((s) => s.isEdited || isAltered(s.voicing)),
     nudge: useCallback(
       (index, degrees) =>
         apply(index, (slot) => transposeDiatonic(slot, key, degrees)),
@@ -127,6 +145,22 @@ export function useChordTrack(
         ),
       [apply, inferred]
     ),
+    moveTone: useCallback(
+      (index, tone, semitones) =>
+        apply(index, (slot) => ({
+          ...slot,
+          voicing: moveVoicedTone(slot.voicing, slot.quality, tone, semitones)
+        })),
+      [apply]
+    ),
+    toggleTone: useCallback(
+      (index, tone) =>
+        apply(index, (slot) => ({
+          ...slot,
+          voicing: toggleVoicedMute(slot.voicing, slot.quality, tone)
+        })),
+      [apply]
+    ),
     revertAll: useCallback(() => {
       setSlots(inferred);
       onEditsChanged?.([]);
@@ -136,7 +170,8 @@ export function useChordTrack(
         const slot = slots[index];
         return slot
           ? voiceChord(slot.rootPc, slot.quality, {
-              bottomMidi: VOICING_BOTTOM_MIDI
+              bottomMidi: floorMidi,
+              voicing: slot.voicing
             })
           : [];
       },

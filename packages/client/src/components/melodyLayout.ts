@@ -14,6 +14,11 @@ import {
   type MelodyGrid
 } from './melodyGrid';
 import {
+  pitchBounds,
+  yForMidi,
+  type PitchAxis
+} from './melodyPitch';
+import {
   resolveScale,
   timeBounds,
   type ScaleRequest,
@@ -21,6 +26,7 @@ import {
 } from './melodyScale';
 
 export type { GridLine, MelodyGrid };
+export { pitchBounds, yForMidi, midiForY, type PitchAxis } from './melodyPitch';
 export {
   anchorZoom,
   clampBeatWidth,
@@ -44,6 +50,11 @@ export interface MelodyLayoutOptions extends ScaleRequest {
   laneFill?: number;
   /** Minimum bar thickness in px (default 3). */
   minBarHeight?: number;
+  /**
+   * Other pitches drawn on this axis — the chord tones under the line — so
+   * the vertical window takes them in rather than letting them fall off it.
+   */
+  alsoShow?: readonly number[];
 }
 
 /** One positioned note bar plus the centre point used for the contour line. */
@@ -66,37 +77,12 @@ export interface MelodyLayout {
   /** Bar and beat rules, empty unless a grid was supplied. */
   gridLines: GridLine[];
   timeAxis: TimeAxis;
+  pitchAxis: PitchAxis;
   /**
    * How wide the drawing is, padding included. Equals `width` when fitted;
    * larger than it when the take runs past the viewport and must scroll.
    */
   contentWidth: number;
-}
-
-/**
- * Pitch bounds for a melody, padded by a semitone on each side so notes never
- * sit flush against the top/bottom edge. A single-pitch (or empty) melody gets a
- * symmetric ±2-semitone window so it still renders as a centred bar.
- */
-export function pitchBounds(notes: readonly MelodyNote[]): {
-  low: number;
-  high: number;
-} {
-  if (notes.length === 0) {
-    return { low: -2, high: 2 };
-  }
-  let lo = Infinity;
-  let hi = -Infinity;
-  for (const n of notes) {
-    if (n.midi < lo) lo = n.midi;
-    if (n.midi > hi) hi = n.midi;
-  }
-  if (hi - lo < 2) {
-    // Near-monotone: widen so the contour has vertical room.
-    const mid = (hi + lo) / 2;
-    return { low: Math.floor(mid - 2), high: Math.ceil(mid + 2) };
-  }
-  return { low: lo - 1, high: hi + 1 };
 }
 
 /**
@@ -114,7 +100,7 @@ export function layoutMelody(
   const innerW = Math.max(1, options.width - 2 * pad);
   const innerH = Math.max(1, options.height - 2 * pad);
 
-  const { low: midiLow, high: midiHigh } = pitchBounds(notes);
+  const { low: midiLow, high: midiHigh } = pitchBounds(notes, options.alsoShow);
   const range = Math.max(1, midiHigh - midiLow);
 
   // One lane per semitone; bars fill a fraction of a lane.
@@ -124,12 +110,12 @@ export function layoutMelody(
   const { t0, span } = timeBounds(notes);
   const { pxPerMs, contentWidth } = resolveScale(options, span, innerW, pad);
 
+  const pitchAxis: PitchAxis = { midiLow, midiHigh, pad, innerH, lane };
+
   const rects: NoteRect[] = notes.map((n) => {
     const x = pad + (n.startMs - t0) * pxPerMs;
     const width = Math.max(2, (n.endMs - n.startMs) * pxPerMs - 1);
-    // Centre each lane vertically; higher MIDI → smaller y (towards the top).
-    const norm = (n.midi - midiLow) / range; // 0..1
-    const cy = pad + (1 - norm) * innerH;
+    const cy = yForMidi(pitchAxis, n.midi);
     return { x, y: cy - barH / 2, width, height: barH, cy, midi: n.midi };
   });
 
@@ -144,6 +130,7 @@ export function layoutMelody(
     midiHigh,
     gridLines,
     timeAxis: { t0, span, pad, innerW, pxPerMs },
+    pitchAxis,
     contentWidth
   };
 }

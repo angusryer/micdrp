@@ -20,7 +20,12 @@ import { ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSynthe
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { MelodyView } from './MelodyView';
-import { layoutMelody, type MelodyGrid, type MelodyNote } from './melodyLayout';
+import {
+  layoutMelody,
+  type MelodyGrid,
+  type MelodyLayout,
+  type MelodyNote
+} from './melodyLayout';
 import { anchorZoom, clampBeatWidth, DEFAULT_BEAT_WIDTH } from './melodyScale';
 
 export interface ZoomableMelodyProps {
@@ -29,8 +34,18 @@ export interface ZoomableMelodyProps {
   /** The viewport. The drawing is usually wider. */
   width: number;
   height: number;
-  /** Drawn over the melody at the drawing's width and scale. */
-  children?: (frame: { contentWidth: number; beatWidth: number }) => React.ReactNode;
+  /** Other pitches sharing this axis — the chord notes under the line. */
+  alsoShow?: readonly number[];
+  /**
+   * Drawn over the melody, given the drawing's size and both of its axes so
+   * whatever it paints lines up with what is under it (INV-NOTES-034).
+   */
+  children?: (frame: {
+    contentWidth: number;
+    beatWidth: number;
+    timeAxis: MelodyLayout['timeAxis'];
+    pitchAxis: MelodyLayout['pitchAxis'];
+  }) => React.ReactNode;
 }
 
 export function ZoomableMelody({
@@ -38,6 +53,7 @@ export function ZoomableMelody({
   grid,
   width,
   height,
+  alsoShow,
   children
 }: ZoomableMelodyProps): React.JSX.Element {
   const beatsPerBar = grid.beatsPerBar > 0 ? grid.beatsPerBar : 4;
@@ -51,8 +67,8 @@ export function ZoomableMelody({
   const pinchStart = useRef(beatWidth);
 
   const layout = useMemo(
-    () => layoutMelody(notes, { width, height, grid, beatWidth }),
-    [notes, width, height, grid, beatWidth]
+    () => layoutMelody(notes, { width, height, grid, beatWidth, alsoShow }),
+    [notes, width, height, grid, beatWidth, alsoShow]
   );
 
   const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -113,8 +129,14 @@ export function ZoomableMelody({
             height={height}
             grid={grid}
             beatWidth={beatWidth}
+            alsoShow={alsoShow}
           />
-          {children?.({ contentWidth: layout.contentWidth, beatWidth })}
+          {children?.({
+            contentWidth: layout.contentWidth,
+            beatWidth,
+            timeAxis: layout.timeAxis,
+            pitchAxis: layout.pitchAxis
+          })}
         </View>
       </ScrollView>
     </GestureDetector>

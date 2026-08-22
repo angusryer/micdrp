@@ -31,7 +31,11 @@ import {
   type Melody
 } from './analysis';
 import { CHORD_TONES } from './chordTones';
-import { voicedTones, type ChordVoicing } from './voicing';
+import {
+  rootMidiAtOrAbove,
+  voicedTones,
+  type ChordVoicing
+} from './voicing';
 import { detectKey, type KeyEstimate } from './key';
 import type { MusicalGrid } from './quantize';
 
@@ -341,8 +345,7 @@ export function voiceChord(
   const inversion = Math.max(0, Math.round(options.inversion ?? 0));
 
   // Absolute pitches in root position, starting at or above `bottom`.
-  const root = normalizePc(rootPc);
-  const rootMidi = bottom + normalizePc(root - normalizePc(bottom));
+  const rootMidi = rootMidiAtOrAbove(rootPc, bottom);
   const notes: number[] = [];
   for (const tone of voicedTones(rootMidi, quality, options.voicing)) {
     if (!tone.muted) {

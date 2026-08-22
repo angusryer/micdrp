@@ -38,6 +38,20 @@ export interface ChordTone {
 /** How far a note may be pushed before it is a different idea, not a voicing. */
 export const MAX_TONE_OFFSET = 12;
 
+/**
+ * The lowest MIDI note of a chord's root at or above `bottomMidi`.
+ *
+ * Shared with the voicer so the graph draws a chord where it will sound.
+ * Voiced upward from a floor rather than from the root's own octave, so
+ * successive chords stay in one register instead of leaping an octave
+ * whenever the root crosses B to C.
+ */
+export function rootMidiAtOrAbove(rootPc: number, bottomMidi: number): number {
+  const pc = ((Math.round(rootPc) % 12) + 12) % 12;
+  const floorPc = ((Math.round(bottomMidi) % 12) + 12) % 12;
+  return bottomMidi + ((pc - floorPc + 12) % 12);
+}
+
 /** How many notes a quality has. */
 export function toneCount(quality: ChordQuality): number {
   return CHORD_TONES[quality].length;

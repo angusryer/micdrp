@@ -38,6 +38,8 @@ export interface MelodyViewProps {
    * wants (INV-NOTES-035).
    */
   beatWidth?: number;
+  /** Other pitches sharing this axis, so the window makes room for them. */
+  alsoShow?: readonly number[];
 }
 
 export function MelodyView({
@@ -47,14 +49,15 @@ export function MelodyView({
   showContour = true,
   color,
   grid,
-  beatWidth
+  beatWidth,
+  alsoShow
 }: MelodyViewProps): React.JSX.Element {
   const { colors } = useTheme();
   const barColor = color ?? colors.primary500;
 
   const layout = useMemo(
-    () => layoutMelody(notes, { width, height, grid, beatWidth }),
-    [notes, width, height, grid, beatWidth]
+    () => layoutMelody(notes, { width, height, grid, beatWidth, alsoShow }),
+    [notes, width, height, grid, beatWidth, alsoShow]
   );
   // What was actually drawn — `width` when fitted, wider when it scrolls.
   const drawnWidth = layout.contentWidth;

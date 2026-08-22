@@ -52,6 +52,12 @@ import { notesRepo } from '../../data/notesRepo';
 import { writeMidi } from '../../data/files';
 import { MelodyView } from '../../components/MelodyView';
 import { ZoomableMelody } from '../../components/ZoomableMelody';
+import { ChordBand } from '../../components/ChordBand';
+import {
+  chordPitches,
+  HEADPHONE_FLOOR_MIDI,
+  SPEAKER_FLOOR_MIDI
+} from '../../components/chordLayout';
 import { BarRulerOverlay } from './BarRulerOverlay';
 import { ExportSheet } from '../Results/ExportSheet';
 import { NoteList, midiToLabel } from '../Results/NoteList';
@@ -151,10 +157,24 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   // The editable harmonic backdrop, derived from the same fitted grid the bar
   // lines are drawn from, so chords and bars always agree. Inference runs
   // first and kept decisions land on top of it.
+  // Where the backdrop sits, which is really a question about what you are
+  // listening on. A phone speaker has almost nothing in the low register, so
+  // chords voiced where a piano would put them are inaudible on one; lifted
+  // towards the melody they can be heard. On headphones the low voicing is
+  // the better sound. The same control moves them on the graph.
+  const [chordsLifted, setChordsLifted] = useState(true);
+  const floorMidi = chordsLifted ? SPEAKER_FLOOR_MIDI : HEADPHONE_FLOOR_MIDI;
   const chords = useChordTrack(melody, grid, {
     savedEdits: interpretation.savedEdits,
-    onEditsChanged: interpretation.update
+    onEditsChanged: interpretation.update,
+    floorMidi
   });
+  // Every pitch the chords occupy, so the graph's vertical window takes them
+  // in rather than letting them fall off the bottom of it.
+  const chordPitchesShown = useMemo(
+    () => chordPitches(chords.slots, floorMidi),
+    [chords.slots, floorMidi]
+  );
   // Play sounds this backdrop with the take, or on its own, or not at all —
   // whichever the choice beside the play control is set to (INV-NOTES-019).
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>('as-sung');
@@ -288,19 +308,34 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
                   grid={gridForView}
                   width={width - 2 * CONTENT_PADDING - 2}
                   height={MELODY_VIEW_HEIGHT}
+                  alsoShow={chordPitchesShown}
                 >
                   {/* Over the melody rather than beside it: the bars are a
                       claim about this take, and correcting one means seeing
                       both. Same width and scale as what it sits on. */}
-                  {({ contentWidth, beatWidth }) => (
-                    <BarRulerOverlay
-                      bars={bars}
-                      notes={melody}
-                      grid={gridForView}
-                      width={contentWidth}
-                      height={MELODY_VIEW_HEIGHT}
-                      beatWidth={beatWidth}
-                    />
+                  {({ contentWidth, beatWidth, timeAxis, pitchAxis }) => (
+                    <>
+                      {/* The chords as individual notes, on the same pitch
+                          ruler as the line above them. */}
+                      <ChordBand
+                        slots={chords.slots}
+                        timeAxis={timeAxis}
+                        pitchAxis={pitchAxis}
+                        floorMidi={floorMidi}
+                        width={contentWidth}
+                        height={MELODY_VIEW_HEIGHT}
+                        onMoveTone={chords.moveTone}
+                        onToggleMute={chords.toggleTone}
+                      />
+                      <BarRulerOverlay
+                        bars={bars}
+                        notes={melody}
+                        grid={gridForView}
+                        width={contentWidth}
+                        height={MELODY_VIEW_HEIGHT}
+                        beatWidth={beatWidth}
+                      />
+                    </>
                   )}
                 </ZoomableMelody>
               ) : (
@@ -358,6 +393,14 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
                 />
                 <Text style={[styles.caption, { color: colors.gray300 }]}>
                   {t('notes.harmonyHint')}
+                </Text>
+                <Text
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: chordsLifted }}
+                  onPress={() => setChordsLifted((on) => !on)}
+                  style={[styles.caption, { color: colors.primary500 }]}
+                >
+                  {t(chordsLifted ? 'notes.chordsLifted' : 'notes.chordsLow')}
                 </Text>
                 {chords.hasEdits ? (
                   <Text
