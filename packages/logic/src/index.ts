@@ -1,6 +1,7 @@
 export * from './mpm';
 export * from './notes';
 export * from './segmentation';
+export * from './bends';
 export * from './midi';
 export * from './playback';
 export * from './scoring';

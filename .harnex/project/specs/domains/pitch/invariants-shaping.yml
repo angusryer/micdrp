@@ -1,0 +1,66 @@
+# How a sung note is told apart from the way a voice arrives at it. Split
+# from invariants.yml for the 150-line spec-file budget.
+invariants:
+  - id: INV-PITCH-017
+    description: A note is its steady part, not the slide into it
+    severity: critical
+    check: >
+      Where a voice slides into or out of a pitch, that movement joins
+      the note it belongs to rather than becoming a note of its own.
+      Verified by asserting a scooped note is read as one note at the
+      pitch it settled on, and that the same phrase sung with and
+      without a scoop reads as the same melody.
+
+      A voice does not arrive at a pitch instantly and does not leave one
+      instantly. Reading the approach as a separate note produces a
+      melody nobody sang, and — because the chords are read from the
+      melody — a harmony nobody implied.
+
+  - id: INV-PITCH-018
+    description: A change of note is at least a semitone
+    severity: critical
+    check: >
+      Two notes in succession whose pitches lie less than a semitone
+      apart are one note that bent, and are read as one. What survives
+      takes the pitch of whichever was held longer, since that is the
+      one being sung and the other is the way in or the way out.
+      Merging repeats until nothing is left within a semitone of its
+      neighbour, so an approach, a note and a release become one note
+      rather than two. Verified by asserting a note flanked by two
+      sub-semitone fragments is read as one note at the held pitch, and
+      that a real semitone step is never merged.
+
+      This is what "a different note" means: a singer moving between
+      scale degrees crosses at least a semitone, and anything smaller is
+      the voice on its way somewhere rather than arriving. Judging each
+      fragment on its own cannot see that — only a note read against its
+      neighbours can, because the evidence for a bend is entirely in how
+      near it sits to what surrounds it.
+
+  - id: INV-PITCH-019
+    description: Nothing shorter than a voice can articulate is a note
+    severity: major
+    check: >
+      A reading that survives the joining of bends and is still briefer
+      than a voice can deliberately articulate is discarded rather than
+      kept. Applied after joining, never before: an approach is brief and
+      belongs to its note, so discarding brief things first would throw
+      away the slide instead of absorbing it. Verified by asserting a
+      brief fragment a tone from both its neighbours is dropped, while a
+      brisk but real phrase survives intact, and a scooped note keeps its
+      approach.
+
+      Changing pitch means changing the length and tension of the vocal
+      folds, and that takes time — the fastest trained melisma runs at
+      about ten notes a second, ordinary singing at half that. Nothing
+      briefer was meant.
+
+      This is the one duration in the analysis worth trusting, and the
+      reason is worth keeping: it is a limit of the instrument, not of
+      the music. Every other span in milliseconds is a guess about tempo,
+      and tempo is the singer's to choose — which is why the chord
+      reading counts notes rather than time. The body does not speed up
+      because the song does.
+
+      It rejects; it does not detect. It cannot say where a note begins,
+      only that this one cannot have been meant.

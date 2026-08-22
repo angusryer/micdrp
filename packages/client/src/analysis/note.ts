@@ -15,6 +15,8 @@ import {
   detectKey,
   estimateTempo,
   scorePitch,
+  dropTooBriefToSing,
+  mergeBends,
   recentreNotes,
   segmentNotes,
   smoothPitch,
@@ -53,7 +55,9 @@ export function analyzeCapture(handle: RecordingHandle): CaptureAnalysis {
   // a semitone. A take sitting near a boundary otherwise splits one scale
   // degree across two semitones, and the key estimate — and so the harmony
   // built on it — inherits that (INV-PITCH-013).
-  const { notes } = recentreNotes(segmentNotes(smoothed, segmentOptions()));
+  const { notes } = recentreNotes(
+    dropTooBriefToSing(mergeBends(segmentNotes(smoothed, segmentOptions())))
+  );
   const hasNotes = notes.length > 0;
 
   // Intonation steadiness: how cleanly each sustained pitch was held (no grade).

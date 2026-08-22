@@ -24,6 +24,8 @@ import {
   detectKey,
   estimateTempo,
   scorePitch,
+  dropTooBriefToSing,
+  mergeBends,
   recentreNotes,
   segmentNotes,
   smoothPitch,
@@ -211,7 +213,9 @@ export function computeFeedback(
   // a semitone. A take sitting near a boundary otherwise splits one scale
   // degree across two semitones, and the key estimate — and so the harmony
   // built on it — inherits that (INV-PITCH-013).
-  const { notes } = recentreNotes(segmentNotes(smoothed, segmentOptions()));
+  const { notes } = recentreNotes(
+    dropTooBriefToSing(mergeBends(segmentNotes(smoothed, segmentOptions())))
+  );
   const usingTargets = externalTargets != null && externalTargets.length > 0;
   const targets = usingTargets ? [...externalTargets] : selfTargets(notes);
   const score = scorePitch(smoothed, targets);
