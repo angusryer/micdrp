@@ -67,9 +67,9 @@
 		51A2B3C4D5E6F70819202133 /* synth_commands.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = synth_commands.h; path = ../cpp/dsp/synth_commands.h; sourceTree = "<group>"; };
 		51A2B3C4D5E6F70819202141 /* CaptureFile.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = CaptureFile.mm; sourceTree = "<group>"; };
 		51A2B3C4D5E6F70819202142 /* CaptureFile.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = CaptureFile.h; sourceTree = "<group>"; };
+		51A2B3C4D5E6F70819202143 /* StreamingPitch.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = StreamingPitch.h; sourceTree = "<group>"; };
 		51A2B3C4D5E6F70819202151 /* HapticsModule.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = HapticsModule.mm; sourceTree = "<group>"; };
 		51A2B3C4D5E6F70819202152 /* HapticsModule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = HapticsModule.h; sourceTree = "<group>"; };
-		51A2B3C4D5E6F70819202143 /* StreamingPitch.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = StreamingPitch.h; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-micdrp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-micdrp.release.xcconfig"; path = "Target Support Files/Pods-micdrp/Pods-micdrp.release.xcconfig"; sourceTree = "<group>"; };
 		5B7EB9410499542E8C5724F5 /* Pods-micdrp-micdrpTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-micdrp-micdrpTests.debug.xcconfig"; path = "Target Support Files/Pods-micdrp-micdrpTests/Pods-micdrp-micdrpTests.debug.xcconfig"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-micdrp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-micdrp.a"; sourceTree = BUILT_PRODUCTS_DIR; };
