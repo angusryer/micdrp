@@ -51,8 +51,24 @@ export async function runOnce(options: Options): Promise<boolean> {
   }
   console.log(`${new Date().toISOString()} dogfood: working on ${clip.id}`);
   const report = progressReporter(pb, clip.id);
-  await report('claimed', 'picked up');
+  try {
+    await report('claimed', 'picked up');
+    return await processClip(pb, clip, report, options);
+  } finally {
+    // However this ended — delivered, withdrawn, or thrown — the estimate
+    // stops. A bar still creeping after the run is over is a lie about a
+    // process that is not there any more (INV-DOG-029).
+    report.stop();
+  }
+}
 
+/** Everything done with a clip once it is claimed and being reported on. */
+async function processClip(
+  pb: ReturnType<typeof connect>,
+  clip: Awaited<ReturnType<typeof claimOldest>> & object,
+  report: ReturnType<typeof progressReporter>,
+  options: Options
+): Promise<boolean> {
   const requests = await understand(pb, clip, report);
   await storeRequests(pb, clip.id, requests);
 

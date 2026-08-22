@@ -1,0 +1,36 @@
+# Saying how far a clip has got, honestly. Its own file: invariants-loop.yml
+# is at its line budget.
+invariants:
+  - id: INV-DOG-029
+    description: The bar keeps moving through a long step
+    severity: major
+    check: >
+      Between one real milestone and the next, the reported percentage
+      advances with elapsed time along a curve that slows as it goes and
+      never reaches the next milestone. A step that finishes early
+      therefore jumps forward; one that runs long approaches its ceiling
+      and stops there. Verified by asserting the percentage strictly
+      increases across a step, stays strictly below the next milestone
+      however long the step runs, and never decreases.
+
+      A single request is ten to twenty minutes of an agent working and a
+      harness running, reported as one number at the start. A bar that
+      sits still for that long is read as a hang — which is exactly the
+      thing the progress was added to rule out, so a still bar defeats
+      its own purpose.
+
+  - id: INV-DOG-030
+    description: An estimated bar never passes for a sign of life
+    severity: critical
+    check: >
+      Only a real milestone updates the time the clip was last heard
+      from. The interpolated movement between milestones changes the
+      percentage and the note, and leaves that timestamp alone. Verified
+      by asserting the stall clock still fires for a run that goes silent
+      while its bar is still creeping.
+
+      The stall warning is the one thing that distinguishes slow work
+      from dead work, and it reads the last-heard-from time. A guess that
+      touched that timestamp would keep a hung run looking healthy for as
+      long as it was hung, which is worse than having no bar: it would
+      turn the one honest signal into a liar.

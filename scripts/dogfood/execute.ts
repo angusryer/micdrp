@@ -13,6 +13,7 @@ import { promisify } from 'node:util';
 // extensionless for Metro's benefit. This is the only file the loop needs.
 import type { ChangeRequestDto } from '../../packages/shared/src/dto/dogfood.ts';
 import { AGENT_ARGS, agentPrompt, lastWords } from './agent.ts';
+import type { Report } from './progress.ts';
 import { changedPaths, restoreTree, treeIsClean } from './tree.ts';
 import { WORKTREE } from './worktree.ts';
 
@@ -70,6 +71,22 @@ export interface ExecuteOutcome {
 }
 
 /**
+ * What a request is doing, as far as anyone outside can tell.
+ *
+ * Two real steps, and they are wildly different lengths — the agent can run
+ * twenty minutes, the harness about one. Saying which is running is the
+ * difference between "still working" and a number that has not moved.
+ */
+export interface RequestProgress {
+  /** Reports a step of this request, with how long that step usually takes. */
+  step: (note: string, typicalMs: number) => Promise<void>;
+}
+
+/** What the agent usually takes on one request, and what the harness takes. */
+export const TYPICAL_AGENT_MS = 9 * 60 * 1000;
+export const TYPICAL_PREFLIGHT_MS = 70 * 1000;
+
+/**
  * Hand one request to a coding agent and keep whatever survives preflight.
  *
  * The agent is invoked as a subprocess rather than through the SDK because it
@@ -78,12 +95,14 @@ export interface ExecuteOutcome {
  * tree before, preflight after, and a full restore on any failure.
  */
 export async function executeRequest(
-  request: ChangeRequestDto
+  request: ChangeRequestDto,
+  progress?: RequestProgress
 ): Promise<ExecuteOutcome> {
   if (!(await treeIsClean())) {
     return { built: false, reason: 'working tree was not clean' };
   }
 
+  await progress?.step('writing the change', TYPICAL_AGENT_MS);
   let said = '';
   try {
     const { stdout } = await run('claude', [...AGENT_ARGS, '-p', agentPrompt(request)], {
@@ -102,6 +121,7 @@ export async function executeRequest(
     return { built: false, reason: `nothing changed — the agent said: ${said}` };
   }
 
+  await progress?.step('checking it holds up', TYPICAL_PREFLIGHT_MS);
   const harness = await preflight();
   if (!harness.passed) {
     await restoreTree();

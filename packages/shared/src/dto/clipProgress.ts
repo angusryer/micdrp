@@ -59,6 +59,93 @@ export function progressPercent(
   return Math.round(PHASE_START.building + span * through);
 }
 
+/**
+ * The percentage the step after this one begins at.
+ *
+ * The ceiling an estimate may approach and must never reach: passing it would
+ * claim work that has not happened, and reaching it would leave nowhere for
+ * the real milestone to land.
+ */
+export function nextMilestone(
+  phase: ClipPhase,
+  done = 0,
+  total = 0
+): number {
+  if (phase === 'done') {
+    return PHASE_START.done;
+  }
+  if (phase === 'building' && total > 0 && done + 1 < total) {
+    return progressPercent('building', done + 1, total);
+  }
+  if (phase === 'building') {
+    return BUILDING_END;
+  }
+  const order: ClipPhase[] = [
+    'claimed',
+    'transcribing',
+    'interpreting',
+    'building',
+    'verifying',
+    'delivering',
+    'done'
+  ];
+  const next = order[order.indexOf(phase) + 1];
+  return PHASE_START[next ?? 'done'];
+}
+
+/**
+ * How far along a step is believed to be, from how long it has been running.
+ *
+ * Asymptotic on purpose. A step whose length is unknown has no honest linear
+ * estimate, and a bar that marches steadily to the next milestone and then
+ * has to stop dead is making a promise it cannot keep. This slows as it goes
+ * and never arrives: it says "still working, and longer than usual" without
+ * ever claiming the step is finished (INV-DOG-029).
+ *
+ * `typicalMs` is the time this kind of step usually takes; at exactly that
+ * long the bar sits around two thirds of the way to the next milestone.
+ */
+export function creptPercent(
+  from: number,
+  to: number,
+  elapsedMs: number,
+  typicalMs: number
+): number {
+  if (!(to > from) || !(typicalMs > 0) || !(elapsedMs > 0)) {
+    return from;
+  }
+  const share = 1 - Math.exp(-elapsedMs / typicalMs);
+  // Never the ceiling itself: that number belongs to the step after this one.
+  return Math.min(to - 1, Math.max(from, Math.round(from + (to - from) * share)));
+}
+
+/**
+ * The fields a progress write sets, and — the point of it — the one it does
+ * not.
+ *
+ * `heardFrom` is what separates a fact from an estimate. A milestone was
+ * actually reached, so it refreshes the time the clip was last heard from; an
+ * interpolated bar has learnt nothing and must leave that alone
+ * (INV-DOG-030). The stall warning reads that timestamp, and it is the only
+ * signal that tells slow work from dead work — a guess that refreshed it
+ * would keep a hung run looking healthy for exactly as long as it was hung.
+ *
+ * Defined here rather than at the write so nothing can quietly start
+ * refreshing it.
+ */
+export function progressPatch(
+  percent: number,
+  note: string,
+  heardFrom: boolean,
+  nowMs: number
+): Record<string, unknown> {
+  return {
+    progress_percent: percent,
+    progress_note: note.slice(0, 120),
+    ...(heardFrom ? { progress_at_ms: nowMs } : {})
+  };
+}
+
 /** Whether a clip has been silent long enough to look stuck. */
 export function looksStalled(
   progress: ClipProgressDto | null,

@@ -53,13 +53,18 @@ export async function buildRequests(
       break;
     }
 
-    // Reported per request: a clip carrying four of them should move the bar
-    // four times rather than sit at one number for twenty minutes.
+    // Reported per request, and again for each step within one: a request is
+    // an agent working and then a harness running, and those are the only two
+    // moments anything outside can actually be told about (INV-DOG-029).
+    const at = attempted;
+    const of = buildable.length;
+    const step = async (note: string, typicalMs: number) =>
+      report?.('building', `${note} (${at + 1} of ${of})`, at, of, typicalMs);
     // eslint-disable-next-line no-await-in-loop -- one change at a time, by design
-    await report?.('building', `building ${attempted + 1} of ${buildable.length}`, attempted, buildable.length);
+    await step('starting', 30 * 1000);
     attempted += 1;
     // eslint-disable-next-line no-await-in-loop -- one change at a time, by design
-    const outcome = await executeRequest(request);
+    const outcome = await executeRequest(request, { step });
     if (!outcome.built) {
       request.state = 'abandoned';
       console.log(`  abandoned: ${request.summary} (${outcome.reason})`);

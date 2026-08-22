@@ -123,7 +123,15 @@ export async function storeRequests(
 }
 
 export async function markDelivered(pb: PocketBase, clipId: string): Promise<void> {
-  await pb.collection(COLLECTION).update(clipId, { state: 'delivered' });
+  // Finished here rather than by the reporter: this is the one place a clip
+  // is done, so it is the one place that can say so without guessing. Nothing
+  // used to, and every delivered clip was left showing 92%.
+  await pb.collection(COLLECTION).update(clipId, {
+    state: 'delivered',
+    progress_percent: 100,
+    progress_note: 'done',
+    progress_at_ms: Date.now()
+  });
 }
 
 /** A fetchable URL for the clip's audio, minted now rather than stored. */

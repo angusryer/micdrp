@@ -3,6 +3,9 @@
  * reading one cannot disagree.
  */
 import {
+  creptPercent,
+  nextMilestone,
+  progressPatch,
   looksStalled,
   progressPercent,
   type ClipPhase
@@ -73,5 +76,95 @@ describe('looksStalled', () => {
 
   it('leaves a clip alone while it is still reporting', () => {
     expect(looksStalled(at(40, 0), 60 * 1000)).toBe(false);
+  });
+});
+
+describe('nextMilestone', () => {
+  it('is where the step after this one begins', () => {
+    expect(nextMilestone('claimed')).toBe(progressPercent('transcribing'));
+    expect(nextMilestone('interpreting')).toBe(progressPercent('building'));
+    expect(nextMilestone('verifying')).toBe(progressPercent('delivering'));
+  });
+
+  it('walks building one request at a time', () => {
+    expect(nextMilestone('building', 0, 3)).toBe(progressPercent('building', 1, 3));
+    expect(nextMilestone('building', 1, 3)).toBe(progressPercent('building', 2, 3));
+    // The last request hands over to verifying rather than to itself.
+    expect(nextMilestone('building', 2, 3)).toBe(85);
+  });
+
+  it('has nowhere left to go once it is done', () => {
+    expect(nextMilestone('done')).toBe(100);
+  });
+});
+
+describe('creptPercent', () => {
+  const TYPICAL = 60_000;
+
+  it('INV-DOG-029: keeps moving through a long step', () => {
+    const a = creptPercent(30, 48, 10_000, TYPICAL);
+    const b = creptPercent(30, 48, 30_000, TYPICAL);
+    const c = creptPercent(30, 48, 60_000, TYPICAL);
+    expect(a).toBeGreaterThan(30);
+    expect(b).toBeGreaterThan(a);
+    expect(c).toBeGreaterThan(b);
+  });
+
+  it('INV-DOG-029: never reaches the next milestone, however long it runs', () => {
+    for (const elapsed of [60_000, 600_000, 6_000_000, 60_000_000]) {
+      expect(creptPercent(30, 48, elapsed, TYPICAL)).toBeLessThan(48);
+    }
+  });
+
+  it('slows as it goes, so a long step never looks nearly finished', () => {
+    const first = creptPercent(0, 100, TYPICAL, TYPICAL) - 0;
+    const later =
+      creptPercent(0, 100, 3 * TYPICAL, TYPICAL) -
+      creptPercent(0, 100, 2 * TYPICAL, TYPICAL);
+    expect(later).toBeLessThan(first);
+  });
+
+  it('never goes backwards from where the step began', () => {
+    expect(creptPercent(30, 48, 0, TYPICAL)).toBe(30);
+    expect(creptPercent(30, 48, -5, TYPICAL)).toBe(30);
+  });
+
+  it('stands still rather than guessing when there is no room or no estimate', () => {
+    expect(creptPercent(85, 85, 10_000, TYPICAL)).toBe(85);
+    expect(creptPercent(30, 48, 10_000, 0)).toBe(30);
+  });
+});
+
+describe('progressPatch', () => {
+  it('records the time when a real milestone is reached', () => {
+    expect(progressPatch(48, 'building 2 of 3', true, 1234)).toEqual({
+      progress_percent: 48,
+      progress_note: 'building 2 of 3',
+      progress_at_ms: 1234
+    });
+  });
+
+  it('INV-DOG-030: an estimate never refreshes the time last heard from', () => {
+    const patch = progressPatch(52, 'writing the change', false, 1234);
+    expect(patch).not.toHaveProperty('progress_at_ms');
+    expect(patch.progress_percent).toBe(52);
+  });
+
+  it('INV-DOG-030: so the stall clock still fires under a creeping bar', () => {
+    // A run that went silent 20 minutes ago while its estimate kept moving.
+    const lastHeard = 0;
+    const patch = progressPatch(60, 'writing the change', false, 20 * 60 * 1000);
+    expect(patch.progress_at_ms ?? lastHeard).toBe(lastHeard);
+    expect(
+      looksStalled(
+        { percent: patch.progress_percent as number, note: '', atMs: lastHeard },
+        20 * 60 * 1000
+      )
+    ).toBe(true);
+  });
+
+  it('keeps a note short enough for the row that shows it', () => {
+    const patch = progressPatch(10, 'x'.repeat(400), true, 0);
+    expect((patch.progress_note as string).length).toBe(120);
   });
 });
