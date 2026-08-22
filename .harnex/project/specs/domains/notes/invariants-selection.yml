@@ -19,3 +19,23 @@ invariants:
       across the take, which reads as the graph being wildly oversensitive
       rather than as what it is — the object's own movement being fed back
       into the measurement of the finger's.
+
+  - id: INV-NOTES-057
+    description: What is chosen is lit from behind
+    severity: major
+    check: >
+      A chosen object is drawn with a soft halo behind it, in its own
+      colour, larger and blurred; nothing else on the graph carries one,
+      and a graph with nothing chosen carries none. The halo is a stroke
+      rather than a fill, so the object it lights is never dimmed or
+      covered by it. Verified by asserting the halo resolves to exactly
+      the chosen object, in that object's own colour, and to nothing when
+      nothing is chosen or when what was chosen has since gone.
+
+      Choosing was legible only by the controls appearing below the graph,
+      which is a long way from the thing being pointed at and says which
+      *kind* of thing was chosen rather than which one. A sung note gave
+      no sign at all. Backlighting reads as "this one is live" without
+      recolouring the object, which matters most for the chord notes,
+      where the colour is not decoration — it says which part of the chord
+      the note is playing, and must survive being chosen (INV-NOTES-052).

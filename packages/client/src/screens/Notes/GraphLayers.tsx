@@ -18,9 +18,11 @@ import React, { useMemo } from 'react';
 
 import { ChordBand } from '../../components/ChordBand';
 import { GraphSurface } from '../../components/GraphSurface';
+import { SelectionGlow } from '../../components/SelectionGlow';
 import { layoutChordTones } from '../../components/chordLayout';
 import type { MelodyLayout, NoteRect } from '../../components/melodyLayout';
 import type { Selection } from '../../components/graphSelection';
+import { useTheme } from '../../theme';
 import { BarRulerOverlay } from './BarRulerOverlay';
 import { barHandles } from './barRulerModel';
 import type { useNoteDetail } from './useNoteDetail';
@@ -49,6 +51,7 @@ export function GraphLayers({
   selection,
   onSelect
 }: GraphLayersProps): React.JSX.Element {
+  const { colors } = useTheme();
   const { melody, gridForView, chords, floorMidi, bars } = detail;
 
   const tones = useMemo(
@@ -83,6 +86,17 @@ export function GraphLayers({
 
   return (
     <>
+      {/* Underneath everything it lights, so the chosen thing blooms at its
+          edges and is never covered by its own halo (INV-NOTES-057). */}
+      <SelectionGlow
+        selection={selection}
+        tones={tones}
+        bars={handles}
+        notes={noteRects}
+        width={contentWidth}
+        height={height}
+        colour={colors.primary500}
+      />
       {/* The chords as individual notes, on the same pitch ruler as the line
           above them. Paint only. */}
       <ChordBand

@@ -7,14 +7,21 @@
  * saying which thing is meant is already done, so the verbs can simply be
  * buttons.
  *
+ * A card rather than a row of words: these are the only controls in the app
+ * that appear and vanish under you, and a strip of bare text reads as a
+ * caption on the graph instead of a thing to press. It carries the chosen
+ * object's own colour along its leading edge, which is what connects it to
+ * the lit thing above it — for a chord note that colour also says which part
+ * of the chord is in hand.
+ *
  * Absent when nothing is chosen, so it costs nothing until it is useful.
  */
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { isAltered } from 'logic';
 
-import { chordRoleAt } from '../../components/chordRoles';
+import { chordRoleAt, chordRoleColour } from '../../components/chordRoles';
 import type { Selection } from '../../components/graphSelection';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
@@ -41,9 +48,13 @@ export function SelectionBar({
 
   const actions: Array<{ label: string; run: () => void }> = [];
   let title: string;
+  // The same colour the graph is lighting it in, so the card and the object
+  // are plainly about each other.
+  let accent = colors.primary500;
 
   if (selection.kind === 'chordTone') {
     const slot = detail.chords.slots[selection.slot];
+    accent = chordRoleColour(selection.tone);
     title = `${slot?.label ?? ''} · ${t(
       `notes.role.${chordRoleAt(selection.tone)}`
     )}`;
@@ -87,28 +98,50 @@ export function SelectionBar({
     });
   }
 
-  actions.push({ label: t('notes.action.done'), run: () => onSelect(null) });
-
   return (
     <View
       style={[
-        styles.bar,
-        { backgroundColor: colors.neutral100, borderColor: colors.neutral500 }
+        styles.card,
+        {
+          backgroundColor: colors.neutral100,
+          borderColor: colors.neutral500,
+          borderLeftColor: accent
+        }
       ]}
     >
-      <Text style={[styles.title, { color: colors.typography }]} numberOfLines={1}>
-        {title}
-      </Text>
+      <View style={styles.head}>
+        <Text
+          style={[styles.title, { color: colors.typography }]}
+          numberOfLines={1}
+        >
+          {title}
+        </Text>
+        <Text
+          accessibilityRole="button"
+          onPress={() => onSelect(null)}
+          style={[styles.done, { color: colors.gray300 }]}
+        >
+          {t('notes.action.done')}
+        </Text>
+      </View>
       <View style={styles.actions}>
         {actions.map((action) => (
-          <Text
+          <Pressable
             key={action.label}
             accessibilityRole="button"
             onPress={action.run}
-            style={[styles.action, { color: colors.primary500 }]}
+            style={({ pressed }) => [
+              styles.pill,
+              {
+                borderColor: colors.neutral500,
+                backgroundColor: pressed ? colors.neutral300 : colors.neutral50
+              }
+            ]}
           >
-            {action.label}
-          </Text>
+            <Text style={[styles.pillText, { color: colors.primary500 }]}>
+              {action.label}
+            </Text>
+          </Pressable>
         ))}
       </View>
     </View>
@@ -118,18 +151,29 @@ export function SelectionBar({
 export default SelectionBar;
 
 const styles = StyleSheet.create({
-  bar: {
+  card: {
+    borderWidth: 1,
+    borderLeftWidth: 3,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginTop: 10,
+    gap: 10
+  },
+  head: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginTop: 8,
     gap: 12
   },
-  title: { fontSize: 13, fontWeight: '600', flexShrink: 1 },
-  actions: { flexDirection: 'row', gap: 16 },
-  action: { fontSize: 13, fontWeight: '600' }
+  title: { fontSize: 13, fontWeight: '700', flexShrink: 1 },
+  done: { fontSize: 12, fontWeight: '600' },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  pill: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingVertical: 7,
+    paddingHorizontal: 14
+  },
+  pillText: { fontSize: 13, fontWeight: '600' }
 });
