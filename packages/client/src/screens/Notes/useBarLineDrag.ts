@@ -20,6 +20,7 @@ import {
   withTiming
 } from 'react-native-reanimated';
 
+import { tapped } from '../../utilities/haptics';
 import {
   AXIS_AWAY,
   AXIS_MOVE,
@@ -104,6 +105,10 @@ export function useBarLineDrag({
     // in hand and the moment worth announcing.
     .onStart(() => {
       held.value = 1;
+      // Felt at the moment the line is in hand, so the hold does not have to
+      // be counted out. Absent on a binary without the module, which is
+      // normal for a bundle that arrived over the air.
+      runOnJS(tapped)();
     })
     .onUpdate((e) => {
       axis.value = chooseAxis(axis.value, e.translationX, e.translationY);
