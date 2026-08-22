@@ -14,7 +14,7 @@ jest.mock('../../audio/AudioEngine', () => ({
 }));
 
 import { DogfoodSession } from '../session';
-import { CLIP_CAP_MS, COUNTDOWN_AT_MS } from '../config';
+import { CAUTION_AT_MS, CLIP_CAP_MS, WARNING_AT_MS } from '../config';
 
 /** A clock the test drives, so nothing waits on real time. */
 const clockAt = (start: number) => {
@@ -65,44 +65,54 @@ describe('DogfoodSession', () => {
     expect(session.elapsedMs()).toBe(5_000);
   });
 
-  it('ACC-DOG-005: time spent paused is free', async () => {
+  it('ACC-DOG-005: a recording clip can only be stopped, never held', async () => {
+    // No pause: a started clip runs from the tap to the tap that ends it.
     const clock = clockAt(0);
     const session = new DogfoodSession(clock.now);
     await session.start('Notes');
     clock.advance(30_000);
-    session.pause();
-    clock.advance(60_000);
-    expect(session.elapsedMs()).toBe(30_000);
-  });
-
-  it('ACC-DOG-006: resuming continues the same clip', async () => {
-    const clock = clockAt(0);
-    const session = new DogfoodSession(clock.now);
-    await session.start('Notes');
-    clock.advance(10_000);
-    session.pause();
-    clock.advance(60_000);
-    session.resume('Dashboard');
-    clock.advance(5_000);
-    expect(session.elapsedMs()).toBe(15_000);
     expect(session.snapshot().state).toBe('recording');
+    expect(
+      (session as unknown as Record<string, unknown>).pause
+    ).toBeUndefined();
+    expect(
+      (session as unknown as Record<string, unknown>).resume
+    ).toBeUndefined();
+    expect((await session.stop())?.durationMs).toBe(30_000);
   });
 
-  it('ACC-DOG-007: the countdown stays hidden until the end is near', async () => {
+  it('ACC-DOG-007: the countdown runs from the cap, unwarned until the end is near', async () => {
     const clock = clockAt(0);
     const session = new DogfoodSession(clock.now);
     await session.start('Notes');
-    clock.advance(CLIP_CAP_MS - COUNTDOWN_AT_MS - 1_000);
-    expect(session.snapshot().isCountingDown).toBe(false);
-  });
-
-  it('shows the countdown once the cap is close', async () => {
-    const clock = clockAt(0);
-    const session = new DogfoodSession(clock.now);
-    await session.start('Notes');
-    clock.advance(CLIP_CAP_MS - 5_000);
+    expect(session.snapshot().remainingMs).toBe(CLIP_CAP_MS);
+    clock.advance(30_000);
     const view = session.snapshot();
-    expect(view.isCountingDown).toBe(true);
+    expect(view.remainingMs).toBe(CLIP_CAP_MS - 30_000);
+    expect(view.urgency).toBe('none');
+  });
+
+  it('ACC-DOG-032: cautions once the cap is close', async () => {
+    const clock = clockAt(0);
+    const session = new DogfoodSession(clock.now);
+    await session.start('Notes');
+    clock.advance(CLIP_CAP_MS - CAUTION_AT_MS - 1_000);
+    expect(session.snapshot().urgency).toBe('none');
+    clock.advance(6_000);
+    const view = session.snapshot();
+    expect(view.urgency).toBe('caution');
+    expect(view.remainingMs).toBe(CAUTION_AT_MS - 5_000);
+  });
+
+  it('ACC-DOG-033: warns for the last stretch', async () => {
+    const clock = clockAt(0);
+    const session = new DogfoodSession(clock.now);
+    await session.start('Notes');
+    clock.advance(CLIP_CAP_MS - WARNING_AT_MS - 1_000);
+    expect(session.snapshot().urgency).toBe('caution');
+    clock.advance(6_000);
+    const view = session.snapshot();
+    expect(view.urgency).toBe('warning');
     expect(view.remainingMs).toBe(5_000);
   });
 

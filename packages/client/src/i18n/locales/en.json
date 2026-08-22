@@ -247,8 +247,11 @@
   },
   "dogfood": {
     "record": "Record feedback",
-    "pause": "Pause feedback recording",
-    "resume": "Resume feedback recording",
-    "stop": "Stop and send feedback"
+    "stop": "Stop and send feedback",
+    "outOfTime": {
+      "title": "Time's up",
+      "body": "If you didn't describe your feature, and you've run out of time, you can submit another feature request.",
+      "dismiss": "OK"
+    }
   }
 }

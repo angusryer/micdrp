@@ -118,8 +118,9 @@ jest.mock(
   'react-native-audio-api',
   () => ({
     // A recorder that behaves like the real one without a microphone: the
-    // dogfood session's timing, pause semantics and trail are the things
-    // under test, not the native capture.
+    // dogfood session's timing and trail are the things under test, not the
+    // native capture. No pause/resume here — the session no longer holds a
+    // recording, and a call to either should fail loudly rather than pass.
     AudioRecorder: class {
       enableFileOutput() {
         return { status: 'success' };
@@ -135,8 +136,6 @@ jest.mock(
           duration: 4
         });
       }
-      pause() {}
-      resume() {}
     },
     AudioContext: function () {},
     // The session has to be told it is recording speech before the recorder's

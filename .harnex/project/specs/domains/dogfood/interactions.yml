@@ -6,10 +6,10 @@ interactions:
       The maintainer is signed in, the microphone permission is granted,
       and no capture or practice session is running.
     steps:
-      - Tap the record control
+      - Tap the round record control, which becomes a square
       - Describe what is on screen and what should be different
       - Navigate to another screen and keep talking
-      - Tap stop
+      - Tap the square
     outcome: >
       The clip is sent with the trail of screens it was spoken over. The
       agent loop picks it up without anything else being done.
@@ -20,35 +20,23 @@ interactions:
     maps_to:
       capability: dogfood.stop_clip
 
-  - id: INT-DOG-002
-    name: Gather a thought mid-sentence
-    view: VIEW-DOG-001
-    precondition: A clip is recording.
-    steps:
-      - Tap pause
-      - Think, or go and look at something
-      - Tap resume and carry on
-    outcome: >
-      One clip, containing both halves. Time spent paused does not count
-      against the cap, so thinking is free.
-    error_handling: >
-      Starting a capture while paused ends the clip and sends what was
-      said rather than discarding it.
-    maps_to:
-      capability: dogfood.pause_clip
-
   - id: INT-DOG-003
     name: Run out of time
     view: VIEW-DOG-001
     precondition: A clip has been recording for close to the cap.
     steps:
-      - Notice the countdown appear
+      - Notice the countdown turn to the caution colour, then the
+        warning colour
       - Finish the sentence
     outcome: >
       At zero the clip sends itself, exactly as stopping would. Nothing
-      spoken is discarded.
+      spoken is discarded. An alert says the recording went and that
+      anything left unsaid can be recorded as another remark, because
+      the clip ending was not something the maintainer asked for and
+      the header is not where they were looking.
     error_handling: >
-      Tapping stop during the countdown does the same thing sooner.
+      Tapping the square in the last stretch does the same thing sooner,
+      and raises no alert: that ending was deliberate.
     maps_to:
       capability: dogfood.expire_clip
 

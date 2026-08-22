@@ -41,6 +41,7 @@ export const palettes: Record<
       colors: {
         ...basicColors,
         error: '#FF4949',
+        caution: '#B35A00',
         gold: '#8D8476',
         typography: '#323E58',
         gray50: '#F3F4F6',
@@ -66,6 +67,7 @@ export const palettes: Record<
       colors: {
         ...basicColors,
         error: '#D43939',
+        caution: '#B35A00',
         gold: '#8D7E76',
         typography: '#29121B',
         gray50: '#F6F5F5',
@@ -91,6 +93,7 @@ export const palettes: Record<
       colors: {
         ...basicColors,
         error: '#FF4949',
+        caution: '#B35A00',
         gold: '#8D7A76',
         typography: '#384343',
         gray50: '#F3FFFF',
@@ -127,6 +130,7 @@ export const palettes: Record<
       colors: {
         ...basicColors,
         error: '#FF6B6B',
+        caution: '#FFA657',
         gold: '#CBB98C',
         typography: '#ECEEF2',
         gray50: '#2A2E36',
@@ -152,6 +156,7 @@ export const palettes: Record<
       colors: {
         ...basicColors,
         error: '#FF6B6B',
+        caution: '#FFA657',
         gold: '#CBB08C',
         typography: '#F3EAEE',
         gray50: '#322A2E',
@@ -177,6 +182,7 @@ export const palettes: Record<
       colors: {
         ...basicColors,
         error: '#FF6B6B',
+        caution: '#FFA657',
         gold: '#BFC79C',
         typography: '#E9F0EE',
         gray50: '#2A322F',

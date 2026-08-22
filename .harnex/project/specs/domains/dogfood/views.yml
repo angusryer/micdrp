@@ -18,11 +18,31 @@ views:
       at all. The recording survives navigation because the session is
       held outside the component, not because the component is.
 
-      Idle, it is a single unobtrusive control. Recording, it shows the
-      elapsed time and offers pause and stop. In the last stretch before
-      the cap it shows a countdown instead of elapsed time — visible only
-      then, because a timer running the whole time invites watching the
-      clock rather than talking.
+      Idle, it is a single unobtrusive round control. Recording, that
+      same control becomes a square and the time left appears beside it;
+      tapping the square ends the clip and sends it. One control with
+      two shapes, and no third state: pausing a remark means holding a
+      thought the app cannot use, and a hold that has to be released is
+      one more thing to get wrong mid-sentence.
+
+      The time beside it counts down from the cap to zero for the whole
+      clip, never up. What a speaker needs to know is how much of the
+      two minutes is left, and a count that only ever appeared near the
+      end left the rest of the clip with no sense of how far along it
+      was. The last stretch is still marked, but by the countdown
+      changing colour rather than by a number appearing: the caution
+      colour first, then the warning colour nearer zero. Two steps, so
+      that the first arrives while there is still time to bring a
+      sentence to a close and the second says finish now.
+
+      When the cap ends the clip rather than a tap, an alert says so.
+      Colour is enough warning while someone is watching the header, but
+      the whole point of the control is that a remark is spoken while
+      looking at the screen it is about — so the moment the clip leaves
+      is otherwise silent, and a sentence cut off mid-word reads as the
+      app having dropped it. The alert says the recording went, and that
+      whatever was left unsaid can be said in another one. Tapping stop
+      raises nothing: that outcome was asked for.
 
       While a capture or practice session holds the microphone it is
       visibly unavailable rather than hidden. Hiding it would read as a
@@ -31,21 +51,30 @@ views:
     min_role: maintainer
     data_sources:
       - dogfood.start_clip
-      - dogfood.pause_clip
-      - dogfood.resume_clip
       - dogfood.stop_clip
     elements:
       - A record control, present on every screen, with a touch target of
         at least 44 points that no neighbour overlaps
-      - Elapsed time while recording
-      - A countdown, shown only once the cap is close
-      - A pause control while recording, and resume while paused
-      - A stop control that ends and sends in one action
-      - A disabled appearance while the microphone is otherwise in use
+      - A round mark while idle, and a square one while recording
+      - A countdown while recording, from the cap to zero
+      - The countdown in the caution colour once the cap is close, and
+        in the warning colour for the last stretch before zero
+      - Tapping the square ends and sends in one action
+      - An alert when the cap ends the clip, saying that another remark
+        can be recorded if this one ran out before it was finished
+      - A disabled appearance while idle and the microphone is otherwise
+        in use; a clip already recording stays stoppable, because with
+        one control a disabled one would strand what was said
       - A brief confirmation that a clip was sent
     absent_elements:
       - Any placement outside the safe area, where it cannot be tapped
       - Any separate send action, because stopping is the instruction to send
+      - Any pause or resume control
+      - Any alert when the square is tapped, because ending it then was
+        the instruction
+      - Any second control beside the record one, because the one control
+        both starts and stops
       - Any transcript or playback, because the clip is not for reading back
       - Any list of past clips, because they are the agent loop's business
-      - A running timer before the countdown threshold
+      - Any time that counts up, because what matters while talking is
+        how much is left, not how much has gone

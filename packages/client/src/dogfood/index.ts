@@ -14,11 +14,18 @@ export { DogfoodSession, type FinishedClip } from './session';
 export { activeSession } from './activeSession';
 export { ScreenTrail } from './trail';
 export { enqueue, listPending, uploadOne, flushPending } from './upload';
-export { CLIP_CAP_MS, COUNTDOWN_AT_MS, readClipOrigin } from './config';
+export {
+  CAUTION_AT_MS,
+  CLIP_CAP_MS,
+  WARNING_AT_MS,
+  readClipOrigin
+} from './config';
+export { countdownColor, countdownLabel } from './countdown';
 export { newClipId } from './id';
 export { runningBundleId } from './origin';
 export type {
   ClipState,
+  CountdownUrgency,
   PendingClip,
   RecordingSession,
   ScreenVisit
