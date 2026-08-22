@@ -8,17 +8,33 @@
  *   - otherwise → play a count-in preview, then record in silence so the speaker
  *     output never bleeds into the take.
  *
- * React Native has no first-class audio-route API, so detection is pluggable: a
- * native module (or a future `react-native-audio-api` capability) can register a
- * probe via {@link setHeadphoneProbe}. With nothing registered we return `false`
- * (speaker → count-in) — the safe default that never feeds the reference into
- * the mic.
+ * React Native has no first-class audio-route API, so detection is pluggable.
+ * `registerNativeProbe` fills it from AVAudioSession where the binary has that
+ * module; tests inject their own through {@link setHeadphoneProbe}. With
+ * nothing registered we return `false` (speaker → count-in) — the safe default,
+ * which never feeds the reference into the mic, and the one a bundle running on
+ * an older binary falls back to.
  */
+import NativeAudioRoute from '../specs/NativeAudioRoute';
 
 /** A probe returns true when headphones are the active output. */
 export type HeadphoneProbe = () => Promise<boolean> | boolean;
 
 let injectedProbe: HeadphoneProbe | null = null;
+
+/**
+ * Ask the native side, when the binary has it.
+ *
+ * This slot sat empty from the day the file was written, so every caller has
+ * been told "speaker" for the app's whole life — which meant Practice's
+ * play-along mode, the whole reason this exists, never once engaged.
+ */
+export function registerNativeProbe(): void {
+  const native = NativeAudioRoute;
+  if (native) {
+    injectedProbe = () => native.isHeadphones();
+  }
+}
 
 /**
  * Register (or clear, with `null`) the headphone-route probe. Wire a native
