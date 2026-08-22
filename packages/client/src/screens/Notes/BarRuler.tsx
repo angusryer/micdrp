@@ -65,11 +65,21 @@ export function BarRuler({
     [onMove, stepAtX]
   );
 
+  // Only the touch position crosses; which grid step it landed on is worked
+  // out here, on the JavaScript side (INV-NOTES-042). Converting it inside the
+  // callback called stepAtX on the UI thread, which is a hard crash in a
+  // release build — and invisible to the tests, since the reanimated mock runs
+  // everything on one thread.
+  const splitAtX = useCallback(
+    (x: number) => onSplit(stepAtX(x)),
+    [onSplit, stepAtX]
+  );
+
   // Holding anywhere that is not a line splits the bar there. It is on the
   // backdrop rather than on each bar so a split can land anywhere.
   const split = Gesture.LongPress()
     .withTestId('bar-split')
-    .onStart((event) => runOnJS(onSplit)(stepAtX(event.x)));
+    .onStart((event) => runOnJS(splitAtX)(event.x));
 
   return (
     <View style={StyleSheet.absoluteFill} testID="bar-ruler">

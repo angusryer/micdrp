@@ -83,3 +83,24 @@ invariants:
       cheapest way to see more bars at a readable scale, and the reading
       is what the screen is for — everything else on the page is about
       the take rather than in it.
+
+  - id: INV-NOTES-042
+    description: Only plain values cross from a gesture to the app
+    severity: critical
+    check: >
+      Every gesture callback on the graph hands the JavaScript side plain
+      numbers and nothing else: no function it was given is called from
+      inside the callback. Anything that has to be worked out from a
+      touch — which grid step it landed on, which line it was near — is
+      worked out after the crossing, not before it. Verified by reading
+      each gesture: what goes through runOnJS is an argument, never the
+      result of calling something passed in.
+
+      Gesture callbacks run on the UI thread. Calling an ordinary
+      function there is a hard crash in a release build, not a warning,
+      and the test setup cannot see it: the reanimated mock runs
+      everything on one thread, so a gesture that kills the app on a
+      device passes every test. Holding between the bar lines to add one
+      did exactly that — it converted a touch to a grid step inside the
+      callback — while holding on a line, which passed only its index,
+      was fine.

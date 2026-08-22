@@ -20,6 +20,8 @@
 
 #import "AudioEngineModule.h"
 
+#import "CaptureFile.h"
+
 #import <AVFoundation/AVFoundation.h>
 #import <React/RCTLog.h>
 
