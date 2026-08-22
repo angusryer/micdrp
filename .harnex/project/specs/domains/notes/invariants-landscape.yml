@@ -1,0 +1,23 @@
+# Fitting a note into the short dimension of a phone on its side. Its own
+# file: invariants-graph.yml is past its line budget.
+invariants:
+  - id: INV-NOTES-060
+    description: Sideways, the graph gives up height rather than pushing things off
+    severity: major
+    check: >
+      Held in landscape, everything on the page fits within the short
+      dimension: the graph, whatever is chosen and its options, and the
+      chord strip. The graph is the piece that yields — when the options
+      appear it becomes shorter, and when they go it takes the room back.
+      Nothing is clipped and nothing is pushed past the bottom edge.
+      Verified by asserting the graph is measured from the space actually
+      left to it rather than computed by subtracting a list of the things
+      that might be beside it.
+
+      Deriving the graph's height by subtracting known constants meant
+      every new thing under it had to remember to be subtracted too, and
+      the options card — which appears only once something is chosen —
+      was not. Choosing anything pushed the chord strip off the bottom of
+      a screen that had no room to spare in the first place. A budget
+      kept in one place and spent by the layout cannot drift that way;
+      a list of subtrahends always will.

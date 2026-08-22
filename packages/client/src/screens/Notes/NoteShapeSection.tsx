@@ -114,17 +114,22 @@ export function NoteShapeSection({
             </Text>
           </View>
         ) : null}
+        {/* On the graph rather than under it. Below the card it was one more
+            thing the sideways layout had to know about and subtract, and it
+            is a control for the drawing either way (INV-NOTES-060). */}
+        {canReset ? (
+          <Text
+            accessibilityRole="button"
+            onPress={() => resetScale.current()}
+            style={[
+              styles.reset,
+              { color: colors.primary500, backgroundColor: colors.neutral100 }
+            ]}
+          >
+            {t('notes.zoomReset')}
+          </Text>
+        ) : null}
       </View>
-
-      {canReset ? (
-        <Text
-          accessibilityRole="button"
-          onPress={() => resetScale.current()}
-          style={[styles.reset, { color: colors.primary500 }]}
-        >
-          {t('notes.zoomReset')}
-        </Text>
-      ) : null}
 
       {showControls ? <NoteShapeControls detail={detail} /> : null}
     </>
@@ -145,5 +150,15 @@ const styles = StyleSheet.create({
     opacity: 0.9
   },
   octaveText: { fontSize: 11, fontWeight: '700' },
-  reset: { fontSize: 12, fontWeight: '600', marginTop: 8, alignSelf: 'flex-end' }
+  reset: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    fontSize: 11,
+    fontWeight: '700',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    opacity: 0.9
+  }
 });

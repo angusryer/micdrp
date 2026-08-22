@@ -10,9 +10,21 @@
  *
  * It reads the same useNoteDetail as the upright page, so turning the phone
  * changes the presentation and nothing about the note.
+ *
+ * The graph is measured from the room actually left to it rather than
+ * calculated by subtracting the things that might be beside it (INV-NOTES-060).
+ * That arithmetic had to be updated every time something new could appear
+ * under the graph, and the options card — which shows up only once something
+ * is chosen — was never added to it, so choosing anything pushed the chord
+ * strip off the bottom.
  */
-import React from 'react';
-import { SafeAreaView, StyleSheet, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  SafeAreaView,
+  StyleSheet,
+  View,
+  type LayoutChangeEvent
+} from 'react-native';
 
 import { useTheme } from '../../theme';
 import { ChordTrack } from './ChordTrack';
@@ -26,37 +38,53 @@ const CHORD_STRIP_HEIGHT = 92;
 /** Breathing room at the edges; less than upright, since space is the point. */
 const EDGE_PADDING = 12;
 
+/** The graph card's own border, which sits inside the space it is given. */
+const CARD_BORDER = 2;
+
+/** Below this the drawing is not a graph any more, so it scrolls instead. */
+const MIN_GRAPH_HEIGHT = 96;
+
 export interface NoteLandscapeProps {
   detail: ReturnType<typeof useNoteDetail>;
   width: number;
-  height: number;
 }
 
 export function NoteLandscape({
   detail,
-  width,
-  height
+  width
 }: NoteLandscapeProps): React.JSX.Element {
   const { colors } = useTheme();
   const { chords } = detail;
+  // What the layout left for the graph once everything else had taken what
+  // it needed. Measured rather than predicted, so a new row beneath it can
+  // never silently push the bottom one off the screen.
+  const [room, setRoom] = useState(0);
+  const measure = useCallback(
+    (e: LayoutChangeEvent) => setRoom(e.nativeEvent.layout.height),
+    []
+  );
 
   const hasChords = chords.slots.length > 0;
-  const graphHeight =
-    height - 2 * EDGE_PADDING - (hasChords ? CHORD_STRIP_HEIGHT : 0);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.neutral300 }]}>
       <View style={styles.frame}>
-        {/* No controls under it: sideways the graph is the view, and the
-            transport lives on the upright page. */}
-        <NoteShapeSection
-          detail={detail}
-          width={width - 2 * EDGE_PADDING}
-          height={Math.max(120, graphHeight)}
-          showControls={false}
-          selection={detail.selection}
-          onSelect={detail.setSelection}
-        />
+        {/* The one piece that yields. Everything else keeps the height it
+            needs and this takes what is left (INV-NOTES-060). */}
+        <View testID="graph-room" style={styles.graph} onLayout={measure}>
+          {room > 0 ? (
+            /* No controls under it: sideways the graph is the view, and the
+               transport lives on the upright page. */
+            <NoteShapeSection
+              detail={detail}
+              width={width - 2 * EDGE_PADDING}
+              height={Math.max(MIN_GRAPH_HEIGHT, room - CARD_BORDER)}
+              showControls={false}
+              selection={detail.selection}
+              onSelect={detail.setSelection}
+            />
+          ) : null}
+        </View>
         <SelectionBar
           detail={detail}
           selection={detail.selection}
@@ -83,5 +111,8 @@ export default NoteLandscape;
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   frame: { flex: 1, padding: EDGE_PADDING },
+  // minHeight lets it shrink below its content, which is what makes it the
+  // piece that gives way rather than the piece that overflows.
+  graph: { flex: 1, minHeight: MIN_GRAPH_HEIGHT },
   strip: { height: CHORD_STRIP_HEIGHT, justifyContent: 'center' }
 });
