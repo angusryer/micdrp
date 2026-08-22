@@ -90,88 +90,6 @@ invariants:
       speaker struggles with most. Giving it its own level is what lets
       it be turned up on headphones and down when it is only rattling.
 
-  - id: INV-NOTES-048
-    description: The chords sit where the downbeats were placed
-    severity: critical
-    check: >
-      Every chord slot begins at a downbeat and runs to the next one,
-      whatever their number or spacing, and the last runs to the end of
-      what was sung. Moving a downbeat moves the chord that starts
-      there; adding one opens a new chord; taking one away gives its
-      span to the chord before it. Verified by asserting a progression
-      built from a set of downbeats has one slot per downbeat, spanning
-      exactly the gaps between them.
-
-      A downbeat is where a new chord may start — that is what the line
-      means, and the harmony has to be the same object rather than a
-      second structure drawn on the same timeline. Until now the slots
-      came from an even division of the detected grid and never saw the
-      arrangement at all, so dragging a line moved the line and nothing
-      else, and the two drifted apart in front of the singer.
-
-      The number of chords is therefore the singer's, not the metre's.
-      Two chords inside what would be one bar is two downbeats close
-      together, and needs no bar to be redefined to say so.
-
-  - id: INV-NOTES-049
-    description: The opening downbeats are read from the music, not counted out
-    severity: major
-    check: >
-      A take opens with downbeats where its implied harmony turns over:
-      at every note onset, the run of notes before it is weighed against
-      the run after, and the onset is proposed when the two spell
-      different chords. Never closer together than a beat, and always
-      one at the first note. Verified by asserting a melody whose
-      harmony changes once is proposed two downbeats, at the start and
-      at the change, and that a melody implying one chord throughout is
-      proposed a single one.
-
-      An even division counted out from a detected tempo is a guess
-      about metre wearing the clothes of a reading. Where the harmony
-      turns over is the thing a downbeat actually marks, and it is
-      measurable.
-
-      The runs are counted in notes, not in milliseconds. A chord is
-      established by notes: a fast passage packs six into two seconds
-      and a slow one holds two, so any fixed span reads the first as
-      noise and the second as silence. The same phrase sung fast and
-      sung slow must be read the same way, and only a note count does
-      that. Three is the fewest that can spell a chord — two notes are
-      an interval, and an interval belongs to several chords equally.
-
-      Candidates are onsets and nothing else, so no boundary needs
-      pulling into place afterwards: a chord starting in the middle of a
-      held note is almost never what was meant.
-
-      Gaps that are already nearly even are evened out, since most
-      people sing to a regular pulse and a proposal that wobbles by a
-      semiquaver reads as wrong rather than as precise. Gaps that are
-      not nearly even are left alone: that is a take with its own
-      shape, and straightening it would be the rigid model this whole
-      arrangement exists to avoid.
-
-  - id: INV-NOTES-050
-    description: Metre is read back from the downbeats, and never has the last word
-    severity: major
-    check: >
-      A time signature is derived from the spacing of the placed
-      downbeats rather than constraining where they may go, and is
-      carried as a suggestion that a person's own choice replaces
-      outright. Nothing in the editing surface consumes it. Verified by
-      asserting a reading is produced from a set of downbeats, and that
-      a stated override survives in its place.
-
-      The reading takes the largest grouping the spacing is consistent
-      with, not the spacing itself. Downbeats every two beats are as
-      much a bar of four with harmony changing halfway as a bar of two,
-      and four is the better guess — reading the gap directly would put
-      the half-bar problem back, one stage further down.
-
-      It cannot be authoritative because it cannot see intent. Three
-      half notes meant as a bar of four are six beats to any arithmetic,
-      and only the person who sang them knows they were not six four.
-      So the last step before anything is written out is a human's.
-
   - id: INV-NOTES-051
     description: A chord note is picked up before it moves
     severity: critical
@@ -186,3 +104,34 @@ invariants:
       Without a hold, every attempt to move along the take or look
       closer would rewrite the harmony instead — the same fault the bar
       lines had, and the same fix (INT-NOTES-012).
+
+  - id: INV-NOTES-052
+    description: A chord's notes are coloured by the part they play
+    severity: major
+    check: >
+      Every note of a chord is drawn in a colour fixed by which member
+      of the chord it is — root, third, fifth, seventh — and not by
+      where it sits on the screen. The colours run in spectrum order
+      from the root upward, so the ordering itself carries the meaning.
+      A silenced note keeps its colour and is drawn as an outline, and a
+      note in hand keeps it too. Verified by asserting the colour of a
+      note follows its position in the chord across renamings and
+      inversions.
+
+      Colour is what makes the root findable at a glance in a band of
+      small rectangles, and findable is what makes it draggable with
+      intent. It also makes renaming legible: pull the fifth of a C up
+      to A and the chord becomes A minor, and the note being dragged
+      turns from the fifth's colour to the root's — the reading is
+      visible in the thing that changed rather than only in a label
+      elsewhere.
+
+      By part and not by height, because the two only agree in root
+      position. Once a note has been moved, or a chord inverted, the
+      lowest thing on screen may not be the root — and it is the root
+      the eye is looking for.
+
+      Colour reinforces; it never carries a fact alone. Vertical
+      position remains the pitch and the label remains the name, since
+      red against green is the commonest way for colour to fail a
+      reader.

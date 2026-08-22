@@ -14,7 +14,7 @@ import { StyleSheet, View } from 'react-native';
 import { Canvas, Rect, RoundedRect } from '@shopify/react-native-skia';
 import { GestureDetector } from 'react-native-gesture-handler';
 
-import { useTheme } from '../theme';
+import { chordRoleColour } from './chordRoles';
 import { layoutChordTones, type PlacedChord } from './chordLayout';
 import { useChordToneGestures } from './useChordToneGestures';
 import type { PitchAxis, TimeAxis } from './melodyLayout';
@@ -42,7 +42,6 @@ export function ChordBand({
   onMoveTone,
   onToggleMute
 }: ChordBandProps): React.JSX.Element | null {
-  const { colors } = useTheme();
 
   const rects = useMemo(
     () => layoutChordTones(slots, timeAxis, pitchAxis, floorMidi),
@@ -67,43 +66,43 @@ export function ChordBand({
     <GestureDetector gesture={gesture}>
       <View style={[styles.fill, { width, height }]}>
         <Canvas style={{ width, height }}>
-          {rects.map((r, i) =>
-            held && held.slot === r.slot && held.tone === r.tone ? (
-              // In hand: drawn brighter and a little proud of the rest, so
-              // there is no doubt which note the drag has hold of.
+          {rects.map((r, i) => {
+            // The part it plays decides the colour, through every state: a
+            // note keeps saying what it is while silenced and while held
+            // (INV-NOTES-052).
+            const colour = chordRoleColour(r.tone);
+            const inHand = held?.slot === r.slot && held?.tone === r.tone;
+            if (r.muted) {
+              // Silenced: an outline, so it is plainly still there to bring
+              // back, and still plainly the third or the fifth.
+              return (
+                <Rect
+                  key={i}
+                  x={r.x}
+                  y={r.y}
+                  width={r.width}
+                  height={r.height}
+                  style="stroke"
+                  strokeWidth={1.5}
+                  color={colour}
+                />
+              );
+            }
+            return (
               <RoundedRect
                 key={i}
-                x={r.x - 1}
-                y={r.y - 2}
-                width={r.width + 2}
-                height={r.height + 4}
-                r={3}
-                color={colors.primary500}
+                // In hand: a little proud of the rest, so there is no doubt
+                // which note the drag has hold of — without borrowing a
+                // colour that would hide what part it plays.
+                x={inHand ? r.x - 1 : r.x}
+                y={inHand ? r.y - 2 : r.y}
+                width={inHand ? r.width + 2 : r.width}
+                height={inHand ? r.height + 4 : r.height}
+                r={inHand ? 3 : 2}
+                color={colour}
               />
-            ) : r.muted ? (
-              // Silenced: an outline, so it is plainly still there to bring back.
-              <Rect
-                key={i}
-                x={r.x}
-                y={r.y}
-                width={r.width}
-                height={r.height}
-                style="stroke"
-                strokeWidth={1}
-                color={colors.neutral500}
-              />
-            ) : (
-              <RoundedRect
-                key={i}
-                x={r.x}
-                y={r.y}
-                width={r.width}
-                height={r.height}
-                r={2}
-                color={r.moved ? colors.primary100 : colors.neutral500}
-              />
-            )
-          )}
+            );
+          })}
         </Canvas>
       </View>
     </GestureDetector>
