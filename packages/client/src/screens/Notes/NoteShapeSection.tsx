@@ -81,9 +81,10 @@ export function NoteShapeSection({
             alsoShow={chordPitchesShown}
             onScaleChange={onScaleChange}
           >
-            {({ contentWidth, beatWidth, timeAxis, pitchAxis }) => (
+            {({ contentWidth, beatWidth, timeAxis, pitchAxis, rects }) => (
               <GraphLayers
                 detail={detail}
+                noteRects={rects}
                 contentWidth={contentWidth}
                 beatWidth={beatWidth}
                 height={height}

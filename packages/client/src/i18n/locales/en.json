@@ -131,7 +131,8 @@
       "silence": "Silence",
       "audition": "Hear",
       "remove": "Remove",
-      "done": "Done"
+      "done": "Done",
+      "hear": "Hear"
     },
     "barMoveHint": "drag to move · lift it away to remove",
     "barRemoveHint": "release to remove this line",
@@ -141,7 +142,8 @@
     "chordsLow": "Chords low for headphones — tap for the speaker",
     "harmonyNone": "A backdrop needs a beat to sit on, and there is not enough rhythm here to find one.",
     "harmonyReset": "Reset chords",
-    "chordCard": "{{chord}}, bar {{bar}}"
+    "chordCard": "{{chord}}, bar {{bar}}",
+    "sungNote": "Sung note"
   },
   "dashboard": {
     "title": "Dashboard",

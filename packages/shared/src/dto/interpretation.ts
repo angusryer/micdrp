@@ -14,6 +14,12 @@ export interface ChordSlotEditDto {
   quality: string;
 }
 
+/** A pitch someone corrected, anchored to a moment inside the note. */
+export interface NoteEditDto {
+  atMs: number;
+  midi: number;
+}
+
 export interface InterpretationDto {
   id: string;
   name: string;
@@ -23,6 +29,8 @@ export interface InterpretationDto {
   chords: ChordSlotEditDto[];
   /** Grid step indices where bars begin, when a person has arranged them. */
   barLines?: number[];
+  /** Pitches a person corrected, where the detector heard wrongly. */
+  notes?: NoteEditDto[];
 }
 
 const QUALITIES = [
@@ -40,6 +48,19 @@ function isChordEdit(value: unknown): value is ChordSlotEditDto {
     v.rootPc <= 11 &&
     typeof v.quality === 'string' &&
     QUALITIES.includes(v.quality)
+  );
+}
+
+function isNoteEdit(value: unknown): value is NoteEditDto {
+  const v = value as NoteEditDto | null;
+  return (
+    v != null &&
+    typeof v.atMs === 'number' &&
+    Number.isFinite(v.atMs) &&
+    typeof v.midi === 'number' &&
+    Number.isInteger(v.midi) &&
+    v.midi >= 0 &&
+    v.midi <= 127
   );
 }
 
@@ -68,7 +89,8 @@ export function parseInterpretations(raw: unknown): InterpretationDto[] {
       chords: Array.isArray(v.chords) ? v.chords.filter(isChordEdit) : [],
       ...(Array.isArray(v.barLines)
         ? { barLines: v.barLines.filter((n) => Number.isInteger(n) && n >= 0) }
-        : {})
+        : {}),
+      ...(Array.isArray(v.notes) ? { notes: v.notes.filter(isNoteEdit) } : {})
     });
   }
   return out;

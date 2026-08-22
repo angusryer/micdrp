@@ -7,8 +7,14 @@
  * underneath it. One place that hit-tests everything replaces that, and
  * choosing a thing before acting on it is what makes the verbs nameable
  * controls rather than remembered gestures (INT-NOTES-015).
+ *
+ * Smallest target first: a chord note is a few points tall and can only be
+ * meant, a sung note is larger, and a bar line spans the whole height and is
+ * easy to hit from anywhere. Asking in that order means a deliberate touch
+ * always beats an incidental one.
  */
 import type { ChordToneRect } from './chordLayout';
+import type { NoteRect } from './melodyLayout';
 
 /** A bar line as the surface needs it: an index and where it is drawn. */
 export interface BarHandlePoint {
@@ -18,13 +24,17 @@ export interface BarHandlePoint {
 
 export type Selection =
   | { kind: 'barLine'; lineIndex: number }
-  | { kind: 'chordTone'; slot: number; tone: number };
+  | { kind: 'chordTone'; slot: number; tone: number }
+  | { kind: 'melodyNote'; index: number };
 
 /** How far from a bar line a touch still means that line. */
 export const BAR_REACH = 22;
 
 /** How far from a chord note's centre a touch still means that note. */
 export const TONE_REACH = 22;
+
+/** How far from a sung note a touch still means that note. */
+export const NOTE_REACH = 20;
 
 /** Whether two selections point at the same thing. */
 export function isSame(a: Selection | null, b: Selection | null): boolean {
@@ -36,6 +46,9 @@ export function isSame(a: Selection | null, b: Selection | null): boolean {
   }
   if (a.kind === 'chordTone' && b.kind === 'chordTone') {
     return a.slot === b.slot && a.tone === b.tone;
+  }
+  if (a.kind === 'melodyNote' && b.kind === 'melodyNote') {
+    return a.index === b.index;
   }
   return false;
 }
@@ -51,7 +64,8 @@ export function selectionAt(
   x: number,
   y: number,
   tones: readonly ChordToneRect[],
-  bars: readonly BarHandlePoint[]
+  bars: readonly BarHandlePoint[],
+  notes: readonly NoteRect[] = []
 ): Selection | null {
   let bestTone: ChordToneRect | null = null;
   let bestToneGap = TONE_REACH;
@@ -67,6 +81,22 @@ export function selectionAt(
   }
   if (bestTone) {
     return { kind: 'chordTone', slot: bestTone.slot, tone: bestTone.tone };
+  }
+
+  let bestNote = -1;
+  let bestNoteGap = NOTE_REACH;
+  notes.forEach((rect, index) => {
+    if (x < rect.x || x > rect.x + rect.width) {
+      return;
+    }
+    const gap = Math.abs(y - rect.cy);
+    if (gap <= bestNoteGap) {
+      bestNoteGap = gap;
+      bestNote = index;
+    }
+  });
+  if (bestNote >= 0) {
+    return { kind: 'melodyNote', index: bestNote };
   }
 
   let bestBar: BarHandlePoint | null = null;
@@ -87,10 +117,11 @@ export function touchesSelection(
   x: number,
   y: number,
   tones: readonly ChordToneRect[],
-  bars: readonly BarHandlePoint[]
+  bars: readonly BarHandlePoint[],
+  notes: readonly NoteRect[] = []
 ): boolean {
   if (!selection) {
     return false;
   }
-  return isSame(selection, selectionAt(x, y, tones, bars));
+  return isSame(selection, selectionAt(x, y, tones, bars, notes));
 }

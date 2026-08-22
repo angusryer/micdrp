@@ -12,7 +12,10 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import {
+  collectNoteEdits,
+  moveNote,
   proposeDownbeats,
+  replayNoteEdits,
   quantize,
   readMetre,
   type NoteEvent
@@ -38,7 +41,7 @@ const EMPTY_READINGS: InterpretationDto[] = [];
 
 export function useNoteDetail(id: string) {
   const note = useMemo(() => cachedNotes().find((n) => n.id === id), [id]);
-  const melody = (note?.melody ?? []) as NoteEvent[];
+  const heard = (note?.melody ?? []) as NoteEvent[];
 
   // Mint the audio URL when Play is pressed rather than here: the token it
   // carries is good for about two minutes (INV-NOTES-014).
@@ -48,6 +51,30 @@ export function useNoteDetail(id: string) {
     [id, audioPath]
   );
 
+  // What this person has already made of the take, kept with the note so a
+  // decision outlives the screen it was made on (INV-NOTES-021).
+  const interpretation = useInterpretation(
+    note?.id ?? null,
+    note?.interpretations ?? EMPTY_READINGS
+  );
+
+
+  // What the detector heard, with the corrections a person made on top
+  // (INV-NOTES-054). Everything downstream reads this rather than the raw
+  // hearing, so putting a note right also puts right the harmony read from it.
+  const melody = useMemo(
+    () => replayNoteEdits(heard, interpretation.savedNoteEdits),
+    [heard, interpretation.savedNoteEdits]
+  );
+
+  const correctNote = useCallback(
+    (index: number, semitones: number) => {
+      const corrected = moveNote(melody, index, semitones);
+      interpretation.updateNotes(collectNoteEdits(heard, corrected));
+    },
+    [heard, melody, interpretation]
+  );
+
   // Fit the metrical grid here rather than reading a stored one. The melody is
   // persisted, so this costs nothing and needs no migration — and it means
   // notes captured before the tempo estimator was fixed are re-read correctly
@@ -55,13 +82,6 @@ export function useNoteDetail(id: string) {
   const quantized = useMemo(() => quantize(melody), [melody]);
   const grid = quantized.grid;
   const hasGrid = grid.bpm > 0 && melody.length > 1;
-
-  // What this person has already made of the take, kept with the note so a
-  // decision outlives the screen it was made on (INV-NOTES-021).
-  const interpretation = useInterpretation(
-    note?.id ?? null,
-    note?.interpretations ?? EMPTY_READINGS
-  );
 
   // Where the harmony turns over, which is what a downbeat marks. The take
   // opens on these rather than on an even division counted out from the
@@ -160,6 +180,7 @@ export function useNoteDetail(id: string) {
     toggleChordsLifted: useCallback(() => setChordsLifted((on) => !on), []),
     resolveAudio,
     midiUri,
+    correctNote,
     selection,
     setSelection,
     ...playback

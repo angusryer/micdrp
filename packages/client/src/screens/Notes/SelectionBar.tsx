@@ -16,6 +16,7 @@ import { chordRoleAt } from '../../components/chordRoles';
 import type { Selection } from '../../components/graphSelection';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
+import { midiToLabel } from '../Results/NoteList';
 import type { useNoteDetail } from './useNoteDetail';
 
 export interface SelectionBarProps {
@@ -51,6 +52,13 @@ export function SelectionBar({
     actions.push({
       label: t('notes.action.audition'),
       run: () => detail.auditionChord(selection.slot)
+    });
+  } else if (selection.kind === 'melodyNote') {
+    const note = detail.melody[selection.index];
+    title = `${t('notes.sungNote')} · ${note ? midiToLabel(note.midi) : ''}`;
+    actions.push({
+      label: t('notes.action.hear'),
+      run: () => note && detail.playNote(note.midi)
     });
   } else {
     title = t('notes.barLine');

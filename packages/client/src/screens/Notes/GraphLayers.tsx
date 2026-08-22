@@ -19,7 +19,7 @@ import React, { useMemo } from 'react';
 import { ChordBand } from '../../components/ChordBand';
 import { GraphSurface } from '../../components/GraphSurface';
 import { layoutChordTones } from '../../components/chordLayout';
-import type { MelodyLayout } from '../../components/melodyLayout';
+import type { MelodyLayout, NoteRect } from '../../components/melodyLayout';
 import type { Selection } from '../../components/graphSelection';
 import { BarRulerOverlay } from './BarRulerOverlay';
 import { barHandles } from './barRulerModel';
@@ -27,6 +27,8 @@ import type { useNoteDetail } from './useNoteDetail';
 
 export interface GraphLayersProps {
   detail: ReturnType<typeof useNoteDetail>;
+  /** The sung notes as drawn, so touching one lands where it looks. */
+  noteRects: readonly NoteRect[];
   contentWidth: number;
   beatWidth: number;
   height: number;
@@ -38,6 +40,7 @@ export interface GraphLayersProps {
 
 export function GraphLayers({
   detail,
+  noteRects,
   contentWidth,
   beatWidth,
   height,
@@ -113,6 +116,7 @@ export function GraphLayers({
           height={height}
           tones={tones}
           bars={handles}
+          notes={noteRects}
           laneHeight={pitchAxis.lane}
           originX={geometry.originX}
           stepWidth={geometry.stepWidth}
@@ -120,6 +124,7 @@ export function GraphLayers({
           onSelect={onSelect}
           onMoveBar={bars.move}
           onMoveTone={chords.moveTone}
+          onMoveNote={detail.correctNote}
           onAddBar={bars.split}
         />
       ) : null}

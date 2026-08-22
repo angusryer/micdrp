@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { activeInterpretation, type InterpretationDto } from 'shared';
-import type { ChordSlotEdit } from 'logic';
+import type { ChordSlotEdit, NoteEdit } from 'logic';
 
 import { notesRepo } from '../../data/notesRepo';
 
@@ -32,10 +32,14 @@ export interface Interpretation {
   savedEdits: readonly ChordSlotEdit[];
   /** An arrangement of bars already kept, if a person has made one. */
   savedBarLines: readonly number[] | undefined;
+  /** Pitches corrected where the detector heard wrongly. */
+  savedNoteEdits: readonly NoteEdit[];
   /** Record a new set of differences; written shortly afterwards. */
   update: (edits: ChordSlotEdit[]) => void;
   /** Record a new arrangement of bars; written shortly afterwards. */
   updateBarLines: (lines: number[]) => void;
+  /** Keep the corrections to what was heard. */
+  updateNotes: (notes: NoteEdit[]) => void;
   /** True once a write has failed, so a screen can say so. */
   failed: boolean;
 }
@@ -47,6 +51,9 @@ export function useInterpretation(
   const active = activeInterpretation(stored) ?? NEW_READING();
   const [savedEdits, setSavedEdits] = useState<readonly ChordSlotEdit[]>(
     active.chords as ChordSlotEdit[]
+  );
+  const [savedNoteEdits, setSavedNoteEdits] = useState<readonly NoteEdit[]>(
+    () => active?.notes ?? []
   );
   const [savedBarLines, setSavedBarLines] = useState<readonly number[] | undefined>(
     active.barLines
@@ -69,9 +76,14 @@ export function useInterpretation(
   // Both halves of a reading go through one writer: which chords were chosen
   // and where the bars fall are one answer about one take, and writing them
   // separately would race each other to the same field.
-  const latest = useRef<{ chords: ChordSlotEdit[]; barLines?: number[] }>({
+  const latest = useRef<{
+    chords: ChordSlotEdit[];
+    barLines?: number[];
+    notes?: NoteEdit[];
+  }>({
     chords: active.chords as ChordSlotEdit[],
-    ...(active.barLines ? { barLines: [...active.barLines] } : {})
+    ...(active.barLines ? { barLines: [...active.barLines] } : {}),
+    ...(active.notes ? { notes: [...active.notes] } : {})
   });
 
   const schedule = useCallback(
@@ -110,6 +122,15 @@ export function useInterpretation(
     [schedule]
   );
 
+  const updateNotes = useCallback(
+    (notes: NoteEdit[]) => {
+      setSavedNoteEdits(notes);
+      latest.current = { ...latest.current, notes };
+      schedule();
+    },
+    [schedule]
+  );
+
   const updateBarLines = useCallback(
     (lines: number[]) => {
       setSavedBarLines(lines);
@@ -119,5 +140,13 @@ export function useInterpretation(
     [schedule]
   );
 
-  return { savedEdits, savedBarLines, update, updateBarLines, failed };
+  return {
+    savedEdits,
+    savedBarLines,
+    savedNoteEdits,
+    update,
+    updateBarLines,
+    updateNotes,
+    failed
+  };
 }

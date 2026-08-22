@@ -1,0 +1,35 @@
+# Correcting what the detector heard. Split for the 150-line spec-file budget.
+invariants:
+  - id: INV-NOTES-053
+    description: A note read wrongly can be put right
+    severity: critical
+    check: >
+      A note of the melody can be chosen on the graph and moved to the
+      pitch that was actually sung. What it becomes is what everything
+      downstream reads: the chords implied, the downbeats proposed, the
+      export. Verified by asserting a corrected note changes the melody
+      handed to harmony, and that correcting one leaves every other note
+      where it was.
+
+      Detection is a starting position, not an answer. The whole point
+      of the graph is that what you see is what you are editing, and a
+      note the detector heard a semitone out has until now been a thing
+      you could see was wrong and could not touch — while the harmony
+      read from it inherited the mistake.
+
+  - id: INV-NOTES-054
+    description: A correction is kept as a difference, not as a new melody
+    severity: critical
+    check: >
+      What is stored is the correction alone, anchored to a moment, and
+      replayed over whatever the detector now says. A correction whose
+      moment lands in no note is dropped rather than applied to whatever
+      has since moved there. Verified by round-tripping corrections
+      through storage, and by replaying one whose note has gone.
+
+      The melody as sung is the one thing that never changes, and
+      overwriting it would destroy the record of what was actually
+      heard — after which no later improvement in detection could ever
+      be applied, because there would be nothing left to re-read. Every
+      other claim on this screen is kept this way (INV-NOTES-022), and a
+      correction is a claim like any other.

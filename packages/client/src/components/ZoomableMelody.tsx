@@ -40,6 +40,8 @@ export interface ZoomableMelodyProps {
     beatWidth: number;
     timeAxis: MelodyLayout['timeAxis'];
     pitchAxis: MelodyLayout['pitchAxis'];
+    /** The sung notes as drawn, for anything that has to touch one. */
+    rects: MelodyLayout['rects'];
   }) => React.ReactNode;
   /**
    * Told when the scale moves off the one the take opened at, and handed the
@@ -101,7 +103,8 @@ export function ZoomableMelody({
             contentWidth: layout.contentWidth,
             beatWidth,
             timeAxis: layout.timeAxis,
-            pitchAxis: layout.pitchAxis
+            pitchAxis: layout.pitchAxis,
+            rects: layout.rects
           })}
         </View>
       </ScrollView>
