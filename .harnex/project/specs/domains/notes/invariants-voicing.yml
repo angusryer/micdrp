@@ -2,21 +2,30 @@
 # to the chord they belong to. Split for the 150-line spec-file budget.
 invariants:
   - id: INV-NOTES-036
-    description: A chord keeps its name while its voicing changes
+    description: A chord is named after the notes it actually has
     severity: critical
     check: >
-      Moving or silencing one of a chord's notes leaves the slot's root
-      and quality alone, so its label and its roman numeral still read.
-      A slot whose notes no longer spell the chord it is named after is
-      marked as altered rather than renamed. Verified by asserting that
-      a slot's label, roman and root survive every voicing change, and
-      that a note moved off a chord tone sets the altered flag.
+      When a chord's notes are moved, the slot is renamed to whatever
+      they now spell, if they spell anything: its root, quality, label
+      and roman numeral all follow. Notes that spell nothing recognised
+      leave the slot named as it was and marked altered. Verified by
+      asserting that moving the third of a major chord down a semitone
+      renames it minor, and that a note moved somewhere that spells no
+      chord leaves the name alone and sets the altered flag.
 
-      The root and quality are what the diatonic drag steps through and
-      what the roman numeral is read from. Renaming the chord every time
-      a note is nudged would rewrite the harmony underneath the person
-      experimenting with it, and the numeral would stop describing where
-      they are in the key.
+      Dragging notes about is how a chord is built here — the point of
+      putting them on the graph was to make harmony something you shape
+      by hand rather than choose from a list. A shape that kept its old
+      name while sounding like something else would be the interface
+      lying about what it just made.
+
+      This was written the other way round at first, out of a worry that
+      renaming on every nudge would rewrite the harmony under someone
+      mid-experiment. That worry was misplaced: a nudge that does not
+      change what the notes spell does not change the name either, since
+      the name is read from the notes. Renaming happens exactly when
+      something else is now being sounded, which is exactly when saying
+      so is useful.
 
   - id: INV-NOTES-037
     description: A silenced note is quiet, not gone
@@ -162,3 +171,18 @@ invariants:
       half notes meant as a bar of four are six beats to any arithmetic,
       and only the person who sang them knows they were not six four.
       So the last step before anything is written out is a human's.
+
+  - id: INV-NOTES-051
+    description: A chord note is picked up before it moves
+    severity: critical
+    check: >
+      A chord's note does not move on contact. It is held first, and
+      only then does dragging take it — and while held it says so, and
+      is felt. Verified by asserting a drag that begins on a note
+      without a hold leaves the chord alone.
+
+      The band sits inside a graph that scrolls and pinches, so a finger
+      landing on a note is the common case rather than the rare one.
+      Without a hold, every attempt to move along the take or look
+      closer would rewrite the harmony instead — the same fault the bar
+      lines had, and the same fix (INT-NOTES-012).

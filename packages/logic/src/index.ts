@@ -16,6 +16,7 @@ export * from './bars';
 export * from './barEdits';
 export * from './chordMatch';
 export * from './chordTones';
+export * from './identifyChord';
 export * from './downbeats';
 export * from './metre';
 export * from './harmony';

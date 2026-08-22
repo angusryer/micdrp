@@ -20,7 +20,7 @@ import {
   revertSlot,
   transposeDiatonic,
   isAltered,
-  moveTone as moveVoicedTone,
+  moveChordTone,
   toggleMute as toggleVoicedMute,
   voiceChord,
   voiceProgression,
@@ -163,11 +163,12 @@ export function useChordTrack(
     ),
     moveTone: useCallback(
       (index, tone, semitones) =>
-        apply(index, (slot) => ({
-          ...slot,
-          voicing: moveVoicedTone(slot.voicing, slot.quality, tone, semitones)
-        })),
-      [apply]
+        // Renames the slot to whatever the notes now spell, so the card above
+        // says what is actually sounding (INV-NOTES-036).
+        apply(index, (slot) =>
+          moveChordTone(slot, key, tone, semitones, floorMidi)
+        ),
+      [apply, key, floorMidi]
     ),
     toggleTone: useCallback(
       (index, tone) =>
