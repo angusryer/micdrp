@@ -59,3 +59,22 @@ export function shouldDiscard(
   }
   return armed === 1 || velocityY <= -flickVelocity;
 }
+
+/**
+ * The nearest grid step's position, in the graph's own coordinates.
+ *
+ * The same calculation draws the line and decides where it lands, so the two
+ * cannot disagree (INV-NOTES-047). A step width of nothing means there is no
+ * grid to snap to, and the position passes through untouched.
+ */
+export function snapToStep(
+  contentX: number,
+  originX: number,
+  stepWidth: number
+): number {
+  'worklet';
+  if (!(stepWidth > 0)) {
+    return contentX;
+  }
+  return originX + Math.round((contentX - originX) / stepWidth) * stepWidth;
+}

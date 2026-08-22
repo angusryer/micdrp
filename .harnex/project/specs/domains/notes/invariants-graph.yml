@@ -171,3 +171,23 @@ invariants:
       sideways across a phone rises and falls by tens of pixels without
       being asked to, and none of that drift should ever be read as an
       instruction to delete something.
+
+  - id: INV-NOTES-047
+    description: A dragged line is drawn where it will actually land
+    severity: critical
+    check: >
+      While a bar line is being moved it is drawn on grid steps, not
+      under the raw finger position, so the line the singer sees is the
+      line they will get. The readout beside it names that same step.
+      Verified by asserting the drawn offset and the committed step come
+      from one calculation rather than two.
+
+      The drop has always quantised; only the drawing did not, so the
+      line sat between steps right up until it jumped on release. That
+      is showing something that will not happen, and it makes the last
+      few pixels of every drag a guess.
+
+      Everything here works in the graph's own coordinates. A screen
+      position is a different space once the graph is inset and
+      scrolled, and mixing the two silently put a moved line some
+      distance from where it was dropped.

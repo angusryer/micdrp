@@ -2,10 +2,15 @@
  * useBarLineDrag — the shared values and the gesture behind moving or
  * discarding a bar line.
  *
- * Split from the view so that file renders and this one holds the motion.
  * Everything that moves lives in a shared value driven on the UI thread: a
  * drag rendered through React would lag the thumb it is meant to be under
  * (INV-NOTES-045).
+ *
+ * All of it works in the graph's own coordinates, never the screen's. The
+ * line's position, the step it will land on and the readout that reports it
+ * are then one number rather than three that have to be kept in agreement —
+ * and a graph that is inset and scrolled makes screen coordinates a
+ * different space entirely (INV-NOTES-034).
  */
 import { Gesture } from 'react-native-gesture-handler';
 import {
@@ -20,7 +25,8 @@ import {
   AXIS_MOVE,
   AXIS_NONE,
   chooseAxis,
-  shouldDiscard
+  shouldDiscard,
+  snapToStep
 } from './barDragAxis';
 
 /**
@@ -53,6 +59,11 @@ const THROW_MS = 170;
 
 export interface BarLineDragOptions {
   lineIndex: number;
+  /** Where this line sits in the graph's own coordinates. */
+  handleX: number;
+  /** The graph's step-zero position and step size, both in those coordinates. */
+  originX: number;
+  stepWidth: number;
   /** How far the line is thrown before it is taken out. */
   throwDistance: number;
   onDrag: (lineIndex: number, x: number, y: number, axis: number, armed: number) => void;
@@ -62,6 +73,9 @@ export interface BarLineDragOptions {
 
 export function useBarLineDrag({
   lineIndex,
+  handleX,
+  originX,
+  stepWidth,
   throwDistance,
   onDrag,
   onDrop,
@@ -73,6 +87,8 @@ export function useBarLineDrag({
   /** 1 once letting go would discard this line. */
   const armed = useSharedValue(0);
   const leaving = useSharedValue(0);
+  /** 1 while the line is picked up, which is what the glow reads. */
+  const held = useSharedValue(0);
 
   const pan = Gesture.Pan()
     .withTestId(`bar-line-pan-${lineIndex}`)
@@ -84,10 +100,20 @@ export function useBarLineDrag({
       armed.value = 0;
       leaving.value = 0;
     })
+    // Fires once the hold has been earned, which is the moment the line is
+    // in hand and the moment worth announcing.
+    .onStart(() => {
+      held.value = 1;
+    })
     .onUpdate((e) => {
       axis.value = chooseAxis(axis.value, e.translationX, e.translationY);
+      let contentX = handleX;
       if (axis.value === AXIS_MOVE) {
-        tx.value = e.translationX;
+        // Snapped as it moves, not only when released: the line lands on
+        // steps, so showing it anywhere else is showing something that will
+        // not happen (INV-NOTES-047).
+        contentX = snapToStep(handleX + e.translationX, originX, stepWidth);
+        tx.value = contentX - handleX;
         ty.value = 0;
       } else if (axis.value === AXIS_AWAY) {
         // Upward only: dragging back down past the start just returns it.
@@ -95,9 +121,10 @@ export function useBarLineDrag({
         ty.value = Math.min(0, e.translationY);
         armed.value = ty.value <= -SLIDE_AWAY_PX ? 1 : 0;
       }
-      runOnJS(onDrag)(lineIndex, e.absoluteX, e.absoluteY, axis.value, armed.value);
+      runOnJS(onDrag)(lineIndex, contentX, e.y, axis.value, armed.value);
     })
     .onEnd((e) => {
+      held.value = 0;
       if (shouldDiscard(axis.value, armed.value, e.velocityY, FLICK_VELOCITY)) {
         leaving.value = 1;
         // Thrown clear, then removed — so the line is seen to go rather than
@@ -107,12 +134,17 @@ export function useBarLineDrag({
         });
         return;
       }
-      const releasedAt = e.absoluteX;
+      // Where it was actually left, in the graph's coordinates — the same
+      // number the line was drawn at, so the two cannot disagree.
+      const releasedAt = handleX + tx.value;
       tx.value = 0;
       ty.value = 0;
       axis.value = AXIS_NONE;
       armed.value = 0;
       runOnJS(onDrop)(lineIndex, releasedAt);
+    })
+    .onFinalize(() => {
+      held.value = 0;
     });
 
   const moving = useAnimatedStyle(() => ({
@@ -120,6 +152,7 @@ export function useBarLineDrag({
     opacity: leaving.value ? 0.35 : 1
   }));
   const danger = useAnimatedStyle(() => ({ opacity: armed.value ? 1 : 0 }));
+  const glow = useAnimatedStyle(() => ({ opacity: held.value ? 1 : 0 }));
 
-  return { pan, moving, danger };
+  return { pan, moving, danger, glow };
 }

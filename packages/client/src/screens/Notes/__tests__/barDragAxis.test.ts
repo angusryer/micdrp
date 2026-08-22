@@ -8,7 +8,8 @@ import {
   AXIS_MOVE,
   AXIS_NONE,
   chooseAxis,
-  shouldDiscard
+  shouldDiscard,
+  snapToStep
 } from '../barDragAxis';
 
 const FLICK = 900;
@@ -64,5 +65,32 @@ describe('whether releasing takes the line away', () => {
   it('ignores downward speed entirely', () => {
     // Flicking down is not a way to delete something.
     expect(shouldDiscard(AXIS_AWAY, 0, 5000, FLICK)).toBe(false);
+  });
+});
+
+describe('a dragged line is drawn where it will land (INV-NOTES-047)', () => {
+  const ORIGIN = 20;
+  const STEP = 12;
+
+  it('lands on the nearest step, in either direction', () => {
+    expect(snapToStep(ORIGIN, ORIGIN, STEP)).toBe(ORIGIN);
+    expect(snapToStep(ORIGIN + 5, ORIGIN, STEP)).toBe(ORIGIN);
+    expect(snapToStep(ORIGIN + 7, ORIGIN, STEP)).toBe(ORIGIN + STEP);
+    expect(snapToStep(ORIGIN + 25, ORIGIN, STEP)).toBe(ORIGIN + 2 * STEP);
+  });
+
+  it('snaps left of the origin too, for a pickup before the first bar', () => {
+    expect(snapToStep(ORIGIN - 7, ORIGIN, STEP)).toBe(ORIGIN - STEP);
+    expect(snapToStep(ORIGIN - 5, ORIGIN, STEP)).toBe(ORIGIN);
+  });
+
+  it('passes through when there is no grid to snap to', () => {
+    expect(snapToStep(123.4, ORIGIN, 0)).toBe(123.4);
+    expect(snapToStep(123.4, ORIGIN, -5)).toBe(123.4);
+  });
+
+  it('is idempotent — a snapped position is already on a step', () => {
+    const once = snapToStep(ORIGIN + 31, ORIGIN, STEP);
+    expect(snapToStep(once, ORIGIN, STEP)).toBe(once);
   });
 });

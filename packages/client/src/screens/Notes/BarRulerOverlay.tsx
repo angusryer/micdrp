@@ -66,6 +66,8 @@ export function BarRulerOverlay({
   return (
     <BarRuler
       handles={barHandles(bars.layout, geometry)}
+      originX={geometry.originX}
+      stepWidth={geometry.stepWidth}
       width={width}
       height={height}
       stepAtX={toStep}

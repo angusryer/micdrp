@@ -32,6 +32,11 @@ export interface BarLineHandleProps {
   color: string;
   /** Colour a line takes on once releasing it would discard it. */
   dangerColor: string;
+  /** Colour of the halo under a line while it is held. */
+  glowColor: string;
+  /** Step zero and step size, in the graph's own coordinates. */
+  originX: number;
+  stepWidth: number;
   /** Live position, for the readout that follows the finger. */
   onDrag: (lineIndex: number, x: number, y: number, axis: number, armed: number) => void;
   /** Released sideways: put the line at the step under the finger. */
@@ -45,14 +50,20 @@ export function BarLineHandle({
   height,
   color,
   dangerColor,
+  glowColor,
+  originX,
+  stepWidth,
   onDrag,
   onDrop,
   onRemove
 }: BarLineHandleProps): React.JSX.Element {
   const { lineIndex, x } = handle;
 
-  const { pan, moving, danger } = useBarLineDrag({
+  const { pan, moving, danger, glow } = useBarLineDrag({
     lineIndex,
+    handleX: x,
+    originX,
+    stepWidth,
     throwDistance: height + GRAB_WIDTH,
     onDrag,
     onDrop,
@@ -65,6 +76,12 @@ export function BarLineHandle({
         style={[styles.grab, { left: x - GRAB_WIDTH / 2, height }, moving]}
         testID={`bar-line-${lineIndex}`}
       >
+        {/* A halo under the line the moment it is picked up, so the hold
+            that earned it is felt as well as waited out. */}
+        <Animated.View
+          style={[styles.glow, { backgroundColor: glowColor }, glow]}
+          pointerEvents="none"
+        />
         <View style={[styles.line, { backgroundColor: color }]} />
         {/* Says the line is going before the finger lifts, so the throw can
             be taken back by bringing it down again (INT-NOTES-014). */}
@@ -89,6 +106,14 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   line: { width: 2, height: '100%', opacity: 0.9 },
+  glow: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 12,
+    borderRadius: 6,
+    opacity: 0.28
+  },
   danger: {
     position: 'absolute',
     top: 0,

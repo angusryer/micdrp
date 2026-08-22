@@ -29,6 +29,9 @@ export interface BarRulerProps {
   stepAtX: (x: number) => number;
   /** What the bars either side would read as, were the line dropped here. */
   previewAt: (lineIndex: number, step: number) => string;
+  /** Step zero and step size, in the graph's own coordinates. */
+  originX: number;
+  stepWidth: number;
   onMove: (lineIndex: number, step: number) => void;
   onSplit: (step: number) => void;
   onMerge: (lineIndex: number) => void;
@@ -44,6 +47,8 @@ export function BarRuler({
   height,
   stepAtX,
   previewAt,
+  originX,
+  stepWidth,
   onMove,
   onSplit,
   onMerge
@@ -119,6 +124,9 @@ export function BarRuler({
           height={height}
           color={colors.primary700}
           dangerColor={colors.error}
+          glowColor={colors.primary500}
+          originX={originX}
+          stepWidth={stepWidth}
           onDrag={showDrag}
           onDrop={endDrag}
           onRemove={removeLine}
