@@ -132,7 +132,8 @@
       "audition": "Hear",
       "remove": "Remove",
       "done": "Done",
-      "hear": "Hear"
+      "hear": "Hear",
+      "reset": "Reset"
     },
     "barMoveHint": "drag to move · lift it away to remove",
     "barRemoveHint": "release to remove this line",

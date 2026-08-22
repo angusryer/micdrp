@@ -132,3 +132,20 @@ invariants:
       position remains the pitch and the label remains the name, since
       red against green is the commonest way for colour to fail a
       reader.
+
+  - id: INV-NOTES-055
+    description: Anything moved can be put back on its own
+    severity: major
+    check: >
+      A note of a chord can be returned to where the chord itself would
+      have it, and a corrected sung note to the pitch that was heard,
+      each without disturbing anything else that was moved. The offer
+      appears only where there is something to undo. Verified by
+      asserting a reset restores the chord it came from, leaves other
+      moved notes where they were, and brings back a silenced note.
+
+      Dragging notes about is how a chord is built here, which means
+      most of what is tried is wrong. Being able to step back one note
+      at a time is what makes trying cheap; without it the only way out
+      of a wrong move is to remember where the note started and drag it
+      back, which is a worse tool than the mistake.

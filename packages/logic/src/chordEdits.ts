@@ -16,6 +16,7 @@ import { identifyChord } from './identifyChord';
 import type { KeyEstimate } from './key';
 import {
   moveTone as moveVoicedTone,
+  resetTone as resetVoicedTone,
   rootMidiAtOrAbove,
   voicedTones
 } from './voicing';
@@ -152,6 +153,22 @@ export function moveChordTone(
 ): ChordSlot {
   const moved = moveVoicedTone(slot.voicing, slot.quality, toneIndex, semitones);
   return relabelFromNotes({ ...slot, voicing: moved, isEdited: true }, key, floorMidi);
+}
+
+/**
+ * Put one of a chord's notes back where the chord would have it.
+ *
+ * The name follows, since the notes have changed and the name is read from
+ * them — resetting the note that made a C into a Cm makes it a C again.
+ */
+export function resetChordTone(
+  slot: ChordSlot,
+  key: KeyEstimate,
+  toneIndex: number,
+  floorMidi: number
+): ChordSlot {
+  const voicing = resetVoicedTone(slot.voicing, slot.quality, toneIndex);
+  return relabelFromNotes({ ...slot, voicing, isEdited: true }, key, floorMidi);
 }
 
 /**

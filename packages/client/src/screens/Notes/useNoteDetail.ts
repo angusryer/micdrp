@@ -75,6 +75,28 @@ export function useNoteDetail(id: string) {
     [heard, melody, interpretation]
   );
 
+  /** Put one note back to the pitch the detector actually heard. */
+  const resetNote = useCallback(
+    (index: number) => {
+      const original = heard[index];
+      if (!original) {
+        return;
+      }
+      interpretation.updateNotes(
+        interpretation.savedNoteEdits.filter(
+          (edit) => edit.atMs !== original.startMs
+        )
+      );
+    },
+    [heard, interpretation]
+  );
+
+  /** True where this note is not the pitch that was heard. */
+  const isCorrected = useCallback(
+    (index: number) => heard[index]?.midi !== melody[index]?.midi,
+    [heard, melody]
+  );
+
   // Fit the metrical grid here rather than reading a stored one. The melody is
   // persisted, so this costs nothing and needs no migration — and it means
   // notes captured before the tempo estimator was fixed are re-read correctly
@@ -181,6 +203,8 @@ export function useNoteDetail(id: string) {
     resolveAudio,
     midiUri,
     correctNote,
+    resetNote,
+    isCorrected,
     selection,
     setSelection,
     ...playback

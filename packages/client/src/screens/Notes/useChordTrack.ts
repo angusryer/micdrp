@@ -16,7 +16,9 @@ import {
   cycleQuality,
   detectKey,
   harmonizeToGrid,
+  relabelFromNotes,
   replayEdits,
+  resetChordTone,
   revertSlot,
   transposeDiatonic,
   isAltered,
@@ -45,6 +47,8 @@ export interface ChordTrack {
   moveTone: (index: number, tone: number, semitones: number) => void;
   /** Silence one note of one chord, or bring it back. */
   toggleTone: (index: number, tone: number) => void;
+  /** Put one note of one chord back where the chord itself would have it. */
+  resetTone: (index: number, tone: number) => void;
   /**
    * The root of each chord on its own, so it can be mixed as a bass under the
    * rest of the harmony rather than as another note inside it (INV-NOTES-040).
@@ -103,9 +107,17 @@ export function useChordTrack(
   // Inference first, then a person's decisions on top of it — which is what
   // makes what we store differences rather than a copy (INV-NOTES-022). A
   // slot nobody overrode follows the analysis; a slot someone chose does not.
+  // Relabelled from the notes after replaying, not just when the edit was
+  // made. replayEdits names a slot from its root and quality — the spine —
+  // so without this a moved note kept sounding but the name reverted the
+  // instant the edit round-tripped through storage (INV-NOTES-036).
   const restored = useMemo(
-    () => (savedEdits?.length ? replayEdits(inferred, savedEdits, key) : inferred),
-    [inferred, savedEdits, key]
+    () =>
+      (savedEdits?.length
+        ? replayEdits(inferred, savedEdits, key)
+        : inferred
+      ).map((slot) => relabelFromNotes(slot, key, floorMidi)),
+    [inferred, savedEdits, key, floorMidi]
   );
   const [slots, setSlots] = useState<ChordSlot[]>(restored);
 
@@ -168,6 +180,11 @@ export function useChordTrack(
         apply(index, (slot) =>
           moveChordTone(slot, key, tone, semitones, floorMidi)
         ),
+      [apply, key, floorMidi]
+    ),
+    resetTone: useCallback(
+      (index, tone) =>
+        apply(index, (slot) => resetChordTone(slot, key, tone, floorMidi)),
       [apply, key, floorMidi]
     ),
     toggleTone: useCallback(

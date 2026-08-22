@@ -2,7 +2,16 @@
  * The notes are stable things you push around; the name follows them
  * (INV-NOTES-036, INV-NOTES-052).
  */
-import { moveChordTone, voiceChord, type ChordSlot } from '../harmony';
+import {
+  collectEdits,
+  moveChordTone,
+  relabelFromNotes,
+  replayEdits,
+  resetChordTone,
+  toggleMute,
+  voiceChord,
+  type ChordSlot
+} from '../index';
 import { identifyChord } from '../identifyChord';
 
 const KEY = { tonic: 0, tonicName: 'C', mode: 'major' as const, confidence: 1 };
@@ -81,5 +90,48 @@ describe('the notes stay where they were put', () => {
     const back = moveChordTone(there, KEY, 1, 1, FLOOR);
     expect(sounding(back)).toEqual(sounding(slot()));
     expect(back.label).toBe('C');
+  });
+});
+
+describe('the name survives being stored and replayed', () => {
+  it('does not revert to the spine when an edit round-trips', () => {
+    // The bug this pins: replayEdits names a slot from its root and quality,
+    // so a moved note kept sounding while the name snapped back to C.
+    const moved = moveChordTone(slot(), KEY, 1, -1, FLOOR);
+    expect(moved.label).toBe('Cm');
+
+    const edits = collectEdits([moved]);
+    const replayed = replayEdits([slot()], edits, KEY).map((s) =>
+      relabelFromNotes(s, KEY, FLOOR)
+    );
+    expect(replayed[0].label).toBe('Cm');
+    expect(sounding(replayed[0])).toEqual(sounding(moved));
+  });
+});
+
+describe('putting one note back', () => {
+  it('restores the chord it came from', () => {
+    const moved = moveChordTone(slot(), KEY, 1, -1, FLOOR);
+    const back = resetChordTone(moved, KEY, 1, FLOOR);
+    expect(back.label).toBe('C');
+    expect(sounding(back)).toEqual(sounding(slot()));
+  });
+
+  it('leaves the other notes where they were put', () => {
+    // Move two, reset one.
+    const one = moveChordTone(slot(), KEY, 1, -1, FLOOR);
+    const two = moveChordTone(one, KEY, 2, -1, FLOOR);
+    const back = resetChordTone(two, KEY, 1, FLOOR);
+    expect(back.voicing?.offsets?.[1]).toBe(0);
+    expect(back.voicing?.offsets?.[2]).toBe(-1);
+  });
+
+  it('brings back a silenced note too', () => {
+    const silenced = {
+      ...slot(),
+      voicing: toggleMute(undefined, 'maj', 2)
+    };
+    const back = resetChordTone(silenced, KEY, 2, FLOOR);
+    expect(sounding(back)).toEqual(sounding(slot()));
   });
 });

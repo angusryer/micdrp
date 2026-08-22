@@ -12,6 +12,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { isAltered } from 'logic';
+
 import { chordRoleAt } from '../../components/chordRoles';
 import type { Selection } from '../../components/graphSelection';
 import { useTheme } from '../../theme';
@@ -53,6 +55,13 @@ export function SelectionBar({
       label: t('notes.action.audition'),
       run: () => detail.auditionChord(selection.slot)
     });
+    // Offered only where there is something to undo.
+    if (isAltered(slot?.voicing)) {
+      actions.push({
+        label: t('notes.action.reset'),
+        run: () => detail.chords.resetTone(selection.slot, selection.tone)
+      });
+    }
   } else if (selection.kind === 'melodyNote') {
     const note = detail.melody[selection.index];
     title = `${t('notes.sungNote')} · ${note ? midiToLabel(note.midi) : ''}`;
@@ -60,6 +69,12 @@ export function SelectionBar({
       label: t('notes.action.hear'),
       run: () => note && detail.playNote(note.midi)
     });
+    if (detail.isCorrected(selection.index)) {
+      actions.push({
+        label: t('notes.action.reset'),
+        run: () => detail.resetNote(selection.index)
+      });
+    }
   } else {
     title = t('notes.barLine');
     actions.push({

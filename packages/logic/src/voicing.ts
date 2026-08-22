@@ -135,6 +135,26 @@ export function clearVoicing(): ChordVoicing {
 }
 
 /**
+ * Put one note back where the chord itself would have it, leaving the others
+ * as they were. Both what was done to it — moved, silenced — is undone.
+ */
+export function resetTone(
+  voicing: ChordVoicing | undefined,
+  quality: ChordQuality,
+  index: number
+): ChordVoicing {
+  const count = toneCount(quality);
+  if (!voicing || !Number.isInteger(index) || index < 0 || index >= count) {
+    return voicing ?? EMPTY;
+  }
+  const offsets = padded(voicing.offsets, count, 0);
+  const muted = padded(voicing.muted, count, false);
+  offsets[index] = 0;
+  muted[index] = false;
+  return { offsets, muted };
+}
+
+/**
  * The notes of a chord in a given register, each carrying what was done to
  * it. Silenced notes are included and flagged: the graph draws them so they
  * can be brought back, and playback filters them out.
