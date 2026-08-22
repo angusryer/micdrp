@@ -21,6 +21,7 @@ import {
 import {
   resolveScale,
   timeBounds,
+  xForMs,
   type ScaleRequest,
   type TimeAxis
 } from './melodyScale';
@@ -33,6 +34,7 @@ export {
   clampBeatWidth,
   DEFAULT_BEAT_WIDTH,
   MIN_BEAT_WIDTH,
+  xForMs,
   type TimeAxis
 } from './melodyScale';
 
@@ -112,9 +114,10 @@ export function layoutMelody(
   const { pxPerMs, contentWidth } = resolveScale(options, span, innerW, pad);
 
   const pitchAxis: PitchAxis = { midiLow, midiHigh, pad, innerH, lane };
+  const timeAxis: TimeAxis = { t0, span, pad, innerW, pxPerMs };
 
   const rects: NoteRect[] = notes.map((n) => {
-    const x = pad + (n.startMs - t0) * pxPerMs;
+    const x = xForMs(timeAxis, n.startMs);
     const width = Math.max(2, (n.endMs - n.startMs) * pxPerMs - 1);
     const cy = yForMidi(pitchAxis, n.midi);
     return { x, y: cy - barH / 2, width, height: barH, cy, midi: n.midi };
@@ -130,7 +133,7 @@ export function layoutMelody(
     midiLow,
     midiHigh,
     gridLines,
-    timeAxis: { t0, span, pad, innerW, pxPerMs },
+    timeAxis,
     pitchAxis,
     contentWidth
   };

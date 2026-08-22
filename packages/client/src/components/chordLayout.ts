@@ -22,6 +22,7 @@ import {
 } from 'logic';
 
 import type { PitchAxis, TimeAxis } from './melodyLayout';
+import { xForMs } from './melodyScale';
 import { yForMidi } from './melodyPitch';
 
 /** A chord placed in time, as the graph needs it. */
@@ -90,12 +91,12 @@ export function layoutChordTones(
   pitchAxis: PitchAxis,
   floorMidi: number
 ): ChordToneRect[] {
-  const { t0, pad, pxPerMs } = timeAxis;
+  const { pxPerMs } = timeAxis;
   const height = Math.max(3, pitchAxis.lane * 0.7);
   const rects: ChordToneRect[] = [];
 
   slots.forEach((slot, slotIndex) => {
-    const x = pad + (slot.startMs - t0) * pxPerMs;
+    const x = xForMs(timeAxis, slot.startMs);
     // A hair short of the slot end, so neighbouring chords read as separate
     // blocks rather than one unbroken run.
     const width = Math.max(2, (slot.endMs - slot.startMs) * pxPerMs - 2);

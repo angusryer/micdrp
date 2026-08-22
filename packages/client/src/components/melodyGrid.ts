@@ -9,6 +9,8 @@
  * under them (INV-NOTES-034).
  */
 
+import { xForMs } from './melodyScale';
+
 /**
  * The metrical frame to draw behind the notes, from `logic`'s `fitGrid`.
  *
@@ -81,7 +83,8 @@ export function layoutGridLines(
   }
   const t1 = t0 + span;
   const beatsAreLegible = beatMs * pxPerMs >= MIN_LEGIBLE_BEAT_PX;
-  const xOf = (timeMs: number) => pad + (timeMs - t0) * pxPerMs;
+  const xOf = (timeMs: number) =>
+    xForMs({ t0, span, pad, innerW: 0, pxPerMs }, timeMs);
 
   // An arrangement someone has made replaces the even spacing entirely: its
   // bars differ from one another, which is the whole point of arranging them.
