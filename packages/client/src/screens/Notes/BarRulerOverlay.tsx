@@ -19,6 +19,11 @@ export interface BarRulerOverlayProps {
   grid: MelodyGrid;
   width: number;
   height: number;
+  /**
+   * The scale the melody underneath was drawn at. It has to be the same one,
+   * or the handles sit beside the lines they move (INV-NOTES-034).
+   */
+  beatWidth?: number;
 }
 
 export function BarRulerOverlay({
@@ -26,22 +31,23 @@ export function BarRulerOverlay({
   notes,
   grid,
   width,
-  height
+  height,
+  beatWidth
 }: BarRulerOverlayProps): React.JSX.Element | null {
   const geometry = useMemo(() => {
-    const { timeAxis } = layoutMelody(notes, { width, height, grid });
+    const { timeAxis } = layoutMelody(notes, { width, height, grid, beatWidth });
     const beatMs = grid.bpm > 0 ? 60000 / grid.bpm : 0;
     const stepsPerBeat = grid.stepsPerBeat ?? 4;
     if (!(beatMs > 0) || !(stepsPerBeat > 0) || !(timeAxis.span > 0)) {
       return null;
     }
-    const stepMs = beatMs / stepsPerBeat;
-    const pxPerMs = timeAxis.innerW / timeAxis.span;
+    // pxPerMs comes from the layout rather than being derived again here: two
+    // converters disagree the moment one gains a scale the other lacks.
     return {
-      originX: timeAxis.pad + (grid.offsetMs - timeAxis.t0) * pxPerMs,
-      stepWidth: stepMs * pxPerMs
+      originX: timeAxis.pad + (grid.offsetMs - timeAxis.t0) * timeAxis.pxPerMs,
+      stepWidth: (beatMs / stepsPerBeat) * timeAxis.pxPerMs
     };
-  }, [notes, width, height, grid]);
+  }, [notes, width, height, grid, beatWidth]);
 
   const toStep = useCallback(
     (x: number) => (geometry ? stepAtX(x, geometry) : 0),

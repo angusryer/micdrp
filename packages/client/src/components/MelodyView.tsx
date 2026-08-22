@@ -31,6 +31,13 @@ export interface MelodyViewProps {
    * something you can read rhythm off.
    */
   grid?: MelodyGrid;
+  /**
+   * Pixels per beat. Given, a beat is that wide wherever it falls and the
+   * drawing runs past `width` for a caller to scroll (INV-NOTES-032).
+   * Omitted, the whole take is fitted to `width`, which is what a thumbnail
+   * wants (INV-NOTES-035).
+   */
+  beatWidth?: number;
 }
 
 export function MelodyView({
@@ -39,15 +46,18 @@ export function MelodyView({
   height,
   showContour = true,
   color,
-  grid
+  grid,
+  beatWidth
 }: MelodyViewProps): React.JSX.Element {
   const { colors } = useTheme();
   const barColor = color ?? colors.primary500;
 
   const layout = useMemo(
-    () => layoutMelody(notes, { width, height, grid }),
-    [notes, width, height, grid]
+    () => layoutMelody(notes, { width, height, grid, beatWidth }),
+    [notes, width, height, grid, beatWidth]
   );
+  // What was actually drawn — `width` when fitted, wider when it scrolls.
+  const drawnWidth = layout.contentWidth;
 
   // Contour: a polyline through each bar's left-edge centre, in time order.
   const contour = useMemo(() => {
@@ -72,8 +82,8 @@ export function MelodyView({
   const radius = Math.min(4, height / 16);
 
   return (
-    <View style={[styles.wrap, { width, height }]}>
-      <Canvas style={{ width, height }}>
+    <View style={[styles.wrap, { width: drawnWidth, height }]}>
+      <Canvas style={{ width: drawnWidth, height }}>
         {/* Rules first, so the melody always reads on top of its own grid. */}
         {layout.gridLines.map((g, i) => (
           <Line
