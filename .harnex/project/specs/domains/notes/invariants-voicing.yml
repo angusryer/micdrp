@@ -80,3 +80,26 @@ invariants:
       rather than as another note in it, and it is the one voice a phone
       speaker struggles with most. Giving it its own level is what lets
       it be turned up on headphones and down when it is only rattling.
+
+  - id: INV-NOTES-048
+    description: The chords sit where the downbeats were placed
+    severity: critical
+    check: >
+      Every chord slot begins at a downbeat and runs to the next one,
+      whatever their number or spacing, and the last runs to the end of
+      what was sung. Moving a downbeat moves the chord that starts
+      there; adding one opens a new chord; taking one away gives its
+      span to the chord before it. Verified by asserting a progression
+      built from a set of downbeats has one slot per downbeat, spanning
+      exactly the gaps between them.
+
+      A downbeat is where a new chord may start — that is what the line
+      means, and the harmony has to be the same object rather than a
+      second structure drawn on the same timeline. Until now the slots
+      came from an even division of the detected grid and never saw the
+      arrangement at all, so dragging a line moved the line and nothing
+      else, and the two drifted apart in front of the singer.
+
+      The number of chords is therefore the singer's, not the metre's.
+      Two chords inside what would be one bar is two downbeats close
+      together, and needs no bar to be redefined to say so.

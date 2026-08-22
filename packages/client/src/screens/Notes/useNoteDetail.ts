@@ -96,10 +96,15 @@ export function useNoteDetail(id: string) {
   // graph, by exactly as much.
   const [chordsLifted, setChordsLifted] = useState(true);
   const floorMidi = chordsLifted ? SPEAKER_FLOOR_MIDI : HEADPHONE_FLOOR_MIDI;
+  // The chords are the downbeats, seen a second way: each one opens a chord
+  // that runs to the next (INV-NOTES-048). Handing the arrangement in is what
+  // makes dragging a line move the harmony with it, rather than leaving two
+  // structures drawn on one timeline to drift apart.
   const chords = useChordTrack(melody, grid, {
     savedEdits: interpretation.savedEdits,
     onEditsChanged: interpretation.update,
-    floorMidi
+    floorMidi,
+    downbeatSteps: bars.layout.lines
   });
   // Every pitch the chords occupy, so the graph's vertical window takes them
   // in rather than letting them fall off the bottom of it.

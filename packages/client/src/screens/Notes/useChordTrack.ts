@@ -75,6 +75,12 @@ export interface ChordTrackOptions {
    * towards the melody, which is what makes it audible on a phone speaker.
    */
   floorMidi?: number;
+  /**
+   * Where the downbeats are, as grid steps. Each one opens a chord and the
+   * chord runs to the next, so the number of chords and their lengths are
+   * the singer's rather than the metre's (INV-NOTES-048).
+   */
+  downbeatSteps?: readonly number[];
 }
 
 export function useChordTrack(
@@ -82,11 +88,16 @@ export function useChordTrack(
   grid: MusicalGrid,
   options: ChordTrackOptions = {}
 ): ChordTrack {
-  const { savedEdits, onEditsChanged, floorMidi = VOICING_BOTTOM_MIDI } = options;
+  const {
+    savedEdits,
+    onEditsChanged,
+    floorMidi = VOICING_BOTTOM_MIDI,
+    downbeatSteps
+  } = options;
   const key = useMemo(() => detectKey(melody), [melody]);
   const inferred = useMemo(
-    () => harmonizeToGrid(melody, grid, { key }),
-    [melody, grid, key]
+    () => harmonizeToGrid(melody, grid, { key, downbeatSteps }),
+    [melody, grid, key, downbeatSteps]
   );
 
   // Inference first, then a person's decisions on top of it — which is what

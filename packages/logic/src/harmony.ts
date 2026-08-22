@@ -25,11 +25,11 @@
 
 import {
   absoluteLabel,
-  impliedHarmony,
   romanLabel,
   type ChordQuality,
   type Melody
 } from './analysis';
+import { chordForSpan } from './chordMatch';
 import { CHORD_TONES } from './chordTones';
 import {
   rootMidiAtOrAbove,
@@ -101,6 +101,13 @@ export interface HarmonizeOptions {
   vocabulary?: 'triads' | 'sevenths';
   /** Precomputed key; detected from the melody when omitted. */
   key?: KeyEstimate;
+  /**
+   * Where the slots actually start, as grid steps — the downbeats a person
+   * placed. Given, these are the slots: arbitrary in number and in length.
+   * Omitted, the grid's own even division is used, which is the opening
+   * proposal rather than a claim about the music.
+   */
+  downbeatSteps?: readonly number[];
 }
 
 function normalizePc(pc: number): number {
@@ -139,10 +146,6 @@ export function harmonizeToGrid(
   if (notes.length === 0 || grid.bpm <= 0) {
     return [];
   }
-  const chordsPerBar = Math.max(1, Math.round(options.chordsPerBar ?? 1));
-  const beatMs = 60000 / grid.bpm;
-  const barMs = beatMs * grid.beatsPerBar;
-  const slotMs = barMs / chordsPerBar;
   const key = options.key ?? detectKey(notes);
 
   let endOfMelody = 0;
@@ -156,48 +159,31 @@ export function harmonizeToGrid(
     }
   }
 
-  // Walk the grid's own bar lines rather than the melody's start, so slots line
-  // up with the bar lines already drawn behind the notes.
-  const firstSlot = Math.floor((startOfMelody - grid.offsetMs) / slotMs);
-  const lastSlot = Math.ceil((endOfMelody - grid.offsetMs) / slotMs) - 1;
-
-  const inferred = impliedHarmony(notes, {
-    windowMs: slotMs,
-    hopMs: slotMs,
-    vocabulary: options.vocabulary ?? 'triads',
-    key
-  });
+  const spans = options.downbeatSteps?.length
+    ? spansFromDownbeats(options.downbeatSteps, grid, endOfMelody)
+    : evenSpans(grid, options.chordsPerBar ?? 1, startOfMelody, endOfMelody);
 
   const slots: ChordSlot[] = [];
-  for (let index = firstSlot; index <= lastSlot; index++) {
-    const startMs = grid.offsetMs + index * slotMs;
-    const endMs = startMs + slotMs;
-    // The window matcher runs from zero, so pick the estimate that overlaps
-    // this slot most rather than assuming the two are index-aligned.
-    let best: (typeof inferred)[number] | null = null;
-    let bestOverlap = 0;
-    for (const estimate of inferred) {
-      const overlap =
-        Math.min(estimate.endMs, endMs) - Math.max(estimate.startMs, startMs);
-      if (overlap > bestOverlap) {
-        bestOverlap = overlap;
-        best = estimate;
-      }
-    }
-    if (!best) {
+  for (const span of spans) {
+    // Matched over exactly the span it covers, rather than against a sweep of
+    // fixed windows that a person's own downbeats would cut across.
+    const match = chordForSpan(notes, span.startMs, span.endMs, {
+      vocabulary: options.vocabulary ?? 'triads'
+    });
+    if (!match) {
       continue;
     }
     slots.push(
       relabel(
         {
-          bar: Math.floor(index / chordsPerBar) + 1,
-          startMs: Math.round(startMs),
-          endMs: Math.round(endMs),
-          rootPc: best.rootPc,
-          quality: best.quality,
+          bar: slots.length + 1,
+          startMs: Math.round(span.startMs),
+          endMs: Math.round(span.endMs),
+          rootPc: match.rootPc,
+          quality: match.quality,
           label: '',
           roman: '',
-          confidence: best.confidence,
+          confidence: match.confidence,
           isEdited: false
         },
         key
@@ -205,6 +191,66 @@ export function harmonizeToGrid(
     );
   }
   return slots;
+}
+
+/** One chord slot's span, in ms. */
+interface Span {
+  startMs: number;
+  endMs: number;
+}
+
+/**
+ * Slots from the downbeats a person placed: each one runs to the next, and
+ * the last runs to the end of what was sung.
+ *
+ * This is the arrangement being the thing rather than a decoration over an
+ * even division — a downbeat is where a new chord may start, so the number
+ * of them and the distance between them are both the singer's to choose
+ * (INV-NOTES-048).
+ */
+function spansFromDownbeats(
+  steps: readonly number[],
+  grid: MusicalGrid,
+  endOfMelody: number
+): Span[] {
+  const beatMs = 60000 / grid.bpm;
+  const stepsPerBeat = grid.stepsPerBeat > 0 ? grid.stepsPerBeat : 4;
+  const stepMs = beatMs / stepsPerBeat;
+  const starts = Array.from(new Set(steps))
+    .sort((a, b) => a - b)
+    .map((step) => grid.offsetMs + step * stepMs);
+
+  const spans: Span[] = [];
+  for (let i = 0; i < starts.length; i++) {
+    const startMs = starts[i];
+    const endMs = i + 1 < starts.length ? starts[i + 1] : endOfMelody;
+    // A downbeat past the end of the take opens nothing.
+    if (endMs > startMs && startMs < endOfMelody) {
+      spans.push({ startMs, endMs: Math.min(endMs, endOfMelody) });
+    }
+  }
+  return spans;
+}
+
+/** The even division a grid proposes, when nobody has placed anything. */
+function evenSpans(
+  grid: MusicalGrid,
+  chordsPerBar: number,
+  startOfMelody: number,
+  endOfMelody: number
+): Span[] {
+  const beatMs = 60000 / grid.bpm;
+  const perBar = Math.max(1, Math.round(chordsPerBar));
+  const slotMs = (beatMs * grid.beatsPerBar) / perBar;
+  const first = Math.floor((startOfMelody - grid.offsetMs) / slotMs);
+  const last = Math.ceil((endOfMelody - grid.offsetMs) / slotMs) - 1;
+
+  const spans: Span[] = [];
+  for (let i = first; i <= last; i++) {
+    const startMs = grid.offsetMs + i * slotMs;
+    spans.push({ startMs, endMs: startMs + slotMs });
+  }
+  return spans;
 }
 
 // ── Editing ────────────────────────────────────────────────────────────────

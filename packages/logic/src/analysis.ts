@@ -20,6 +20,12 @@
  *
  * Pure and dependency-free beyond sibling `logic` primitives.
  */
+import {
+  chordForSpan,
+  SEVENTH_TEMPLATES,
+  templateWeightLookup,
+  TRIAD_TEMPLATES
+} from './chordMatch';
 import type { NoteEvent } from './segmentation';
 import { detectKey, type KeyEstimate } from './key';
 import { NOTE_NAMES } from './notes';
@@ -327,28 +333,6 @@ export type ChordQuality =
   | 'm7b5'
   | 'dim7';
 
-/** Weighted pitch-class templates (offset from root -> perceptual weight). */
-interface ChordTemplate {
-  quality: ChordQuality;
-  /** [offsetSemitones, weight] chord tones; root is weighted highest. */
-  tones: ReadonlyArray<readonly [number, number]>;
-}
-
-const TRIAD_TEMPLATES: readonly ChordTemplate[] = [
-  { quality: 'maj', tones: [[0, 3], [4, 2], [7, 2]] },
-  { quality: 'min', tones: [[0, 3], [3, 2], [7, 2]] },
-  { quality: 'dim', tones: [[0, 3], [3, 2], [6, 2]] },
-  { quality: 'aug', tones: [[0, 3], [4, 2], [8, 2]] }
-];
-
-const SEVENTH_TEMPLATES: readonly ChordTemplate[] = [
-  { quality: 'maj7', tones: [[0, 3], [4, 2], [7, 1.5], [11, 1.5]] },
-  { quality: 'dom7', tones: [[0, 3], [4, 2], [7, 1.5], [10, 1.5]] },
-  { quality: 'min7', tones: [[0, 3], [3, 2], [7, 1.5], [10, 1.5]] },
-  { quality: 'm7b5', tones: [[0, 3], [3, 2], [6, 1.5], [10, 1.5]] },
-  { quality: 'dim7', tones: [[0, 3], [3, 2], [6, 1.5], [9, 1.5]] }
-];
-
 const QUALITY_SUFFIX: Record<ChordQuality, string> = {
   maj: '',
   min: 'm',
@@ -418,25 +402,6 @@ export interface ImpliedHarmonyOptions {
 }
 
 /** Weight a chord tone carries when matching, by its template offset. */
-function templateWeightLookup(template: ChordTemplate): Map<number, number> {
-  const map = new Map<number, number>();
-  for (const [offset, weight] of template.tones) {
-    map.set(((offset % 12) + 12) % 12, weight);
-  }
-  return map;
-}
-
-/** Off-chord weight penalty — chords that leave a lot of sung weight unexplained lose. */
-const OFF_CHORD_PENALTY = 0.5;
-
-/**
- * Estimate the harmony a monophonic melody implies, window by window. A sung
- * line has no chords, but the pitch-classes it dwells on over a span imply one:
- * we build a duration-weighted pitch-class histogram per window and score it
- * against weighted chord templates at all 12 roots, picking the best fit. This
- * is the same family of template-matching as {@link detectKey}, scoped to a
- * window and a chord vocabulary.
- */
 export function impliedHarmony(
   notes: Melody,
   options: ImpliedHarmonyOptions = {}
@@ -453,6 +418,7 @@ export function impliedHarmony(
   const minConfidence = options.minConfidence ?? 0;
   const templates =
     vocabulary === 'sevenths' ? SEVENTH_TEMPLATES : TRIAD_TEMPLATES;
+  // Built once and reused across every window rather than per span.
   const lookups = templates.map(templateWeightLookup);
   const key = options.key ?? (keyRelative ? detectKey(notes) : undefined);
 
@@ -467,82 +433,19 @@ export function impliedHarmony(
 
   for (let winStart = 0; winStart < endOfMelody; winStart += hopMs) {
     const winEnd = winStart + windowMs;
-
-    // Duration-weighted pitch-class histogram for notes overlapping the window.
-    const pc = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    let weightTotal = 0;
-    for (const n of notes) {
-      const overlap = Math.min(n.endMs, winEnd) - Math.max(n.startMs, winStart);
-      if (overlap <= 0) {
-        continue;
-      }
-      const cls = ((Math.round(n.midi) % 12) + 12) % 12;
-      pc[cls] += overlap;
-      weightTotal += overlap;
-    }
-    if (weightTotal === 0) {
+    const match = chordForSpan(notes, winStart, winEnd, { templates, lookups });
+    if (!match || match.confidence < minConfidence) {
       continue;
     }
-    for (let i = 0; i < 12; i++) {
-      pc[i] /= weightTotal; // normalize so scores are window-size-invariant
-    }
-
-    let bestScore = -Infinity;
-    let secondScore = -Infinity;
-    let bestRoot = 0;
-    let bestQuality: ChordQuality = templates[0].quality;
-
-    for (let root = 0; root < 12; root++) {
-      for (let t = 0; t < templates.length; t++) {
-        const lookup = lookups[t];
-        let onChord = 0;
-        for (let i = 0; i < 12; i++) {
-          if (pc[i] === 0) {
-            continue;
-          }
-          const offset = ((i - root) % 12 + 12) % 12;
-          const w = lookup.get(offset);
-          if (w !== undefined) {
-            onChord += pc[i] * w;
-          }
-        }
-        // pc sums to 1; offChord weight = 1 - (weight on chord tones as plain mass).
-        let chordMass = 0;
-        for (const [offset] of templates[t].tones) {
-          chordMass += pc[((root + offset) % 12 + 12) % 12];
-        }
-        const score = onChord - OFF_CHORD_PENALTY * (1 - chordMass);
-
-        if (score > bestScore) {
-          secondScore = bestScore;
-          bestScore = score;
-          bestRoot = root;
-          bestQuality = templates[t].quality;
-        } else if (score > secondScore) {
-          secondScore = score;
-        }
-      }
-    }
-
-    let confidence = 0;
-    if (bestScore > 0 && secondScore > -Infinity) {
-      confidence = (bestScore - secondScore) / bestScore;
-      if (confidence < 0) confidence = 0;
-      else if (confidence > 1) confidence = 1;
-    }
-    if (confidence < minConfidence) {
-      continue;
-    }
-
     out.push({
       startMs: winStart,
       endMs: Math.min(winEnd, endOfMelody),
-      rootPc: bestRoot,
-      quality: bestQuality,
+      rootPc: match.rootPc,
+      quality: match.quality,
       label: keyRelative && key
-        ? romanLabel(bestRoot, bestQuality, key)
-        : absoluteLabel(bestRoot, bestQuality),
-      confidence
+        ? romanLabel(match.rootPc, match.quality, key)
+        : absoluteLabel(match.rootPc, match.quality),
+      confidence: match.confidence
     });
   }
 
