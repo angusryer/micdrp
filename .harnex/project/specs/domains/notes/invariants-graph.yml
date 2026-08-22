@@ -1,0 +1,66 @@
+# What the melody graph promises about its own axes. Split from invariants.yml
+# to stay inside the 150-line spec-file budget (Axiom 3).
+invariants:
+  - id: INV-NOTES-032
+    description: A beat is the same width wherever it falls
+    severity: critical
+    check: >
+      Two beats are the same distance apart everywhere in the graph at a
+      given zoom, whatever the take's length. A take wider than the
+      viewport extends past it and is reached by scrolling, rather than
+      being compressed to fit. Verified by asserting that the same
+      passage laid out inside two takes of different lengths occupies
+      the same width.
+
+      Fitting a whole take to the screen made a bar of a long idea
+      narrower than a bar of a short one. Nothing could be compared
+      between two takes, the same note changed size depending on what
+      else was sung, and a bar of a minute-long idea was too narrow to
+      put a finger on — which is what per-note editing needs.
+
+  - id: INV-NOTES-033
+    description: Zoom changes the scale, never the content
+    severity: major
+    check: >
+      Zooming changes how many pixels a beat occupies, within bounds,
+      and changes nothing else: every note, bar line and chord is still
+      present, still in the same musical position, and still in the same
+      order. The scale is clamped so a beat can never collapse to
+      nothing or grow past the point where a bar has left the screen
+      entirely. Verified by asserting the set of laid-out elements is
+      unchanged across zoom levels and only their coordinates move.
+
+      A zoom that dropped detail as it went would make the graph a
+      different picture at every scale, and the singer could not trust
+      that what they were editing was what they had sung.
+
+  - id: INV-NOTES-034
+    description: A finger lands where the graph says it is
+    severity: critical
+    check: >
+      Every gesture on the graph — moving a bar line, dragging a chord
+      note, scrubbing — resolves its position through the same axis that
+      drew what is under it, at the current zoom and scroll. Verified by
+      asserting that a gesture at a given x resolves to the time whose
+      element was drawn there, at more than one zoom and scroll offset.
+
+      Two pieces of arithmetic that both convert between time and pixels
+      will disagree the moment one of them gains a scale or an offset
+      the other does not. The graph already exports the axis it drew
+      with so hit-testing cannot drift from it; zoom and scroll make
+      that the only tolerable arrangement.
+
+  - id: INV-NOTES-035
+    description: A thumbnail still shows the whole idea at once
+    severity: major
+    check: >
+      Where the graph stands in for a note rather than being worked on —
+      a row in the list, a fragment on the dashboard — the whole take is
+      fitted to the width it has and nothing scrolls. Verified by
+      asserting a thumbnail's laid-out span equals its available width
+      whatever the take's length.
+
+      A list row is for recognising an idea, not reading it. Fixed beat
+      spacing there would show the first two seconds of everything, so
+      every row would look alike, which is the one thing a list must not
+      do.
