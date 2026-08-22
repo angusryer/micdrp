@@ -204,6 +204,63 @@ melody that was read wrong compounds the error instead of revealing it.
 
 ---
 
+### Hybrid analysis: local first, help for the hard parts
+
+Not committed to. Recorded because the reasoning is worth keeping.
+
+The maintainer's proposal, in their terms:
+
+> There will be segments of that analysis that are low confidence from my
+> standpoint — where the output of the algorithm doesn't match what my ear is
+> picking up. I think we'll hit consistent roadblocks because voice is hard to
+> analyse, because it can't really read intent. For those specific segments,
+> if we are able to put a boundary around those areas that are not confident,
+> we may be able to send those fragments out to a network analysis tool that
+> uses greater processing power off a server, or possibly an LLM. The user
+> sees one melody analysis with parts of it that are pending. If they want to
+> play it at that point, they get whatever has been analysed locally, and when
+> the more intensive analysis comes back it inserts into those places.
+
+**The architecture already fits.** A remote reading is structurally identical
+to a human edit: a claim about a span, anchored to a time. Interpretations are
+already stored that way, `replayEdits` already drops claims whose span has
+gone, and `isEdited` already marks what a person has taken ownership of. A
+result arriving late is another layer over inference, which is what this app
+already is. The one rule to add: **a remote result never overwrites something
+the human has touched.**
+
+**Three refinements worth arguing about before building it.**
+
+*Confidence boundaries are worth having on their own.* Knowing where the
+reading is unsure is useful without any round trip — the graph could say so,
+instead of presenting a uniformly confident melody that is wrong in three
+places. Confidence is already computed in several places (chord match, note
+clarity, key detection) and surfaced in none.
+
+*An LLM is the wrong tool for the signal-level question.* "What note is this
+fragment" is what CREPE, SPICE and basic-pitch exist for, and they run in
+milliseconds on a server GPU. Keep the LLM for the interpretive layer, where
+musical knowledge rather than signal analysis is the missing ingredient:
+whether an ambiguous fragment is a passing tone, whether a progression is
+heading somewhere.
+
+*The hard part is defining confidence, and the algorithm is the wrong judge of
+it.* The gap named above is between the algorithm's output and **an ear** —
+which is not the same as the algorithm's own uncertainty. Algorithms are
+routinely confident and wrong. So the first step is probably not the round
+trip but a way to **mark a region as wrong**: that is useful on its own as an
+edit, it produces ground truth about where detection actually fails, and it
+turns "improve the analysis" from a guess into something measurable. With a
+set of marked regions in hand, candidate algorithms can be tried against them
+offline — which may fix it locally and make the network dependency
+unnecessary.
+
+**What to weigh if it does go ahead.** Audio already leaves the device for
+storage, so a fragment leaving for analysis is not a new exposure to the
+backend — but a third-party API is a different posture from one's own server,
+and the dogfood loop's local-only transcription exists precisely because
+unreleased ideas in one's own voice are worth keeping close.
+
 ## 5. Standing constraints
 
 - **Never** put build secrets in `packages/client/.env*` — react-native-config
