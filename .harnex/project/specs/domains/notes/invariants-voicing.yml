@@ -1,0 +1,66 @@
+# A chord's individual notes: moving them, silencing them, and what that does
+# to the chord they belong to. Split for the 150-line spec-file budget.
+invariants:
+  - id: INV-NOTES-036
+    description: A chord keeps its name while its voicing changes
+    severity: critical
+    check: >
+      Moving or silencing one of a chord's notes leaves the slot's root
+      and quality alone, so its label and its roman numeral still read.
+      A slot whose notes no longer spell the chord it is named after is
+      marked as altered rather than renamed. Verified by asserting that
+      a slot's label, roman and root survive every voicing change, and
+      that a note moved off a chord tone sets the altered flag.
+
+      The root and quality are what the diatonic drag steps through and
+      what the roman numeral is read from. Renaming the chord every time
+      a note is nudged would rewrite the harmony underneath the person
+      experimenting with it, and the numeral would stop describing where
+      they are in the key.
+
+  - id: INV-NOTES-037
+    description: A silenced note is quiet, not gone
+    severity: major
+    check: >
+      A silenced note is absent from what sounds while remaining visible
+      and able to be brought back by the same gesture that silenced it.
+      Silencing every note of a slot leaves the slot present and empty
+      rather than deleting it. Verified by asserting a silenced note is
+      missing from the voiced output, still present in the slot, and
+      restored by silencing it again.
+
+      Leaving out the fifth is a voicing a piano player makes without
+      thinking, not a different chord. And an edit that cannot be undone
+      by the gesture that made it is a trap: the singer has to know they
+      can try something.
+
+  - id: INV-NOTES-038
+    description: Moving the chord carries its voicing along
+    severity: critical
+    check: >
+      Nudging a whole slot through the key, or stepping its shape, moves
+      every note with it and keeps the voicing: an individual note's
+      offset is held relative to its chord tone rather than as an
+      absolute pitch, and a silenced note stays silent. Verified by
+      asserting that a voiced-then-transposed slot and a
+      transposed-then-voiced slot sound the same notes.
+
+      An offset stored as an absolute pitch would be undone by the next
+      transpose, so the singer's own adjustment would quietly survive
+      until they moved the chord and then vanish.
+
+  - id: INV-NOTES-039
+    description: A voicing is kept the way every other edit is kept
+    severity: major
+    check: >
+      Offsets and silences travel through the same collect-and-replay
+      path as the rest of a chord edit, anchored to a moment rather than
+      to a slot number, and round-trip unchanged. A voicing whose moment
+      lands in no slot is dropped rather than applied to whatever now
+      occupies that position. Verified by round-tripping a voiced
+      progression and by replaying a voicing whose slot has gone.
+
+      Only differences from what was inferred are stored (INV-NOTES-022),
+      and a voicing is a difference like any other. Applying an orphaned
+      one to whichever chord happened to move into its place would put
+      notes the singer never chose into a chord they never edited.

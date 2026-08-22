@@ -30,21 +30,10 @@ import {
   type ChordQuality,
   type Melody
 } from './analysis';
+import { CHORD_TONES } from './chordTones';
+import { voicedTones, type ChordVoicing } from './voicing';
 import { detectKey, type KeyEstimate } from './key';
 import type { MusicalGrid } from './quantize';
-
-/** Semitone offsets from the root for each supported quality. */
-const CHORD_TONES: Record<ChordQuality, readonly number[]> = {
-  maj: [0, 4, 7],
-  min: [0, 3, 7],
-  dim: [0, 3, 6],
-  aug: [0, 4, 8],
-  maj7: [0, 4, 7, 11],
-  dom7: [0, 4, 7, 10],
-  min7: [0, 3, 7, 10],
-  m7b5: [0, 3, 6, 10],
-  dim7: [0, 3, 6, 9]
-};
 
 /**
  * The order a "change the shape" control steps through.
@@ -93,6 +82,12 @@ export interface ChordSlot {
   confidence: number;
   /** True once a person has changed this slot, so inference stops overwriting it. */
   isEdited: boolean;
+  /**
+   * How this slot's individual notes have been moved or silenced, if at all.
+   * The chord itself stays (rootPc, quality) — this is the layer over it, so
+   * the label and roman numeral survive every voicing change (INV-NOTES-036).
+   */
+  voicing?: ChordVoicing;
 }
 
 export interface HarmonizeOptions {
@@ -323,6 +318,12 @@ export interface VoicingOptions {
   bottomMidi?: number;
   /** 0 for root position, 1 for first inversion, and so on. */
   inversion?: number;
+  /**
+   * Per-note offsets and silences. Silenced notes are left out of what
+   * sounds while staying in the slot, so they can be brought back
+   * (INV-NOTES-037).
+   */
+  voicing?: ChordVoicing;
 }
 
 /**
@@ -338,18 +339,27 @@ export function voiceChord(
 ): number[] {
   const bottom = options.bottomMidi ?? 48;
   const inversion = Math.max(0, Math.round(options.inversion ?? 0));
-  const tones = CHORD_TONES[quality];
 
   // Absolute pitches in root position, starting at or above `bottom`.
   const root = normalizePc(rootPc);
   const rootMidi = bottom + normalizePc(root - normalizePc(bottom));
   const notes: number[] = [];
-  for (const offset of tones) {
-    notes.push(rootMidi + offset);
+  for (const tone of voicedTones(rootMidi, quality, options.voicing)) {
+    if (!tone.muted) {
+      notes.push(tone.midi);
+    }
+  }
+  if (notes.length === 0) {
+    // Every note silenced: the slot is still there, it just says nothing.
+    return notes;
   }
 
-  // Each inversion lifts the current lowest note by an octave.
-  for (let i = 0; i < inversion % tones.length; i++) {
+  // Sorted before inverting, because an offset can put a tone below the one
+  // under it and "lift the lowest" has to mean the lowest that is sounding.
+  notes.sort(function (a, b) {
+    return a - b;
+  });
+  for (let i = 0; i < inversion % notes.length; i++) {
     notes[i] += 12;
   }
   notes.sort(function (a, b) {
@@ -372,7 +382,10 @@ export function voiceProgression(
 ): ChordPlayback[] {
   return slots.map(function (slot) {
     return {
-      midi: voiceChord(slot.rootPc, slot.quality, options),
+      midi: voiceChord(slot.rootPc, slot.quality, {
+        ...options,
+        voicing: slot.voicing
+      }),
       startMs: slot.startMs,
       endMs: slot.endMs
     };

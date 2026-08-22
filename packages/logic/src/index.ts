@@ -13,5 +13,7 @@ export * from './analysis';
 export * from './quantize';
 export * from './bars';
 export * from './barEdits';
+export * from './chordTones';
 export * from './harmony';
 export * from './interpretation';
+export * from './voicing';

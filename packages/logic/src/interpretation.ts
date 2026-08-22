@@ -12,6 +12,7 @@
  */
 import { setChord, type ChordSlot } from './harmony';
 import type { KeyEstimate } from './key';
+import { isAltered, type ChordVoicing } from './voicing';
 
 /**
  * One chord a person chose, anchored to a moment rather than to a bar.
@@ -25,6 +26,12 @@ export interface ChordSlotEdit {
   atMs: number;
   rootPc: number;
   quality: ChordSlot['quality'];
+  /**
+   * How this chord's own notes were moved or silenced, when they were. A
+   * voicing is a difference like any other and is kept the same way
+   * (INV-NOTES-039).
+   */
+  voicing?: ChordVoicing;
 }
 
 /** Whether a time falls inside a slot. End-exclusive so slots cannot overlap. */
@@ -41,9 +48,20 @@ function covers(slot: ChordSlot, atMs: number): boolean {
 export function collectEdits(slots: readonly ChordSlot[]): ChordSlotEdit[] {
   const edits: ChordSlotEdit[] = [];
   for (const slot of slots) {
-    if (slot.isEdited) {
-      edits.push({ atMs: slot.startMs, rootPc: slot.rootPc, quality: slot.quality });
+    // A voicing counts as an edit on its own: someone can move a note of a
+    // chord they were otherwise happy with, and that must survive too.
+    if (!slot.isEdited && !isAltered(slot.voicing)) {
+      continue;
     }
+    const edit: ChordSlotEdit = {
+      atMs: slot.startMs,
+      rootPc: slot.rootPc,
+      quality: slot.quality
+    };
+    if (isAltered(slot.voicing)) {
+      edit.voicing = slot.voicing;
+    }
+    edits.push(edit);
   }
   return edits;
 }
@@ -67,7 +85,8 @@ export function replayEdits(
     if (index === -1) {
       continue;
     }
-    slots[index] = setChord(slots[index], key, edit.rootPc, edit.quality);
+    const placed = setChord(slots[index], key, edit.rootPc, edit.quality);
+    slots[index] = edit.voicing ? { ...placed, voicing: edit.voicing } : placed;
   }
   return slots;
 }
