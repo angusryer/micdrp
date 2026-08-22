@@ -47,15 +47,46 @@ chain up to the store call.
 ### iOS credentials: one key, not five
 
 iOS authenticates with an **App Store Connect API key**, which both signs and
-uploads. Supply it as either:
+uploads.
+
+**Already exported in `~/.zshrc` (lines 85-87).** Normally there is nothing to
+set up — but see the shell warning below, because that file is not always
+read.
+
+The key id and issuer id are **always required**. What varies is only how the
+private key itself is supplied:
 
 ```sh
-export ASC_API_KEY_PATH=/path/to/asc_key.json     # fastlane's JSON form
-# or the three parts
 export ASC_KEY_ID=XXXXXXXXXX
 export ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+
+# then EITHER a path to the .p8 on disk...
+export ASC_API_KEY_PATH=/path/to/AuthKey_XXXXXXXXXX.p8
+# ...OR its contents inline
 export ASC_KEY_CONTENT="$(cat AuthKey_XXXXXXXXXX.p8)"
 ```
+
+`ASC_API_KEY_PATH` is the **`.p8`**, not `asc_api_key.json`. `Fastfile`'s
+`asc_api_key` helper hands it to fastlane as `key_filepath`, which wants the
+raw key file. This is easy to get wrong because a JSON export of the same key
+exists and carries the ids inside it — but nothing here reads that JSON, so
+pointing this variable at it fails.
+
+It is **not** an either/or against the ids: both branches of the helper call
+`ENV.fetch("ASC_KEY_ID")` and `ENV.fetch("ASC_ISSUER_ID")`. Supplying only
+`ASC_API_KEY_PATH` dies with `KeyError: key not found: "ASC_KEY_ID"` — and it
+dies *after* preflight has already spent a full build, because
+`yarn release:check` reports the key present on the path alone.
+
+> **A non-interactive shell does not source `.zshrc`.** zsh reads `.zshenv`
+> for every shell but `.zshrc` only for interactive ones, and `.zshenv` sets
+> none of these. So an agent tool shell, a cron job, or a `sh -c` sees all
+> three as unset even though they are plainly there in a terminal. Do not
+> assume they are inherited — check, or source the profile first:
+>
+> ```sh
+> source ~/.zshrc && yarn release 1.0.0
+> ```
 
 There is deliberately **no Apple ID, no `match` repo, no match passphrase, no
 keychain password, and no 2FA prompt**. `cert` and `sigh` create and fetch the
@@ -66,6 +97,14 @@ prefer fixing the key.
 Get a key at App Store Connect → Users and Access → Integrations → App Store
 Connect API, role **App Manager**. The `.p8` downloads once and cannot be
 re-downloaded.
+
+The current key (`F73BPX6QH9`) is in 1Password, `micdrp` vault, item "App
+Store Connect keys". A working copy sits on disk because `.zshrc` points
+`ASC_API_KEY_PATH` straight at it — **move that copy and you break releases
+until line 85 is repointed**. The `micdrp` vault is also not reachable from a
+default session: the ambient `OP_SERVICE_ACCOUNT_TOKEN` belongs to TallieUp's
+service account, the same cross-project trap as `CLOUDFLARE_API_TOKEN` below.
+Reaching it needs that variable set to the `AI_MICDRP_RW` token.
 
 `BUILD_NUMBER` must increase on every upload; App Store Connect rejects a
 repeat. `scripts/bump-version.sh` handles it.
