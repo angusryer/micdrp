@@ -127,3 +127,19 @@ invariants:
       existed. A bundle that reaches for a module the binary never had
       does not degrade — it silences every screen that makes sound, on
       exactly the installs that cannot be rebuilt to fix it.
+
+  - id: INV-NOTES-031
+    description: Changing the route does not end the sound or move the clock
+    severity: critical
+    check: >
+      Plugging in headphones, unplugging them, or joining a Bluetooth
+      device leaves playback sounding and leaves every scheduled note at
+      the moment it was scheduled for. Verified on a device, since no
+      host test can change an audio route.
+
+      An engine's connections are torn down when its configuration
+      changes, and an engine nobody restarts stays silent for the rest
+      of the session. Rendering at a rate the app chooses rather than
+      the rate the hardware happens to want is what keeps the clock
+      still through that: the output converts, and a note's sample
+      position goes on meaning the moment it always meant.

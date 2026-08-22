@@ -106,10 +106,14 @@ Three pieces are moving to C++, in this order:
    `src/audio/synthPlayer.ts` replaced all six `createReferenceTonePlayer`
    call sites — falling back to the old per-context players on binaries
    without the module (INV-NOTES-030), since bundles ship over the air to
-   binaries built before it existed. Still to do: **a TestFlight build, then
-   ears on a device** — nothing on this path has been heard, and playback
-   starting before a capture (session category change under a running
-   engine) is the untested edge.
+   binaries built before it existed. The synth renders at its own fixed rate
+   rather than the hardware's, so a route change reconnects without moving
+   the clock (INV-NOTES-031) — taking the hardware rate would mean headphones
+   stopped the music.
+
+   Still to do: **a TestFlight build, then ears on a device** — nothing on
+   this path has been heard. Playback started before a capture (a session
+   category change under a running engine) is the untested order.
 
 2. **Analysis off the JS thread.** Opening a note currently runs `quantize`,
    `harmonizeToGrid`, `detectKey` and `recentreNotes` synchronously in JS.

@@ -18,6 +18,7 @@
 #
 #   ./build/dsp_synth_test       # prints "SYNTH OK", exit 0
 #   ./build/dsp_mailbox_test     # prints "MAILBOX OK", exit 0
+#   ./build/dsp_commands_test    # prints "COMMANDS OK", exit 0
 
 cmake_minimum_required(VERSION 3.16)
 project(micdrp_dsp_core LANGUAGES CXX)
@@ -38,6 +39,7 @@ add_library(micdrp_dsp STATIC
   pitch_engine.cpp
   synth.cpp
   synth_mailbox.cpp
+  synth_commands.cpp
 )
 target_include_directories(micdrp_dsp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -61,7 +63,12 @@ target_link_libraries(dsp_mailbox_test PRIVATE micdrp_dsp)
 find_package(Threads REQUIRED)
 target_link_libraries(dsp_mailbox_test PRIVATE Threads::Threads)
 
+# Host test for the ms/bus translation the platform layer speaks.
+add_executable(dsp_commands_test __tests__/synth_commands_test.cpp)
+target_link_libraries(dsp_commands_test PRIVATE micdrp_dsp)
+
 enable_testing()
 add_test(NAME dsp_parity COMMAND dsp_parity_test)
 add_test(NAME dsp_synth COMMAND dsp_synth_test)
 add_test(NAME dsp_mailbox COMMAND dsp_mailbox_test)
+add_test(NAME dsp_commands COMMAND dsp_commands_test)
