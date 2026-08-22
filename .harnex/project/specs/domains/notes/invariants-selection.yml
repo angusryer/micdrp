@@ -1,0 +1,21 @@
+# What choosing a thing on the graph must look like, and how the thing then
+# moves. Split from invariants-graph.yml, which is at its file budget.
+invariants:
+  - id: INV-NOTES-056
+    description: A drag is measured from where it was grabbed
+    severity: critical
+    check: >
+      The position a dragged object is moved to is its position when the
+      finger went down plus the distance the finger has travelled since —
+      never its position now plus that same distance. Verified by feeding
+      a sequence of increasing translations through the drag while the
+      object's committed position updates between each one, and asserting
+      the object lands where the finger is rather than further along.
+
+      A drag reads a translation that is cumulative from touch-down, so
+      adding it to a position that has already been moved by the earlier
+      part of the same drag counts every pixel twice, then three times,
+      then four. A bar line dragged a centimetre shot most of the way
+      across the take, which reads as the graph being wildly oversensitive
+      rather than as what it is — the object's own movement being fed back
+      into the measurement of the finger's.

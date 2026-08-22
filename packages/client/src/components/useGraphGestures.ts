@@ -54,6 +54,15 @@ export function useGraphGestures({
 }: GraphGestureOptions) {
   /** How far the current drag has already been committed. */
   const applied = useRef(0);
+  /**
+   * Where the thing being dragged was when the finger went down.
+   *
+   * A translation is cumulative from touch-down, so it can only be added to a
+   * position that has not itself moved since. Adding it to where the line is
+   * *now* — which the commit below has already moved — counts every pixel
+   * twice, then three times, and the line outruns the thumb (INV-NOTES-056).
+   */
+  const grabX = useRef(0);
 
   const semitonePx = Math.max(MIN_SEMITONE_PX, laneHeight);
 
@@ -98,6 +107,13 @@ export function useGraphGestures({
             touch &&
             touchesSelection(selection, touch.x, touch.y, tones, bars, notes)
           ) {
+            if (selection?.kind === 'barLine') {
+              const line = bars.find((b) => b.lineIndex === selection.lineIndex);
+              grabX.current = line?.x ?? 0;
+              // Where it already is, so a drag that goes nowhere commits
+              // nothing rather than re-issuing the position it is at.
+              applied.current = stepAt(grabX.current);
+            }
             state.activate();
           } else {
             state.fail();
@@ -122,11 +138,9 @@ export function useGraphGestures({
             }
             return;
           }
-          const line = bars.find((b) => b.lineIndex === selection.lineIndex);
-          if (!line) {
-            return;
-          }
-          const step = stepAt(snapToStep(line.x + e.translationX, originX, stepWidth));
+          const step = stepAt(
+            snapToStep(grabX.current + e.translationX, originX, stepWidth)
+          );
           if (step !== applied.current) {
             applied.current = step;
             onMoveBar(selection.lineIndex, step);
