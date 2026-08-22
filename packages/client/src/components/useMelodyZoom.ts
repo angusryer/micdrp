@@ -109,6 +109,18 @@ export function useMelodyZoom({
     [beatWidth, zoomTo]
   );
 
+  /**
+   * Open the graph up by a factor, held about a point.
+   *
+   * What a chord too narrow to read asks for: exactly enough that its own
+   * card fits (INV-NOTES-063). It goes through the same clamp as a pinch, so
+   * it can never ask for a scale the take does not allow.
+   */
+  const zoomBy = useCallback(
+    (factor: number, focalX: number) => zoomTo(beatWidth * factor, focalX),
+    [beatWidth, zoomTo]
+  );
+
   /** Back to the scale the take opened at, about the middle of the screen. */
   const reset = useCallback(
     () => zoomTo(opened, width / 2),
@@ -130,5 +142,5 @@ export function useMelodyZoom({
     onScaleChange?.({ isDefault: beatWidth === opened, reset });
   }, [beatWidth, opened, reset, onScaleChange]);
 
-  return { beatWidth, layout, pinch };
+  return { beatWidth, layout, pinch, zoomBy };
 }

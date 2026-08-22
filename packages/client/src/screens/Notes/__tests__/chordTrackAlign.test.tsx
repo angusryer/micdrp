@@ -10,7 +10,7 @@
  * `render` is async in this setup — await it.
  */
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import type { ChordSlot } from 'logic';
@@ -18,7 +18,7 @@ import type { ChordSlot } from 'logic';
 import { xForMs, type TimeAxis } from '../../../components/melodyScale';
 import { I18nProvider } from '../../../i18n';
 import { ThemeProvider } from '../../../theme';
-import { ChordTrack } from '../ChordTrack';
+import { ChordTrack, MIN_CARD_WIDTH } from '../ChordTrack';
 
 const AXIS: TimeAxis = {
   t0: 500,
@@ -43,6 +43,8 @@ const SLOTS = [
   slot(2, 2500, 4500)
 ];
 
+const onReveal = jest.fn();
+
 const renderTrack = (slots: readonly ChordSlot[] = SLOTS) =>
   render(
     <GestureHandlerRootView>
@@ -52,6 +54,7 @@ const renderTrack = (slots: readonly ChordSlot[] = SLOTS) =>
             slots={slots}
             timeAxis={AXIS}
             contentWidth={900}
+            onReveal={onReveal}
             onNudge={jest.fn()}
             onReshape={jest.fn()}
             onAudition={jest.fn()}
@@ -79,18 +82,41 @@ describe('the chord track under the bars', () => {
     expect(laid[1].left).toBe(xForMs(AXIS, SLOTS[1].startMs));
   });
 
-  it('is as wide as the chord lasts', async () => {
+  it('is as wide as the chord lasts, and never wider', async () => {
     await renderTrack();
     const laid = placements();
-    expect(laid[0].width).toBe(
-      xForMs(AXIS, SLOTS[0].endMs) - xForMs(AXIS, SLOTS[0].startMs)
-    );
+    laid.forEach((placed, i) => {
+      expect(placed.width).toBe(
+        xForMs(AXIS, SLOTS[i].endMs) - xForMs(AXIS, SLOTS[i].startMs)
+      );
+    });
   });
 
-  it('stays tappable when a chord is too brief to be one', async () => {
-    // 20ms at this scale is 4px, which no thumb can find.
+  it('INV-NOTES-063: marks a chord too narrow to be a card', async () => {
+    // 20ms at this scale is 4px — no card fits, so nothing pretends one does.
     await renderTrack([slot(1, 500, 520)]);
-    expect(placements()[0].width).toBeGreaterThanOrEqual(44);
+    expect(placements()[0].width).toBeLessThan(MIN_CARD_WIDTH);
+    expect(screen.queryByRole('button', { name: /too narrow/ })).not.toBeNull();
+    expect(screen.queryAllByLabelText(/^C, bar \d+$/)).toHaveLength(0);
+  });
+
+  it('INV-NOTES-063: a mark asks for exactly enough zoom to become a card', async () => {
+    onReveal.mockClear();
+    await renderTrack([slot(1, 500, 520)]);
+    await fireEvent.press(screen.getByRole('button', { name: /too narrow/ }));
+
+    const [factor, focalX] = onReveal.mock.calls[0] as [number, number];
+    const left = xForMs(AXIS, 500);
+    const width = xForMs(AXIS, 520) - left;
+    expect(width * factor).toBeCloseTo(MIN_CARD_WIDTH, 5);
+    // Held about the mark itself, so the chord you tapped is what opens up.
+    expect(focalX).toBeCloseTo(left + width / 2, 5);
+  });
+
+  it('a chord with room to spare is a card, not a mark', async () => {
+    await renderTrack();
+    expect(screen.queryByRole('button', { name: /too narrow/ })).toBeNull();
+    expect(screen.queryAllByLabelText(/^C, bar \d+$/)).toHaveLength(SLOTS.length);
   });
 
   it('draws nothing at all when the melody implied no chords', async () => {

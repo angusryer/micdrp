@@ -43,7 +43,7 @@ const CONTENT_PADDING = 20;
  * The whole graph card upright: the drawing plus the row of chord cards that
  * now rides in its scroll, so each card starts on its own downbeat.
  */
-const MELODY_VIEW_HEIGHT = 236;
+const MELODY_VIEW_HEIGHT = 204;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NoteDetail'>;
 

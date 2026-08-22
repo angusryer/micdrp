@@ -121,14 +121,18 @@ export function ChordCard({
           },
           // Sized to the chord it describes, so the left edge lands on the
           // downbeat and the card covers what it is talking about.
-          width != null ? { width, minWidth: 0, paddingHorizontal: 4 } : null
+          width != null ? { width, minWidth: 0, paddingHorizontal: 2 } : null
         ]}
       >
-        <Text style={[styles.bar, { color: colors.gray300 }]}>{slot.bar}</Text>
-        <Text style={[styles.label, { color: colors.typography }]}>
+        {/* No bar number any more: the card sits on its own downbeat, so
+            the position says what the number used to (INV-NOTES-061). */}
+        <Text
+          numberOfLines={1}
+          style={[styles.label, { color: colors.typography }]}
+        >
           {slot.label}
         </Text>
-        <Text style={[styles.roman, { color: colors.gray300 }]}>
+        <Text numberOfLines={1} style={[styles.roman, { color: colors.gray300 }]}>
           {slot.roman}
         </Text>
       </View>
@@ -139,16 +143,16 @@ export function ChordCard({
 export default ChordCard;
 
 const styles = StyleSheet.create({
+  // Sized like the transport's own controls rather than twice their height:
+  // the strip is a reading of the take, not the main event on the screen.
   card: {
-    minWidth: 76,
+    minWidth: 44,
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    alignItems: 'center',
-    gap: 2
+    borderRadius: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 6,
+    alignItems: 'center'
   },
-  bar: { fontSize: 10, letterSpacing: 0.4 },
-  label: { fontSize: 20, fontWeight: '700' },
-  roman: { fontSize: 11, letterSpacing: 0.4 }
+  label: { fontSize: 15, fontWeight: '700' },
+  roman: { fontSize: 10, letterSpacing: 0.4 }
 });

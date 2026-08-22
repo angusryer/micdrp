@@ -57,3 +57,24 @@ invariants:
       play took away the view they had turned the phone to get, which
       made the landscape layout something to leave rather than something
       to work in.
+
+  - id: INV-NOTES-063
+    description: Where a chord is too narrow to read, a mark stands in its place
+    severity: major
+    check: >
+      A chord whose span at the current scale is narrower than a legible
+      card is drawn instead as a slim upright mark with an arrowhead at
+      each end, occupying only that chord's own span. Cards and marks
+      never overlap: at any scale, each occupies its own chord's span and
+      no more. Tapping a mark zooms in about it until the chord it stands
+      for is wide enough to be a card. Verified by asserting a chord
+      narrower than the legible width renders a mark rather than a card,
+      that a wide one renders a card, and that no drawn width exceeds its
+      own span.
+
+      Floors on a card's width bought legibility by letting neighbours
+      overlap, which hides the chord underneath — the worst outcome for a
+      strip whose whole job is saying which chord is where. Refusing to
+      draw a card that does not fit, and saying plainly that something is
+      there, keeps every chord accounted for at every scale and turns
+      "too small to read" into an instruction rather than a defect.

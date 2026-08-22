@@ -20,8 +20,13 @@ import { ChordTrack } from './ChordTrack';
 import { NoteShapeControls } from './NoteShapeControls';
 import type { useNoteDetail } from './useNoteDetail';
 
-/** Room for one row of chord cards under the drawing, inside the same card. */
-const CHORD_STRIP_HEIGHT = 84;
+/**
+ * Room for one row of chord cards under the drawing, inside the same card.
+ *
+ * Sized to the cards, which are sized like the transport's own controls: the
+ * strip is a reading of the take, not the main event on the screen.
+ */
+const CHORD_STRIP_HEIGHT = 52;
 
 /** Below this the drawing stops being a graph, so it refuses to shrink more. */
 export const MIN_GRAPH_HEIGHT = 96;
@@ -101,11 +106,12 @@ export function NoteShapeSection({
             alsoShow={chordPitchesShown}
             onScaleChange={onScaleChange}
             footerHeight={stripHeight}
-            footer={({ contentWidth, timeAxis }) => (
+            footer={({ contentWidth, timeAxis, zoomBy }) => (
               <ChordTrack
                 slots={chords.slots}
                 timeAxis={timeAxis}
                 contentWidth={contentWidth}
+                onReveal={zoomBy}
                 onNudge={chords.nudge}
                 onReshape={chords.reshape}
                 onAudition={detail.auditionChord}

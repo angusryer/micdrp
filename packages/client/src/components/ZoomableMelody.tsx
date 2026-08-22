@@ -58,6 +58,8 @@ export interface ZoomableMelodyProps {
   footer?: (frame: {
     contentWidth: number;
     timeAxis: MelodyLayout['timeAxis'];
+    /** Open the graph up by a factor, held about a point in the drawing. */
+    zoomBy: (factor: number, focalX: number) => void;
   }) => React.ReactNode;
   /** How much room the footer takes, which the scroll has to account for. */
   footerHeight?: number;
@@ -77,7 +79,7 @@ export function ZoomableMelody({
   const scroller = useRef<ScrollView>(null);
   const scrollX = useRef(0);
 
-  const { beatWidth, layout, pinch } = useMelodyZoom({
+  const { beatWidth, layout, pinch, zoomBy } = useMelodyZoom({
     notes,
     grid,
     width,
@@ -133,7 +135,8 @@ export function ZoomableMelody({
           >
             {footer({
               contentWidth: layout.contentWidth,
-              timeAxis: layout.timeAxis
+              timeAxis: layout.timeAxis,
+              zoomBy
             })}
           </View>
         ) : null}

@@ -144,6 +144,7 @@
     "harmonyNone": "A backdrop needs a beat to sit on, and there is not enough rhythm here to find one.",
     "harmonyReset": "Reset chords",
     "chordCard": "{{chord}}, bar {{bar}}",
+    "chordSqueezed": "{{chord}}, bar {{bar}} — too narrow to show; tap to zoom in",
     "sungNote": "Sung note",
     "octave": "Octave",
     "octaveUp": "Move the melody up an octave",
