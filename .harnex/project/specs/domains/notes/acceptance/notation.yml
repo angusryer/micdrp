@@ -1,0 +1,37 @@
+# Seeing a kept take as sung or as written down — INV-NOTES-026 applied to
+# what is drawn rather than to what is sounded. Its own file so neither
+# playback.yml nor library.yml crosses the 150-line spec-file budget.
+acceptance:
+  - id: ACC-NOTES-036
+    interface: ui
+    title: Choosing the written reading draws the melody on the grid
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio
+    when:
+      - singer S calls notes.set_notation_view on note N
+    then:
+      - the note field notationView is as-written
+      - the note field shownOnsetsOnGrid is true
+      - the note field shownCentsReported is false
+    maps_to:
+      capability: notes.set_notation_view
+      invariants: [INV-NOTES-026]
+      interaction: INT-NOTES-015
+
+  - id: ACC-NOTES-037
+    interface: ui
+    title: The reading on screen changes nothing that was stored or heard
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio
+    when:
+      - singer S calls notes.set_notation_view on note N
+    then:
+      - the note field notationView is as-written
+      - the note field melodyRewritten is false
+      - the note field playbackReadingChanged is false
+    maps_to:
+      capability: notes.set_notation_view
+      invariants: [INV-NOTES-026]
+      interaction: INT-NOTES-015

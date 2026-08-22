@@ -1,11 +1,26 @@
 # Domain Development State — overwrite each meaningful change
-updated_at: "2026-08-21T00:00:00Z"
+updated_at: "2026-08-22T00:00:00Z"
 updated_by: agent
 phase: specifying
 phase_detail: >
   Specs written from a crawl of screens/Notes, analysis/note.ts, the
   data layer, and the notes table in migration 0001. 12 capabilities,
   20 invariants, 35 acceptance tests, 2 views, 11 interactions.
+
+  The detail view now draws the take as sung or as written down
+  (notes.set_notation_view, INT-NOTES-015, ACC-NOTES-036/037), which is
+  INV-NOTES-026 — until now only about what play sounded — extended to
+  what the graph and the note list show. logic/notation.ts holds the
+  mapping: as written puts each onset on its gridStartMs at its
+  gridDurationMs and zeroes the cents, since notation has no way to say
+  a note was fourteen cents flat. useNotationView holds the choice and
+  forces it back to as sung when a take has no grid. SeeItAs is the
+  control, above the graph so the picture and the control that changes
+  it are visible together, leaving the chord cards straight after the
+  graph (INV-NOTES-029). It is a second control rather than a second
+  use of HearItAs on purpose: reading the notation while hearing the
+  raw take is how the detector and the quantizer are told apart. The
+  segmented row both use was lifted into ModeChoice.
 
   Play on the detail view sounds the take and the chord backdrop
   together (notes.play_backdrop, INV-NOTES-018, ACC-NOTES-032), and
@@ -90,6 +105,13 @@ blockers:
     adapter with a fake engine and a row-level-security-enforcing fake
     backend client is wired.
 known_conflicts:
+  - >
+    NoteDetailScreen.tsx is 419 lines, well over the 150-line file
+    budget, and its component function is longer than 40 lines. Both
+    pre-date the notation choice, which added 19 lines to it; the
+    choice itself lives in useNotationView, SeeItAs and ModeChoice so
+    the screen only wires it. Splitting the screen is a refactor of its
+    own and there is no test over it to hold a split honest.
   - >
     usePlayback.play() is 49 lines, over the 40-line function budget. It
     was already 47 before the backdrop was aligned to the take's clock;

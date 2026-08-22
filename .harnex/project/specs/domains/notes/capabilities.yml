@@ -98,6 +98,32 @@ capabilities:
       - role: singer
         notes: Playback resolves a signed URL scoped to the singer.
 
+  - name: notes.set_notation_view
+    description: >
+      Choose whether the take is shown as it was sung or as it was
+      written down, so a snap onto the wrong step can be seen rather
+      than guessed at.
+    actor: singer
+    implemented_by: packages/client/src/screens/Notes/useNotationView.ts
+    parameters:
+      required: [view]
+    preconditions:
+      - the note has a melody
+    postconditions:
+      - the choice is as sung or as written, and as sung is what a note
+        offers before anything is chosen
+      - as written puts every onset on the grid at a notated length and
+        reports no cents
+      - the one choice governs the graph and the note list together, so
+        the two never show different readings
+      - a take with no metre is not offered the written reading
+      - the stored melody is never rewritten by the choice
+      - what pressing play sounds is unaffected, so the notation can be
+        read while the raw take is heard
+    permissions:
+      - role: singer
+        notes: A reading of the singer's own note; nothing is written.
+
   - name: notes.export_midi
     description: Offer a note's melody as a Standard MIDI File.
     actor: singer

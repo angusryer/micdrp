@@ -96,6 +96,7 @@ jest.mock('@shopify/react-native-skia', () => {
     Line: noop,
     Circle: noop,
     Rect: noop,
+    RoundedRect: noop,
     Text: noop,
     Skia: {
       Path: {

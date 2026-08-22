@@ -112,3 +112,22 @@ invariants:
       space above Play was freed when the disclosed player went away
       (INV-NOTES-015), and the fact a singer wants there is how far into
       the take they are.
+
+  - id: INV-NOTES-030
+    description: The detail transport is one round control showing what a press does
+    severity: minor
+    check: >
+      The note detail's play control is a single circular button of one
+      size in every state, carrying a triangle while a press would start
+      the take and a pair of upright bars while a press would pause it,
+      and it never carries a word. Fetching and decoding happens inside
+      that same circle rather than replacing it. Verified by asserting
+      the control is as tall as it is wide and fully rounded, that the
+      glyph it draws swaps between play and pause with the transport
+      state, and that no button text is rendered.
+
+      A transport is read at a glance mid-take, so the shape is the
+      message: a word has to be read, and a control that changes size
+      between states — or vanishes while a take is fetched — moves the
+      thing the singer is aiming at. The label a screen reader hears is
+      unchanged; only the drawing is.

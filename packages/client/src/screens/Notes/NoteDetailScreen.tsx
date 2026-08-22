@@ -6,7 +6,9 @@
  * (tap to hear each pitch) and a MIDI export. Play sounds the take and the chord
  * backdrop together, so the singer hears the harmony their line implied rather
  * than the bare recording — or either of them alone, whichever the choice beside
- * the play control is set to. The symbolic melody is read straight from the cache;
+ * the play control is set to. The graph and the list draw the take either as it
+ * was sung or as it was written down, whichever the choice above the graph is
+ * set to. The symbolic melody is read straight from the cache;
  * the audio is never re-touched. MIDI is generated on-the-fly from the stored
  * melody so export works without a server round-trip.
  */
@@ -31,6 +33,8 @@ import {
 
 import { ChordTrack } from './ChordTrack';
 import { HearItAs } from './HearItAs';
+import { SeeItAs } from './SeeItAs';
+import { useNotationView } from './useNotationView';
 import { MelodyMix } from './MelodyMix';
 import { DEFAULT_MELODY_LEVEL, useMelodyBackdrop } from './useMelodyBackdrop';
 import { useChordBackdrop } from './useChordBackdrop';
@@ -50,16 +54,13 @@ import { createReferenceTonePlayer } from '../../audio/referenceTone';
 import { cachedNotes } from '../../data/notesSync';
 import { notesRepo } from '../../data/notesRepo';
 import { writeMidi } from '../../data/files';
-import { MelodyView } from '../../components/MelodyView';
-import { BarRulerOverlay } from './BarRulerOverlay';
+import { MelodyGraph } from './MelodyGraph';
 import { ExportSheet } from '../Results/ExportSheet';
 import { NoteList, midiToLabel } from '../Results/NoteList';
 import { PlaybackBar } from './PlaybackBar';
 
 /** Side padding of the detail scroll content (keep in sync with styles.content). */
 const CONTENT_PADDING = 20;
-/** Height of the piano-roll melody view. */
-const MELODY_VIEW_HEIGHT = 150;
 
 /** How long a tapped reference note sounds, in ms. */
 const TAP_NOTE_MS = 700;
@@ -99,6 +100,10 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   const grid = quantized.grid;
   const hasGrid = grid.bpm > 0 && melody.length > 1;
   const meterIsStated = grid.meterIsStated;
+  // Which reading is drawn — as sung, or as written on the grid. Separate
+  // from what play sounds, so the notation can be read while the raw take is
+  // heard, which is how the two are told apart (INV-NOTES-026).
+  const shown = useNotationView(melody, quantized.notes, hasGrid);
   // What this person has already made of the take, kept with the note so a
   // decision outlives the screen it was made on (INV-NOTES-021).
   const interpretation = useInterpretation(note?.id ?? null, note?.interpretations ?? EMPTY_READINGS);
@@ -267,69 +272,25 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
               {t('notes.shape')}
             </Text>
-            <View
-              style={[
-                styles.melodyCard,
-                {
-                  backgroundColor: colors.neutral50,
-                  borderColor: colors.neutral500
-                }
-              ]}
-            >
-              <MelodyView
-                notes={melody}
-                width={width - 2 * CONTENT_PADDING - 2}
-                height={MELODY_VIEW_HEIGHT}
-                grid={gridForView}
-              />
-              {/* Over the melody rather than beside it: the bars are a claim
-                  about this take, and correcting one means seeing both. */}
-              {gridForView != null && (
-                <BarRulerOverlay
-                  bars={bars}
-                  notes={melody}
-                  grid={gridForView}
-                  width={width - 2 * CONTENT_PADDING - 2}
-                  height={MELODY_VIEW_HEIGHT}
-                />
-              )}
-            </View>
+            {/* Above the graph, not below it: the control that changes the
+                picture has to be visible with the picture it changes. The
+                chord cards still come straight after the graph
+                (INV-NOTES-029). */}
+            <SeeItAs
+              view={shown.view}
+              onChange={shown.setView}
+              canNotate={shown.canNotate}
+            />
+            <MelodyGraph
+              notes={shown.notes}
+              slots={chords.slots}
+              bars={bars}
+              grid={gridForView}
+              width={width - 2 * CONTENT_PADDING - 2}
+            />
 
-            <View style={styles.hearAs}>
-              <HearItAs
-                mode={playbackMode}
-                onChange={setPlaybackMode}
-                onPlay={playMelody}
-                canNotate={hasGrid}
-              />
-              <MelodyMix
-                isOverTake={isOverTake}
-                onOverTakeChange={setIsOverTake}
-                level={melodyLevel}
-                onLevelChange={setMelodyLevel}
-              />
-            </View>
-            {/* Say when the bar lines are an assumption rather than a reading.
-                A short sung idea often does not state its metre, and drawing
-                confident bar lines over one would be inventing information. */}
-            {hasGrid && !meterIsStated ? (
-              <Text style={[styles.caption, { color: colors.gray300 }]}>
-                {t('notes.gridAssumed')}
-              </Text>
-            ) : null}
-            {!hasGrid ? (
-              <Text style={[styles.caption, { color: colors.gray300 }]}>
-                {t('notes.gridNone')}
-              </Text>
-            ) : null}
-          </>
-        ) : null}
-
-        {melody.length > 0 ? (
-          <>
-            <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
-              {t('notes.harmony')}
-            </Text>
+            {/* The cards come straight after the graph, so a chord and the
+                control that changes it are read together (INV-NOTES-029). */}
             {chords.slots.length > 0 ? (
               <>
                 <ChordTrack
@@ -357,6 +318,35 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
                 {t('notes.harmonyNone')}
               </Text>
             )}
+
+            {/* Say when the bar lines are an assumption rather than a reading.
+                A short sung idea often does not state its metre, and drawing
+                confident bar lines over one would be inventing information. */}
+            {hasGrid && !meterIsStated ? (
+              <Text style={[styles.caption, { color: colors.gray300 }]}>
+                {t('notes.gridAssumed')}
+              </Text>
+            ) : null}
+            {!hasGrid ? (
+              <Text style={[styles.caption, { color: colors.gray300 }]}>
+                {t('notes.gridNone')}
+              </Text>
+            ) : null}
+
+            <View style={styles.hearAs}>
+              <HearItAs
+                mode={playbackMode}
+                onChange={setPlaybackMode}
+                onPlay={playMelody}
+                canNotate={hasGrid}
+              />
+              <MelodyMix
+                isOverTake={isOverTake}
+                onOverTakeChange={setIsOverTake}
+                level={melodyLevel}
+                onLevelChange={setMelodyLevel}
+              />
+            </View>
           </>
         ) : null}
 
@@ -388,7 +378,9 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
         <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
           {t('notes.notesTapToHear')}
         </Text>
-        <NoteList notes={melody} onPressNote={playNote} />
+        {/* The same reading as the graph above, so the picture and the list
+            never say different things about one take. */}
+        <NoteList notes={shown.notes} onPressNote={playNote} />
 
         <ExportSheet midiUri={midiUri} title={note.title} />
       </ScrollView>
@@ -405,11 +397,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5
-  },
-  melodyCard: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
-    padding: 8
   },
   statGrid: {
     flexDirection: 'row',

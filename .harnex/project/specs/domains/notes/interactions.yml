@@ -55,6 +55,25 @@ interactions:
     maps_to:
       capability: notes.open_chord_track
 
+  - id: INT-NOTES-015
+    name: See the take as sung or as written
+    view: VIEW-NOTES-002
+    precondition: The note has a melody.
+    steps:
+      - Choose as sung or as written above the melody graph
+    outcome: >
+      The graph and the note list are redrawn from the chosen reading.
+      As sung, each note sits where it was sung and says how far off
+      centre it was. As written, each onset sits on the grid at a
+      notated length and nothing is off centre, because notation has no
+      way to say a note was fourteen cents flat. The stored melody is
+      untouched, and what pressing play sounds is left as it was.
+    error_handling: >
+      A take with no metre is not offered the written reading — there is
+      no grid to write it against — and stays as sung.
+    maps_to:
+      capability: notes.set_notation_view
+
   - id: INT-NOTES-005
     name: Change a chord in the backdrop
     view: VIEW-NOTES-002
