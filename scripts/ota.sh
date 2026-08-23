@@ -68,6 +68,30 @@ env_value() {
   grep -E "^${key}=" "$file" | head -1 | cut -d= -f2-
 }
 
+# Refuse to publish from a tree that is behind the trunk (INV-UPD-014).
+#
+# Bundles are served newest-first, so a publish from behind does not merely
+# omit newer work — it withdraws it from every device that already took it.
+# That is how the beta channel moved backwards by 44 commits on 2026-08-22:
+# two lines of work published in turn from trees neither of which contained
+# the other. One fetch turns that silent regression into a refusal to ship.
+#
+# A tree merely ahead of the trunk publishes fine. Only missing commits stop it.
+require_trunk_contained() {
+  git rev-parse --git-dir >/dev/null 2>&1 || return 0
+  git fetch origin main --quiet 2>/dev/null || \
+    info "Could not reach origin; judging against the trunk as last known."
+  git rev-parse --verify --quiet origin/main >/dev/null || return 0
+
+  git merge-base --is-ancestor origin/main HEAD && return 0
+
+  local behind
+  behind="$(git rev-list --count HEAD..origin/main)"
+  info "This tree is missing ${behind} commit(s) already on origin/main."
+  info "Publishing now would withdraw them from every device that has them."
+  die "refusing to publish from behind the trunk — merge origin/main first"
+}
+
 cmd_publish() {
   local channel="${1:-}"; shift || true
   local target_version="" min_build="" message="" dry_run=0
@@ -90,6 +114,8 @@ cmd_publish() {
   # build's source.
   local built_from
   built_from="$(env_value BUILD_NUMBER)"
+
+  require_trunk_contained
 
   info "Bundle for ${target_version}, runnable on build >=${min_build}"
   if [ "$dry_run" = "1" ]; then

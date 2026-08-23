@@ -23,6 +23,25 @@ pre-push:
       # or PREFLIGHT_SKIP=1.
       run: ./scripts/preflight.sh
 
+# Every commit goes to the trunk at once.
+#
+# This repo self-delivers: the dogfood loop builds a spoken change request in
+# its own worktree against origin/main *as fetched*, then publishes an OTA
+# bundle from it. A commit sitting unpushed is invisible to that loop, so it
+# builds from a trunk without it and publishes a bundle that withdraws the
+# work from every device that had it — which is what happened on 2026-08-22,
+# 44 commits deep.
+#
+# Backgrounded and --no-verify: the push must never be something worth
+# skipping for speed, or it will be skipped. What guards the trunk is the
+# preflight run before committing and the loop's own gate before delivery;
+# what guards the *devices* is the publish refusing to ship from behind
+# (INV-UPD-014).
+post-commit:
+  commands:
+    push:
+      run: git rev-parse --abbrev-ref HEAD | grep -qx main && (git push --no-verify --quiet origin main &) || true
+
 commit-msg:
   parallel: true
   commands:
