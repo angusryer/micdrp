@@ -1,0 +1,62 @@
+# A second take sung against the first, as context for reading the harmony.
+# Its own file: the chord invariants are at their line budget.
+invariants:
+  - id: INV-NOTES-071
+    description: A sung bass decides the root, without overruling the melody
+    severity: major
+    check: >
+      Where a context layer is sounding, the chord read over that span
+      prefers the chord rooted on the bass pitch class, and where nothing
+      is sounding in the layer the read is exactly what it was without
+      one. The preference is a weight and not a constraint: a melody that
+      strongly implies another chord can still win. Verified by asserting
+      an ambiguous span resolves to the bass's root, that an unambiguous
+      contradiction survives, and that a span the layer does not cover is
+      byte-for-byte the reading it had before.
+
+      A monophonic melody only implies harmony, which is why naming a
+      chord from three sung pitch classes is a guess dressed as a
+      reading. The one thing the system cannot know is what the singer
+      heard underneath — and the singer can simply sing it. A root is the
+      single most decisive piece of that, and the chord matcher already
+      had somewhere to put one.
+
+      A weight rather than a rule because the layer is a performance too:
+      it can be sung as an inversion, and it is read by the same detector
+      that misreads the melody.
+
+  - id: INV-NOTES-072
+    description: Where the bass moves is where the chord changes
+    severity: major
+    check: >
+      With a context layer present, the proposed downbeats are the moments
+      its pitch class changes, rather than the moments the melody's
+      harmony appears to turn over. Without one, the melodic reading is
+      unchanged. A layer that never changes pitch proposes one downbeat at
+      its first note, not none. Verified by asserting the proposals follow
+      the layer's changes and that removing the layer restores the
+      melodic proposal exactly.
+
+      Reading harmonic rhythm out of a melody alone is the weakest
+      inference in the pipeline and the one most often corrected by hand.
+      A bass line states it outright: the chord lasts until the bass
+      moves.
+
+  - id: INV-NOTES-073
+    description: A context layer is a recording like any other
+    severity: major
+    check: >
+      A layer is captured, stored, detected, drawn and sounded by the same
+      path as the first take, and can be silenced from the same place as
+      the other tracks. Muting it silences it without withdrawing it from
+      the reading. Verified by asserting a layer round-trips through
+      storage as a take does, and that muting changes what is heard and
+      not what is read.
+
+      It is a performance of part of the idea, not a setting. Anything
+      that treated it as configuration would have to reimplement capture,
+      detection and playback, and would drift from them.
+
+      Muting is about the ear, not the analysis: the reason to silence the
+      bass is to hear the melody alone, and losing the harmony reading at
+      the same moment would be a second, unasked-for change.

@@ -42,6 +42,21 @@ export const SEVENTH_TEMPLATES: readonly ChordTemplate[] = [
  */
 const OFF_CHORD_PENALTY = 0.5;
 
+/**
+ * What a sung root is worth, against template weights of 3 for a root and 2
+ * for a third or fifth over a normalised histogram — so scores run to about 3.
+ *
+ * Sized against the thing it has to beat: two notes that spell one chord's
+ * root-and-third also spell another's third-and-fifth, and the first wins by
+ * about 0.5 on weighting alone. Anything smaller than that would leave the
+ * ambiguity the layer was sung to settle.
+ *
+ * It still loses to a plainly stated triad — three chord tones sung out score
+ * above 2.3, which no bonus here can reach from a chord the melody does not
+ * contain (INV-NOTES-071).
+ */
+const BASS_ROOT_BONUS = 1.0;
+
 export function templateWeightLookup(
   template: ChordTemplate
 ): Map<number, number> {
@@ -68,6 +83,12 @@ export interface SpanMatch {
 
 export interface SpanMatchOptions {
   vocabulary?: 'triads' | 'sevenths';
+  /**
+   * The pitch class a sung context layer holds over this span, when there is
+   * one. Weights the chord rooted there rather than forcing it: the layer is
+   * a performance too, and can be sung as an inversion (INV-NOTES-071).
+   */
+  bassPc?: number | null;
   /** Precomputed lookups, when matching many spans in a row. */
   templates?: readonly ChordTemplate[];
   lookups?: readonly Map<number, number>[];
@@ -123,6 +144,8 @@ export function chordForSpan(
     options.templates ??
     (options.vocabulary === 'sevenths' ? SEVENTH_TEMPLATES : TRIAD_TEMPLATES);
   const lookups = options.lookups ?? templates.map(templateWeightLookup);
+  const bassRoot =
+    options.bassPc == null ? null : (((options.bassPc % 12) + 12) % 12);
 
   let bestScore = -Infinity;
   let secondScore = -Infinity;
@@ -146,7 +169,10 @@ export function chordForSpan(
       for (const [offset] of templates[t].tones) {
         chordMass += pc[(((root + offset) % 12) + 12) % 12];
       }
-      const score = onChord - OFF_CHORD_PENALTY * (1 - chordMass);
+      const score =
+        onChord -
+        OFF_CHORD_PENALTY * (1 - chordMass) +
+        (root === bassRoot ? BASS_ROOT_BONUS : 0);
       if (score > bestScore) {
         secondScore = bestScore;
         bestScore = score;

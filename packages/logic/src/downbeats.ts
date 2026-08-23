@@ -13,6 +13,7 @@
  */
 import { chordForSpan } from './chordMatch';
 import type { Melody } from './analysis';
+import { bassChangeTimes, bassSpans } from './bassContext';
 import type { MusicalGrid } from './quantize';
 
 export interface DownbeatOptions {
@@ -30,6 +31,15 @@ export interface DownbeatOptions {
   minGapBeats?: number;
   /** Chord set to read with (default 'triads'). */
   vocabulary?: 'triads' | 'sevenths';
+  /**
+   * A context layer sung against the take, when there is one.
+   *
+   * Given, it decides the downbeats outright: the chord lasts until the bass
+   * moves, which is stated rather than inferred (INV-NOTES-072). Reading
+   * harmonic rhythm out of a melody alone is the weakest step in this
+   * pipeline and the one most often corrected by hand.
+   */
+  bass?: Melody;
   /**
    * How far gaps may differ from their median and still be called even, as a
    * fraction of that median (default 0.25). Nearly-even gaps are evened out;
@@ -141,6 +151,18 @@ export function proposeDownbeats(
 
   const ordered = inTimeOrder(notes);
 
+  // Stated beats inferred. Where a layer was sung, its changes are the
+  // answer and the melodic comparison below is not consulted at all.
+  if (options.bass && options.bass.length > 0) {
+    return toSteps(
+      bassChangeTimes(bassSpans(options.bass)),
+      grid,
+      stepMs,
+      minGapMs,
+      options.evenTolerance ?? 0.25
+    );
+  }
+
   // Every note onset is a candidate — a chord starting in the middle of a
   // held note is almost never what was meant, so the onsets are the only
   // places worth asking about, and asking there needs no snapping afterwards.
@@ -155,14 +177,31 @@ export function proposeDownbeats(
     }
   }
 
+  return toSteps(boundaries, grid, stepMs, minGapMs, options.evenTolerance ?? 0.25);
+}
+
+/**
+ * Moments to grid steps: thinned to the minimum gap, evened when they are
+ * nearly even already, and deduplicated.
+ *
+ * One implementation, because a stated downbeat and an inferred one must land
+ * on the grid the same way or the two paths would disagree about where the
+ * same moment is.
+ */
+function toSteps(
+  moments: readonly number[],
+  grid: MusicalGrid,
+  stepMs: number,
+  minGapMs: number,
+  evenTolerance = 0.25
+): number[] {
   const kept: number[] = [];
-  for (const boundary of boundaries) {
-    if (kept.length === 0 || boundary - kept[kept.length - 1] >= minGapMs) {
-      kept.push(boundary);
+  for (const moment of moments) {
+    if (kept.length === 0 || moment - kept[kept.length - 1] >= minGapMs) {
+      kept.push(moment);
     }
   }
-
-  const evened = evenOutIfClose(kept, options.evenTolerance ?? 0.25);
+  const evened = evenOutIfClose(kept, evenTolerance);
   const steps = evened.map((ms) =>
     Math.max(0, Math.round((ms - grid.offsetMs) / stepMs))
   );
