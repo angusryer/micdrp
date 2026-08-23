@@ -1,0 +1,25 @@
+# The melody read out of a take, sounded on its own — as against the take
+# itself, which is invariants-playback.yml. Its own file so that one stays
+# inside the 150-line spec-file budget.
+
+invariants:
+  - id: INV-NOTES-031
+    description: The melody control is a toggle that says which way it points
+    severity: minor
+    check: >
+      The control that sounds the detected melody stops it on a second
+      press, and reports which of the two the next press would do — its
+      glyph, its word, and the state a screen reader is told all change
+      together. It goes back to offering play by itself when the melody
+      runs out, when the reading beside it changes, when the same voice
+      is taken for a tapped note or an auditioned chord, and when the
+      view goes away. Verified by asserting that a press sounds the
+      melody, that a second press silences it and schedules nothing new,
+      and that the control reads as playing only while it is.
+
+      A press that can only start is a control the singer cannot get out
+      of: the melody runs to its end whatever they do, and the button
+      goes on offering to start something already sounding. The take's
+      transport was made a toggle for that reason (INV-NOTES-030), and
+      one screen should not carry two play controls that disagree about
+      what a second press means.

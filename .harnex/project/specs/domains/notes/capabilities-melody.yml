@@ -1,0 +1,27 @@
+# Sounding the melody read out of a take, as against the take itself.
+# Its own file: capabilities.yml is already at the 150-line budget.
+
+capabilities:
+  - name: notes.play_melody
+    description: >
+      Sound the melody read out of a take — in whichever reading is
+      chosen — and stop it again from the same control, so hearing what
+      was detected is a decision the singer can take back.
+    actor: singer
+    implemented_by: packages/client/src/screens/Notes/useTonePreview.ts
+    parameters:
+      required: [notes]
+    preconditions:
+      - the note has a melody
+    postconditions:
+      - the control that starts the melody is the control that stops it
+      - a second press while it sounds stops it and schedules nothing new
+      - the control offers play again once the melody has run out, with
+        no press needed
+      - changing which reading is heard stops what is sounding
+      - anything else that takes the same voice — a tapped note, an
+        auditioned chord — stops the melody, and the control says so
+      - leaving the view leaves nothing sounding
+    permissions:
+      - role: singer
+        notes: Local playback only; nothing is written and nothing is fetched.

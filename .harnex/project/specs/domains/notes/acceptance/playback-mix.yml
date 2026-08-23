@@ -1,0 +1,68 @@
+# Turning the tracks a press sounds on and off — notes.set_playback_mix.
+# Split out of playback.yml, which crossed the 150-line spec-file budget when
+# the melody became a track of its own.
+acceptance:
+  - id: ACC-NOTES-033
+    interface: ui
+    title: Turning the take track off plays no take
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio
+    when:
+      - singer S calls notes.set_playback_mix on note N
+    then:
+      - the note field takeTrackOn is false
+      - the note field takeDecoded is false
+    maps_to:
+      capability: notes.set_playback_mix
+      invariants: [INV-NOTES-019]
+      interaction: INT-NOTES-011
+
+  - id: ACC-NOTES-034
+    interface: ui
+    title: Turning the chord track off sounds no chords
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio
+    when:
+      - singer S calls notes.set_playback_mix on note N
+    then:
+      - the note field chordTrackOn is false
+      - the note field backdropScheduled is false
+    maps_to:
+      capability: notes.set_playback_mix
+      invariants: [INV-NOTES-019]
+      view: VIEW-NOTES-002
+
+  - id: ACC-NOTES-040
+    interface: ui
+    title: The melody sounds over the take only when its track is on
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio and a detected melody
+    when:
+      - singer S calls notes.set_playback_mix on note N
+    then:
+      - the note field melodyTrackOn is true
+      - the note field melodyScheduled is true
+      - the note field melodyOverTakeSwitchShown is false
+    maps_to:
+      capability: notes.set_playback_mix
+      invariants: [INV-NOTES-019, INV-NOTES-027]
+      interaction: INT-NOTES-011
+
+  - id: ACC-NOTES-041
+    interface: ui
+    title: A note with nothing to turn shows no track toggles
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio, no chords and no melody
+    when:
+      - singer S views note N
+    then:
+      - the note field trackTogglesShown is 0
+      - the note field takeTrackOn is true
+    maps_to:
+      capability: notes.set_playback_mix
+      invariants: [INV-NOTES-019]
+      interaction: INT-NOTES-011

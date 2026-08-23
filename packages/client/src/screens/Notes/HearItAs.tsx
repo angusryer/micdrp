@@ -8,6 +8,10 @@
  *
  * Without being able to switch, every complaint about playback is ambiguous
  * between the two, which is what has made the pitch detector hard to judge.
+ *
+ * The control that sounds it is a toggle: the press that starts the melody is
+ * the press that stops it, and it says which of the two it is offering
+ * (INV-NOTES-031).
  */
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -15,12 +19,20 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { PlaybackMode } from 'logic';
 
 import { useTheme } from '../../theme';
+import { Icon } from '../../components/Icon';
 import { ModeChoice, type ModeOption } from './ModeChoice';
+
+/** Edge of the glyph on the play control, in px. */
+const GLYPH = 15;
 
 export interface HearItAsProps {
   mode: PlaybackMode;
   onChange: (mode: PlaybackMode) => void;
   onPlay: () => void;
+  /** Silence a melody already sounding, from the control that started it. */
+  onStop: () => void;
+  /** Whether the melody is sounding now, which is what the control reports. */
+  isPlaying: boolean;
   /** False when there is no grid, so notation has nothing to say. */
   canNotate: boolean;
 }
@@ -30,10 +42,49 @@ const MODES: { mode: PlaybackMode; label: string; hint: string }[] = [
   { mode: 'as-notated', label: 'As written', hint: 'snapped to notes and beats' }
 ];
 
+/**
+ * The melody's own transport. The press that starts it is the press that
+ * stops it, and the glyph says which one is on offer — a square rather than a
+ * pause, since what it ends starts again from the top (INV-NOTES-031).
+ */
+function MelodyToggle({
+  isPlaying,
+  restingLabel,
+  onPlay,
+  onStop
+}: {
+  isPlaying: boolean;
+  restingLabel: string;
+  onPlay: () => void;
+  onStop: () => void;
+}): React.JSX.Element {
+  const { colors } = useTheme();
+  return (
+    <TouchableOpacity
+      testID="hear-play"
+      accessibilityRole="button"
+      accessibilityLabel={isPlaying ? 'Stop the melody' : restingLabel}
+      accessibilityState={{ selected: isPlaying }}
+      onPress={isPlaying ? onStop : onPlay}
+      style={[
+        styles.play,
+        { backgroundColor: isPlaying ? colors.primary300 : colors.primary500 }
+      ]}
+    >
+      <Icon name={isPlaying ? 'stop' : 'play'} size={GLYPH} color={colors.white} />
+      <Text style={[styles.playText, { color: colors.white }]}>
+        {isPlaying ? 'Stop melody' : 'Play melody'}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 export function HearItAs({
   mode,
   onChange,
   onPlay,
+  onStop,
+  isPlaying,
   canNotate
 }: HearItAsProps): React.JSX.Element {
   const { colors } = useTheme();
@@ -55,15 +106,12 @@ export function HearItAs({
         testIDPrefix="hear"
       />
 
-      <TouchableOpacity
-        testID="hear-play"
-        accessibilityRole="button"
-        accessibilityLabel={`Play ${active.label.toLowerCase()}`}
-        onPress={onPlay}
-        style={[styles.play, { backgroundColor: colors.primary500 }]}
-      >
-        <Text style={[styles.playText, { color: colors.white }]}>Play melody</Text>
-      </TouchableOpacity>
+      <MelodyToggle
+        isPlaying={isPlaying}
+        restingLabel={`Play ${active.label.toLowerCase()}`}
+        onPlay={onPlay}
+        onStop={onStop}
+      />
 
       <Text style={[styles.hint, { color: colors.gray500 }]}>{active.hint}</Text>
 
@@ -73,7 +121,14 @@ export function HearItAs({
 
 const styles = StyleSheet.create({
   wrap: { gap: 8 },
-  play: { paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
+  play: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
   playText: { fontSize: 15, fontWeight: '700' },
   hint: { fontSize: 12, textAlign: 'center' }
 });

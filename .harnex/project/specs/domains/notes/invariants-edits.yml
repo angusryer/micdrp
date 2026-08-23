@@ -106,9 +106,13 @@ invariants:
     severity: high
     check: >
       The detected melody sounds over the take, on the take's own clock,
-      and its level can be changed while both are playing. Verified by
-      starting mid-take and asserting the melody lands where the voice
-      is, and that a level set during playback moves what is sounding.
+      and its level can be changed while both are playing. It is turned
+      on and off by its own track toggle beside the play control, with
+      the other tracks and by the same rules (INV-NOTES-019) — there is
+      no second switch for it under the graph. Verified by starting
+      mid-take and asserting the melody lands where the voice is, that a
+      level set during playback moves what is sounding, and that the
+      melody track's toggle is what decides whether it sounds at all.
 
       Hearing them apart says each is plausible; hearing them together
       says whether they are the same. A note read a semitone out, or a

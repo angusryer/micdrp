@@ -5,10 +5,12 @@
  * key, natural tempo, vocal range and intonation steadiness — plus the note list
  * (tap to hear each pitch) and a MIDI export. Play sounds the take and the chord
  * backdrop together, so the singer hears the harmony their line implied rather
- * than the bare recording — or either of them alone, whichever the choice beside
- * the play control is set to. The graph and the list draw the take either as it
+ * than the bare recording — or whichever tracks are left on beside the play
+ * control, the melody read from the take among them. The graph and the list draw the take either as it
  * was sung or as it was written down, whichever the choice above the graph is
- * set to. The symbolic melody is read straight from the cache;
+ * set to. The melody read from the take has its own control under the graph,
+ * which starts it and stops it again (INV-NOTES-031). The symbolic melody is
+ * read straight from the cache;
  * the audio is never re-touched. MIDI is generated on-the-fly from the stored
  * melody so export works without a server round-trip.
  */
@@ -50,7 +52,7 @@ const EMPTY_READINGS: InterpretationDto[] = [];
 import type { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
-import { createReferenceTonePlayer } from '../../audio/referenceTone';
+import { useTonePreview } from './useTonePreview';
 import { cachedNotes } from '../../data/notesSync';
 import { notesRepo } from '../../data/notesRepo';
 import { writeMidi } from '../../data/files';
@@ -160,9 +162,8 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
     onEditsChanged: interpretation.update
   });
   // Play sounds this backdrop with the take, or on its own, or not at all —
-  // whichever the choice beside the play control is set to (INV-NOTES-019).
+  // whichever way its track is turned beside the play control (INV-NOTES-019).
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>('as-sung');
-  const [isOverTake, setIsOverTake] = useState(false);
   const [melodyLevel, setMelodyLevel] = useState(DEFAULT_MELODY_LEVEL);
   const melodyTones = useMemo(
     () => playbackTargets(melody, quantized.notes, playbackMode),
@@ -173,36 +174,31 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
 
   const backdrop = useChordBackdrop(chords.progression);
 
-  // The melody follows the take itself; the chords follow the mix choice.
-  // Hanging one off the other made the melody a passenger on a decision about
-  // harmony, and it fell silent whenever chords were off (INV-NOTES-027).
+  // A track of its own beside the take's and the chords', turned on and off
+  // there rather than from a switch under the graph. Hanging it off the chord
+  // backdrop made it a passenger on a decision about harmony, and it fell
+  // silent whenever chords were off (INV-NOTES-027).
   const melodyVoiceMix = useMemo(
     () => ({
-      start: (offsetMs = 0) => {
-        if (isOverTake) {
-          melodyVoice.start(offsetMs);
-        }
-      },
+      start: (offsetMs = 0) => melodyVoice.start(offsetMs),
       stop: () => melodyVoice.stop(),
       durationMs: melodyTones[melodyTones.length - 1]?.endMs ?? 0
     }),
-    [melodyVoice, isOverTake, melodyTones]
+    [melodyVoice, melodyTones]
   );
-  // Tap a note to hear its pitch.
-  const tonePlayer = useMemo(() => createReferenceTonePlayer(), []);
-  useEffect(() => () => tonePlayer.stop(), [tonePlayer]);
-
-  // Two questions, not one. As sung, a wrong note is the detector's doing; as
-  // written, it is what transcription costs (INV-NOTES-026).
-  const playMelody = useCallback(() => {
-    tonePlayer.stop();
-    tonePlayer.play(melodyTones);
-  }, [tonePlayer, melodyTones]);
+  // One voice for the melody, a tapped note and a tapped chord: the press
+  // that sounds the melody is the press that stops it, and anything else
+  // taking the voice ends it rather than leaving the control claiming to play
+  // (INV-NOTES-031). Two questions, not one — as sung, a wrong note is the
+  // detector's doing; as written, it is what transcription costs
+  // (INV-NOTES-026).
+  const preview = useTonePreview(melodyTones);
+  const { playTones } = preview;
   const playNote = useCallback(
     (midi: number) => {
-      tonePlayer.play([{ midi, startMs: 0, endMs: TAP_NOTE_MS }]);
+      playTones([{ midi, startMs: 0, endMs: TAP_NOTE_MS }]);
     },
-    [tonePlayer]
+    [playTones]
   );
 
   // A chord is just its notes sounded together, which the reference player
@@ -213,11 +209,11 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
       if (midis.length === 0) {
         return;
       }
-      tonePlayer.play(
+      playTones(
         midis.map((midi) => ({ midi, startMs: 0, endMs: chords.auditionMs }))
       );
     },
-    [tonePlayer, chords]
+    [playTones, chords]
   );
 
   if (!note) {
@@ -337,15 +333,12 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
               <HearItAs
                 mode={playbackMode}
                 onChange={setPlaybackMode}
-                onPlay={playMelody}
+                onPlay={preview.play}
+                onStop={preview.stop}
+                isPlaying={preview.isPlaying}
                 canNotate={hasGrid}
               />
-              <MelodyMix
-                isOverTake={isOverTake}
-                onOverTakeChange={setIsOverTake}
-                level={melodyLevel}
-                onLevelChange={setMelodyLevel}
-              />
+              <MelodyMix level={melodyLevel} onLevelChange={setMelodyLevel} />
             </View>
           </>
         ) : null}

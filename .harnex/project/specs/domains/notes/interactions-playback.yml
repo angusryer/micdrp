@@ -20,24 +20,48 @@ interactions:
       capability: notes.play
 
   - id: INT-NOTES-011
-    name: Choose what play sounds
+    name: Turn the tracks a press sounds on and off
     view: VIEW-NOTES-002
-    precondition: The note has stored audio and its melody implied chords.
+    precondition: >
+      The note has stored audio and a track beyond the take — chords read
+      from it, a melody read from it, or both.
     steps:
-      - Choose take, chords, or both beside the play control
+      - Turn the take, the chords and the melody on or off beside the
+        play control
       - Press play
     outcome: >
-      Play sounds exactly what was chosen: the recorded take alone, the
-      chord backdrop alone, or the two together, which is what a note
-      offers before anything is chosen. Chords alone run to the end of
-      the progression and hand the control back to play. Changing the
-      choice while something is sounding stops it, so the next press
-      starts the mix that is now chosen.
+      Play sounds exactly the tracks left on: the recorded take, the
+      chord backdrop under it, the detected melody over it, in any
+      combination. The take and the chords are on and the melody off
+      before anything is turned. The chords with the take off run to the
+      end of the progression and hand the control back to play. Turning
+      a track while something is sounding stops it, so the next press
+      starts the mix as it now stands.
     error_handling: >
-      A note whose melody implied no chords offers no choice and plays
-      the take alone.
+      Only tracks the note has are offered, and a note with nothing to
+      turn shows no toggles and plays the take alone. The melody rides
+      the take, so its toggle cannot be turned on with the take off.
     maps_to:
       capability: notes.set_playback_mix
+
+  - id: INT-NOTES-016
+    name: Hear the melody that was read, and stop it
+    view: VIEW-NOTES-002
+    precondition: The note has a melody.
+    steps:
+      - Press the melody control under the graph
+      - Press it again
+    outcome: >
+      The first press sounds the melody in whichever reading is chosen
+      beside it, and the control becomes the stop for what it started.
+      The second press silences it. Left alone, it silences itself when
+      the melody runs out and the control offers play again.
+    error_handling: >
+      A note with no melody offers no such control. Changing the
+      reading, or tapping a note or a chord, stops what is sounding
+      rather than leaving the control claiming to play.
+    maps_to:
+      capability: notes.play_melody
 
   - id: INT-NOTES-010
     name: Play a kept idea from the list

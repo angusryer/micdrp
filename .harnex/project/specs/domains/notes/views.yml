@@ -47,6 +47,7 @@ views:
       - notes.list
       - notes.open_chord_track
       - notes.play
+      - notes.play_melody
       - notes.play_backdrop
       - notes.set_playback_mix
       - notes.export_midi
@@ -77,8 +78,19 @@ views:
       - That play control drawn as a round button carrying a triangle
         while it will start the take and a pair of upright bars while it
         is playing, with no word on it
-      - A choice beside that play control of what it sounds — the take,
-        the chords, or both, which is what is offered until something
-        else is chosen — shown only when the melody implied chords to
-        choose between
+      - One toggle per track beside that play control — the take, the
+        chords, the melody read from the take — each turned on and off
+        on its own, with the take and the chords on and the melody off
+        until they are turned, offering only the tracks the note has and
+        nothing at all when there is none to turn
+      - A choice under the graph of which reading is sounded when the
+        melody itself is played, made separately from what the take's
+        play control sounds
+      - A control beside that choice which sounds the melody read from
+        the take and stops it again on a second press, carrying a
+        triangle while a press would start it and a square while a press
+        would stop it, and saying which it is doing in its own word
+      - A level under the graph for how loudly that same melody sits
+        against the take when its track is on, and no separate switch
+        for turning it on — that is the melody's track toggle
       - An export control offering the melody as a MIDI file

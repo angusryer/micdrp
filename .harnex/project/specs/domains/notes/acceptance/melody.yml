@@ -1,0 +1,35 @@
+# Sounding the melody read out of a take, and stopping it again —
+# INV-NOTES-031. Its own file so acceptance/playback.yml stays inside the
+# 150-line spec-file budget.
+acceptance:
+  - id: ACC-NOTES-038
+    interface: ui
+    title: The control that starts the melody is the control that stops it
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio
+    when:
+      - singer S calls notes.play_melody on note N
+    then:
+      - the note field melodyPlaying is true
+      - the note field melodyControlsShown is 1
+    maps_to:
+      capability: notes.play_melody
+      invariants: [INV-NOTES-031]
+      interaction: INT-NOTES-016
+
+  - id: ACC-NOTES-039
+    interface: ui
+    title: A second press stops the melody and sounds nothing new
+    given:
+      - a signed-in singer S
+      - singer S has a note N with stored audio
+    when:
+      - singer S calls notes.play_melody on note N
+    then:
+      - the note field melodyPlayingAfterSecondPress is false
+      - the note field melodyScheduledOnSecondPress is false
+    maps_to:
+      capability: notes.play_melody
+      invariants: [INV-NOTES-031]
+      interaction: INT-NOTES-016
