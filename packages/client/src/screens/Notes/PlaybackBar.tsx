@@ -67,6 +67,9 @@ export interface PlaybackBarProps {
   onTransport?: (transport: {
     positionMs: number;
     seek: (ms: number) => void;
+    /** Start the take, so a layer can be sung against it (INT-NOTES-025). */
+    play: () => void;
+    stop: () => void;
   }) => void;
 }
 
@@ -120,8 +123,14 @@ export function PlaybackBar({
   );
 
   useEffect(
-    () => onTransport?.({ positionMs, seek: (ms) => void seek(ms) }),
-    [onTransport, positionMs, seek]
+    () =>
+      onTransport?.({
+        positionMs,
+        seek: (ms) => void seek(ms),
+        play: () => void play(),
+        stop: () => void stop()
+      }),
+    [onTransport, positionMs, seek, play, stop]
   );
 
   return (

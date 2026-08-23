@@ -57,3 +57,23 @@ interactions:
       about it changes.
     maps_to:
       capability: notes.transpose_playback
+
+  - id: INT-NOTES-025
+    name: Sing the bass line you heard under a take
+    view: VIEW-NOTES-002
+    precondition: The note has stored audio.
+    steps:
+      - Press record beside the chords
+      - Sing the roots you hear underneath while the take plays
+      - Press stop
+    outcome: >
+      The take plays and the second voice is captured against it. What
+      comes back is read as a recording — detected, drawn, sounded, and
+      silenceable like any other — and used as the harmony's evidence: it
+      names the root of every chord and states where the chords change.
+
+      Recording opens before playback starts. A take that began while the
+      microphone was still opening would be sung against a moment already
+      gone.
+    maps_to:
+      capability: notes.capture

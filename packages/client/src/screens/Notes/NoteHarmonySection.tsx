@@ -17,10 +17,15 @@ import type { useNoteDetail } from './useNoteDetail';
 
 export interface NoteHarmonySectionProps {
   detail: ReturnType<typeof useNoteDetail>;
+  /** Start the take, so the layer is sung against something. */
+  onPlayTake?: () => void;
+  onStopTake?: () => void;
 }
 
 export function NoteHarmonySection({
-  detail
+  detail,
+  onPlayTake,
+  onStopTake
 }: NoteHarmonySectionProps): React.JSX.Element {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -43,8 +48,16 @@ export function NoteHarmonySection({
         layers={detail.layers}
         isRecording={detail.layerCapture.isRecording}
         alignedByMs={detail.layerCapture.alignedByMs}
-        onStart={() => void detail.layerCapture.start('bass')}
-        onStop={() => void detail.layerCapture.stop()}
+        onStart={() => {
+          // Recording first, then playback: a take that started while the
+          // microphone was still opening would be sung against a moment that
+          // has already gone by.
+          void detail.layerCapture.start('bass').then(() => onPlayTake?.());
+        }}
+        onStop={() => {
+          onStopTake?.();
+          void detail.layerCapture.stop();
+        }}
         onMuteChange={detail.setLayerMuted}
       />
       <Text style={[styles.caption, { color: colors.gray300 }]}>

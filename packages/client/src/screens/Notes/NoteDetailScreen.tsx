@@ -61,6 +61,8 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   const [transport, setTransport] = useState<{
     positionMs: number;
     seek: (ms: number) => void;
+    play: () => void;
+    stop: () => void;
   } | null>(null);
 
   if (!note) {
@@ -139,7 +141,13 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
               {t('notes.harmony')}
             </Text>
-            <NoteHarmonySection detail={detail} />
+            {/* The take plays while the layer is sung over it — that is what
+                makes it a layer rather than a second recording. */}
+            <NoteHarmonySection
+              detail={detail}
+              onPlayTake={() => transport?.play()}
+              onStopTake={() => transport?.stop()}
+            />
           </>
         ) : null}
 
