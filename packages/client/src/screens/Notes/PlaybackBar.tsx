@@ -14,8 +14,9 @@
  * same take (INV-NOTES-015).
  */
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Icon } from '../../components/Icon';
 import { useTheme } from '../../theme';
 import { PlaybackButton } from './PlaybackButton';
 import { PlaybackMixToggle } from './PlaybackMixToggle';
@@ -80,7 +81,7 @@ export function PlaybackBar({
     () => withOnlyAvailable(mix, offered),
     [mix, offered]
   );
-  const { state, play, stop } = usePlaybackMix({
+  const { state, play, stop, rewind } = usePlaybackMix({
     resolveAudioUri,
     mix: sounding,
     accompaniment,
@@ -90,6 +91,18 @@ export function PlaybackBar({
   return (
     <View style={styles.stack}>
       <View style={styles.container}>
+        {/* Beside play rather than behind a gesture: a wrong note is judged by
+            hearing it again, and that was costing the whole take
+            (INT-NOTES-020). */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Go back five seconds"
+          onPress={() => void rewind()}
+          hitSlop={8}
+          style={({ pressed }) => [styles.rewind, { opacity: pressed ? 0.5 : 1 }]}
+        >
+          <Icon name="rewind" size={20} color={colors.gray300} />
+        </Pressable>
         <PlaybackButton
           state={state}
           onPlay={() => void play()}
@@ -123,6 +136,7 @@ export function PlaybackBar({
 export default PlaybackBar;
 
 const styles = StyleSheet.create({
+  rewind: { padding: 4, marginRight: 4 },
   stack: { gap: 8 },
   container: {
     flexDirection: 'row',

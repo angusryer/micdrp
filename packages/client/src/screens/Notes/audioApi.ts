@@ -13,7 +13,8 @@ export interface AudioBufferLike {
 export interface AudioBufferSourceNodeLike {
   buffer: AudioBufferLike | null;
   connect(dest: AudioDestinationNodeLike): void;
-  start(when?: number): void;
+  /** `offset` is where in the buffer to begin, in seconds (INV-NOTES-069). */
+  start(when?: number, offset?: number): void;
   stop(when?: number): void;
   onended: (() => void) | null;
 }

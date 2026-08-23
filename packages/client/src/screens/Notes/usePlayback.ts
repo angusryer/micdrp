@@ -54,7 +54,10 @@ export interface Playback {
    * a take already running lines itself up with (INV-NOTES-020).
    */
   elapsedMs: () => number;
-  play(): Promise<void>;
+  /** Start at a moment in the take. Omitted, from the beginning. */
+  play(fromMs?: number): Promise<void>;
+  /** How long the take runs, once it has been decoded at least once. */
+  durationMs: number;
   stop(): Promise<void>;
 }
 
@@ -63,7 +66,11 @@ export function usePlayback({
 }: UsePlaybackOptions): Playback {
   const [state, setState] = useState<PlaybackState>('stopped');
   // Runs only while audio is running, and resets itself the moment it isn't.
-  const positionMs = usePlaybackClock(state === 'playing');
+  // Where this run began, so the counter names a moment in the take rather
+  // than time-since-press (INV-NOTES-069).
+  const [fromMs, setFromMs] = useState(0);
+  const [durationMs, setDurationMs] = useState(0);
+  const positionMs = usePlaybackClock(state === 'playing', fromMs);
   const anchor = useTakeAnchor();
   const ctxRef = useRef<AudioContextLike | null>(null);
   const sourceRef = useRef<AudioBufferSourceNodeLike | null>(null);
@@ -91,7 +98,7 @@ export function usePlayback({
     };
   }, [resolveAudioUri, teardown]);
 
-  const play = useCallback(async (): Promise<void> => {
+  const play = useCallback(async (startAtMs = 0): Promise<void> => {
     if (state === 'loading' || state === 'playing') {
       return;
     }
@@ -116,6 +123,12 @@ export function usePlayback({
       const ctx = new AudioContext();
       ctxRef.current = ctx;
       const audioBuffer = await ctx.decodeAudioData(resolved);
+      const takeMs = audioBuffer.duration * 1000;
+      setDurationMs(takeMs);
+      // Brought inside the take: a source started past its own end never
+      // fires onended, so the control would sit on "playing" forever.
+      const offsetMs = Math.min(Math.max(startAtMs, 0), Math.max(0, takeMs - 1));
+      setFromMs(offsetMs);
       const source = ctx.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(ctx.destination);
@@ -125,7 +138,7 @@ export function usePlayback({
         void ctx.close().catch(() => undefined);
         ctxRef.current = null;
       };
-      source.start(0);
+      source.start(0, offsetMs / 1000);
       // The take's clock starts here, not at the press — decode sits between.
       anchor.mark();
       sourceRef.current = source;
@@ -146,5 +159,5 @@ export function usePlayback({
     setState('stopped');
   }, [teardown]);
 
-  return { state, positionMs, elapsedMs: anchor.elapsedMs, play, stop };
+  return { state, positionMs, elapsedMs: anchor.elapsedMs, durationMs, play, stop };
 }

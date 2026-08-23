@@ -22,6 +22,7 @@ export type IconName =
   | 'settings'
   | 'play'
   | 'pause'
+  | 'rewind'
   | 'stop';
 
 /** Material-style filled glyphs, authored on a 24×24 viewbox. */
@@ -39,6 +40,10 @@ const ICON_PATHS: Record<IconName, string> = {
   // centred inside a circle, which is where these two are used (INV-NOTES-030).
   play: 'M8 5v14l11-7z',
   pause: 'M6 5h4v14H6zm8 0h4v14h-4z',
+  // Two triangles pointing back into a bar: goes back over a passage rather
+  // than to the very start, which is what a press actually does
+  // (INT-NOTES-020).
+  rewind: 'M18 6v12l-8.5-6L18 6zM9 6v12L4 12l5-6z',
   // A square, not a pair of bars: what it ends cannot be resumed, only
   // started again from the top (INV-NOTES-031).
   stop: 'M6 6h12v12H6z',

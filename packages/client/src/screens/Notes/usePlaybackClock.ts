@@ -17,24 +17,27 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 const TICK_MS = 500;
 
 /**
- * Elapsed milliseconds since `running` turned true, 0 whenever it is false.
- * Restarts from zero each time it turns true, which is each fresh press of play.
+ * Milliseconds into the take, 0 whenever nothing is running.
+ *
+ * `fromMs` is where this run of playback began. A take resumed part-way
+ * through counts from there, not from zero — the counter names a moment in
+ * the take, and after a rewind that moment is not the start (INV-NOTES-069).
  */
-export function usePlaybackClock(running: boolean): number {
-  const [elapsedMs, setElapsedMs] = useState(0);
+export function usePlaybackClock(running: boolean, fromMs = 0): number {
+  const [elapsedMs, setElapsedMs] = useState(fromMs);
 
   useEffect(() => {
-    setElapsedMs(0);
+    setElapsedMs(fromMs);
     if (!running) {
       return;
     }
     const startedAt = Date.now();
     const id = setInterval(
-      () => setElapsedMs(Date.now() - startedAt),
+      () => setElapsedMs(fromMs + (Date.now() - startedAt)),
       TICK_MS
     );
     return () => clearInterval(id);
-  }, [running]);
+  }, [running, fromMs]);
 
   return elapsedMs;
 }

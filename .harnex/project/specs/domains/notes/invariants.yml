@@ -81,26 +81,26 @@ invariants:
       quieter per tone than an audition, which is heard on its own.
 
   - id: INV-NOTES-068
-    description: The graph reads down — melody, then the chords it implies
+    description: The chords are drawn on the melody's own pitch ruler
     severity: minor
     check: >
-      In the note's graph the sung line is drawn above the chords read
-      from it, the chords sit along the bottom edge of the graph, and the
-      cards that edit those chords are the next thing below the graph.
-      Verified by asserting the order the graph stacks its two lanes and
-      that the chord lane is drawn between the melody and the track.
+      The sung line and the chords read from it share one vertical scale,
+      so a chord note and a sung note at the same pitch sit at the same
+      height, and the cards that edit those chords are the next thing
+      below the graph. Verified by asserting both are laid out from one
+      pitch axis and one time axis.
 
-      Stacking follows the harmony: a backdrop already sounds below the
-      sung line (INV-NOTES-009), so drawing it above the melody puts the
-      picture at odds with what is heard. Keeping the lane against the
-      bottom edge also puts each chord within a thumb's travel of the
-      card that changes it, so the two readings of one chord — its span
-      across the take and the control for it — are read together.
+      A spoken request asked for the chords as a lane along the bottom
+      edge instead. Put to the maintainer, the answer was to keep them on
+      the shared ruler: the graph's whole claim is that vertical distance
+      is pitch distance, and a second scale on the same screen makes the
+      same interval measure two different heights. What prompted the
+      request — chords appearing among the low notes of the melody — is a
+      consequence of lifting them for the phone speaker (INV-NOTES-039),
+      not of the axis they are drawn on.
 
-      Both lanes are laid out on the melody's own time axis, so a chord
-      is drawn under the notes it was inferred from. A lane on a second
-      axis would drift from the line above it and claim a harmony nobody
-      sang there.
+      Both lanes share the time axis too, so a chord is drawn under the
+      notes it was inferred from (INV-NOTES-061).
 
   - id: INV-NOTES-017
     description: A chord slot never eats a sideways drag

@@ -108,3 +108,22 @@ interactions:
       flattening the intervals.
     maps_to:
       capability: notes.transpose_playback
+
+  - id: INT-NOTES-020
+    name: Go back over a passage
+    view: VIEW-NOTES-002
+    precondition: The note has stored audio.
+    steps:
+      - Press rewind while the take is playing, or after it has stopped
+    outcome: >
+      Playback resumes a few seconds earlier, with every track that was
+      sounding still together — the take, the chords under it and the
+      melody over it all move back by the same amount, because they are
+      one performance and not three. Pressing it at the very start, or
+      before anything has played, starts the take from the beginning.
+
+      A wrong note is judged by hearing it again, and hearing it again
+      meant playing the whole take from the top. That cost grows with the
+      take, so the longer the idea the less it was checked.
+    maps_to:
+      capability: notes.play

@@ -23,6 +23,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePlayback, type PlaybackState } from './usePlayback';
 import { sameMix, type PlaybackMix } from './playbackTracks';
 
+/** How far back a press of rewind goes. About one phrase of a sung idea. */
+export const REWIND_MS = 5000;
+
 export type { PlaybackMix };
 
 export interface MixAccompaniment {
@@ -51,7 +54,12 @@ export interface UsePlaybackMixOptions {
 
 export interface MixedPlayback {
   state: PlaybackState;
-  play(): Promise<void>;
+  /** Start at a moment in the take. Omitted, from the beginning. */
+  play(fromMs?: number): Promise<void>;
+  /** Stop, then resume this many ms earlier — never before the start. */
+  rewind(byMs?: number): Promise<void>;
+  /** Where the take is now, in ms. */
+  positionMs: number;
   stop(): Promise<void>;
 }
 
@@ -64,6 +72,7 @@ export function usePlaybackMix({
   const {
     state: takeState,
     elapsedMs: takeElapsedMs,
+    positionMs,
     play: playTake,
     stop: stopTake
   } = usePlayback({ resolveAudioUri });
@@ -135,9 +144,9 @@ export function usePlaybackMix({
     await stopTake();
   }, [clearEndTimer, stopTake]);
 
-  const play = useCallback(async (): Promise<void> => {
+  const play = useCallback(async (fromMs = 0): Promise<void> => {
     if (wantsTake) {
-      await playTake();
+      await playTake(fromMs);
       return;
     }
     // With the take off the chords are the transport; with both off there is
@@ -162,7 +171,19 @@ export function usePlaybackMix({
     void stop();
   }, [mix, stop]);
 
-  return { state, play, stop };
+  // One performance heard three ways, so they move together: a backdrop that
+  // restarted from the top while the take resumed in the middle would put a
+  // different chord under every note (INV-NOTES-069).
+  const rewind = useCallback(
+    async (byMs = REWIND_MS): Promise<void> => {
+      const to = Math.max(0, takeElapsedMs() - byMs);
+      await stop();
+      await play(to);
+    },
+    [takeElapsedMs, stop, play]
+  );
+
+  return { state, play, stop, rewind, positionMs };
 }
 
 export default usePlaybackMix;

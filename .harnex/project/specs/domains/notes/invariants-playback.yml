@@ -170,3 +170,18 @@ invariants:
 
   # The melody's own control — INV-NOTES-031 — lives in
   # invariants-melody.yml, so this file stays inside the budget.
+
+  - id: INV-NOTES-069
+    description: Moving to a moment moves every track to that moment
+    severity: critical
+    check: >
+      Starting playback at a position starts the take, the chord backdrop
+      and the melody over it at that same position, and the counter reads
+      from there rather than from zero. A position past the end, or below
+      zero, is brought inside the take. Verified by asserting each track
+      is handed the same offset and that the clock is anchored to it.
+
+      They are one performance heard three ways. A backdrop that restarts
+      from the top while the take resumes in the middle is not merely out
+      of step, it is a different chord under every note — which reads as
+      the harmony being wrong rather than the transport.
