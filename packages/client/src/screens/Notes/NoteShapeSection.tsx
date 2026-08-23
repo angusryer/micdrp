@@ -67,7 +67,7 @@ export function NoteShapeSection({
     []
   );
   const {
-    melody,
+    shownMelody: melody,
     gridForView,
     chordPitchesShown,
     chords,

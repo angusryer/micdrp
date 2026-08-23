@@ -16,6 +16,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { HearItAs } from './HearItAs';
+import { SeeItAs } from './SeeItAs';
 import { MelodyMix } from './MelodyMix';
 import { MelodyOctave } from './MelodyOctave';
 import type { useNoteDetail } from './useNoteDetail';
@@ -41,6 +42,14 @@ export function NoteShapeControls({
           onStop={detail.stopMelody}
           isPlaying={detail.isMelodyPlaying}
           canNotate={hasGrid}
+        />
+        {/* Its own control rather than a second use of the playback one:
+            reading the notation while hearing the raw take is how you tell
+            which of the two is wrong (INV-NOTES-026). */}
+        <SeeItAs
+          view={detail.notationView}
+          onChange={detail.setNotationView}
+          canNotate={detail.canNotate}
         />
         <MelodyMix
           level={detail.melodyLevel}

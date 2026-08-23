@@ -34,6 +34,7 @@ import { useChordTrack } from './useChordTrack';
 import { useInterpretation } from './useInterpretation';
 import { useExportedMidi } from './useExportedMidi';
 import type { Selection } from '../../components/graphSelection';
+import { useNotationView } from './useNotationView';
 import { useNotePlayback } from './useNotePlayback';
 
 /** Stable, so a note with no readings does not look like a new one each render. */
@@ -154,6 +155,12 @@ export function useNoteDetail(id: string) {
     [bars.layout.lines, grid]
   );
 
+  // Two readings of one take, for the eye. A snap onto the wrong step is
+  // plain in the picture and all but inaudible in a short take, which is how
+  // the quantizer gets judged (INV-NOTES-026). Only the drawing follows this:
+  // the chords, the bars and the edits are all read from the melody itself.
+  const notation = useNotationView(melody, quantized.notes, hasGrid);
+
   const midiUri = useExportedMidi(note?.id ?? null, melody);
 
   // Where the backdrop sits, which is really a question about what you are
@@ -194,6 +201,11 @@ export function useNoteDetail(id: string) {
     gridForView,
     metre,
     meterIsStated: grid.meterIsStated,
+    /** The melody as the chosen reading draws it — the graph's notes. */
+    shownMelody: notation.notes,
+    notationView: notation.view,
+    setNotationView: notation.setView,
+    canNotate: notation.canNotate,
     bars,
     chords,
     chordPitchesShown,
