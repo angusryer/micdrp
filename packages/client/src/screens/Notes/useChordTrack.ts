@@ -85,6 +85,11 @@ export interface ChordTrackOptions {
    * the singer's rather than the metre's (INV-NOTES-048).
    */
   downbeatSteps?: readonly number[];
+  /**
+   * A bass layer sung against the take, when there is one. It names the root
+   * of each chord, which a melody alone can only imply (INV-NOTES-071).
+   */
+  bassLayer?: readonly NoteEvent[];
 }
 
 export function useChordTrack(
@@ -96,12 +101,13 @@ export function useChordTrack(
     savedEdits,
     onEditsChanged,
     floorMidi = VOICING_BOTTOM_MIDI,
-    downbeatSteps
+    downbeatSteps,
+    bassLayer
   } = options;
   const key = useMemo(() => detectKey(melody), [melody]);
   const inferred = useMemo(
-    () => harmonizeToGrid(melody, grid, { key, downbeatSteps }),
-    [melody, grid, key, downbeatSteps]
+    () => harmonizeToGrid(melody, grid, { key, downbeatSteps, bass: bassLayer }),
+    [melody, grid, key, downbeatSteps, bassLayer]
   );
 
   // Inference first, then a person's decisions on top of it — which is what

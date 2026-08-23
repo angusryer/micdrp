@@ -24,6 +24,8 @@
  */
 
 import type { ChordQuality, Melody } from './analysis';
+import { bassPitchClassOver, bassSpans } from './bassContext';
+import type { NoteEvent } from './segmentation';
 import { chordForSpan } from './chordMatch';
 import { rootMidiAtOrAbove, voicedTones, type ChordVoicing } from './voicing';
 import { relabel, type ChordSlot } from './chordSlot';
@@ -47,6 +49,14 @@ export interface HarmonizeOptions {
    * proposal rather than a claim about the music.
    */
   downbeatSteps?: readonly number[];
+  /**
+   * A layer sung against the take, naming the root under each span.
+   *
+   * The one thing a melody cannot state about its own harmony, so where it
+   * exists it is the strongest evidence there is — weighted, not obeyed
+   * (INV-NOTES-071).
+   */
+  bass?: readonly NoteEvent[];
 }
 
 export function harmonizeToGrid(
@@ -74,12 +84,20 @@ export function harmonizeToGrid(
     ? spansFromDownbeats(options.downbeatSteps, grid, endOfMelody)
     : evenSpans(grid, options.chordsPerBar ?? 1, startOfMelody, endOfMelody);
 
+  // Read once for the whole take rather than per span: the layer does not
+  // change, and re-deriving it inside the loop would be the same answer
+  // computed as many times as there are chords.
+  const bass = options.bass?.length ? bassSpans(options.bass) : null;
+
   const slots: ChordSlot[] = [];
   for (const span of spans) {
     // Matched over exactly the span it covers, rather than against a sweep of
     // fixed windows that a person's own downbeats would cut across.
     const match = chordForSpan(notes, span.startMs, span.endMs, {
-      vocabulary: options.vocabulary ?? 'triads'
+      vocabulary: options.vocabulary ?? 'triads',
+      bassPc: bass
+        ? bassPitchClassOver(bass, span.startMs, span.endMs)
+        : null
     });
     if (!match) {
       continue;

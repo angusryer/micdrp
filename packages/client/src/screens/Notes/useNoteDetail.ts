@@ -106,12 +106,22 @@ export function useNoteDetail(id: string) {
   const grid = quantized.grid;
   const hasGrid = grid.bpm > 0 && melody.length > 1;
 
+  // A second take sung against this one, when there is one. The bass layer
+  // is the one that carries harmony: it names the root and states where the
+  // chord changes, which are the two things a melody alone only implies
+  // (INV-NOTES-071, INV-NOTES-072).
+  const bass = useMemo(
+    () =>
+      (note?.layers ?? []).find((layer) => layer.role === 'bass')?.melody,
+    [note?.layers]
+  );
+
   // Where the harmony turns over, which is what a downbeat marks. The take
   // opens on these rather than on an even division counted out from the
-  // tempo (INV-NOTES-049).
+  // tempo (INV-NOTES-049) — unless a layer states it outright.
   const readDownbeats = useMemo(
-    () => proposeDownbeats(melody, grid),
-    [melody, grid]
+    () => proposeDownbeats(melody, grid, bass ? { bass } : {}),
+    [melody, grid, bass]
   );
 
   // Where the downbeats fall. Detection proposes; a person arranges
@@ -178,7 +188,8 @@ export function useNoteDetail(id: string) {
     savedEdits: interpretation.savedEdits,
     onEditsChanged: interpretation.update,
     floorMidi,
-    downbeatSteps: bars.layout.lines
+    downbeatSteps: bars.layout.lines,
+    bassLayer: bass
   });
   // Every pitch the chords occupy, so the graph's vertical window takes them
   // in rather than letting them fall off the bottom of it.

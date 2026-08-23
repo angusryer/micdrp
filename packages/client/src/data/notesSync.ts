@@ -34,6 +34,7 @@ export function dtoToMeta(dto: NoteDto): NoteMeta {
     sampleRateHz: dto.sampleRateHz,
     audioPath: dto.audioPath,
     melody: dto.melody,
+    layers: dto.layers ?? [],
     interpretations: dto.interpretations,
     key: dto.key ?? undefined,
     tempoBpm: dto.tempoBpm ?? undefined,

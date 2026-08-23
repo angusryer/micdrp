@@ -14,7 +14,7 @@
 import type { NoteEventDto } from 'shared';
 
 import { getJSON } from './store';
-import type { InterpretationDto } from 'shared';
+import type { NoteLayerDto, InterpretationDto } from 'shared';
 
 /** MMKV key under which the whole `id -> NoteMeta` index is stored. */
 export const NOTES_INDEX_KEY = 'notes.index';
@@ -55,6 +55,12 @@ export interface NoteMeta {
    * network answers is a decision that looks lost.
    */
   interpretations?: InterpretationDto[];
+  /**
+   * Second takes sung against this one, as context for reading it. Optional:
+   * a note cached before layers existed simply has none, which is not an
+   * error (INV-NOTES-073).
+   */
+  layers?: NoteLayerDto[];
 }
 
 type NoteIndex = Record<string, NoteMeta>;

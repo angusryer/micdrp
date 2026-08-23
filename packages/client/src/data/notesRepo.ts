@@ -14,7 +14,13 @@
  *
  * The bucket is private, so reads return short-lived signed URLs for playback.
  */
-import { AppErrorCode, appError, audioExtensionOf, parseInterpretations } from 'shared';
+import {
+  AppErrorCode,
+  appError,
+  audioExtensionOf,
+  parseInterpretations,
+  parseLayers
+} from 'shared';
 import type {
   CreateNoteInput,
   InterpretationDto,
@@ -65,7 +71,8 @@ function rowToDto(row: NoteRow): NoteDto {
     noteCount: row.note_count,
     rangeLowMidi: row.range_low_midi,
     rangeHighMidi: row.range_high_midi,
-    interpretations: parseInterpretations(row.interpretations_json)
+    interpretations: parseInterpretations(row.interpretations_json),
+    layers: parseLayers((row as { layers_json?: unknown }).layers_json)
   };
 }
 
