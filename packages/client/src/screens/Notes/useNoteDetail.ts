@@ -24,8 +24,7 @@ import type { InterpretationDto } from 'shared';
 
 import {
   chordPitches,
-  HEADPHONE_FLOOR_MIDI,
-  SPEAKER_FLOOR_MIDI
+  HEADPHONE_FLOOR_MIDI
 } from '../../components/chordLayout';
 import { cachedNotes } from '../../data/notesSync';
 import { notesRepo } from '../../data/notesRepo';
@@ -178,8 +177,11 @@ export function useNoteDetail(id: string) {
   // chords voiced where a piano would put them are inaudible on one; lifted
   // towards the melody they can be heard. The same control moves them on the
   // graph, by exactly as much.
-  const [chordsLifted, setChordsLifted] = useState(true);
-  const floorMidi = chordsLifted ? SPEAKER_FLOOR_MIDI : HEADPHONE_FLOOR_MIDI;
+  // Said as what it is. "Lift for the speaker" was a listening choice that
+  // only ever moved the chords by an octave, and every other line already
+  // says that in octaves (INV-NOTES-039).
+  const [chordOctaves, setChordOctaves] = useState(1);
+  const floorMidi = HEADPHONE_FLOOR_MIDI + 12 * chordOctaves;
   // The chords are the downbeats, seen a second way: each one opens a chord
   // that runs to the next (INV-NOTES-048). Handing the arrangement in is what
   // makes dragging a line move the harmony with it, rather than leaving two
@@ -221,8 +223,8 @@ export function useNoteDetail(id: string) {
     chords,
     chordPitchesShown,
     floorMidi,
-    chordsLifted,
-    toggleChordsLifted: useCallback(() => setChordsLifted((on) => !on), []),
+    chordOctaves,
+    setChordOctaves,
     resolveAudio,
     midiUri,
     correctNote,

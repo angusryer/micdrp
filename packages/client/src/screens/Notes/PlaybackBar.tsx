@@ -20,6 +20,7 @@ import { Icon } from '../../components/Icon';
 import { PlaybackSheet } from './PlaybackSheet';
 import { useTheme } from '../../theme';
 import { PlaybackButton } from './PlaybackButton';
+import { GlyphGuideSheet } from './GlyphGuideSheet';
 import { TrackCard } from './TrackCard';
 import { PlaybackOptionsButton } from './PlaybackOptionsButton';
 import {
@@ -35,14 +36,8 @@ import {
 /** What each track is called, in the singer's terms rather than the code's. */
 const TRACK_TITLES: Record<TrackName, string> = {
   take: 'Your take',
-  chords: 'Chords read from it',
-  melody: 'Melody read from it'
-};
-
-const TRACK_HINTS: Record<TrackName, string> = {
-  take: 'The recording itself',
-  chords: 'The harmony your line implies, with its root underneath',
-  melody: 'What the detector heard you sing'
+  chords: 'Chords read from your take',
+  melody: 'Transcription of your take'
 };
 import { usePlaybackMix, type MixAccompaniment } from './usePlaybackMix';
 
@@ -106,6 +101,7 @@ export function PlaybackBar({
 }: PlaybackBarProps) {
   const { colors } = useTheme();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [explaining, setExplaining] = useState<TrackName | null>(null);
   const [mix, setMix] = useState<PlaybackMix>(DEFAULT_MIX);
   const [levels, setLevels] = useState<TrackLevels>(DEFAULT_LEVELS);
   const setLevel = useCallback(
@@ -231,17 +227,24 @@ export function PlaybackBar({
           <TrackCard
             key={track}
             title={TRACK_TITLES[track]}
-            hint={TRACK_HINTS[track]}
             level={levels[track]}
             onLevelChange={(level) => setLevel(track, level)}
             isAudible={sounding[track]}
             onAudibleChange={(on) => setAudible(track, on)}
             isLocked={isTrackLocked(track, sounding)}
+            onExplain={() => setExplaining(track)}
           >
             {trackOptions?.(track)}
           </TrackCard>
         ))}
       </PlaybackSheet>
+
+      {/* Where the words went, now that the controls are glyphs
+          (INV-NOTES-086). */}
+      <GlyphGuideSheet
+        track={explaining}
+        onClose={() => setExplaining(null)}
+      />
     </View>
   );
 }

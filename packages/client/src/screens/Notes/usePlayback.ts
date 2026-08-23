@@ -81,7 +81,24 @@ export function usePlayback({
   const ctxRef = useRef<AudioContextLike | null>(null);
   const sourceRef = useRef<AudioBufferSourceNodeLike | null>(null);
 
+  /**
+   * The take's own length as a second way of noticing it ended.
+   *
+   * `onended` is the native source's promise to tell us, and a promise we
+   * cannot verify from here is not one to hang the transport on: when it does
+   * not arrive the control sits on pause over silence, offering to stop
+   * something that already stopped (INV-NOTES-085).
+   */
+  const endsAt = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearEndsAt = useCallback(() => {
+    if (endsAt.current) {
+      clearTimeout(endsAt.current);
+      endsAt.current = null;
+    }
+  }, []);
+
   const teardown = useCallback(async (): Promise<void> => {
+    clearEndsAt();
     try {
       sourceRef.current?.stop();
     } catch {
@@ -94,7 +111,7 @@ export function usePlayback({
       // ignore
     }
     ctxRef.current = null;
-  }, []);
+  }, [clearEndsAt]);
 
   // Stop any running audio when the source changes (different card opened)
   // and on unmount.
@@ -145,12 +162,19 @@ export function usePlayback({
       source.buffer = audioBuffer;
       source.connect(level);
       source.onended = () => {
+        clearEndsAt();
         setState('stopped');
         sourceRef.current = null;
         void ctx.close().catch(() => undefined);
         ctxRef.current = null;
       };
       source.start(0, offsetMs / 1000);
+      // Whichever arrives first puts the control back to play.
+      clearEndsAt();
+      endsAt.current = setTimeout(
+        () => setState('stopped'),
+        Math.max(0, takeMs - offsetMs)
+      );
       // The take's clock starts here, not at the press — decode sits between.
       anchor.mark();
       sourceRef.current = source;
@@ -164,7 +188,7 @@ export function usePlayback({
       ctxRef.current = null;
       sourceRef.current = null;
     }
-  }, [anchor, resolveAudioUri, state]);
+  }, [anchor, resolveAudioUri, state, clearEndsAt]);
 
   const stop = useCallback(async (): Promise<void> => {
     await teardown();

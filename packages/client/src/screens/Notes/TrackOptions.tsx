@@ -19,6 +19,15 @@ import { IconToggle } from './IconToggle';
 import { OctaveSlider } from './OctaveSlider';
 import type { useNoteDetail } from './useNoteDetail';
 
+/**
+ * How far the chords may move.
+ *
+ * Two either way covers what it is for: a backdrop voiced where a piano would
+ * put it is inaudible on a phone, and one or two octaves up is the whole of
+ * the fix (INV-NOTES-039).
+ */
+const CHORD_OCTAVE_RANGE = { down: 2, up: 2 };
+
 export interface TrackOptionsProps {
   detail: ReturnType<typeof useNoteDetail>;
   track: TrackName;
@@ -29,20 +38,16 @@ export function TrackOptions({
   track
 }: TrackOptionsProps): React.JSX.Element | null {
   if (track === 'chords') {
+    // Lifting the chords for the phone speaker was only ever moving them by
+    // an octave, said as a listening choice. Said as what it is, it is the
+    // same control the other lines have (INV-NOTES-039).
     return (
-      <View style={styles.toggles}>
-        {/* Which register the chords occupy, which is really a question about
-            what you are listening on: a phone speaker has almost nothing an
-            octave below middle C (INV-NOTES-039). */}
-        <IconToggle
-          testID="lift-chords"
-          icon="speaker"
-          offIcon="headphones"
-          isOn={detail.chordsLifted}
-          onChange={detail.toggleChordsLifted}
-          label="Lift the chords for the phone speaker"
-        />
-      </View>
+      <OctaveSlider
+        octaves={detail.chordOctaves}
+        range={CHORD_OCTAVE_RANGE}
+        onChange={detail.setChordOctaves}
+        label="Chord octave"
+      />
     );
   }
 

@@ -115,3 +115,35 @@ invariants:
       with the singer counting themselves in carries its own tempo and its
       own downbeat, and that is exactly the part a second voice needs to
       come in on.
+
+  - id: INV-NOTES-085
+    description: A control never offers to stop what has already stopped
+    severity: major
+    check: >
+      The transport returns to offering play when the take ends, whether
+      the native source reports ending or not: the take's own length is
+      timed alongside, and whichever arrives first puts the control back.
+      Verified by asserting the control leaves the playing state at the
+      end of a take with no ending reported.
+
+      `onended` is the source's promise to say so, and a promise that
+      cannot be checked from here is not one to hang a control on. When it
+      did not arrive the button sat on pause over silence, offering to
+      stop something that had already stopped.
+
+  - id: INV-NOTES-086
+    description: A glyph can always be asked what it means
+    severity: major
+    check: >
+      Every card carries an info mark that opens a guide naming each of
+      that card's controls and saying what it does, drawing the same glyph
+      the card draws rather than a picture of it. Verified by asserting
+      each offered track opens a guide listing its own controls.
+
+      Glyphs are what let the sheet read as a set of dials rather than a
+      page of prose, but a glyph nobody can name is a control nobody will
+      press. The words did not go away — they went behind the mark, where
+      they cost nothing until they are wanted.
+
+      Drawn from the same icon set as the card, so the guide cannot come
+      to describe an icon the card no longer has.

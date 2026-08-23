@@ -48,18 +48,20 @@ export function OctaveSlider({
   );
 
   return (
-    <View style={styles.wrap}>
-      <View style={styles.head}>
-        <Text style={[styles.label, { color: colors.gray300 }]}>{label}</Text>
-        <Text style={[styles.reading, { color: colors.typography }]}>
-          {octaveLabel(octaves) ?? 'as sung'}
-        </Text>
+    <View style={styles.row}>
+      <View style={styles.slider}>
+        <LevelSlider
+          value={toSlider(octaves)}
+          onChange={(position) => onChange(fromSlider(position))}
+          accessibilityLabel={`${label}, ${octaveLabel(octaves) ?? 'as sung'}`}
+        />
       </View>
-      <LevelSlider
-        value={toSlider(octaves)}
-        onChange={(position) => onChange(fromSlider(position))}
-        accessibilityLabel={`${label}, ${octaveLabel(octaves) ?? 'as sung'}`}
-      />
+      {/* Beside the slider rather than above it: it is the slider's own
+          reading, and a line of its own put it a row away from the thing it
+          reports. */}
+      <Text style={[styles.reading, { color: colors.typography }]}>
+        {octaveLabel(octaves) ?? '0'}
+      </Text>
     </View>
   );
 }
@@ -67,12 +69,14 @@ export function OctaveSlider({
 export default OctaveSlider;
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: 10 },
-  head: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between'
+    gap: 12,
+    marginTop: 10
   },
-  label: { fontSize: 11 },
-  reading: { fontSize: 11, fontWeight: '700' }
+  slider: { flex: 1 },
+  // The same width the speaker occupies on the row above, so the two rows
+  // line up rather than nearly lining up.
+  reading: { fontSize: 12, fontWeight: '700', width: 28, textAlign: 'center' }
 });

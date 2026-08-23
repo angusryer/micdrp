@@ -18,8 +18,8 @@ import { useTheme } from '../../theme';
 
 export interface TrackCardProps {
   title: string;
-  /** What this actually is, in a line, for whoever did not name it. */
-  hint?: string;
+  /** Opens the sheet naming every glyph on this card. */
+  onExplain?: () => void;
   level: number;
   onLevelChange: (level: number) => void;
   isAudible: boolean;
@@ -35,7 +35,7 @@ export interface TrackCardProps {
 
 export function TrackCard({
   title,
-  hint,
+  onExplain,
   level,
   onLevelChange,
   isAudible,
@@ -52,10 +52,22 @@ export function TrackCard({
         { backgroundColor: colors.neutral100, borderColor: colors.neutral500 }
       ]}
     >
-      <Text style={[styles.title, { color: colors.gray500 }]}>{title}</Text>
-      {hint ? (
-        <Text style={[styles.hint, { color: colors.gray300 }]}>{hint}</Text>
-      ) : null}
+      <View style={styles.head}>
+        <Text style={[styles.title, { color: colors.gray500 }]}>{title}</Text>
+        {/* The glyphs below say what they do to whoever already knows. This
+            is where the words went (INV-NOTES-086). */}
+        {onExplain ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`What the ${title} controls do`}
+            onPress={onExplain}
+            hitSlop={8}
+            style={({ pressed }) => [{ opacity: pressed ? 0.5 : 1 }]}
+          >
+            <Icon name="info" size={16} color={colors.gray300} />
+          </Pressable>
+        ) : null}
+      </View>
 
       <View style={styles.row}>
         <View style={styles.slider}>
@@ -109,7 +121,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5
   },
-  hint: { fontSize: 11, lineHeight: 15 },
+  head: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 6 },
   slider: { flex: 1 },
   speaker: { padding: 4 }

@@ -48,8 +48,8 @@ const renderBar = (
 /** What each track's card is called, which is what its controls are named. */
 const CARD: Record<string, string> = {
   Take: 'Your take',
-  Chords: 'Chords read from it',
-  Melody: 'Melody read from it'
+  Chords: 'Chords read from your take',
+  Melody: 'Transcription of your take'
 };
 
 /**
