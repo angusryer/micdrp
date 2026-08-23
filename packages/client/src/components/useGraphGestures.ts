@@ -23,6 +23,25 @@ import {
 /** Pixels of drag that mean one semitone, when a lane is too small to use. */
 const MIN_SEMITONE_PX = 12;
 
+/** What the chosen thing sounds at, or null for something with no pitch. */
+function pitchOf(
+  selection: Selection | null,
+  tones: readonly ChordToneRect[],
+  notes: readonly NoteRect[]
+): number | null {
+  if (selection?.kind === 'chordTone') {
+    return (
+      tones.find(
+        (t) => t.slot === selection.slot && t.tone === selection.tone
+      )?.midi ?? null
+    );
+  }
+  if (selection?.kind === 'melodyNote') {
+    return notes[selection.index]?.midi ?? null;
+  }
+  return null;
+}
+
 export interface GraphGestureOptions {
   tones: readonly ChordToneRect[];
   bars: readonly BarHandlePoint[];
@@ -36,6 +55,11 @@ export interface GraphGestureOptions {
   onMoveTone: (slot: number, tone: number, semitones: number) => void;
   onMoveNote: (index: number, semitones: number) => void;
   onAddBar: (step: number) => void;
+  /**
+   * The pitch the finger has just reached, once per semitone crossed. What
+   * makes a drag its own audition (INV-NOTES-070).
+   */
+  onHear?: (midi: number) => void;
 }
 
 export function useGraphGestures({
@@ -50,7 +74,8 @@ export function useGraphGestures({
   onMoveBar,
   onMoveTone,
   onMoveNote,
-  onAddBar
+  onAddBar,
+  onHear
 }: GraphGestureOptions) {
   /** How far the current drag has already been committed. */
   const applied = useRef(0);
@@ -63,6 +88,8 @@ export function useGraphGestures({
    * twice, then three times, and the line outruns the thumb (INV-NOTES-056).
    */
   const grabX = useRef(0);
+  /** The pitch of the thing being dragged when the finger went down. */
+  const grabbedMidi = useRef<number | null>(null);
 
   const semitonePx = Math.max(MIN_SEMITONE_PX, laneHeight);
 
@@ -107,6 +134,7 @@ export function useGraphGestures({
             touch &&
             touchesSelection(selection, touch.x, touch.y, tones, bars, notes)
           ) {
+            grabbedMidi.current = pitchOf(selection, tones, notes);
             if (selection?.kind === 'barLine') {
               const line = bars.find((b) => b.lineIndex === selection.lineIndex);
               grabX.current = line?.x ?? 0;
@@ -135,6 +163,12 @@ export function useGraphGestures({
               } else {
                 onMoveNote(selection.index, step);
               }
+              // The pitch just reached, read from where the thing started
+              // rather than from where it is now — the same reason the bar
+              // drag anchors (INV-NOTES-056).
+              if (grabbedMidi.current != null) {
+                onHear?.(grabbedMidi.current + wanted);
+              }
             }
             return;
           }
@@ -150,6 +184,7 @@ export function useGraphGestures({
     [
       bars,
       notes,
+      onHear,
       onMoveBar,
       onMoveNote,
       onMoveTone,

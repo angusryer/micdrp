@@ -140,6 +140,7 @@ export function GraphLayers({
           onMoveTone={chords.moveTone}
           onMoveNote={detail.correctNote}
           onAddBar={bars.split}
+          onHear={detail.hearDragged}
         />
       ) : null}
     </>

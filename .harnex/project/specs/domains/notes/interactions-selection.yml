@@ -42,3 +42,18 @@ interactions:
       because nothing is grabbed that was not first chosen.
     maps_to:
       capability: transcription.move_bar_line
+
+  - id: INT-NOTES-024
+    name: Hear a note while moving it
+    view: VIEW-NOTES-002
+    precondition: Hearing while dragging is turned on in the playback options.
+    steps:
+      - Choose a chord note or a sung note
+      - Drag it up or down
+    outcome: >
+      Every semitone the note crosses sounds as it is reached, so the
+      drag is its own audition and the pitch is judged where the decision
+      is being made. Turned off, dragging is silent and nothing else
+      about it changes.
+    maps_to:
+      capability: notes.transpose_playback

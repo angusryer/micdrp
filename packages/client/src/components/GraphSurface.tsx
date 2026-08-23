@@ -42,6 +42,8 @@ export interface GraphSurfaceProps {
   onMoveNote: (index: number, semitones: number) => void;
   /** Put a new downbeat at a grid step. */
   onAddBar: (step: number) => void;
+  /** The pitch a drag has just reached, once per semitone (INV-NOTES-070). */
+  onHear?: (midi: number) => void;
 }
 
 export function GraphSurface({
@@ -58,7 +60,8 @@ export function GraphSurface({
   onMoveBar,
   onMoveTone,
   onMoveNote,
-  onAddBar
+  onAddBar,
+  onHear
 }: GraphSurfaceProps): React.JSX.Element {
   const gesture = useGraphGestures({
     tones,
@@ -72,7 +75,8 @@ export function GraphSurface({
     onMoveBar,
     onMoveTone,
     onMoveNote,
-    onAddBar
+    onAddBar,
+    onHear
   });
 
   return (

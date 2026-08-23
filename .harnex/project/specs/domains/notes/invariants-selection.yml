@@ -39,3 +39,24 @@ invariants:
       recolouring the object, which matters most for the chord notes,
       where the colour is not decoration — it says which part of the chord
       the note is playing, and must survive being chosen (INV-NOTES-052).
+
+  - id: INV-NOTES-070
+    description: A dragged pitch is heard as it is crossed, once each
+    severity: major
+    check: >
+      While a chord note or a sung note is being dragged, each whole
+      semitone it crosses sounds once, at the pitch it has just reached,
+      and only while hearing is turned on. A drag that stays inside one
+      semitone sounds nothing, and a drag back over a pitch already
+      crossed sounds it again. Verified by asserting one sounding per
+      crossing and none for movement that commits no change.
+
+      Moving a note is a question about pitch, and answering it by eye
+      alone means dropping the note and pressing a control to find out —
+      by which point the thing being compared is gone. Sounding the pitch
+      under the finger makes the drag itself the audition.
+
+      It is a toggle because a phone speaker in a quiet room is not
+      always welcome, and because a long drag across an octave is twelve
+      notes nobody asked for. The same voice the graph already auditions
+      with, so a drag can never sound over a tap.

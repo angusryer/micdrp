@@ -26,6 +26,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
+import { DragAuditionControl } from './DragAuditionControl';
 import { MelodyMix } from './MelodyMix';
 import { MelodyOctave } from './MelodyOctave';
 import { NoteDetailsPage } from './NoteDetailsPage';
@@ -104,6 +105,12 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
                   octaves={detail.octaves}
                   range={detail.octaveRange}
                   onShift={detail.shiftOctave}
+                />
+                <DragAuditionControl
+                  isAudible={detail.isDragAudible}
+                  onAudibleChange={detail.setIsDragAudible}
+                  level={detail.dragLevel}
+                  onLevelChange={detail.setDragLevel}
                 />
               </>
             }
