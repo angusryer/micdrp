@@ -33,7 +33,7 @@ jest.mock('../PlaybackBar', () => {
   const { View: Stub } = require('react-native');
   return { PlaybackBar: () => <Stub testID="transport" /> };
 });
-jest.mock('../SelectionBar', () => ({ SelectionBar: () => null }));
+jest.mock('../SelectionSheet', () => ({ SelectionSheet: () => null }));
 jest.mock('../ChordTrack', () => ({ ChordTrack: () => null }));
 
 const detail = {

@@ -77,3 +77,28 @@ interactions:
       gone.
     maps_to:
       capability: notes.capture
+
+  - id: INT-NOTES-027
+    name: See what you chose, and what can be done to it
+    view: VIEW-NOTES-002
+    steps:
+      - Tap a sung note, a chord note, or a bar line
+    outcome: >
+      A sheet rises carrying what that thing is — its pitch, where it
+      falls in the take, how far it sits from the note it was read as —
+      and the things that can be done to it: hear it, silence it, put it
+      back. Choosing something else swaps the contents; putting it down
+      closes the sheet.
+
+      The graph stays live underneath. The chosen thing can still be
+      dragged while its own sheet is open, because dragging is one of the
+      actions and it is the one that has to be watched while it happens
+      (INV-NOTES-076).
+
+      What was there before was a strip of pills with no room to say
+      anything: it named the thing and offered verbs, but never what the
+      thing actually was — the pitch that was read, how far off it sat,
+      which bar it fell in. Those are the facts a person is deciding
+      from.
+    maps_to:
+      capability: notes.open_chord_track

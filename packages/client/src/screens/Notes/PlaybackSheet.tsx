@@ -10,7 +10,7 @@
  * grabber inside a ScrollView, which is the one place a grabber cannot work:
  * dragging it scrolled the body and never moved the sheet. TrueSheet's
  * grabber lives in the sheet chrome outside the scroll, so it pans and
- * dismisses the way a sheet is expected to (INV-NOTES-075).
+ * dismisses the way a sheet is expected to (INV-NOTES-077).
  *
  * The dimming behind it is the system's, which means it appears with the
  * presentation rather than sliding up as part of the sheet — the sheet moves

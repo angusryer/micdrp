@@ -1,0 +1,173 @@
+/**
+ * What the chosen thing is, and what can be done to it.
+ *
+ * Separated from the sheet that draws it because these are two different
+ * questions, and only this one has a right answer worth pinning: which facts
+ * a person is deciding from, and which verbs are honest to offer.
+ *
+ * The strip this replaced named the thing and offered verbs, but never said
+ * what the thing actually was — the pitch that was read, how far off it sat,
+ * which bar it fell in (INT-NOTES-027). Those are the facts the decision is
+ * made from, and they were the ones missing.
+ *
+ * A verb appears only where it would do something. "Put it back" on a note
+ * nobody has moved is a control that reports nothing and does nothing.
+ */
+import { isAltered } from 'logic';
+
+import { chordRoleAt, chordRoleColour } from '../../components/chordRoles';
+import type { Selection } from '../../components/graphSelection';
+import { midiToLabel } from '../Results/NoteList';
+import type { useNoteDetail } from './useNoteDetail';
+
+/** One line of the sheet's readout: a name and what it currently says. */
+export interface SelectionFact {
+  label: string;
+  value: string;
+}
+
+export interface SelectionAction {
+  label: string;
+  run: () => void;
+  /** Takes something away rather than changing it, and is drawn as such. */
+  isDestructive?: boolean;
+}
+
+export interface SelectionDescription {
+  title: string;
+  /** The colour the graph is lighting it in, so the two are plainly one thing. */
+  accent: string;
+  facts: SelectionFact[];
+  actions: SelectionAction[];
+}
+
+const seconds = (ms: number): string => `${(ms / 1000).toFixed(2)}s`;
+
+/** Cents as a signed reading, or "in tune" when there is nothing to report. */
+function centsOff(cents: number): string {
+  const rounded = Math.round(cents);
+  if (rounded === 0) {
+    return 'in tune';
+  }
+  return `${rounded > 0 ? '+' : ''}${rounded} cents`;
+}
+
+export function describeSelection(
+  selection: Selection,
+  detail: ReturnType<typeof useNoteDetail>,
+  accent: string,
+  onSelect: (selection: Selection | null) => void
+): SelectionDescription {
+  if (selection.kind === 'chordTone') {
+    return describeChordTone(selection, detail);
+  }
+  if (selection.kind === 'melodyNote') {
+    return describeSungNote(selection, detail, accent);
+  }
+  return describeBarLine(selection, detail, accent, onSelect);
+}
+
+function describeChordTone(
+  selection: Extract<Selection, { kind: 'chordTone' }>,
+  detail: ReturnType<typeof useNoteDetail>
+): SelectionDescription {
+  const slot = detail.chords.slots[selection.slot];
+  const voiced = detail.chords.voicing(selection.slot)[selection.tone];
+  const actions: SelectionAction[] = [
+    {
+      label: 'Hear the chord',
+      run: () => detail.auditionChord(selection.slot)
+    },
+    {
+      label: 'Silence this note',
+      run: () => detail.chords.toggleTone(selection.slot, selection.tone)
+    }
+  ];
+  // Offered only where there is something to undo.
+  if (isAltered(slot?.voicing)) {
+    actions.push({
+      label: 'Put it back',
+      run: () => detail.chords.resetTone(selection.slot, selection.tone)
+    });
+  }
+  return {
+    title: slot?.label ?? 'Chord',
+    accent: chordRoleColour(selection.tone),
+    facts: [
+      { label: 'Part', value: chordRoleAt(selection.tone) },
+      { label: 'Pitch', value: voiced != null ? midiToLabel(voiced) : '—' },
+      { label: 'Bar', value: slot ? String(slot.bar) : '—' },
+      ...(slot ? [{ label: 'Starts', value: seconds(slot.startMs) }] : [])
+    ],
+    actions
+  };
+}
+
+function describeSungNote(
+  selection: Extract<Selection, { kind: 'melodyNote' }>,
+  detail: ReturnType<typeof useNoteDetail>,
+  accent: string
+): SelectionDescription {
+  const note = detail.melody[selection.index];
+  const isCorrected = detail.isCorrected(selection.index);
+  const actions: SelectionAction[] = [
+    { label: 'Hear it', run: () => note && detail.playNote(note.midi) }
+  ];
+  if (isCorrected) {
+    actions.push({
+      label: 'Put it back',
+      run: () => detail.resetNote(selection.index)
+    });
+  }
+  return {
+    title: note ? midiToLabel(note.midi) : 'Sung note',
+    accent,
+    facts: note
+      ? [
+          { label: 'Starts', value: seconds(note.startMs) },
+          { label: 'Lasts', value: seconds(note.endMs - note.startMs) },
+          // What the detector heard against the note it settled on. The
+          // reason a note looks wrong is usually here.
+          { label: 'Tuning', value: centsOff(note.cents) },
+          {
+            label: 'Read as',
+            value: isCorrected ? 'moved by hand' : 'detected'
+          }
+        ]
+      : [],
+    actions
+  };
+}
+
+function describeBarLine(
+  selection: Extract<Selection, { kind: 'barLine' }>,
+  detail: ReturnType<typeof useNoteDetail>,
+  accent: string,
+  onSelect: (selection: Selection | null) => void
+): SelectionDescription {
+  const slot = detail.chords.slots[selection.lineIndex];
+  return {
+    title: 'Downbeat',
+    accent,
+    facts: [
+      { label: 'Opens bar', value: String(selection.lineIndex + 1) },
+      ...(slot
+        ? [
+            { label: 'Chord', value: slot.label },
+            { label: 'Starts', value: seconds(slot.startMs) }
+          ]
+        : [])
+    ],
+    actions: [
+      {
+        label: 'Remove it',
+        isDestructive: true,
+        run: () => {
+          detail.bars.merge(selection.lineIndex);
+          // What it referred to has gone, so nothing is chosen any more.
+          onSelect(null);
+        }
+      }
+    ]
+  };
+}

@@ -21,3 +21,33 @@ invariants:
       counter and a failure line to fit. The glyph is an SVG path drawn
       through the same Skia icon set as the rest of the app, so changing
       it stays a JavaScript change and ships over the air.
+
+  - id: INV-NOTES-077
+    description: A sheet is dragged by a handle outside its own scroll
+    severity: major
+    check: >
+      Every bottom sheet is a native sheet whose grabber lives in the
+      sheet chrome rather than inside the scrolling body, so dragging it
+      pans the sheet — to a taller detent, or away. Verified by asserting
+      no sheet draws its own handle inside its scroll view.
+
+      A handle drawn inside a ScrollView is the one place a handle cannot
+      work: the scroll view claims the drag first, so the body moves and
+      the sheet never does. It reads as a sheet that has stopped
+      responding.
+
+  - id: INV-NOTES-078
+    description: Choosing a thing never puts a sheet between you and it
+    severity: critical
+    check: >
+      The sheet carrying a chosen object's details and actions leaves the
+      graph reachable: nothing behind it is dimmed and nothing behind it
+      stops taking touches, so the object can still be dragged while its
+      own sheet is open. Verified by asserting the selection sheet is
+      presented undimmed, which is what keeps the background live.
+
+      The point of choosing something is to act on it, and dragging is one
+      of the actions. A sheet that covered the graph would make the
+      controls and direct manipulation exclusive — buttons or movement,
+      never both — and movement is the one that has to be watched while it
+      happens.

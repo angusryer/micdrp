@@ -32,7 +32,7 @@ import {
 import { useTheme } from '../../theme';
 import { MIN_GRAPH_HEIGHT, NoteShapeSection } from './NoteShapeSection';
 import { PlaybackBar } from './PlaybackBar';
-import { SelectionBar } from './SelectionBar';
+import { SelectionSheet } from './SelectionSheet';
 import type { useNoteDetail } from './useNoteDetail';
 
 /** Breathing room at the edges; less than upright, since space is the point. */
@@ -82,7 +82,7 @@ export function NoteLandscape({
             />
           ) : null}
         </View>
-        <SelectionBar
+        <SelectionSheet
           detail={detail}
           selection={detail.selection}
           onSelect={detail.setSelection}

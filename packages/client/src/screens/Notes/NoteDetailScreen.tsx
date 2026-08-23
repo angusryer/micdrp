@@ -31,7 +31,7 @@ import { NoteHarmonySection } from './NoteHarmonySection';
 import { NoteLandscape } from './NoteLandscape';
 import { NoteShapeSection } from './NoteShapeSection';
 import { PlaybackOptions } from './PlaybackOptions';
-import { SelectionBar } from './SelectionBar';
+import { SelectionSheet } from './SelectionSheet';
 import { formatDuration } from './NoteStats';
 import { PlaybackBar } from './PlaybackBar';
 import { useNoteDetail } from './useNoteDetail';
@@ -112,7 +112,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
               selection={detail.selection}
               onSelect={detail.setSelection}
             />
-            <SelectionBar
+            <SelectionSheet
               detail={detail}
               selection={detail.selection}
               onSelect={detail.setSelection}
