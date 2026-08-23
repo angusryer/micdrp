@@ -77,3 +77,41 @@ invariants:
 
       The take sits at full and the voices read from it sit under it. They
       describe the performance; at equal level they argue with it.
+
+  - id: INV-NOTES-083
+    description: A press sounds exactly what the cards say it will
+    severity: critical
+    check: >
+      Pressing play honours every setting in the options: each track's
+      level, each track's mute, and the register the melody is set to.
+      Nothing gates a track except its own control, and no level has two
+      writers. Verified by asserting a track turned on sounds, and that
+      the level reaching a voice is the one its card holds.
+
+      Two ways this broke at once when the loose controls became cards.
+      The melody stayed gated behind a "play over the recording" switch
+      that had gone into the track list, so its own toggle turned a track
+      that could never sound. And its level had two writers — the old
+      slider's effect and the mix — so whichever committed second won,
+      and moving the card's slider did nothing or was undone a frame
+      later.
+
+      A control that does not govern what it claims to govern is worse
+      than no control: it teaches that the settings do not matter.
+
+  - id: INV-NOTES-084
+    description: A layer is sung against the mix, from the very beginning
+    severity: major
+    check: >
+      Recording a layer plays the take under it honouring every option
+      set — levels, mutes and register — and starts from the beginning of
+      the recording rather than from the first note. Verified by asserting
+      the layer capture starts playback at zero and through the same mix
+      the transport uses.
+
+      The singer has to hear what they are singing against, and what they
+      chose to hear is what they chose for a reason. Starting at the first
+      detected note would also throw away the count-in: a take that begins
+      with the singer counting themselves in carries its own tempo and its
+      own downbeat, and that is exactly the part a second voice needs to
+      come in on.

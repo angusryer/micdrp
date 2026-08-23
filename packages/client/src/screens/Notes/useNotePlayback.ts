@@ -5,7 +5,7 @@
  * describes hearing it. They are genuinely separate concerns: the reading of
  * a take does not depend on whether anything is currently sounding.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   playbackTargets,
@@ -21,7 +21,7 @@ import { SynthBus } from '../../audio/synthPlayer';
 const BASS_PEAK_GAIN = 0.09;
 import { useChordBackdrop } from './useChordBackdrop';
 import type { useChordTrack } from './useChordTrack';
-import { DEFAULT_MELODY_LEVEL, useMelodyBackdrop } from './useMelodyBackdrop';
+import { useMelodyBackdrop } from './useMelodyBackdrop';
 import { useOctaveShift } from './useOctaveShift';
 import { usePreviewVoice } from './usePreviewVoice';
 
@@ -34,8 +34,6 @@ export function useNotePlayback(
   // Play sounds the backdrop with the take, or on its own, or not at all —
   // whichever the choice beside the play control is set to (INV-NOTES-019).
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>('as-sung');
-  const [isOverTake, setIsOverTake] = useState(false);
-  const [melodyLevel, setMelodyLevel] = useState(DEFAULT_MELODY_LEVEL);
   // A listening aid, not an edit: this moves what sounds and nothing that is
   // drawn, read, or kept (INV-NOTES-058).
   const octave = useOctaveShift(melody);
@@ -50,7 +48,6 @@ export function useNotePlayback(
     [melody, quantized, playbackMode, octaves]
   );
   const melodyVoice = useMelodyBackdrop(melodyTones);
-  useEffect(() => melodyVoice.setLevel(melodyLevel), [melodyVoice, melodyLevel]);
 
   const backdrop = useChordBackdrop(chords.progression);
   // The root on its own bus, under the rest of the harmony (INV-NOTES-040).
@@ -86,18 +83,18 @@ export function useNotePlayback(
     [backdrop, bassVoice]
   );
 
+  // Started whenever the transport says so. It used to be gated behind a
+  // "play over the recording" switch, and when that switch went into the
+  // track list the gate stayed — leaving the melody's own toggle turning a
+  // track that could never sound (INV-NOTES-083).
   const melodyVoiceMix = useMemo(
     () => ({
-      start: (offsetMs = 0) => {
-        if (isOverTake) {
-          melodyVoice.start(offsetMs);
-        }
-      },
+      start: (offsetMs = 0) => melodyVoice.start(offsetMs),
       stop: () => melodyVoice.stop(),
       durationMs: melodyTones[melodyTones.length - 1]?.endMs ?? 0,
       setLevel: (level: number) => melodyVoice.setLevel(level)
     }),
-    [melodyVoice, isOverTake, melodyTones]
+    [melodyVoice, melodyTones]
   );
 
   const preview = usePreviewVoice(melodyTones, chords, octaves);
@@ -105,10 +102,6 @@ export function useNotePlayback(
   return {
     playbackMode,
     setPlaybackMode,
-    isOverTake,
-    setIsOverTake,
-    melodyLevel,
-    setMelodyLevel,
     ...octave,
     backdrop: accompaniment,
     melodyVoiceMix,
