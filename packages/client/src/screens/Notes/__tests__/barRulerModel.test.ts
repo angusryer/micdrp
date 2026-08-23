@@ -8,10 +8,11 @@
 import {
   barHandles,
   barLabels,
+  dropAtX,
   previewSignatures,
   stepAtX
 } from '../barRulerModel';
-import type { BarLayout } from 'logic';
+import { moveBarLine, type BarLayout } from 'logic';
 
 const SIMPLE = { stepsPerBeat: 4, isCompound: false };
 const layout = (lines: number[]): BarLayout => ({ lines, ...SIMPLE });
@@ -79,6 +80,42 @@ describe('previewSignatures', () => {
 
   it('uses the take end as the upper bound for the last line', () => {
     expect(previewSignatures(layout([0, 16]), 48, 1, 20)).toBe('5/4 · 7/4');
+  });
+});
+
+describe('dropAtX', () => {
+  const bars = layout([0, 16, 32]);
+
+  it('puts the line on the step under the finger', () => {
+    // 16px left of its rest at x=64: four sixteenths back.
+    expect(dropAtX(bars, 48, GEOM, 1, 48)).toEqual({
+      step: 12,
+      x: 48,
+      label: '3/4 · 5/4'
+    });
+  });
+
+  it('stops the line against its neighbour instead of crossing it', () => {
+    // The finger is far past line 2 at step 32; the line stops one short.
+    const drop = dropAtX(bars, 48, GEOM, 1, 400);
+    expect(drop.step).toBe(31);
+    expect(drop.x).toBe(124);
+  });
+
+  it('commits the step it drew, so nothing moves on release', () => {
+    // A drop the layout would refuse is a line that snaps back (INV-NOTES-028).
+    const drop = dropAtX(bars, 48, GEOM, 1, 400);
+    expect(moveBarLine(bars, 1, drop.step).lines).toEqual([0, 31, 32]);
+  });
+
+  it('reads the same step for the line and for the readout', () => {
+    const drop = dropAtX(bars, 48, GEOM, 1, 400);
+    expect(drop.label).toBe(previewSignatures(bars, 48, 1, drop.step));
+  });
+
+  it('respects an origin that is not the left edge', () => {
+    expect(dropAtX(bars, 48, { originX: 20, stepWidth: 4 }, 1, 84).step).toBe(16);
+    expect(dropAtX(bars, 48, { originX: 20, stepWidth: 4 }, 1, 84).x).toBe(84);
   });
 });
 

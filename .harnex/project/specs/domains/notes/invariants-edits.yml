@@ -61,34 +61,58 @@ invariants:
       see the thing you are choosing until you let go. Placement you
       cannot watch is placement by trial and error.
 
+      The surface being dragged over can be shorter than the readout
+      needs: the melody strip is 150 points tall, and the readout plus
+      the clearance that keeps it off the fingertip is nearly all of
+      that. Clamped inside such a surface, every placement settles level
+      with the thumb — offset to the side by the letter of this rule,
+      under the hand in fact. Where nothing above the surface clips, the
+      readout rises above it instead: the bound it must stay inside is
+      the screen, not the strip. Verified by placing on a surface too
+      short to hold the readout and asserting it still clears the finger
+      vertically rather than sitting beside it at thumb height.
+
   - id: INV-NOTES-026
-    description: A take can be heard as sung or as written down
+    description: A take can be seen and heard as sung or as written down
     severity: high
     check: >
-      Playing a take as sung uses the pitch and timing that were
-      detected, unrounded and unsnapped. Playing it as written uses the
-      notated pitch and the grid. Verified by asserting the two differ
-      for a take that was neither exactly in tune nor exactly in time,
-      and agree for one that was.
+      As sung uses the pitch and timing that were detected, unrounded
+      and unsnapped. As written uses the notated pitch and the grid.
+      This holds of both surfaces: what the melody sounds when it is
+      played, and what the graph and the note list draw. Verified by
+      asserting the two readings differ for a take that was neither
+      exactly in tune nor exactly in time, agree for one that was, and
+      that choosing the written one moves every drawn onset onto the
+      grid while the stored melody is left alone.
 
       These answer different questions and conflating them hides both.
-      Heard as sung, a mismatch is the detector's fault and worth
-      chasing. Heard as written, a mismatch is what transcription costs —
-      a pure major third is fourteen cents from a tempered one, and no
-      amount of better detection will change that.
+      As sung, a mismatch is the detector's fault and worth chasing. As
+      written, it is what transcription costs — a pure major third is
+      fourteen cents from a tempered one, and no amount of better
+      detection will change that.
 
-      Being able to hear the difference is what makes the pitch detector
-      testable at all: without it, every complaint about playback is
-      ambiguous between the two.
+      Hearing the difference is what makes the pitch detector testable
+      at all: without it, every complaint about playback is ambiguous
+      between the two. Seeing it is what makes the quantizer testable,
+      since a snap onto the wrong step is plain in the picture and all
+      but inaudible in a short take.
+
+      The two choices are made separately, and neither drives the
+      other: looking at the notation while listening to the raw take is
+      how a person tells which of the two is wrong.
 
   - id: INV-NOTES-027
     description: The take and what was read from it can be heard together
     severity: high
     check: >
       The detected melody sounds over the take, on the take's own clock,
-      and its level can be changed while both are playing. Verified by
-      starting mid-take and asserting the melody lands where the voice
-      is, and that a level set during playback moves what is sounding.
+      and its level can be changed while both are playing. It is turned
+      on and off by its own track toggle beside the play control, with
+      the other tracks and by the same rules (INV-NOTES-019) — there is
+      no second switch for it under the graph. Verified by starting
+      mid-take and asserting the melody lands where the voice is, that a
+      level set during playback moves what is sounding, and that the
+      melody track's toggle is what decides whether it sounds at all.
 
       Hearing them apart says each is plausible; hearing them together
       says whether they are the same. A note read a semitone out, or a
@@ -125,3 +149,24 @@ invariants:
       before a sound was made. A fixed pool of voices, each reused as
       notes finish, is what keeps a long idea as cheap to hear as a
       short one.
+
+  - id: INV-NOTES-064
+    description: The thing being dragged moves with the finger dragging it
+    severity: high
+    check: >
+      While a bar-line drag is live, the line is drawn at the step it
+      would land on if the finger let go now — not at the step it started
+      from. Releasing puts it exactly where it was last drawn. Verified by
+      dragging a line and asserting both its drawn position and the step
+      the drop commits follow the finger.
+
+      The readout already followed the finger (INV-NOTES-025) while the
+      line stayed behind, which left the one thing being placed as the one
+      thing that did not move. A gesture whose subject is frozen reads as
+      a gesture that was not registered, and a person presses harder
+      rather than further.
+
+      Where it would land, not where the finger is: the line stops against
+      its neighbours instead of crossing them, and what the drop commits
+      is the step the drag last drew — a line that snaps back on release
+      is worse than one that never moved, because it lies twice.

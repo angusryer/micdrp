@@ -64,12 +64,17 @@ when:
     mode: extension
     action: dog_tap
     params: { control: "{value}" }
-    resolution: One of record, pause, resume, stop.
+    resolution: One of record, stop — the one control, named by what a tap means.
   - id: WX-DOG-NAVIGATE
     pattern: 'the maintainer navigates to {value}'
     mode: extension
     action: dog_navigate
     params: { route: "{value}" }
+  - id: WX-DOG-RUN-ON
+    pattern: 'the clip runs on to {N} seconds left'
+    mode: extension
+    action: dog_run_on_to
+    params: { seconds: "{N}" }
   - id: WX-DOG-CAP
     pattern: 'the cap elapses'
     mode: extension
@@ -116,15 +121,21 @@ then:
     mode: extension
     action: dog_assert_control
     params: { state: "{state}" }
-  - id: TX-DOG-COUNTDOWN
-    pattern: 'the countdown is {state}'
+  - id: TX-DOG-WARNING
+    pattern: 'the countdown urgency is {state}'
     mode: extension
-    action: dog_assert_countdown
+    action: dog_assert_countdown_urgency
     params: { state: "{state}" }
+    resolution: state is none, caution, or warning.
   - id: TX-DOG-ELAPSED
     pattern: 'the elapsed time is {N} seconds'
     mode: extension
     action: dog_assert_elapsed
+    params: { seconds: "{N}" }
+  - id: TX-DOG-REMAINING
+    pattern: 'the remaining time is {N} seconds'
+    mode: extension
+    action: dog_assert_remaining
     params: { seconds: "{N}" }
   - id: TX-DOG-FILED-REASON
     pattern: 'request {label} is filed because {value}'

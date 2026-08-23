@@ -47,17 +47,27 @@ views:
       - notes.list
       - notes.open_chord_track
       - notes.play
+      - notes.play_melody
       - notes.play_backdrop
       - notes.set_playback_mix
       - notes.export_midi
     elements:
       - The note's title
-      - A piano-roll melody view over time and pitch
+      - A choice above that graph of which reading is drawn — as sung,
+        or as written on the grid — offered as written only once the
+        take has a metre to be written against, and changing what the
+        graph and the note list show without changing what play sounds
+        or what is stored
+      - A piano-roll melody view over time and pitch, occupying the upper
+        part of the graph
+      - A chord lane along the bottom edge of that graph, on the same time
+        axis as the melody above it, one band per chord read from the
+        take, marked when the chord has been chosen by hand
       - Bar lines and the time signature, presented as an assumption when
         the metre was not measured
       - The descriptive analysis — key, tempo, range, steadiness — with no
         headline score
-      - A chord track under the melody, one slot per bar, scrolled
+      - A chord track directly under that lane, one slot per bar, scrolled
         sideways when the progression runs past the screen
       - Controls on each chord slot to nudge it, reshape it, and revert
         it, none of which claim a sideways drag
@@ -65,8 +75,22 @@ views:
       - A playback bar, absent when the note has no stored audio, whose
         play control sounds the chord backdrop under the take as well as
         the take itself, and silences it again on stop
-      - A choice beside that play control of what it sounds — the take,
-        the chords, or both, which is what is offered until something
-        else is chosen — shown only when the melody implied chords to
-        choose between
+      - That play control drawn as a round button carrying a triangle
+        while it will start the take and a pair of upright bars while it
+        is playing, with no word on it
+      - One toggle per track beside that play control — the take, the
+        chords, the melody read from the take — each turned on and off
+        on its own, with the take and the chords on and the melody off
+        until they are turned, offering only the tracks the note has and
+        nothing at all when there is none to turn
+      - A choice under the graph of which reading is sounded when the
+        melody itself is played, made separately from what the take's
+        play control sounds
+      - A control beside that choice which sounds the melody read from
+        the take and stops it again on a second press, carrying a
+        triangle while a press would start it and a square while a press
+        would stop it, and saying which it is doing in its own word
+      - A level under the graph for how loudly that same melody sits
+        against the take when its track is on, and no separate switch
+        for turning it on — that is the melody's track toggle
       - An export control offering the melody as a MIDI file

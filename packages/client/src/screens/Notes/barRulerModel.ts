@@ -22,6 +22,11 @@ export interface RulerGeometry {
   stepWidth: number;
 }
 
+/** Pixel position of a grid step. The one place steps become pixels. */
+export function xAtStep(step: number, geometry: RulerGeometry): number {
+  return geometry.originX + step * geometry.stepWidth;
+}
+
 /** Where each bar line sits on screen. */
 export function barHandles(
   layout: BarLayout,
@@ -30,7 +35,7 @@ export function barHandles(
   return layout.lines.map((step, lineIndex) => ({
     lineIndex,
     step,
-    x: geometry.originX + step * geometry.stepWidth
+    x: xAtStep(step, geometry)
   }));
 }
 
@@ -40,6 +45,30 @@ export function stepAtX(x: number, geometry: RulerGeometry): number {
     return 0;
   }
   return Math.max(0, Math.round((x - geometry.originX) / geometry.stepWidth));
+}
+
+/**
+ * Where a line dragged towards `toStep` would actually end up.
+ *
+ * A line cannot cross or land on its neighbours, so a drag heading past one
+ * stops against it rather than being refused on release. The first line is the
+ * exception at the bottom: it may sit at step zero, which is a take that
+ * begins on a downbeat rather than one with a pickup.
+ */
+export function landingStep(
+  layout: BarLayout,
+  totalSteps: number,
+  lineIndex: number,
+  toStep: number
+): number {
+  const lines = layout.lines;
+  if (lineIndex < 0 || lineIndex >= lines.length) {
+    return Math.max(0, toStep);
+  }
+  const lower = lineIndex > 0 ? lines[lineIndex - 1] : 0;
+  const upper = lineIndex + 1 < lines.length ? lines[lineIndex + 1] : totalSteps;
+  const lowest = lineIndex === 0 ? 0 : lower + 1;
+  return Math.min(Math.max(toStep, lowest), upper - 1);
 }
 
 /**
@@ -55,19 +84,16 @@ export function previewSignatures(
   lineIndex: number,
   toStep: number
 ): string {
-  const lines = [...layout.lines];
+  const lines = layout.lines;
   if (lineIndex < 0 || lineIndex >= lines.length) {
     return '';
   }
   const lower = lineIndex > 0 ? lines[lineIndex - 1] : 0;
   const upper = lineIndex + 1 < lines.length ? lines[lineIndex + 1] : totalSteps;
 
-  // A line cannot cross or land on its neighbours, so the preview shows where
-  // it would actually end up rather than where the finger is.
-  // The first line is the exception: it may sit at step zero, which is a take
-  // that begins on a downbeat rather than one with a pickup.
-  const lowest = lineIndex === 0 ? 0 : lower + 1;
-  const step = Math.min(Math.max(toStep, lowest), upper - 1);
+  // The readout shows where the line would actually end up rather than where
+  // the finger is, so that it agrees with the line drawn under the finger.
+  const step = landingStep(layout, totalSteps, lineIndex, toStep);
   const before = step - lower;
   const after = upper - step;
 
@@ -77,6 +103,38 @@ export function previewSignatures(
   // Nothing before the first line means no pickup, so there is only one bar
   // for the drag to be deciding.
   return before === 0 ? sig(after) : `${sig(before)} · ${sig(after)}`;
+}
+
+/** A drag in flight: where the line is now, and what letting go would mean. */
+export interface BarDrop {
+  /** The step the drop will commit, already inside what the layout allows. */
+  step: number;
+  /** Pixel x of that step, which is where the line is drawn while dragging. */
+  x: number;
+  /** What the bars either side would read as (INV-NOTES-025). */
+  label: string;
+}
+
+/**
+ * Read a live drag: one answer for the line, the readout and the drop.
+ *
+ * They have to agree. A line drawn where the finger is, a readout for the
+ * step it would clamp to and a drop that refuses outright are three different
+ * claims about the same gesture, and two of them are lies (INV-NOTES-028).
+ */
+export function dropAtX(
+  layout: BarLayout,
+  totalSteps: number,
+  geometry: RulerGeometry,
+  lineIndex: number,
+  x: number
+): BarDrop {
+  const step = landingStep(layout, totalSteps, lineIndex, stepAtX(x, geometry));
+  return {
+    step,
+    x: xAtStep(step, geometry),
+    label: previewSignatures(layout, totalSteps, lineIndex, step)
+  };
 }
 
 /** Bar numbers and signatures as they stand, for labelling the ruler. */

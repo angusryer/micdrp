@@ -16,51 +16,28 @@ capabilities:
     postconditions:
       - the audio session is configured for speech, not for pitch detection
       - elapsedMs starts at 0 and advances only while recording
+      - remainingMs starts at the cap and counts down to zero, which is
+        the only time the control shows
       - the screen on show is the first entry in the trail
       - navigating appends to the trail and does not stop the recording
     permissions:
       - role: maintainer
         notes: The signed-in owner of the clip.
 
-  - name: dogfood.pause_clip
-    description: Hold the recording, keeping what has been said.
+  - name: dogfood.stop_clip
+    description: >
+      Finish, and send. There is no separate send step: stopping is the
+      instruction to send, because a remark held on the device helps
+      nobody. It is also the only thing a recording control can do, so
+      the same control starts and ends a clip — a remark is spoken in one
+      go, and a hold that has to be released is one more thing to get
+      wrong mid-sentence.
     actor: maintainer
     implemented_by: packages/client/src/dogfood/session.ts
     parameters:
       required: []
     preconditions:
       - a clip is in state recording
-    postconditions:
-      - elapsedMs stops advancing
-      - time spent paused does not count towards the cap
-      - the microphone is released while paused
-
-  - name: dogfood.resume_clip
-    description: Carry on recording into the same clip.
-    actor: maintainer
-    implemented_by: packages/client/src/dogfood/session.ts
-    parameters:
-      required: []
-    preconditions:
-      - a clip is in state paused
-      - no capture is in progress
-      - no practice session is in progress
-    postconditions:
-      - elapsedMs resumes from where it stopped
-      - what was said before the pause is retained
-      - the screen on show is appended to the trail
-
-  - name: dogfood.stop_clip
-    description: >
-      Finish, and send. There is no separate send step: stopping is the
-      instruction to send, because a remark held on the device helps
-      nobody.
-    actor: maintainer
-    implemented_by: packages/client/src/dogfood/session.ts
-    parameters:
-      required: []
-    preconditions:
-      - a clip is in state recording or paused
     postconditions:
       - the clip moves to state pending_upload
       - the audio session is restored to what it was before recording
@@ -80,7 +57,11 @@ capabilities:
       - elapsedMs has reached the cap
     postconditions:
       - the clip is sent exactly as dogfood.stop_clip sends it
-      - the countdown was visible for the warning threshold beforehand
+      - the countdown reached zero in view, in the caution colour from
+        the caution threshold and the warning colour from the warning
+        threshold beforehand
+      - an alert reports that the clip ran out of time and that another
+        remark can be recorded; dogfood.stop_clip raises none
 
   - name: dogfood.upload_clip
     description: >

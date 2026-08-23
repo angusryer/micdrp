@@ -111,26 +111,31 @@ capabilities:
 
   - name: notes.set_playback_mix
     description: >
-      Choose what pressing play sounds — the take alone, the chord
-      backdrop alone, or both — so the harmony a line implied can be
-      heard without the line sitting on top of it.
+      Turn each track a press would sound on and off independently — the
+      take, the chord backdrop, and the melody read out of the take — so
+      the harmony a line implied can be heard without the line sitting on
+      top of it, and what was detected can be heard against the voice it
+      was detected from.
     actor: singer
     implemented_by: packages/client/src/screens/Notes/usePlaybackMix.ts
     parameters:
       required: [mix]
     preconditions:
       - the note has stored audio
-      - the note's melody implied at least one chord
+      - at least one track beyond the take exists to be turned off
     postconditions:
-      - the choice is take, chords, or both, and both is what a note
-        offers before anything is chosen
-      - a press sounds exactly the chosen sources and nothing else
-      - choosing the chords alone mints no audio URL and decodes no take
+      - each track is on or off on its own, and the take and the chords
+        are on and the melody off before anything is turned
+      - a press sounds exactly the tracks that are on and nothing else
+      - a press with the take off mints no audio URL and decodes no take
       - the chords alone end when the progression runs out, handing the
         control back to offering play
-      - changing the choice while something is sounding stops it, so no
-        mix is ever half-applied
-      - a melody that implied no chords offers no choice at all
+      - turning any track while something is sounding stops it, so no mix
+        is ever half-applied
+      - only tracks the note has are offered, and a note offering nothing
+        to turn shows no toggles at all
+      - the melody rides the take's clock, so it cannot be turned on with
+        the take off
     permissions:
       - role: singer
         notes: Local playback only.

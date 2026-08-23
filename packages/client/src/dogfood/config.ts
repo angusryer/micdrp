@@ -1,7 +1,7 @@
 /**
  * The numbers the recording session runs on, and where the clip came from.
  *
- * The cap and the warning threshold are here rather than inline so the control
+ * The cap and the colour thresholds are here rather than inline so the control
  * and the session cannot disagree about them — one source, and the tests read
  * the same one the app does.
  */
@@ -18,14 +18,22 @@ import Config from 'react-native-config';
 export const CLIP_CAP_MS = 120_000;
 
 /**
- * When the countdown appears. Before this the control shows elapsed time, so
- * the clock is not something to watch until it matters.
+ * When the countdown turns to the caution colour. Twenty seconds is about a
+ * sentence and a half: enough that the warning below is not the first notice,
+ * and late enough that the colour still means something when it arrives.
  */
-export const COUNTDOWN_AT_MS = 10_000;
+export const CAUTION_AT_MS = 20_000;
 
 /**
- * How often the session recomputes elapsed time. Fast enough that the last ten
- * seconds tick visibly, slow enough not to re-render the tree pointlessly.
+ * When the countdown turns to the warning colour. The countdown itself runs
+ * the whole clip — this is only the point at which running out stops being
+ * something to know and starts being something to act on.
+ */
+export const WARNING_AT_MS = 10_000;
+
+/**
+ * How often the session recomputes the time left. Fast enough that the last
+ * ten seconds tick visibly, slow enough not to re-render the tree pointlessly.
  */
 export const TICK_MS = 250;
 

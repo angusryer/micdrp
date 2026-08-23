@@ -8,13 +8,8 @@
  * called dogfood.
  */
 
-/** Where a clip sits, from spoken to sent. */
-export type ClipState =
-  | 'idle'
-  | 'recording'
-  | 'paused'
-  | 'pending_upload'
-  | 'uploaded';
+/** Where a clip sits, from spoken to sent. There is no paused. */
+export type ClipState = 'idle' | 'recording' | 'pending_upload' | 'uploaded';
 
 // ScreenVisit lives in `shared`: the client writes it, the server stores it,
 // and the agent loop reads it, so it cannot be defined here.
@@ -42,17 +37,25 @@ export type PendingClip = {
 };
 
 /**
+ * How close the clip is to sending itself, in the only terms the control
+ * needs: which colour the countdown wears. Two steps, not one — a single
+ * change at the very end arrives too late to finish a sentence differently.
+ */
+export type CountdownUrgency = 'none' | 'caution' | 'warning';
+
+/**
  * The live recording, as the control renders it.
  *
- * `isCountingDown` exists so the countdown appears only near the end. A timer
- * running the whole time invites watching the clock instead of talking, which
- * is the opposite of what this feature is for.
+ * `remainingMs` is the number the control shows, for the whole clip: what a
+ * speaker needs is how much of the two minutes is left. `urgency` marks the
+ * end approaching, which changes how that number looks and nothing else.
  */
 export type RecordingSession = {
+  /** Only ever 'idle' or 'recording': the control has two shapes, not three. */
   state: ClipState;
   elapsedMs: number;
   remainingMs: number;
-  isCountingDown: boolean;
+  urgency: CountdownUrgency;
   /** False while a capture or practice session holds the microphone. */
   canRecord: boolean;
 };
@@ -61,6 +64,6 @@ export const IDLE_SESSION: RecordingSession = {
   state: 'idle',
   elapsedMs: 0,
   remainingMs: 0,
-  isCountingDown: false,
+  urgency: 'none',
   canRecord: true
 };

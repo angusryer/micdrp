@@ -55,8 +55,6 @@ entities:
     states:
       - name: recording
         description: Being spoken now. Exists only on the device.
-      - name: paused
-        description: Held, retaining what has been said so far.
       - name: pending_upload
         description: Finished and on disk, not yet accepted by the server.
       - name: uploaded
@@ -74,15 +72,6 @@ entities:
           something that happened to it.
     transitions:
       - from: recording
-        to: paused
-        trigger: dogfood.pause_clip
-      - from: paused
-        to: recording
-        trigger: dogfood.resume_clip
-      - from: recording
-        to: pending_upload
-        trigger: dogfood.stop_clip, or the cap elapsing
-      - from: paused
         to: pending_upload
         trigger: dogfood.stop_clip, or the cap elapsing
       - from: pending_upload
@@ -119,7 +108,7 @@ entities:
       - name: atMs
         type: number
         required: true
-        description: Offset from the start of the clip, excluding pauses.
+        description: Offset from the start of the clip.
 
   - name: RecordingSession
     description: >
@@ -129,18 +118,24 @@ entities:
       - name: elapsedMs
         type: number
         required: true
-        description: Time recorded, excluding anything spent paused.
+        description: Time recorded, from the tap that started the clip.
       - name: remainingMs
         type: number
         required: true
-        description: The cap minus elapsedMs.
-      - name: isCountingDown
-        type: boolean
+        description: >
+          The cap minus elapsedMs, never below zero. This is what the
+          control shows for the whole clip: it counts down to zero.
+      - name: urgency
+        type: string
         required: true
         description: >
-          True once remainingMs is at or under the warning threshold. The
-          control shows the countdown only then — a timer running the
-          whole time invites watching the clock instead of talking.
+          How close the clip is to sending itself: none, then caution
+          once remainingMs is at or under the caution threshold, then
+          warning at or under the warning threshold. The countdown is
+          shown throughout, so this changes only how it is shown — its
+          colour, warmer as the end approaches. Two steps rather than
+          one because a single change at the very end arrives too late
+          to finish a sentence differently.
       - name: canRecord
         type: boolean
         required: true

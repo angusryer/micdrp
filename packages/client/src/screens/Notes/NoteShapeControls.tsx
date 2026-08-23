@@ -38,11 +38,11 @@ export function NoteShapeControls({
           mode={detail.playbackMode}
           onChange={detail.setPlaybackMode}
           onPlay={detail.playMelody}
+          onStop={detail.stopMelody}
+          isPlaying={detail.isMelodyPlaying}
           canNotate={hasGrid}
         />
         <MelodyMix
-          isOverTake={detail.isOverTake}
-          onOverTakeChange={detail.setIsOverTake}
           level={detail.melodyLevel}
           onLevelChange={detail.setMelodyLevel}
         />

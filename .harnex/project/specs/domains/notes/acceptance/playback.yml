@@ -94,38 +94,6 @@ acceptance:
       invariants: [INV-NOTES-016]
       interaction: INT-NOTES-010
 
-  - id: ACC-NOTES-033
-    interface: ui
-    title: Choosing the chords alone plays no take
-    given:
-      - a signed-in singer S
-      - singer S has a note N with stored audio
-    when:
-      - singer S calls notes.set_playback_mix on note N
-    then:
-      - the note field playbackMix is chords
-      - the note field takeDecoded is false
-    maps_to:
-      capability: notes.set_playback_mix
-      invariants: [INV-NOTES-019]
-      interaction: INT-NOTES-011
-
-  - id: ACC-NOTES-034
-    interface: ui
-    title: Choosing the take alone sounds no chords
-    given:
-      - a signed-in singer S
-      - singer S has a note N with stored audio
-    when:
-      - singer S calls notes.set_playback_mix on note N
-    then:
-      - the note field playbackMix is take
-      - the note field backdropScheduled is false
-    maps_to:
-      capability: notes.set_playback_mix
-      invariants: [INV-NOTES-019]
-      view: VIEW-NOTES-002
-
   - id: ACC-NOTES-031
     interface: ui
     title: That same line counts the position while the take plays

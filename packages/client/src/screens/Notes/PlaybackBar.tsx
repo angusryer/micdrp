@@ -1,10 +1,11 @@
 /**
- * PlaybackBar — play/pause a note, and choose what playing it sounds.
+ * PlaybackBar — play/pause a note, and turn the tracks playing it sounds.
  *
- * The view of a transport, plus the choice that transport honours: the take
- * alone, the chord backdrop alone, or both, which is what a note offers until
- * something else is chosen (INV-NOTES-019). The choice only appears when there
- * are chords to choose — a melody that implied none offers no decision. The
+ * The view of a transport, plus the toggles that transport honours: the take,
+ * the chord backdrop, the melody read from the take, each on or off on its own,
+ * with the take and the chords on until they are turned (INV-NOTES-019). Only
+ * the tracks the note has are offered, so a take that implied no chords and
+ * carries no melody shows no toggles at all — there is nothing to turn. The
  * transport itself, the accompaniment's lifecycle, decoding and the
  * URL-resolution rules live in `usePlaybackMix` and `usePlayback`.
  *
@@ -12,17 +13,19 @@
  * play button is its player, so a bar there would be a second control for the
  * same take (INV-NOTES-015).
  */
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../theme';
 import { PlaybackButton } from './PlaybackButton';
 import { PlaybackMixToggle } from './PlaybackMixToggle';
 import {
-  usePlaybackMix,
-  type MixAccompaniment,
-  type PlaybackMix
-} from './usePlaybackMix';
+  DEFAULT_MIX,
+  withOnlyAvailable,
+  type PlaybackMix,
+  type TrackName
+} from './playbackTracks';
+import { usePlaybackMix, type MixAccompaniment } from './usePlaybackMix';
 
 export type { PlaybackState } from './usePlayback';
 export type { PlaybackMix };
@@ -42,7 +45,10 @@ export interface PlaybackBarProps {
    * (INV-NOTES-018).
    */
   accompaniment?: MixAccompaniment;
-  /** Follows the take itself rather than the chord choice. */
+  /**
+   * The melody read out of the take. Its own track, sounding over the take on
+   * the take's clock rather than following the chord track (INV-NOTES-027).
+   */
   voice?: MixAccompaniment;
 }
 
@@ -53,12 +59,30 @@ export function PlaybackBar({
   voice
 }: PlaybackBarProps) {
   const { colors } = useTheme();
-  const [mix, setMix] = useState<PlaybackMix>('both');
-  // Nothing to choose between without chords, so the take is all there is.
-  const hasChords = (accompaniment?.durationMs ?? 0) > 0;
+  const [mix, setMix] = useState<PlaybackMix>(DEFAULT_MIX);
+  // Only offer a track this note has. With neither chords nor a melody there
+  // is nothing to turn, so the take is all there is and no toggles are shown.
+  const offered = useMemo<TrackName[]>(() => {
+    const extras: TrackName[] = [];
+    if ((accompaniment?.durationMs ?? 0) > 0) {
+      extras.push('chords');
+    }
+    if ((voice?.durationMs ?? 0) > 0) {
+      extras.push('melody');
+    }
+    return extras.length > 0 ? ['take', ...extras] : [];
+  }, [accompaniment?.durationMs, voice?.durationMs]);
+
+  // What the toggles both draw and hand back: a track the note lacks, or a
+  // melody with no take left under it, is off in fact, so drawing it on would
+  // be the control claiming a sound nothing makes.
+  const sounding = useMemo(
+    () => withOnlyAvailable(mix, offered),
+    [mix, offered]
+  );
   const { state, play, stop } = usePlaybackMix({
     resolveAudioUri,
-    mix: hasChords ? mix : 'take',
+    mix: sounding,
     accompaniment,
     voice
   });
@@ -85,7 +109,13 @@ export function PlaybackBar({
         ) : null}
       </View>
 
-      {hasChords ? <PlaybackMixToggle value={mix} onChange={setMix} /> : null}
+      {offered.length > 0 ? (
+        <PlaybackMixToggle
+          value={sounding}
+          onChange={setMix}
+          offered={offered}
+        />
+      ) : null}
     </View>
   );
 }

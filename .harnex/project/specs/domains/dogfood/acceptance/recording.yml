@@ -57,44 +57,54 @@ acceptance:
 
   - id: ACC-DOG-005
     interface: ui
-    title: Thinking time is free
+    title: The one control both starts and stops
     given:
       - a clip is recording
-      - the clip has been recording for 30 seconds
-    when:
-      - the maintainer taps pause
-    then:
-      - the clip is in state paused
-      - the elapsed time is 30 seconds
-    maps_to:
-      capability: dogfood.pause_clip
-
-  - id: ACC-DOG-006
-    interface: ui
-    title: Resuming continues the same clip
-    given:
-      - a clip is paused
-      - the maintainer is on the Dashboard screen
-    when:
-      - the maintainer taps resume
-    then:
-      - the clip is in state recording
-      - the trail is Dashboard
-    maps_to:
-      capability: dogfood.resume_clip
-
-  - id: ACC-DOG-007
-    interface: ui
-    title: The countdown appears only near the end
-    given:
-      - a clip is recording
-      - the clip has been recording for 30 seconds
     when:
       - the maintainer taps record
     then:
-      - the countdown is hidden
+      - the clip is in state pending_upload
+    maps_to:
+      capability: dogfood.stop_clip
+      invariants: [INV-DOG-003]
+
+  - id: ACC-DOG-007
+    interface: ui
+    title: The countdown runs the whole clip and warns only near the end
+    given:
+      - a clip is recording
+      - the clip has been recording for 30 seconds
+    when:
+      - the maintainer navigates to Practice
+    then:
+      - the remaining time is 90 seconds
+      - the countdown urgency is none
     maps_to:
       capability: dogfood.start_clip
+
+  - id: ACC-DOG-032
+    interface: ui
+    title: The countdown cautions before it warns
+    given:
+      - a clip is recording
+    when:
+      - the clip runs on to 15 seconds left
+    then:
+      - the countdown urgency is caution
+    maps_to:
+      capability: dogfood.expire_clip
+
+  - id: ACC-DOG-033
+    interface: ui
+    title: The countdown warns for the last stretch
+    given:
+      - a clip is recording
+    when:
+      - the clip runs on to 5 seconds left
+    then:
+      - the countdown urgency is warning
+    maps_to:
+      capability: dogfood.expire_clip
 
   - id: ACC-DOG-008
     interface: ui
@@ -121,6 +131,30 @@ acceptance:
     maps_to:
       capability: dogfood.expire_clip
       invariants: [INV-DOG-003]
+
+  - id: ACC-DOG-034
+    interface: ui
+    title: Running out of time says so, and says another can be recorded
+    given:
+      - a clip is recording
+    when:
+      - the cap elapses
+    then:
+      - an alert says another feature request can be submitted
+    maps_to:
+      capability: dogfood.expire_clip
+
+  - id: ACC-DOG-035
+    interface: ui
+    title: Stopping deliberately raises no alert
+    given:
+      - a clip is recording
+    when:
+      - the maintainer taps stop
+    then:
+      - no alert is shown
+    maps_to:
+      capability: dogfood.stop_clip
 
   - id: ACC-DOG-029
     interface: ui

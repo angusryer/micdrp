@@ -1,11 +1,42 @@
 # Domain Development State — overwrite each meaningful change
-updated_at: "2026-08-21T00:00:00Z"
+updated_at: "2026-08-22T23:59:00Z"
 updated_by: agent
 phase: specifying
 phase_detail: >
   Specs written from a crawl of screens/Notes, analysis/note.ts, the
   data layer, and the notes table in migration 0001. 12 capabilities,
   20 invariants, 35 acceptance tests, 2 views, 11 interactions.
+
+  The detail view now draws the take as sung or as written down
+  (notes.set_notation_view, INT-NOTES-015, ACC-NOTES-036/037), which is
+  INV-NOTES-026 — until now only about what play sounded — extended to
+  what the graph and the note list show. logic/notation.ts holds the
+  mapping: as written puts each onset on its gridStartMs at its
+  gridDurationMs and zeroes the cents, since notation has no way to say
+  a note was fourteen cents flat. useNotationView holds the choice and
+  forces it back to as sung when a take has no grid. SeeItAs is the
+  control, above the graph so the picture and the control that changes
+  it are visible together, leaving the chord cards straight after the
+  graph (INV-NOTES-029). It is a second control rather than a second
+  use of HearItAs on purpose: reading the notation while hearing the
+  raw take is how the detector and the quantizer are told apart. The
+  segmented row both use was lifted into ModeChoice.
+
+  The melody control under that graph is a toggle: the press that
+  sounds the melody stops it again (notes.play_melody, INV-NOTES-031,
+  INT-NOTES-016, ACC-NOTES-038/039). It was a one-way press, so a
+  melody, once started, ran to its end whatever the singer did while
+  the button went on offering to start it — the take's transport had
+  already been made a toggle for that reason (INV-NOTES-030).
+  useTonePreview now owns the one preview voice the detail view has —
+  the melody, a tapped note, a tapped chord — which is what makes the
+  state honest: anything else taking that voice, the reading changing
+  beside it, the melody running out on its own timer, or the view
+  going away all put the control back to offering play. HearItAs draws
+  it, with a square rather than a pause since what it ends starts
+  again from the top; Icon gained that glyph. The melody heard *over*
+  the take keeps its own player, but no longer its own switch: that is
+  now its track toggle (INV-NOTES-027).
 
   Play on the detail view sounds the take and the chord backdrop
   together (notes.play_backdrop, INV-NOTES-018, ACC-NOTES-032), and
@@ -27,22 +58,28 @@ phase_detail: >
   gain than an audition, on its own AudioContext so a tap does not cut
   it off.
 
-  What a press sounds is chosen beside it — take, chords, or both
-  (notes.set_playback_mix, INV-NOTES-019, INT-NOTES-011,
-  ACC-NOTES-033/034). usePlaybackMix is the single transport over both
-  sources: it wraps usePlayback for anything with a take in it, and for
-  chords alone it makes the backdrop the transport, ending it on a
-  timer the length of the progression (useChordBackdrop now reports
-  durationMs). Chords alone never calls the resolver, so a press that
-  plays no take mints no file token. The backdrop is still driven from
-  the transport through a ref, so re-voicing mid-take cannot restart
-  it, and a choice made mid-playback stops what is sounding rather than
-  half-applying. PlaybackBar holds the choice and hides it when the
-  melody implied no chords; PlaybackMixToggle is the control.
-  PlaybackButton was split out of the bar, playback interactions into
-  interactions-playback.yml, and the bar's rendering into
-  __fixtures__/renderPlaybackBar, all for the 150-line and 40-line
-  budgets.
+  What a press sounds is turned beside it, one toggle per track — take,
+  chords, melody (notes.set_playback_mix, INV-NOTES-019, INT-NOTES-011,
+  ACC-NOTES-033/034/040/041). The maintainer asked to drop the "play
+  over the recording" switch once the toggles covered the tracks, which
+  they only could once the melody was one of them: three tracks cannot
+  be named by a single exclusive pick. playbackTracks.ts holds the mix
+  shape, the default (take and chords on, melody off — what the old
+  choice and the switch together already gave), and the two locks that
+  stop a control promising a sound nothing makes: the last audible
+  track cannot be turned off, and the melody cannot be turned on with
+  no take to ride. usePlaybackMix is the single transport over all
+  three: usePlayback for anything with a take in it, and for chords
+  alone the backdrop itself, ended on a timer the length of the
+  progression. No take means the resolver is never called, so such a
+  press mints no file token (useChordBackdrop reports durationMs). The
+  backdrop is still driven from the transport through a ref, so
+  re-voicing mid-take cannot restart it, and a track turned mid-play
+  stops what is sounding. PlaybackBar holds the mix and offers only the
+  tracks a note has; PlaybackMixToggle is the control, and MelodyMix
+  under the graph is now the melody's level alone. PlaybackButton,
+  interactions-playback, acceptance/playback-mix and
+  __fixtures__/renderPlaybackBar were all split off for the budgets.
 
   A chord slot answers only vertical drags and taps (INV-NOTES-017,
   INT-NOTES-005). The card used to lock an axis mid-drag and read
@@ -90,6 +127,13 @@ blockers:
     adapter with a fake engine and a row-level-security-enforcing fake
     backend client is wired.
 known_conflicts:
+  - >
+    NoteDetailScreen.tsx is 412 lines, well over the 150-line file
+    budget, and its component function is longer than 40 lines. Both
+    pre-date the notation choice and the melody toggle, which each put
+    their own logic in a hook (useNotationView, useTonePreview) so the
+    screen only wires them. Splitting the screen is a refactor of its
+    own and there is no test over it to hold a split honest.
   - >
     usePlayback.play() is 49 lines, over the 40-line function budget. It
     was already 47 before the backdrop was aligned to the take's clock;

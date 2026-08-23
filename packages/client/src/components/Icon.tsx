@@ -19,7 +19,10 @@ export type IconName =
   | 'practice'
   | 'notes'
   | 'dashboard'
-  | 'settings';
+  | 'settings'
+  | 'play'
+  | 'pause'
+  | 'stop';
 
 /** Material-style filled glyphs, authored on a 24×24 viewbox. */
 const ICON_PATHS: Record<IconName, string> = {
@@ -32,6 +35,13 @@ const ICON_PATHS: Record<IconName, string> = {
     'M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z',
   // Ascending bars — the Dashboard tab.
   dashboard: 'M4 9h4v11H4zm6-5h4v16h-4zm6 8h4v8h-4z',
+  // Transport pair. The triangle sits a touch right of centre so it reads as
+  // centred inside a circle, which is where these two are used (INV-NOTES-030).
+  play: 'M8 5v14l11-7z',
+  pause: 'M6 5h4v14H6zm8 0h4v14h-4z',
+  // A square, not a pair of bars: what it ends cannot be resumed, only
+  // started again from the top (INV-NOTES-031).
+  stop: 'M6 6h12v12H6z',
   // Cog — Account & Settings.
   settings:
     'M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z'

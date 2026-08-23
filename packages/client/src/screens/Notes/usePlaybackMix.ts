@@ -1,27 +1,29 @@
 /**
- * usePlaybackMix — one transport over two sources.
+ * usePlaybackMix — one transport over three tracks.
  *
- * A note can be heard three ways: the take alone, the chord backdrop alone, or
- * the two together, which is what play gives until something else is chosen.
- * This owns which of them a press sounds (INV-NOTES-019) and keeps them under
- * a single transport, so the play control is never a lie about what is running.
+ * A note has up to three of them: the recorded take, the chord backdrop read
+ * from it, and the melody read from it. Each is turned on and off on its own,
+ * and a press sounds exactly those left on (INV-NOTES-019). This owns that and
+ * keeps them under a single transport, so the play control is never a lie about
+ * what is running. Why toggles rather than one exclusive pick, and what each
+ * track means, is `playbackTracks`.
  *
  * The take's machine is `usePlayback`. The chords have no decode step, so when
  * they sound alone the backdrop *is* the transport: the press schedules it and
  * a timer the length of the progression hands the control back to play when it
  * runs out (INV-NOTES-018).
  *
- * Choosing the chords alone never resolves the audio URL, so a press that
- * plays no take mints no file token and asks the backend for nothing.
- * Changing the choice stops whatever is sounding — a mix applied halfway would
- * make what is heard depend on when the choice was made.
+ * The take turned off never resolves the audio URL, so a press that plays no
+ * take mints no file token and asks the backend for nothing. Turning any track
+ * stops whatever is sounding — a mix applied halfway would make what is heard
+ * depend on when the track was turned.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { usePlayback, type PlaybackState } from './usePlayback';
+import { sameMix, type PlaybackMix } from './playbackTracks';
 
-/** What a press sounds. `both` is the default. */
-export type PlaybackMix = 'take' | 'chords' | 'both';
+export type { PlaybackMix };
 
 export interface MixAccompaniment {
   /** Schedule the backdrop against a take already `offsetMs` in. */
@@ -37,13 +39,12 @@ export interface UsePlaybackMixOptions {
   mix: PlaybackMix;
   accompaniment?: MixAccompaniment;
   /**
-   * A voice that follows the take itself rather than the chord choice.
+   * A voice that follows the take itself rather than the chord track.
    *
-   * The detected melody belongs here. Hanging it off the accompaniment made
-   * it a passenger on a decision about chords: with the mix on take-only the
+   * The detected melody belongs here. Hanging it off the accompaniment made it
+   * a passenger on a decision about chords: with the chords off the
    * accompaniment never starts, so the melody was silent however loud it was
-   * set (INV-NOTES-027). Whether you want to hear what was read is a separate
-   * question from whether you want harmony under it.
+   * set (INV-NOTES-027) — which is why it is a track of its own in `mix`.
    */
   voice?: MixAccompaniment;
 }
@@ -66,8 +67,10 @@ export function usePlaybackMix({
     play: playTake,
     stop: stopTake
   } = usePlayback({ resolveAudioUri });
-  const wantsTake = mix !== 'chords';
-  const wantsChords = mix !== 'take';
+  const wantsTake = mix.take;
+  const wantsChords = mix.chords;
+  // The melody rides the take's clock, so it cannot sound without one.
+  const wantsVoice = mix.melody && mix.take;
 
   // The chords-alone transport: no decode, so nothing to be loading or in
   // error over — it is running or it is not.
@@ -106,14 +109,14 @@ export function usePlaybackMix({
     latestVoice.current = voice;
   }, [voice]);
 
-  // Follows the take, not the chord choice.
+  // Follows the take, not the chord track — and only when its own is on.
   useEffect(() => {
-    if (state === 'playing' && takeWanted.current) {
+    if (state === 'playing' && wantsVoice) {
       latestVoice.current?.start(takeElapsedMs());
     } else {
       latestVoice.current?.stop();
     }
-  }, [state, takeElapsedMs]);
+  }, [state, wantsVoice, takeElapsedMs]);
 
   useEffect(() => {
     if (state === 'playing' && wantsChords) {
@@ -137,23 +140,25 @@ export function usePlaybackMix({
       await playTake();
       return;
     }
-    const durationMs = latest.current?.durationMs ?? 0;
+    // With the take off the chords are the transport; with both off there is
+    // none, so the press sounds nothing rather than the track just turned off.
+    const durationMs = wantsChords ? (latest.current?.durationMs ?? 0) : 0;
     if (durationMs <= 0) {
       return;
     }
     clearEndTimer();
     setChordsRunning(true);
     endTimer.current = setTimeout(() => setChordsRunning(false), durationMs);
-  }, [wantsTake, playTake, clearEndTimer]);
+  }, [wantsTake, wantsChords, playTake, clearEndTimer]);
 
-  // A choice made mid-playback stops what is sounding, so the next press is
-  // the whole of the mix now chosen rather than half of two.
-  const chosen = useRef(mix);
+  // A track turned mid-playback stops what is sounding, so the next press is
+  // the whole of the mix as it now stands rather than half of two.
+  const turned = useRef(mix);
   useEffect(() => {
-    if (chosen.current === mix) {
+    if (sameMix(turned.current, mix)) {
       return;
     }
-    chosen.current = mix;
+    turned.current = mix;
     void stop();
   }, [mix, stop]);
 

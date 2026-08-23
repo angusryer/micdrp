@@ -17,8 +17,9 @@ import { ThemeProvider } from '../../../theme';
 import { PlaybackBar } from '../PlaybackBar';
 
 /**
- * A chord backdrop that reports a length, so the bar offers the choice of
- * what to sound. A length of 0 is a melody that implied no chords.
+ * A track that reports a length, so the bar offers a toggle for it. A length
+ * of 0 is a track the note does not have — a melody that implied no chords,
+ * or a take nothing was read out of.
  */
 export const backdrop = (durationMs = 4000) => ({
   start: jest.fn(),
@@ -26,9 +27,13 @@ export const backdrop = (durationMs = 4000) => ({
   durationMs
 });
 
+/** The melody read from the take, which is the bar's third track. */
+export const melodyVoice = backdrop;
+
 export const renderPlaybackBar = (
   resolveAudioUri: () => Promise<string | null>,
-  accompaniment?: ReturnType<typeof backdrop>
+  accompaniment?: ReturnType<typeof backdrop>,
+  voice?: ReturnType<typeof backdrop>
 ) =>
   waitFor(() =>
     render(
@@ -37,6 +42,7 @@ export const renderPlaybackBar = (
           <PlaybackBar
             resolveAudioUri={resolveAudioUri}
             accompaniment={accompaniment}
+            voice={voice}
           />
         </ThemeProvider>
       </I18nProvider>

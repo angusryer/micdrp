@@ -38,6 +38,7 @@ declare interface IPaletteColors {
   typography: string;
   gold: string;
   error: string;
+  caution: string; // A step short of error: running low, not yet wrong
   neutral50: string; // Navigation bar and button background
   neutral100: string; // Tile and card background
   neutral300: string; // Page backbround

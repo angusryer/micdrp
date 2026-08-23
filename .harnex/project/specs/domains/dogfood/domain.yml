@@ -29,8 +29,11 @@ domain:
   interfaces:
     - type: ui
       description: >
-        A record control present on every screen, its elapsed time, a
-        countdown when the cap is close, and pause/resume/stop.
+        A record control present on every screen — round idle, square
+        while recording — with the time left counting down beside it,
+        in the caution colour once the cap is close and the warning
+        colour for the last stretch. The one control starts and stops;
+        there is no pause.
     - type: module
       description: >
         The client recorder and uploader in packages/client/src/dogfood.
@@ -47,7 +50,7 @@ domain:
   boundaries:
     owns:
       - The always-present record control and everything it displays
-      - The recording session, including pause, resume, stop and the cap
+      - The recording session, including stopping and the cap
       - Which screens were visited while a clip was being recorded
       - Uploading a clip, and retrying an upload that failed
       - Claiming, transcribing and interpreting a clip

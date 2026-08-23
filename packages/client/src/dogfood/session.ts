@@ -1,11 +1,9 @@
 /**
- * The recording session: start, pause, resume, stop, and running out of time.
- *
- * Two things here are not obvious from the outside.
- *
- * Elapsed time excludes pauses. Thinking is free (INT-DOG-002), and — more
- * importantly — a trail offset and a transcript timestamp have to refer to the
- * same moment, which they only do if both ignore the gaps.
+ * The recording session: start, stop, and running out of time. There is no
+ * pause — a remark is spoken in one go, and a hold that has to be released is
+ * one more thing to get wrong mid-sentence. It also keeps a trail offset and a
+ * transcript timestamp referring to the same moment for free: with no gaps to
+ * discount, elapsed time is simply wall time since the tap.
  *
  * Stopping and running out of time are the same operation (INV-DOG-003). A
  * recording that needs a second deliberate act to send is one that gets
@@ -20,11 +18,29 @@ import {
 
 import { audioEngine } from '../audio/AudioEngine';
 import { isBusy } from '../app/activity';
-import { CLIP_CAP_MS, CLIP_SUBDIRECTORY, COUNTDOWN_AT_MS } from './config';
+import {
+  CAUTION_AT_MS,
+  CLIP_CAP_MS,
+  CLIP_SUBDIRECTORY,
+  WARNING_AT_MS
+} from './config';
 import { ScreenTrail } from './trail';
-import { IDLE_SESSION, type ClipState, type RecordingSession } from './types';
+import {
+  IDLE_SESSION,
+  type ClipState,
+  type CountdownUrgency,
+  type RecordingSession
+} from './types';
 
 type Clock = () => number;
+
+/** Which colour the countdown wears, from how little is left of the cap. */
+const urgencyOf = (remainingMs: number): CountdownUrgency => {
+  if (remainingMs <= WARNING_AT_MS) {
+    return 'warning';
+  }
+  return remainingMs <= CAUTION_AT_MS ? 'caution' : 'none';
+};
 
 /** What a finished session hands over. Uploading is somebody else's job. */
 export type FinishedClip = {
@@ -50,15 +66,13 @@ export class DogfoodSession {
   private readonly trail = new ScreenTrail();
   private recorder: AudioRecorder | null = null;
   private state: ClipState = 'idle';
-  private accumulatedMs = 0;
-  private segmentStartedAt = 0;
+  private startedAt = 0;
 
   constructor(private readonly now: Clock = Date.now) {}
 
-  /** Time actually recorded, excluding anything spent paused. */
+  /** Time recorded, counted from the tap that started the clip. */
   elapsedMs(): number {
-    const live = this.state === 'recording' ? this.now() - this.segmentStartedAt : 0;
-    return this.accumulatedMs + live;
+    return this.state === 'recording' ? this.now() - this.startedAt : 0;
   }
 
   /** What the control renders. */
@@ -72,7 +86,7 @@ export class DogfoodSession {
       state: this.state,
       elapsedMs,
       remainingMs,
-      isCountingDown: remainingMs <= COUNTDOWN_AT_MS,
+      urgency: urgencyOf(remainingMs),
       canRecord: !isBusy()
     };
   }
@@ -147,8 +161,7 @@ export class DogfoodSession {
     lastStartError = null;
     this.recorder = recorder;
     this.state = 'recording';
-    this.accumulatedMs = 0;
-    this.segmentStartedAt = this.now();
+    this.startedAt = this.now();
     this.trail.reset();
     this.trail.visit(route, 0);
     return true;
@@ -162,30 +175,9 @@ export class DogfoodSession {
     this.trail.visit(route, this.elapsedMs());
   }
 
-  /** Hold, keeping what has been said. Time paused does not count. */
-  pause(): void {
-    if (this.state !== 'recording' || !this.recorder) {
-      return;
-    }
-    this.accumulatedMs = this.elapsedMs();
-    this.recorder.pause();
-    this.state = 'paused';
-  }
-
-  /** Carry on into the same clip. */
-  resume(route: string): void {
-    if (this.state !== 'paused' || !this.recorder || isBusy()) {
-      return;
-    }
-    this.recorder.resume();
-    this.state = 'recording';
-    this.segmentStartedAt = this.now();
-    this.trail.visit(route, this.accumulatedMs);
-  }
-
   /**
-   * Finish. Used both by the stop control and by the cap elapsing, because
-   * they mean the same thing (INV-DOG-003).
+   * Finish. Used both by the tap on the square and by the cap elapsing,
+   * because they mean the same thing (INV-DOG-003).
    *
    * Returns null for a clip with nothing in it — an accidental tap should not
    * produce something for the loop to read.
@@ -206,7 +198,6 @@ export class DogfoodSession {
       lastStartError = `stop threw: ${String(error)}`;
       this.recorder = null;
       this.state = 'idle';
-      this.accumulatedMs = 0;
       this.trail.reset();
       return null;
     }
@@ -214,7 +205,6 @@ export class DogfoodSession {
     const trail = this.trail.entries();
     this.recorder = null;
     this.state = 'idle';
-    this.accumulatedMs = 0;
     this.trail.reset();
 
     const audioPath = result.status === 'success' ? result.paths[0] : undefined;

@@ -80,6 +80,28 @@ invariants:
       than competing with it. Played under a take the backdrop is also
       quieter per tone than an audition, which is heard on its own.
 
+  - id: INV-NOTES-068
+    description: The graph reads down — melody, then the chords it implies
+    severity: minor
+    check: >
+      In the note's graph the sung line is drawn above the chords read
+      from it, the chords sit along the bottom edge of the graph, and the
+      cards that edit those chords are the next thing below the graph.
+      Verified by asserting the order the graph stacks its two lanes and
+      that the chord lane is drawn between the melody and the track.
+
+      Stacking follows the harmony: a backdrop already sounds below the
+      sung line (INV-NOTES-009), so drawing it above the melody puts the
+      picture at odds with what is heard. Keeping the lane against the
+      bottom edge also puts each chord within a thumb's travel of the
+      card that changes it, so the two readings of one chord — its span
+      across the take and the control for it — are read together.
+
+      Both lanes are laid out on the melody's own time axis, so a chord
+      is drawn under the notes it was inferred from. A lane on a second
+      axis would drift from the line above it and claim a harmony nobody
+      sang there.
+
   - id: INV-NOTES-017
     description: A chord slot never eats a sideways drag
     severity: major
