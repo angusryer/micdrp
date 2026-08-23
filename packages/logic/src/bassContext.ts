@@ -94,3 +94,30 @@ export function bassPitchClassOver(
 export function bassChangeTimes(spans: readonly BassSpan[]): number[] {
   return spans.map((span) => span.startMs);
 }
+
+/**
+ * The same performance, moved earlier by the round trip it was heard through.
+ *
+ * A voice sung against playback reaches the microphone after the output and
+ * input paths have run, so every onset lands late by a fixed few tens of
+ * milliseconds. Left alone, every downbeat the layer states is dragged late
+ * with it, and the take reads worse with the layer than without one
+ * (INV-NOTES-074).
+ *
+ * Nothing is moved before the start of the take: a note that would land at a
+ * negative moment is clamped rather than dropped, because a bass note sung
+ * fractionally early is still the chord it states.
+ */
+export function alignLayer(
+  notes: readonly NoteEvent[],
+  latencyMs: number
+): NoteEvent[] {
+  if (!(latencyMs > 0)) {
+    return notes as NoteEvent[];
+  }
+  return notes.map((note) => {
+    const startMs = Math.max(0, note.startMs - latencyMs);
+    const endMs = Math.max(startMs, note.endMs - latencyMs);
+    return { ...note, startMs, endMs, durationMs: endMs - startMs };
+  });
+}

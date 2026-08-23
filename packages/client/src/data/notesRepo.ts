@@ -25,7 +25,8 @@ import type {
   CreateNoteInput,
   InterpretationDto,
   NoteDto,
-  NoteEventDto
+  NoteEventDto,
+  NoteLayerDto
 } from 'shared';
 
 import { backend, COLLECTIONS } from '../lib/backend';
@@ -209,6 +210,25 @@ export const notesRepo = {
    * beside the others — which one is active is a property of the set, not of
    * any one entry.
    */
+  /**
+   * Keep the layers sung against a take.
+   *
+   * Written whole for the same reason as the readings: which layer is the
+   * bass, and which are muted, are properties of the set.
+   */
+  async saveLayers(
+    noteId: string,
+    layers: readonly NoteLayerDto[]
+  ): Promise<void> {
+    try {
+      await backend.collection(COLLECTIONS.notes).update(noteId, {
+        layers_json: layers
+      });
+    } catch (error) {
+      throw appError(AppErrorCode.Unknown, 'Could not save the layers', error);
+    }
+  },
+
   async saveInterpretations(
     noteId: string,
     interpretations: readonly InterpretationDto[]

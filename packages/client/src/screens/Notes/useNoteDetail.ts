@@ -34,6 +34,7 @@ import { useChordTrack } from './useChordTrack';
 import { useInterpretation } from './useInterpretation';
 import { useExportedMidi } from './useExportedMidi';
 import type { Selection } from '../../components/graphSelection';
+import { useNoteLayers } from './useNoteLayers';
 import { useNotationView } from './useNotationView';
 import { useNotePlayback } from './useNotePlayback';
 
@@ -110,10 +111,9 @@ export function useNoteDetail(id: string) {
   // is the one that carries harmony: it names the root and states where the
   // chord changes, which are the two things a melody alone only implies
   // (INV-NOTES-071, INV-NOTES-072).
-  const bass = useMemo(
-    () =>
-      (note?.layers ?? []).find((layer) => layer.role === 'bass')?.melody,
-    [note?.layers]
+  const { layers, bass, layerCapture, setLayerMuted } = useNoteLayers(
+    note?.id ?? null,
+    note?.layers
   );
 
   // Where the harmony turns over, which is what a downbeat marks. The take
@@ -228,6 +228,9 @@ export function useNoteDetail(id: string) {
     correctNote,
     resetNote,
     isCorrected,
+    layers,
+    setLayerMuted,
+    layerCapture,
     selection,
     setSelection,
     ...playback

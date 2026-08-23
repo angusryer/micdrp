@@ -60,3 +60,33 @@ invariants:
       Muting is about the ear, not the analysis: the reason to silence the
       bass is to hear the melody alone, and losing the harmony reading at
       the same moment would be a second, unasked-for change.
+
+  - id: INV-NOTES-074
+    description: An overdub is placed where it was sung, not where it was heard
+    severity: critical
+    check: >
+      A layer captured against a playing take has the round-trip latency
+      subtracted from every one of its timings before it is stored, and
+      the amount subtracted is kept with the layer. The correction is the
+      output latency plus the input latency plus one buffer, read from the
+      audio session at the moment of capture rather than assumed. A layer
+      captured with no take playing under it is corrected by nothing.
+      Verified by asserting the stored timings equal the detected ones
+      less the reported latency, and that the amount stored is the amount
+      applied.
+
+      A voice sung against playback reaches the microphone after the
+      output and input paths have both run, so every onset lands late by
+      a fixed few tens of milliseconds. Left alone, every downbeat this
+      layer states is dragged late with it — which would make a take read
+      worse with the layer than without one, and the feature would be
+      worth less than nothing.
+
+      Fixed per device rather than guessed at one number: the round trip
+      differs between the built-in speaker, wired headphones and
+      Bluetooth, and Bluetooth is far enough out that a constant would be
+      wrong on every route but the one it was measured on.
+
+      Stored rather than folded silently into the timings, so a
+      correction that is wrong can be seen to be wrong instead of being
+      inferred from bass lines that all sit slightly late.

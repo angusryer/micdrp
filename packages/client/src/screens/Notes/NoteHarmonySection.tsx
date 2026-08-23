@@ -12,6 +12,7 @@ import { StyleSheet, Text } from 'react-native';
 
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
+import { LayerControl } from './LayerControl';
 import type { useNoteDetail } from './useNoteDetail';
 
 export interface NoteHarmonySectionProps {
@@ -35,6 +36,17 @@ export function NoteHarmonySection({
 
   return (
     <>
+      {/* The one thing the reading cannot infer, which the singer can simply
+          perform (INV-NOTES-071). Beside the chords because it is the reason
+          they are what they are. */}
+      <LayerControl
+        layers={detail.layers}
+        isRecording={detail.layerCapture.isRecording}
+        alignedByMs={detail.layerCapture.alignedByMs}
+        onStart={() => void detail.layerCapture.start('bass')}
+        onStop={() => void detail.layerCapture.stop()}
+        onMuteChange={detail.setLayerMuted}
+      />
       <Text style={[styles.caption, { color: colors.gray300 }]}>
         {t('notes.harmonyHint')}
       </Text>

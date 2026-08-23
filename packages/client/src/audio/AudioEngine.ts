@@ -125,6 +125,24 @@ class AudioEngineImpl implements AudioEngineContract {
     await w.start();
   }
 
+  /**
+   * The round trip from asking for a sound to hearing it back, for the route
+   * in use right now, or 0 when nothing can say.
+   *
+   * Callers must read 0 as "do not correct" rather than "no latency": a wrong
+   * correction to an overdub is worse than an uncorrected one, which is at
+   * least visibly late (INV-NOTES-074).
+   */
+  async roundTripLatencyMs(): Promise<number> {
+    try {
+      return (await this.native?.roundTripLatencyMs()) ?? 0;
+    } catch {
+      // The worklet tier has no session to ask, and a session that refuses is
+      // the same answer as not having one.
+      return 0;
+    }
+  }
+
   async stop(): Promise<RecordingHandle> {
     if (this.native) {
       const handle = await this.native.stop();

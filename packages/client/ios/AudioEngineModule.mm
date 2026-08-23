@@ -263,6 +263,27 @@ static double NowMs() {
   [self emitOnPitch:body];
 }
 
+/**
+ * The round trip from asking for a sound to hearing it back through the mic.
+ *
+ * Output path, plus input path, plus the buffer the engine works in — the
+ * three delays a voice sung against playback actually passes through. Read
+ * from the session at the moment of asking rather than assumed: the built-in
+ * speaker, wired headphones and Bluetooth differ, and Bluetooth by enough
+ * that a constant would be wrong everywhere but where it was measured
+ * (INV-NOTES-074).
+ *
+ * Zero when the session will not say, which the caller must treat as "do not
+ * correct" rather than "no latency" — a wrong correction is worse than none.
+ */
+- (void)roundTripLatencyMs:(RCTPromiseResolveBlock)resolve
+                    reject:(__unused RCTPromiseRejectBlock)reject {
+  AVAudioSession *session = [AVAudioSession sharedInstance];
+  NSTimeInterval seconds =
+      session.outputLatency + session.inputLatency + session.IOBufferDuration;
+  resolve(@(seconds > 0 ? seconds * 1000.0 : 0.0));
+}
+
 - (void)stop:(RCTPromiseResolveBlock)resolve
       reject:(RCTPromiseRejectBlock)reject {
   if (!_running.load()) {

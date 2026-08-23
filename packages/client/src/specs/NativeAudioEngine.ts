@@ -59,6 +59,16 @@ export interface Spec extends TurboModule {
    */
   start(captureDir: string): Promise<void>;
   stop(): Promise<RecordingHandleResult>;
+  /**
+   * The round trip from asking for a sound to hearing it back through the
+   * microphone, in milliseconds, for the route in use right now.
+   *
+   * Read rather than assumed: it differs between the built-in speaker, wired
+   * headphones and Bluetooth, and Bluetooth is far enough out that any
+   * constant would be wrong on every route but the one it was measured on
+   * (INV-NOTES-074). 0 when the session cannot say.
+   */
+  roundTripLatencyMs(): Promise<Double>;
 
   /** Throttled live frames for the duration of a capture. */
   readonly onPitch: EventEmitter<PitchSampleEvent>;

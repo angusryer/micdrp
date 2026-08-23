@@ -8,6 +8,7 @@
  * worse than no feature.
  */
 import {
+  alignLayer,
   bassChangeTimes,
   bassPitchClassOver,
   bassSpans
@@ -121,5 +122,37 @@ describe('INV-NOTES-072: where the bass moves is where the chord changes', () =>
   it('every stretch begins a chord, the first included', () => {
     const spans = bassSpans([note(48, 250, 800), note(50, 800, 1200)]);
     expect(bassChangeTimes(spans)).toEqual([250, 800]);
+  });
+});
+
+describe('INV-NOTES-074: placing an overdub where it was sung', () => {
+  const heard = [note(48, 120, 620), note(53, 620, 1120)];
+
+  it('moves every timing earlier by the round trip', () => {
+    const placed = alignLayer(heard, 100);
+    expect(placed[0].startMs).toBe(20);
+    expect(placed[0].endMs).toBe(520);
+    expect(placed[1].startMs).toBe(520);
+  });
+
+  it('keeps each note as long as it was', () => {
+    const placed = alignLayer(heard, 100);
+    placed.forEach((n, i) => {
+      expect(n.endMs - n.startMs).toBe(heard[i].endMs - heard[i].startMs);
+      expect(n.durationMs).toBe(n.endMs - n.startMs);
+    });
+  });
+
+  it('corrects a layer sung with nothing playing by nothing at all', () => {
+    // The session reports 0 when it will not say, and a wrong correction is
+    // worse than none.
+    expect(alignLayer(heard, 0)).toEqual(heard);
+    expect(alignLayer(heard, -5)).toEqual(heard);
+  });
+
+  it('clamps rather than drops a note that would land before the take', () => {
+    const early = alignLayer([note(48, 30, 200)], 100);
+    expect(early[0].startMs).toBe(0);
+    expect(early).toHaveLength(1);
   });
 });
