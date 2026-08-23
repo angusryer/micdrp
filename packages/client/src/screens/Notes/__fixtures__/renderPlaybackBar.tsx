@@ -9,7 +9,7 @@
  * transport, INV-NOTES-018) and playbackMix.test.tsx (what a press sounds,
  * INV-NOTES-019).
  */
-import { render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
 
 import { I18nProvider } from '../../../i18n';
@@ -30,12 +30,19 @@ export const backdrop = (durationMs = 4000) => ({
 /** The melody read from the take, which is the bar's third track. */
 export const melodyVoice = backdrop;
 
-export const renderPlaybackBar = (
+/**
+ * Renders the transport with its options sheet already open.
+ *
+ * The track toggles live in the sheet now (INT-NOTES-021), and every suite
+ * using this fixture is about which tracks sound rather than about how the
+ * sheet opens — so opening it here keeps those tests about their subject.
+ */
+export const renderPlaybackBar = async (
   resolveAudioUri: () => Promise<string | null>,
   accompaniment?: ReturnType<typeof backdrop>,
   voice?: ReturnType<typeof backdrop>
-) =>
-  waitFor(() =>
+) => {
+  const rendered = await waitFor(() =>
     render(
       <I18nProvider>
         <ThemeProvider>
@@ -48,3 +55,6 @@ export const renderPlaybackBar = (
       </I18nProvider>
     )
   );
+  await fireEvent.press(screen.getByLabelText('Playback options'));
+  return rendered;
+};

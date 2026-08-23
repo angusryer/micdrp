@@ -17,8 +17,6 @@ import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { HearItAs } from './HearItAs';
 import { SeeItAs } from './SeeItAs';
-import { MelodyMix } from './MelodyMix';
-import { MelodyOctave } from './MelodyOctave';
 import type { useNoteDetail } from './useNoteDetail';
 
 export interface NoteShapeControlsProps {
@@ -51,15 +49,7 @@ export function NoteShapeControls({
           onChange={detail.setNotationView}
           canNotate={detail.canNotate}
         />
-        <MelodyMix
-          level={detail.melodyLevel}
-          onLevelChange={detail.setMelodyLevel}
-        />
-        <MelodyOctave
-          octaves={detail.octaves}
-          range={detail.octaveRange}
-          onShift={detail.shiftOctave}
-        />
+
       </View>
       {/* Say when the bar lines are an assumption rather than a reading. A
           short sung idea often does not state its metre, and drawing

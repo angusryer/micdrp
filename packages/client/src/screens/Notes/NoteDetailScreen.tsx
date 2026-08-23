@@ -28,6 +28,8 @@ import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { ExportSheet } from '../Results/ExportSheet';
 import { NoteList } from '../Results/NoteList';
+import { MelodyMix } from './MelodyMix';
+import { MelodyOctave } from './MelodyOctave';
 import { NoteHarmonySection } from './NoteHarmonySection';
 import { NoteLandscape } from './NoteLandscape';
 import { NoteShapeSection } from './NoteShapeSection';
@@ -85,6 +87,19 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             durationLabel={formatDuration(note.durationMs)}
             accompaniment={detail.backdrop}
             voice={detail.melodyVoiceMix}
+            options={
+              <>
+                <MelodyMix
+                  level={detail.melodyLevel}
+                  onLevelChange={detail.setMelodyLevel}
+                />
+                <MelodyOctave
+                  octaves={detail.octaves}
+                  range={detail.octaveRange}
+                  onShift={detail.shiftOctave}
+                />
+              </>
+            }
           />
         ) : null}
 

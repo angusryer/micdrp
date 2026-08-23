@@ -127,3 +127,22 @@ interactions:
       take, so the longer the idea the less it was checked.
     maps_to:
       capability: notes.play
+
+  - id: INT-NOTES-021
+    name: Open the playback options
+    view: VIEW-NOTES-002
+    steps:
+      - Press the options control beside the transport
+    outcome: >
+      A sheet rises from the bottom carrying everything that decides what a
+      press sounds and in what register: which tracks are on, how loud the
+      melody sits against the take, and which octave it plays in. Closing
+      it keeps every choice. Nothing in the sheet starts a sound — the
+      transport is still the only thing that does.
+
+      These controls were scattered down the page, each beside the thing
+      it happened to be built for, so setting up a listen meant scrolling
+      past the graph and back. They answer one question — what am I about
+      to hear — and belong together, off the page until asked for.
+    maps_to:
+      capability: notes.set_playback_mix
