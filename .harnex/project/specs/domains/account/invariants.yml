@@ -98,3 +98,25 @@ invariants:
       The response to a reset request is identical for a registered and
       an unregistered address, so the screen cannot be used to enumerate
       accounts.
+
+  - id: INV-ACCOUNT-013
+    description: Every setting says when you would notice it
+    severity: major
+    check: >
+      Each adjustable setting carries a line naming the real situation in
+      which changing it is most obviously felt — not a restatement of what
+      the number is. Verified by asserting every field in the settings
+      screen has a hint, and that no hint is empty.
+
+      These are detector internals with names like "clarity threshold" and
+      "hop size". Their labels say what they are, which their names
+      already did, and nothing about when to reach for one. The knob that
+      lets a quiet whistle be heard was already on this screen and went
+      unfound for exactly that reason: nothing on the page connected it to
+      the room the singing was happening in.
+
+      The wording is a situation, not a direction: "whistling, or singing
+      softly in a quiet room" rather than "lower to detect quieter
+      sounds". A situation lets a person recognise their own case; a
+      direction only tells them which way the number goes, which the
+      stepper already shows.

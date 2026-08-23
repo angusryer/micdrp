@@ -78,6 +78,7 @@ function Section({
 
 function StepperRow({
   label,
+  hint,
   display,
   atMin,
   atMax,
@@ -85,6 +86,8 @@ function StepperRow({
   onIncrease
 }: {
   label: string;
+  /** When you would notice this change — the situation, not the direction. */
+  hint?: string;
   value: number;
   display: string;
   atMin: boolean;
@@ -95,9 +98,16 @@ function StepperRow({
   const { colors } = useTheme();
   return (
     <View style={[styles.row, { borderBottomColor: colors.neutral500 }]}>
-      <Text style={[styles.rowLabel, { color: colors.typography }]}>
-        {label}
-      </Text>
+      <View style={styles.rowText}>
+        <Text style={[styles.rowLabel, { color: colors.typography }]}>
+          {label}
+        </Text>
+        {hint != null ? (
+          <Text style={[styles.rowHint, { color: colors.gray300 }]}>
+            {hint}
+          </Text>
+        ) : null}
+      </View>
       <View style={styles.stepper}>
         <TouchableOpacity
           onPress={onDecrease}
@@ -138,6 +148,9 @@ function StepperRow({
 interface EngineFieldSpec {
   key: keyof EngineConfig;
   labelKey: string;
+  /** The situation this is felt in, named rather than described
+      (INV-ACCOUNT-013). */
+  hintKey: string;
   step: number;
   min: number;
   max: number;
@@ -146,12 +159,12 @@ interface EngineFieldSpec {
 }
 
 const ENGINE_FIELDS: EngineFieldSpec[] = [
-  { key: 'frameSize', labelKey: 'settings.engine.frameSize', step: 512, min: 512, max: 8192, unit: 'samples' },
-  { key: 'hopSize', labelKey: 'settings.engine.hopSize', step: 256, min: 256, max: 4096, unit: 'samples' },
-  { key: 'minFrequencyHz', labelKey: 'settings.engine.minFrequency', step: 10, min: 20, max: 500, unit: 'Hz' },
-  { key: 'maxFrequencyHz', labelKey: 'settings.engine.maxFrequency', step: 50, min: 200, max: 4000, unit: 'Hz' },
-  { key: 'clarityThreshold', labelKey: 'settings.engine.clarityThreshold', step: 0.05, min: 0, max: 1, decimals: 2 },
-  { key: 'emitRateHz', labelKey: 'settings.engine.emitRate', step: 10, min: 10, max: 120, unit: 'Hz' }
+  { key: 'frameSize', labelKey: 'settings.engine.frameSize', hintKey: 'settings.engine.frameSizeHint', step: 512, min: 512, max: 8192, unit: 'samples' },
+  { key: 'hopSize', labelKey: 'settings.engine.hopSize', hintKey: 'settings.engine.hopSizeHint', step: 256, min: 256, max: 4096, unit: 'samples' },
+  { key: 'minFrequencyHz', labelKey: 'settings.engine.minFrequency', hintKey: 'settings.engine.minFrequencyHint', step: 10, min: 20, max: 500, unit: 'Hz' },
+  { key: 'maxFrequencyHz', labelKey: 'settings.engine.maxFrequency', hintKey: 'settings.engine.maxFrequencyHint', step: 50, min: 200, max: 4000, unit: 'Hz' },
+  { key: 'clarityThreshold', labelKey: 'settings.engine.clarityThreshold', hintKey: 'settings.engine.clarityThresholdHint', step: 0.05, min: 0, max: 1, decimals: 2 },
+  { key: 'emitRateHz', labelKey: 'settings.engine.emitRate', hintKey: 'settings.engine.emitRateHint', step: 10, min: 10, max: 120, unit: 'Hz' }
 ];
 
 const PALETTE_DISPLAY: { palette: ETheme; label: string; swatch: string }[] = [
@@ -327,6 +340,7 @@ export default function AccountScreen(props: Props): React.JSX.Element {
         <Section title={t('settings.sections.analysis').toUpperCase()}>
           <StepperRow
             label={t('settings.analysis.windowMs')}
+            hint={t('settings.analysis.windowMsHint')}
             value={chordInference.windowMs}
             display={`${chordInference.windowMs} ms`}
             atMin={chordInference.windowMs <= 500}
@@ -415,6 +429,7 @@ export default function AccountScreen(props: Props): React.JSX.Element {
           </TouchableOpacity>
           <StepperRow
             label={t('settings.analysis.minConfidence')}
+            hint={t('settings.analysis.minConfidenceHint')}
             value={chordInference.minConfidence}
             display={chordInference.minConfidence.toFixed(2)}
             atMin={chordInference.minConfidence <= 0}
@@ -447,6 +462,7 @@ export default function AccountScreen(props: Props): React.JSX.Element {
               <StepperRow
                 key={field.key}
                 label={t(field.labelKey)}
+                hint={t(field.hintKey)}
                 value={value}
                 display={`${value.toFixed(field.decimals ?? 0)}${
                   field.unit ? ` ${field.unit}` : ''
@@ -650,6 +666,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth
   },
+  rowText: { flexShrink: 1, paddingRight: 12 },
+  rowHint: { fontSize: 11, marginTop: 2, lineHeight: 15 },
   rowLabel: { fontSize: 15, flex: 1 },
   rowValue: { fontSize: 15, marginLeft: 12, flexShrink: 1, textAlign: 'right' },
   fieldBlock: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16 },

@@ -233,7 +233,9 @@
       "triads": "Triads",
       "sevenths": "7ths",
       "keyRelative": "Key-relative",
-      "minConfidence": "Min confidence"
+      "minConfidence": "Min confidence",
+      "windowMsHint": "A take that changes chord quickly, where one chord is read across two.",
+      "minConfidenceHint": "A wandering or bluesy melody, where chords are guessed that you did not imply."
     },
     "engine": {
       "frameSize": "Frame Size",
@@ -246,7 +248,13 @@
       "resetToDefaults": "Reset to defaults",
       "resetAccessibility": "Reset engine settings to defaults",
       "decrease": "Decrease {{label}}",
-      "increase": "Increase {{label}}"
+      "increase": "Increase {{label}}",
+      "frameSizeHint": "Very short notes, or fast runs — smaller catches them, larger steadies long held notes.",
+      "hopSizeHint": "Quick ornaments and grace notes, where the pitch moves between readings.",
+      "minFrequencyHint": "Singing at the very bottom of your range, where low notes go undetected.",
+      "maxFrequencyHint": "Whistling, or a high falsetto — most whistling sits above the usual ceiling.",
+      "clarityThresholdHint": "Whistling, or singing softly in a quiet room, where notes are missed rather than wrong.",
+      "emitRateHint": "Watching the live pitch line while you sing — how smoothly it moves."
     },
     "appearance": {
       "themeHint": "Theme changes apply instantly.",
