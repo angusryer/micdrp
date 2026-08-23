@@ -12,11 +12,10 @@
  * and what the graph will not claim on its own.
  */
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
-import { MelodyPlayToggle } from './MelodyPlayToggle';
 import type { useNoteDetail } from './useNoteDetail';
 
 export interface NoteShapeControlsProps {
@@ -32,14 +31,6 @@ export function NoteShapeControls({
 
   return (
     <>
-      <View style={styles.hearAs}>
-        <MelodyPlayToggle
-          isPlaying={detail.isMelodyPlaying}
-          mode={detail.playbackMode}
-          onPlay={detail.playMelody}
-          onStop={detail.stopMelody}
-        />
-      </View>
       {/* Say when the bar lines are an assumption rather than a reading. A
           short sung idea often does not state its metre, and drawing
           confident bar lines over one would be inventing information. */}
@@ -60,6 +51,5 @@ export function NoteShapeControls({
 export default NoteShapeControls;
 
 const styles = StyleSheet.create({
-  hearAs: { marginTop: 12, gap: 12 },
   caption: { fontSize: 12, marginTop: 8 }
 });

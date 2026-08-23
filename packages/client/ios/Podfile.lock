@@ -2387,6 +2387,28 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - RNTrueSheet (3.11.12):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - RNWorklets (0.11.4):
     - hermes-engine
     - RCTRequired
@@ -2550,6 +2572,7 @@ DEPENDENCIES:
   - RNReanimated (from `../../../node_modules/react-native-reanimated`)
   - RNScreens (from `../../../node_modules/react-native-screens`)
   - RNShare (from `../../../node_modules/react-native-share`)
+  - "RNTrueSheet (from `../../../node_modules/@lodev09/react-native-true-sheet`)"
   - RNWorklets (from `../../../node_modules/react-native-worklets`)
   - Yoga (from `../../../node_modules/react-native/ReactCommon/yoga`)
 
@@ -2735,6 +2758,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/react-native-screens"
   RNShare:
     :path: "../../../node_modules/react-native-share"
+  RNTrueSheet:
+    :path: "../../../node_modules/@lodev09/react-native-true-sheet"
   RNWorklets:
     :path: "../../../node_modules/react-native-worklets"
   Yoga:
@@ -2830,6 +2855,7 @@ SPEC CHECKSUMS:
   RNReanimated: 7094afd106a35ecb18602b098a2d862e5d358610
   RNScreens: de068bbd7d91b820fedac25c597d4b14830de74b
   RNShare: 7344a3a7d4e5df58c356ad0f79e4a3ef1325c635
+  RNTrueSheet: 6a823298d3933c3b07aa858eb8bd66e15a23ed5f
   RNWorklets: 16d99ea653d02704584de4b91dde39cbd30199b5
   Yoga: 9891cfb1c680f64de9c41b09e7453dea33454d2b
 

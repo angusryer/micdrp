@@ -122,23 +122,22 @@ describe('turning the tracks a press sounds', () => {
     expect(melody.start).toHaveBeenCalledWith(expect.any(Number));
   });
 
-  it('does not sound a melody left on when the take goes off under it', async () => {
+  it('sounds the melody alone with the take off under it', async () => {
     const melody = backdrop(3000);
     await renderBar(backdrop(), jest.fn().mockResolvedValue(REMOTE), melody);
 
     await fireEvent.press(track('Melody'));
     await fireEvent.press(track('Take'));
+    await fireEvent.press(track('Chords'));
 
-    // It rides the take's clock, so with no take there is nothing to ride and
-    // the toggle stops offering itself rather than promising silence.
-    expect(
-      screen.getByRole('checkbox', { name: 'Melody', disabled: true })
-    ).toBeTruthy();
-
+    // Its own transport now: the melody read from a take is worth hearing by
+    // itself, and the control that used to do that is this toggle
+    // (INT-NOTES-026).
     await fireEvent.press(screen.getByLabelText('Play'));
 
-    await waitFor(() => expect(screen.getByLabelText('Pause')).toBeTruthy());
-    expect(melody.start).not.toHaveBeenCalled();
+    await waitFor(() => expect(melody.start).toHaveBeenCalledTimes(1));
+    // From its own top, with no take to catch up to.
+    expect(melody.start).toHaveBeenCalledWith(0);
   });
 
   it('will not turn off the last track that can sound', async () => {

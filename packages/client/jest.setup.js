@@ -91,6 +91,21 @@ jest.mock('react-native-mmkv', () => {
   };
 }, { virtual: true });
 
+// @lodev09/react-native-true-sheet: the real module throws at import when the
+// native side is absent, which is every test. Render the children inline so a
+// sheet's contents are still queryable, and no-op the imperative methods.
+jest.mock('@lodev09/react-native-true-sheet', () => {
+  const React = require('react');
+  class TrueSheet extends React.Component {
+    present() { return Promise.resolve(); }
+    dismiss() { return Promise.resolve(); }
+    render() {
+      return React.createElement(React.Fragment, null, this.props.children);
+    }
+  }
+  return { TrueSheet };
+}, { virtual: true });
+
 // @shopify/react-native-skia: render children, stub drawing primitives.
 jest.mock('@shopify/react-native-skia', () => {
   const React = require('react');

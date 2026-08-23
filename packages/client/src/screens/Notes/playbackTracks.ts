@@ -33,17 +33,18 @@ export const DEFAULT_MIX: PlaybackMix = {
 /**
  * Whether a track's toggle is unavailable rather than merely off.
  *
- * Two cases, both of which would otherwise leave a control that does nothing:
- * turning off the last track that can sound, and turning the melody on with no
- * take under it — the melody rides the take's clock and is not a transport of
- * its own.
+ * One case now: turning off the last track that can sound, which would leave
+ * a press with nothing to do.
+ *
+ * The melody used to be locked without a take under it, on the grounds that
+ * it rides the take's clock. It has its own transport now — the melody read
+ * from a take is worth hearing by itself, and the separate control that used
+ * to do that has gone into this list, so locking it here would take the
+ * ability away rather than move it (INT-NOTES-026).
  */
 export function isTrackLocked(track: TrackName, mix: PlaybackMix): boolean {
-  if (track === 'melody') {
-    return !mix.take;
-  }
-  const other = track === 'take' ? 'chords' : 'take';
-  return mix[track] && !mix[other];
+  const sounding = TRACK_ORDER.filter((name) => mix[name]);
+  return mix[track] && sounding.length === 1;
 }
 
 /** Whether two mixes have every track the same way round. */
@@ -59,7 +60,9 @@ export function withOnlyAvailable(
   return {
     take: mix.take,
     chords: mix.chords && available.includes('chords'),
-    // The melody rides the take, so it is silent without one however it is set.
-    melody: mix.melody && mix.take && available.includes('melody')
+    // Sounds on its own now: the melody read from a take is worth hearing by
+    // itself, and the control that used to do that has gone into this list
+    // (INT-NOTES-026).
+    melody: mix.melody && available.includes('melody')
   };
 }

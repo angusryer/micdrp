@@ -173,3 +173,26 @@ interactions:
       top edge of the graph into the one place time is both read and set.
     maps_to:
       capability: notes.play
+
+  - id: INT-NOTES-026
+    name: Everything a press sounds is in one list
+    view: VIEW-NOTES-002
+    steps:
+      - Open the playback options
+      - Turn the melody on, and the take off
+      - Press play
+    outcome: >
+      The melody sounds on its own, from its own beginning. Every track is
+      turned in the same list, and the transport is the only control that
+      starts anything — there is no second play control anywhere on the
+      page.
+
+      The melody had its own button under the graph, so which reading you
+      heard depended on which control you pressed, and the options list
+      claimed to describe a press it did not govern. One transport and one
+      list is the smaller thing to explain and the honest one.
+    error_handling: >
+      Turning off the last track that can sound is refused, so a press
+      always has something to do.
+    maps_to:
+      capability: notes.set_playback_mix

@@ -3002,6 +3002,32 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@lodev09/react-native-true-sheet@npm:^3.11.12":
+  version: 3.11.12
+  resolution: "@lodev09/react-native-true-sheet@npm:3.11.12"
+  peerDependencies:
+    "@radix-ui/react-dialog": ">=1"
+    "@radix-ui/react-presence": ">=1"
+    "@react-navigation/core": ">=7"
+    react: "*"
+    react-native: "*"
+    react-native-reanimated: ">=4"
+    react-native-worklets: "*"
+  peerDependenciesMeta:
+    "@radix-ui/react-dialog":
+      optional: true
+    "@radix-ui/react-presence":
+      optional: true
+    "@react-navigation/core":
+      optional: true
+    react-native-reanimated:
+      optional: true
+    react-native-worklets:
+      optional: true
+  checksum: a52675ec59062e9e9dbee1b7370bf261a9e436a4248a9072fe0f67e9d2b783713bd029e9b158e432e64b7f54afe384fc8237235833868cece5f7e4fa3e9ffb77
+  languageName: node
+  linkType: hard
+
 "@napi-rs/wasm-runtime@npm:^1.1.6":
   version: 1.2.3
   resolution: "@napi-rs/wasm-runtime@npm:1.2.3"
@@ -5685,6 +5711,7 @@ __metadata:
     "@hot-updater/bare": 0.36.1
     "@hot-updater/cloudflare": 0.36.1
     "@hot-updater/react-native": 0.36.1
+    "@lodev09/react-native-true-sheet": ^3.11.12
     "@react-navigation/bottom-tabs": ^7.18.17
     "@react-navigation/native": ^7.3.17
     "@react-navigation/native-stack": ^7.18.9

@@ -25,6 +25,7 @@ module.exports = {
       '|react-native-gesture-handler|@react-navigation|react-native-screens' +
       '|react-native-safe-area-context|@shopify/react-native-skia' +
       '|react-native-mmkv|react-native-nitro-modules|react-native-share' +
+      '|@lodev09/react-native-true-sheet' +
       '|react-native-audio-api|react-native-keychain|react-native-localize' +
       '|react-native-url-polyfill|@dr.pogodin/react-native-fs|pocketbase' +
       '|@supabase|i18next|react-i18next|xstate|@xstate)/)'

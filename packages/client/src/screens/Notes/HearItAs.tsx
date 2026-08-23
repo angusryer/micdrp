@@ -12,7 +12,8 @@
  * A row in the playback options' list of toggles, beside the tracks: it is one
  * more thing that decides what the next press will sound, so it belongs where
  * the rest of that decision is made rather than under the graph on its own.
- * The control that sounds it is MelodyPlayToggle, which stays under the graph —
+ * Nothing here sounds anything. The transport is the only control that starts
+ * a track, and the melody is one of them (INT-NOTES-026) —
  * nothing in the options starts a sound (INT-NOTES-021).
  */
 import React from 'react';

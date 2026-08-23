@@ -78,11 +78,11 @@ export function usePlaybackMix({
   } = usePlayback({ resolveAudioUri });
   const wantsTake = mix.take;
   const wantsChords = mix.chords;
-  // The melody rides the take's clock, so it cannot sound without one.
-  const wantsVoice = mix.melody && mix.take;
+  const wantsVoice = mix.melody;
 
-  // The chords-alone transport: no decode, so nothing to be loading or in
-  // error over — it is running or it is not.
+  // The transport for whatever sounds without a take under it — the chords,
+  // the melody, or both. No decode, so nothing to be loading or in error
+  // over: it is running or it is not.
   const [chordsRunning, setChordsRunning] = useState(false);
   const endTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearEndTimer = useCallback(() => {
@@ -118,10 +118,12 @@ export function usePlaybackMix({
     latestVoice.current = voice;
   }, [voice]);
 
-  // Follows the take, not the chord track — and only when its own is on.
+  // Follows the take when there is one, and stands on its own when there is
+  // not: the melody read from a take is worth hearing by itself, and making
+  // it wait for the take was a rule about clocks, not about listening.
   useEffect(() => {
     if (state === 'playing' && wantsVoice) {
-      latestVoice.current?.start(takeElapsedMs());
+      latestVoice.current?.start(takeWanted.current ? takeElapsedMs() : 0);
     } else {
       latestVoice.current?.stop();
     }
@@ -149,16 +151,20 @@ export function usePlaybackMix({
       await playTake(fromMs);
       return;
     }
-    // With the take off the chords are the transport; with both off there is
-    // none, so the press sounds nothing rather than the track just turned off.
-    const durationMs = wantsChords ? (latest.current?.durationMs ?? 0) : 0;
+    // With the take off, whatever is left is the transport, and it runs for
+    // as long as the longest of them. With everything off there is none, so
+    // the press sounds nothing rather than the track just turned off.
+    const durationMs = Math.max(
+      wantsChords ? (latest.current?.durationMs ?? 0) : 0,
+      wantsVoice ? (latestVoice.current?.durationMs ?? 0) : 0
+    );
     if (durationMs <= 0) {
       return;
     }
     clearEndTimer();
     setChordsRunning(true);
     endTimer.current = setTimeout(() => setChordsRunning(false), durationMs);
-  }, [wantsTake, wantsChords, playTake, clearEndTimer]);
+  }, [wantsTake, wantsChords, wantsVoice, playTake, clearEndTimer]);
 
   // A track turned mid-playback stops what is sounding, so the next press is
   // the whole of the mix as it now stands rather than half of two.
