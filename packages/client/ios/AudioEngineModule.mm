@@ -23,6 +23,7 @@
 #import "CaptureFile.h"
 
 #import <AVFoundation/AVFoundation.h>
+#import <UIKit/UIKit.h>
 #import <React/RCTLog.h>
 
 #include <atomic>
@@ -174,8 +175,7 @@ static double NowMs() {
   // the side of the singer's head at conversation volume, which is
   // indistinguishable from it not playing at all (INV-NOTES-089).
   if (isOverdub) {
-    [session overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker
-                               error:nil];
+    [self followTheEar:YES];
   }
 
   _engine = [[AVAudioEngine alloc] init];
@@ -302,6 +302,62 @@ static double NowMs() {
   resolve(@(seconds > 0 ? seconds * 1000.0 : 0.0));
 }
 
+/**
+ * Speaker at arm's length, earpiece against the head — the way a call behaves.
+ *
+ * Singing a part against a take is done both ways: held out while working on
+ * the phrase, and up to the ear in a room where a speaker would be rude or
+ * would bleed into the microphone. Asking which one to use would be a setting
+ * about where the phone is, which the phone already knows (INV-NOTES-090).
+ *
+ * The proximity sensor sits by the earpiece and iOS reports it as a device
+ * state. On a device without one — an iPad — enabling it does nothing and no
+ * notification ever arrives, so the speaker override stands and the behaviour
+ * is exactly what it was.
+ */
+- (void)dealloc {
+  // Synchronously, and without dispatching: handing `self` to another queue
+  // from dealloc hands it an object that is already going away.
+  [[NSNotificationCenter defaultCenter]
+      removeObserver:self
+                name:UIDeviceProximityStateDidChangeNotification
+              object:nil];
+}
+
+- (void)followTheEar:(BOOL)following {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    UIDevice *device = [UIDevice currentDevice];
+    NSNotificationCenter *centre = [NSNotificationCenter defaultCenter];
+    if (!following) {
+      [centre removeObserver:self
+                        name:UIDeviceProximityStateDidChangeNotification
+                      object:nil];
+      device.proximityMonitoringEnabled = NO;
+      return;
+    }
+    device.proximityMonitoringEnabled = YES;
+    [centre addObserver:self
+               selector:@selector(proximityChanged:)
+                   name:UIDeviceProximityStateDidChangeNotification
+                 object:nil];
+    [self routeForProximity];
+  });
+}
+
+- (void)proximityChanged:(__unused NSNotification *)note {
+  [self routeForProximity];
+}
+
+/** Near the face, the receiver; away from it, the speaker. */
+- (void)routeForProximity {
+  const BOOL atTheEar = [UIDevice currentDevice].proximityState;
+  AVAudioSession *session = [AVAudioSession sharedInstance];
+  [session overrideOutputAudioPort:atTheEar
+                                       ? AVAudioSessionPortOverrideNone
+                                       : AVAudioSessionPortOverrideSpeaker
+                             error:nil];
+}
+
 - (void)stop:(RCTPromiseResolveBlock)resolve
       reject:(RCTPromiseRejectBlock)reject {
   if (!_running.load()) {
@@ -315,6 +371,8 @@ static double NowMs() {
   [_engine stop];
   _engine = nil;
   _running = false;
+  // The sensor is only wanted while something is playing to be held up to.
+  [self followTheEar:NO];
 
   const double durationMs = NowMs() - _startHostTime;
 

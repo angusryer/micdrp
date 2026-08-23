@@ -147,3 +147,24 @@ invariants:
       Left alone it plays the take into the side of the singer's head at
       conversation volume, which from arm's length is indistinguishable
       from it not playing at all.
+
+  - id: INV-NOTES-090
+    description: An overdub follows the ear
+    severity: major
+    check: >
+      While a layer is being sung, output goes to the speaker when the
+      phone is held away and to the earpiece when it is held to the head,
+      switching as the phone moves. On a device with no proximity sensor
+      it stays on the speaker. Verified by asserting the route is set from
+      the sensor's state on every change while overdubbing, and that
+      monitoring is turned off when the capture ends.
+
+      A part is sung both ways: held out while working on a phrase, and
+      up to the ear in a room where a speaker would be rude or would bleed
+      into the microphone. Asking which would be a setting about where the
+      phone is, which the phone already knows — the same reason a call
+      does this without being asked.
+
+      Only during an overdub. Nothing else here plays and records at once,
+      and a sensor that dimmed the screen and moved the audio during
+      ordinary listening would be a phone call nobody made.
