@@ -82,8 +82,9 @@ invariants:
     description: Play sounds the tracks turned on and nothing else
     severity: major
     check: >
-      One toggle per track beside the play control — the take, the chord
-      backdrop, the melody — each on or off on its own, and a press
+      One toggle per track in the options the play control opens — the
+      take, the chord backdrop, the melody — each on or off on its own,
+      alongside the two reading toggles (INV-NOTES-026), and a press
       sounds exactly those that are on. The take off schedules no decode
       and resolves no audio URL, so a press that plays no take asks the
       server for nothing; the chords off schedules no backdrop; the

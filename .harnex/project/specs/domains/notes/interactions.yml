@@ -60,7 +60,8 @@ interactions:
     view: VIEW-NOTES-002
     precondition: The note has a melody.
     steps:
-      - Choose as sung or as written above the melody graph
+      - Open the playback options and choose as sung or as written for
+        what is drawn
     outcome: >
       The graph and the note list are redrawn from the chosen reading.
       As sung, each note sits where it was sung and says how far off

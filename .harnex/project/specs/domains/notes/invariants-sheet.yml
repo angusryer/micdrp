@@ -1,0 +1,23 @@
+# How the playback options sheet is opened — as against what it holds, which
+# is INV-NOTES-019 in invariants-playback.yml and INV-NOTES-026 in
+# invariants-edits.yml. Its own file so both of those stay inside the
+# 150-line spec-file budget.
+
+invariants:
+  - id: INV-NOTES-075
+    description: What opens the playback options is drawn, not written
+    severity: minor
+    check: >
+      The control at the far end of the note detail's transport row draws
+      a vector glyph and renders no text at all, and pressing it opens
+      the playback options sheet. The label a screen reader hears still
+      names what it opens. Verified by asserting the control renders the
+      glyph, that no word is rendered on it, and that a press reports the
+      sheet should open.
+
+      The transport it sits beside is already wordless (INV-NOTES-065),
+      so a written control there was the one thing on the bar to be read
+      rather than recognised — and the widest thing on a row that has a
+      counter and a failure line to fit. The glyph is an SVG path drawn
+      through the same Skia icon set as the rest of the app, so changing
+      it stays a JavaScript change and ships over the air.

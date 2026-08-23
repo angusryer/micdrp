@@ -79,11 +79,14 @@ invariants:
       As sung uses the pitch and timing that were detected, unrounded
       and unsnapped. As written uses the notated pitch and the grid.
       This holds of both surfaces: what the melody sounds when it is
-      played, and what the graph and the note list draw. Verified by
-      asserting the two readings differ for a take that was neither
-      exactly in tune nor exactly in time, agree for one that was, and
-      that choosing the written one moves every drawn onset onto the
-      grid while the stored melody is left alone.
+      played, and what the graph and the note list draw. Both are chosen
+      in the playback options, as two toggles in the same list as the
+      track toggles and drawn like them, each naming the surface it is
+      for. Verified by asserting the two readings differ for a take that
+      was neither exactly in tune nor exactly in time, agree for one that
+      was, that choosing the written one moves every drawn onset onto the
+      grid while the stored melody is left alone, and that both toggles
+      are reachable only from those options.
 
       These answer different questions and conflating them hides both.
       As sung, a mismatch is the detector's fault and worth chasing. As
@@ -99,7 +102,11 @@ invariants:
 
       The two choices are made separately, and neither drives the
       other: looking at the notation while listening to the raw take is
-      how a person tells which of the two is wrong.
+      how a person tells which of the two is wrong. Sitting them among
+      the tracks does not join them — they are one more thing that
+      decides what you are about to hear and see, and a segmented
+      control of their own beneath the graph made them look like a
+      different kind of question than the toggles they belong with.
 
   - id: INV-NOTES-027
     description: The take and what was read from it can be heard together

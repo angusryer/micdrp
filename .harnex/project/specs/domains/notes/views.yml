@@ -53,9 +53,9 @@ views:
       - notes.export_midi
     elements:
       - The note's title
-      - A choice above that graph of which reading is drawn — as sung,
-        or as written on the grid — offered as written only once the
-        take has a metre to be written against, and changing what the
+      - A toggle in the playback options for which reading is drawn — as
+        sung, or as written on the grid — offered as written only once
+        the take has a metre to be written against, and changing what the
         graph and the note list show without changing what play sounds
         or what is stored
       - A piano-roll melody view over time and pitch, occupying the upper
@@ -78,19 +78,23 @@ views:
       - That play control drawn as a round button carrying a triangle
         while it will start the take and a pair of upright bars while it
         is playing, with no word on it
-      - One toggle per track beside that play control — the take, the
+      - A control at the far end of that bar which opens the playback
+        options, drawn as a sliders glyph and carrying no word, named to
+        a screen reader by what it opens
+      - One toggle per track in the playback options — the take, the
         chords, the melody read from the take — each turned on and off
         on its own, with the take and the chords on and the melody off
         until they are turned, offering only the tracks the note has and
         nothing at all when there is none to turn
-      - A choice under the graph of which reading is sounded when the
-        melody itself is played, made separately from what the take's
-        play control sounds
-      - A control beside that choice which sounds the melody read from
-        the take and stops it again on a second press, carrying a
-        triangle while a press would start it and a square while a press
-        would stop it, and saying which it is doing in its own word
-      - A level under the graph for how loudly that same melody sits
+      - A toggle in that same list for which reading is sounded when the
+        melody itself is played, made separately from which reading is
+        drawn and from what the take's play control sounds
+      - A control under the graph which sounds the melody read from the
+        take and stops it again on a second press, carrying a triangle
+        while a press would start it and a square while a press would
+        stop it, saying which it is doing in its own word and naming the
+        chosen reading to a screen reader
+      - A level in those same options for how loudly that melody sits
         against the take when its track is on, and no separate switch
         for turning it on — that is the melody's track toggle
       - An export control offering the melody as a MIDI file

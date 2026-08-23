@@ -5,8 +5,8 @@
  * are the same thing. A note read a semitone out, or a beat late, is obvious
  * against the voice and easy to miss beside it (INV-NOTES-027).
  *
- * Whether it sounds at all is the melody's track toggle beside the play
- * control, with the take's and the chords' (INV-NOTES-019). A switch here as
+ * Whether it sounds at all is the melody's track toggle at the top of these
+ * options, with the take's and the chords' (INV-NOTES-019). A switch here as
  * well would have been a second control for one decision, and only one of the
  * two would have been beside the tracks it belongs with.
  *
@@ -48,8 +48,7 @@ export function MelodyMix({
         accessibilityLabel="Melody level"
       />
       <Text style={[styles.hint, { color: colors.gray300 }]}>
-        How loudly the melody sits over the take, when its track is on beside
-        the play control.
+        How loudly the melody sits over the take, when its track is on.
       </Text>
     </View>
   );

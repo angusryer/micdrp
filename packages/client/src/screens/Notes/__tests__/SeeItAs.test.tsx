@@ -32,6 +32,19 @@ describe('SeeItAs', () => {
     expect(getByTestId('see-as-notated')).toBeTruthy();
   });
 
+  it('is a toggle in the list, saying which surface it is for', async () => {
+    // It sits directly under HearItAs, which offers the same two words. The
+    // row is what says this one is about the picture.
+    const { getByText, getByRole } = await setup();
+    expect(getByText('See')).toBeTruthy();
+    expect(
+      getByRole('radio', { name: 'See as sung', selected: true })
+    ).toBeTruthy();
+    expect(
+      getByRole('radio', { name: 'See as written', selected: false })
+    ).toBeTruthy();
+  });
+
   it('ACC-NOTES-036: switches to the written reading when asked', async () => {
     const { getByTestId, onChange } = await setup();
     await fireEvent.press(getByTestId('see-as-notated'));

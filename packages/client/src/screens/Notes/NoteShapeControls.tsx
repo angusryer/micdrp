@@ -1,22 +1,22 @@
 /**
- * NoteShapeControls — everything under the graph that decides how you hear it.
+ * NoteShapeControls — what stays under the graph once the choices have gone.
  *
  * Split from NoteShapeSection, which was carrying both the drawing and the
  * controls and had outgrown the file budget. It is also a real seam: sideways
  * the graph takes the whole screen and none of this is shown, so the section
  * leaves it out entirely rather than hiding it.
  *
- * Three questions in order — which reading you hear, how loudly it sits
- * against the take, and which register it plays in — followed by what the
- * graph will not claim on its own.
+ * Which reading you hear and which you see are now toggles in the playback
+ * options with the tracks (INV-NOTES-026). What is left is the one control
+ * here that makes a sound — nothing in those options does (INT-NOTES-021) —
+ * and what the graph will not claim on its own.
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
-import { HearItAs } from './HearItAs';
-import { SeeItAs } from './SeeItAs';
+import { MelodyPlayToggle } from './MelodyPlayToggle';
 import type { useNoteDetail } from './useNoteDetail';
 
 export interface NoteShapeControlsProps {
@@ -33,23 +33,12 @@ export function NoteShapeControls({
   return (
     <>
       <View style={styles.hearAs}>
-        <HearItAs
+        <MelodyPlayToggle
+          isPlaying={detail.isMelodyPlaying}
           mode={detail.playbackMode}
-          onChange={detail.setPlaybackMode}
           onPlay={detail.playMelody}
           onStop={detail.stopMelody}
-          isPlaying={detail.isMelodyPlaying}
-          canNotate={hasGrid}
         />
-        {/* Its own control rather than a second use of the playback one:
-            reading the notation while hearing the raw take is how you tell
-            which of the two is wrong (INV-NOTES-026). */}
-        <SeeItAs
-          view={detail.notationView}
-          onChange={detail.setNotationView}
-          canNotate={detail.canNotate}
-        />
-
       </View>
       {/* Say when the bar lines are an assumption rather than a reading. A
           short sung idea often does not state its metre, and drawing

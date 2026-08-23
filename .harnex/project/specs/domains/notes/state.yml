@@ -1,13 +1,11 @@
 # Domain Development State — overwrite each meaningful change
-updated_at: "2026-08-22T23:59:00Z"
+updated_at: "2026-08-23T00:00:00Z"
 updated_by: agent
-phase: specifying
+phase: building
 phase_detail: >
-  Specs written from a crawl of screens/Notes, analysis/note.ts, the
-  data layer, and the notes table in migration 0001. 12 capabilities,
-  20 invariants, 35 acceptance tests, 2 views, 11 interactions.
+  19 capabilities, 73 invariants, 41 acceptance tests, 25 interactions.
 
-  The detail view now draws the take as sung or as written down
+  The detail view draws the take as sung or as written down
   (notes.set_notation_view, INT-NOTES-015, ACC-NOTES-036/037), which is
   INV-NOTES-026 — until now only about what play sounded — extended to
   what the graph and the note list show. logic/notation.ts holds the
@@ -15,28 +13,27 @@ phase_detail: >
   gridDurationMs and zeroes the cents, since notation has no way to say
   a note was fourteen cents flat. useNotationView holds the choice and
   forces it back to as sung when a take has no grid. SeeItAs is the
-  control, above the graph so the picture and the control that changes
-  it are visible together, leaving the chord cards straight after the
-  graph (INV-NOTES-029). It is a second control rather than a second
-  use of HearItAs on purpose: reading the notation while hearing the
-  raw take is how the detector and the quantizer are told apart. The
-  segmented row both use was lifted into ModeChoice.
+  control, now a toggle row in the playback options beneath HearItAs:
+  both readings are chosen in the one list, with the tracks and drawn
+  like them. Still a second control, not a second use of HearItAs —
+  reading the notation while hearing the raw take is how the detector
+  and the quantizer are told apart. The row both use is ModeChoice, over
+  the TogglePill the track toggles are made of.
 
   The melody control under that graph is a toggle: the press that
   sounds the melody stops it again (notes.play_melody, INV-NOTES-031,
-  INT-NOTES-016, ACC-NOTES-038/039). It was a one-way press, so a
-  melody, once started, ran to its end whatever the singer did while
-  the button went on offering to start it — the take's transport had
-  already been made a toggle for that reason (INV-NOTES-030).
-  useTonePreview now owns the one preview voice the detail view has —
+  INT-NOTES-016, ACC-NOTES-038/039), as the take's own transport is
+  (INV-NOTES-030): a press that can only start is one the singer cannot
+  get out of. useTonePreview owns the one preview voice the view has —
   the melody, a tapped note, a tapped chord — which is what makes the
   state honest: anything else taking that voice, the reading changing
-  beside it, the melody running out on its own timer, or the view
-  going away all put the control back to offering play. HearItAs draws
-  it, with a square rather than a pause since what it ends starts
-  again from the top; Icon gained that glyph. The melody heard *over*
-  the take keeps its own player, but no longer its own switch: that is
-  now its track toggle (INV-NOTES-027).
+  in the options, the melody running out on its own timer, or the view
+  going away all put the control back to offering play. MelodyPlayToggle
+  draws it, split out of HearItAs when the reading moved into the options
+  since nothing in there sounds: a square rather than a pause (Icon
+  gained that glyph), and the reading named aloud. The melody over the
+  take keeps its own player, not its own switch: that is its track
+  toggle (INV-NOTES-027).
 
   Play on the detail view sounds the take and the chord backdrop
   together (notes.play_backdrop, INV-NOTES-018, ACC-NOTES-032), and
@@ -58,12 +55,12 @@ phase_detail: >
   gain than an audition, on its own AudioContext so a tap does not cut
   it off.
 
-  What a press sounds is turned beside it, one toggle per track — take,
-  chords, melody (notes.set_playback_mix, INV-NOTES-019, INT-NOTES-011,
-  ACC-NOTES-033/034/040/041). The maintainer asked to drop the "play
-  over the recording" switch once the toggles covered the tracks, which
-  they only could once the melody was one of them: three tracks cannot
-  be named by a single exclusive pick. playbackTracks.ts holds the mix
+  What a press sounds is turned in the options it opens, one toggle per
+  track — take, chords, melody, with the two reading rows beneath them
+  (notes.set_playback_mix, INV-NOTES-019, ACC-NOTES-033/034/040/041,
+  INT-NOTES-011). There is no separate "play over the recording" switch:
+  three tracks cannot be named by a single exclusive pick, so the
+  toggles are the whole answer. playbackTracks.ts holds the mix
   shape, the default (take and chords on, melody off — what the old
   choice and the switch together already gave), and the two locks that
   stop a control promising a sound nothing makes: the last audible
@@ -76,10 +73,13 @@ phase_detail: >
   backdrop is still driven from the transport through a ref, so
   re-voicing mid-take cannot restart it, and a track turned mid-play
   stops what is sounding. PlaybackBar holds the mix and offers only the
-  tracks a note has; PlaybackMixToggle is the control, and MelodyMix
-  under the graph is now the melody's level alone. PlaybackButton,
-  interactions-playback, acceptance/playback-mix and
-  __fixtures__/renderPlaybackBar were all split off for the budgets.
+  tracks a note has; PlaybackMixToggle is the control, over the shared
+  TogglePill; PlaybackOptions is everything else the screen puts in the
+  sheet. PlaybackOptionsButton opens it: a sliders glyph at the far end
+  of the transport row, no word on it, the transport beside it being
+  wordless too (INV-NOTES-075; Icon gained an 'options' path).
+  PlaybackButton, interactions-playback, acceptance/playback-mix
+  and __fixtures__/renderPlaybackBar were all split off for the budgets.
 
   A chord slot answers only vertical drags and taps (INV-NOTES-017,
   INT-NOTES-005). The card used to lock an axis mid-drag and read

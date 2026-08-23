@@ -9,6 +9,10 @@
  * Its own control rather than a second use of the playback one: reading the
  * notation while listening to the raw take is how a person tells which of the
  * two is wrong, and one toggle driving both would take that away.
+ *
+ * A row in the playback options beneath its sibling, so the two readings are
+ * chosen in one place and are plainly two questions rather than one. Sitting
+ * them together does not join them — each still moves on its own.
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -52,6 +56,7 @@ export function SeeItAs({
   return (
     <View style={styles.wrap}>
       <ModeChoice
+        label="See"
         options={options}
         value={view}
         onChange={onChange}
@@ -65,6 +70,6 @@ export function SeeItAs({
 export default SeeItAs;
 
 const styles = StyleSheet.create({
-  wrap: { gap: 6 },
-  hint: { fontSize: 12, textAlign: 'center' }
+  wrap: { gap: 4, paddingVertical: 4 },
+  hint: { fontSize: 12 }
 });

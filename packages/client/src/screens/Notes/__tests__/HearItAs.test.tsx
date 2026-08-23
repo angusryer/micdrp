@@ -4,6 +4,9 @@
  * The reason both exist is that a complaint about playback should stop being
  * ambiguous between the detector and the notation.
  *
+ * Only the choice is here now: it is a row in the playback options, and the
+ * control that sounds it stayed under the graph (MelodyPlayToggle.test).
+ *
  * `await waitFor(() => render(...))` before any query, matching ChordCard —
  * a bare render leaves the queries unbound in this setup.
  */
@@ -15,24 +18,14 @@ import { HearItAs } from '../HearItAs';
 
 const setup = async (over: Partial<React.ComponentProps<typeof HearItAs>> = {}) => {
   const onChange = jest.fn();
-  const onPlay = jest.fn();
-  const onStop = jest.fn();
   const utils = await waitFor(() =>
     render(
       <ThemeProvider>
-        <HearItAs
-          mode="as-sung"
-          onChange={onChange}
-          onPlay={onPlay}
-          onStop={onStop}
-          isPlaying={false}
-          canNotate
-          {...over}
-        />
+        <HearItAs mode="as-sung" onChange={onChange} canNotate {...over} />
       </ThemeProvider>
     )
   );
-  return { ...utils, onChange, onPlay, onStop };
+  return { ...utils, onChange };
 };
 
 describe('HearItAs', () => {
@@ -48,30 +41,17 @@ describe('HearItAs', () => {
     expect(onChange).toHaveBeenCalledWith('as-notated');
   });
 
-  it('plays when asked', async () => {
-    const { getByTestId, onPlay } = await setup();
-    await fireEvent.press(getByTestId('hear-play'));
-    expect(onPlay).toHaveBeenCalled();
-  });
-
-  it('stops what it started rather than starting it again', async () => {
-    // A press that can only start leaves the singer with no way out of a
-    // melody they are already hearing (INV-NOTES-031).
-    const { getByTestId, onPlay, onStop } = await setup({ isPlaying: true });
-    await fireEvent.press(getByTestId('hear-play'));
-    expect(onStop).toHaveBeenCalled();
-    expect(onPlay).not.toHaveBeenCalled();
-  });
-
-  it('says which of the two the next press would do', async () => {
-    // Rendered fresh rather than rerendered, as below.
-    const idle = await setup({ isPlaying: false });
-    expect(idle.getByText('Play melody')).toBeTruthy();
-
-    const playing = await setup({ isPlaying: true });
-    expect(playing.getByText('Stop melody')).toBeTruthy();
-    // What a screen reader is told changes with it, not only the drawing.
-    expect(playing.getByLabelText('Stop the melody')).toBeTruthy();
+  it('is a toggle in the list, saying which surface it is for', async () => {
+    // Two rows put "As sung" in the sheet twice, so what tells them apart is
+    // the row — visible on screen, and said aloud so it is not lost.
+    const { getByText, getByRole } = await setup();
+    expect(getByText('Hear')).toBeTruthy();
+    expect(
+      getByRole('radio', { name: 'Hear as sung', selected: true })
+    ).toBeTruthy();
+    expect(
+      getByRole('radio', { name: 'Hear as written', selected: false })
+    ).toBeTruthy();
   });
 
   it('will not offer notation for a take that has no grid', async () => {

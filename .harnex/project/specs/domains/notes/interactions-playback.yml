@@ -53,9 +53,11 @@ interactions:
       - Press it again
     outcome: >
       The first press sounds the melody in whichever reading is chosen
-      beside it, and the control becomes the stop for what it started.
-      The second press silences it. Left alone, it silences itself when
-      the melody runs out and the control offers play again.
+      in the playback options, and the control becomes the stop for what
+      it started. The second press silences it. Left alone, it silences
+      itself when the melody runs out and the control offers play again.
+      The control names that reading to a screen reader, since the choice
+      is no longer beside it to be read off the screen.
     error_handling: >
       A note with no melody offers no such control. Changing the
       reading, or tapping a note or a chord, stops what is sounding
@@ -132,18 +134,23 @@ interactions:
     name: Open the playback options
     view: VIEW-NOTES-002
     steps:
-      - Press the options control beside the transport
+      - Press the sliders glyph at the far end of the transport row
     outcome: >
       A sheet rises from the bottom carrying everything that decides what a
-      press sounds and in what register: which tracks are on, how loud the
-      melody sits against the take, and which octave it plays in. Closing
+      press sounds, in what register, and how the take is read: which
+      tracks are on, which reading is heard and which is drawn, how loud
+      the melody sits against the take, and which octave it plays in. The
+      choices are one list of toggles, drawn alike and read in one pass,
+      rather than a list plus a pair of controls of another shape. Closing
       it keeps every choice. Nothing in the sheet starts a sound — the
-      transport is still the only thing that does.
+      transport is still the only thing that does. What is pressed to get
+      there is drawn, not written (INV-NOTES-075).
 
       These controls were scattered down the page, each beside the thing
       it happened to be built for, so setting up a listen meant scrolling
       past the graph and back. They answer one question — what am I about
-      to hear — and belong together, off the page until asked for.
+      to hear, and what am I looking at — and belong together, off the
+      page until asked for.
     maps_to:
       capability: notes.set_playback_mix
 

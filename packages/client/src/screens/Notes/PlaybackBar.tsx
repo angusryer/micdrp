@@ -21,6 +21,7 @@ import { PlaybackSheet } from './PlaybackSheet';
 import { useTheme } from '../../theme';
 import { PlaybackButton } from './PlaybackButton';
 import { PlaybackMixToggle } from './PlaybackMixToggle';
+import { PlaybackOptionsButton } from './PlaybackOptionsButton';
 import {
   DEFAULT_MIX,
   withOnlyAvailable,
@@ -53,9 +54,10 @@ export interface PlaybackBarProps {
    */
   voice?: MixAccompaniment;
   /**
-   * Anything else that decides what a press sounds, shown in the same sheet
-   * as the tracks — the register the melody plays in, how loud it sits. Given
-   * by the screen so this file never learns what an octave is.
+   * Anything else that decides what a press sounds — or how the take is read
+   * while it does — shown in the same list as the tracks: which reading is
+   * heard and which is drawn, the register the melody plays in, how loud it
+   * sits. Given by the screen so this file never learns what an octave is.
    */
   options?: React.ReactNode;
   /**
@@ -166,20 +168,13 @@ export function PlaybackBar({
           </Text>
         ) : null}
 
-        <Text
-          accessibilityRole="button"
-          accessibilityLabel="Playback options"
-          onPress={() => setIsSheetOpen(true)}
-          style={[styles.options, { color: colors.primary500 }]}
-        >
-          Options
-        </Text>
+        <PlaybackOptionsButton onPress={() => setIsSheetOpen(true)} />
       </View>
 
       <PlaybackSheet
         isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}
-        title="What to play"
+        title="What to play, what to show"
       >
         {offered.length > 0 ? (
           <PlaybackMixToggle
@@ -198,7 +193,6 @@ export default PlaybackBar;
 
 const styles = StyleSheet.create({
   rewind: { padding: 4, marginRight: 4 },
-  options: { fontSize: 13, fontWeight: '600', marginLeft: 'auto' },
   stack: { gap: 8 },
   container: {
     flexDirection: 'row',
