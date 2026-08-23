@@ -135,6 +135,7 @@ static double NowMs() {
 }
 
 - (void)start:(NSString *)captureDir
+      overdub:(std::optional<bool>)overdub
       resolve:(RCTPromiseResolveBlock)resolve
        reject:(RCTPromiseRejectBlock)reject {
   if (_running.load()) {
@@ -144,9 +145,18 @@ static double NowMs() {
 
   NSError *sessionErr = nil;
   AVAudioSession *session = [AVAudioSession sharedInstance];
+  // Measurement strips every bit of processing, which is what a first take
+  // wants — nothing between the voice and the detector. It is exactly wrong
+  // for an overdub: it takes the session and silences what is playing, and
+  // with no echo cancellation the microphone hears the take through the
+  // speaker, so the detector reads the take back as the thing being sung
+  // (INV-NOTES-087).
+  const BOOL isOverdub = overdub.value_or(false);
   [session setCategory:AVAudioSessionCategoryPlayAndRecord
-                  mode:AVAudioSessionModeMeasurement
-               options:AVAudioSessionCategoryOptionDefaultToSpeaker
+                  mode:isOverdub ? AVAudioSessionModeVoiceChat
+                                 : AVAudioSessionModeMeasurement
+               options:AVAudioSessionCategoryOptionDefaultToSpeaker |
+                       AVAudioSessionCategoryOptionAllowBluetooth
                  error:&sessionErr];
   if (sessionErr) {
     [self emitState:@"error"];

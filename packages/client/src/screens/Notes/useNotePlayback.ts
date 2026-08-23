@@ -8,6 +8,7 @@
 import { useMemo, useState } from 'react';
 
 import {
+  countInBeats,
   playbackTargets,
   transposeTargets,
   type NoteEvent,
@@ -48,6 +49,27 @@ export function useNotePlayback(
     [melody, quantized, playbackMode, octaves]
   );
   const melodyVoice = useMelodyBackdrop(melodyTones);
+
+  // The count-in, as a voice like the others so the mix reaches it. Its
+  // clicks come from the take's own tempo, counted back from the first note
+  // into whatever pickup is actually there (INV-NOTES-088).
+  const countTones = useMemo(
+    () =>
+      countInBeats(melody[0]?.startMs ?? 0, quantized.grid?.bpm ?? 0).map(
+        (beat) => ({ midi: beat.midi, startMs: beat.startMs, endMs: beat.endMs })
+      ),
+    [melody, quantized.grid?.bpm]
+  );
+  const countVoice = useMelodyBackdrop(countTones);
+  const countMix = useMemo(
+    () => ({
+      start: (offsetMs = 0) => countVoice.start(offsetMs),
+      stop: () => countVoice.stop(),
+      durationMs: countTones[countTones.length - 1]?.endMs ?? 0,
+      setLevel: (level: number) => countVoice.setLevel(level)
+    }),
+    [countVoice, countTones]
+  );
 
   const backdrop = useChordBackdrop(chords.progression);
   // The root on its own bus, under the rest of the harmony (INV-NOTES-040).
@@ -100,6 +122,7 @@ export function useNotePlayback(
   const preview = usePreviewVoice(melodyTones, chords, octaves);
 
   return {
+    countMix,
     playbackMode,
     setPlaybackMode,
     ...octave,

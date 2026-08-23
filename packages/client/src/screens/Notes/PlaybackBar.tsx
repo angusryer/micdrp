@@ -37,7 +37,8 @@ import {
 const TRACK_TITLES: Record<TrackName, string> = {
   take: 'Your take',
   chords: 'Chords read from your take',
-  melody: 'Transcription of your take'
+  melody: 'Transcription of your take',
+  count: 'Count-in'
 };
 import { usePlaybackMix, type MixAccompaniment } from './usePlaybackMix';
 
@@ -64,6 +65,8 @@ export interface PlaybackBarProps {
    * the take's clock rather than following the chord track (INV-NOTES-027).
    */
   voice?: MixAccompaniment;
+  /** The click counting the take in (INV-NOTES-088). */
+  count?: MixAccompaniment;
   /**
    * Anything else that decides what a press sounds — or how the take is read
    * while it does — shown in the same list as the tracks: which reading is
@@ -95,6 +98,7 @@ export function PlaybackBar({
   durationLabel,
   accompaniment,
   voice,
+  count,
   trackOptions,
   onDetails,
   onTransport
@@ -124,8 +128,12 @@ export function PlaybackBar({
     if ((voice?.durationMs ?? 0) > 0) {
       extras.push('melody');
     }
+    // Only where there is a pickup to count into.
+    if ((count?.durationMs ?? 0) > 0) {
+      extras.push('count');
+    }
     return extras.length > 0 ? ['take', ...extras] : [];
-  }, [accompaniment?.durationMs, voice?.durationMs]);
+  }, [accompaniment?.durationMs, voice?.durationMs, count?.durationMs]);
 
   // What the toggles both draw and hand back: a track the note lacks, or a
   // melody with no take left under it, is off in fact, so drawing it on would
@@ -139,7 +147,8 @@ export function PlaybackBar({
     mix: sounding,
     levels,
     accompaniment,
-    voice
+    voice,
+    count
   });
 
   // Dragging stops what is sounding and starts again where the finger left

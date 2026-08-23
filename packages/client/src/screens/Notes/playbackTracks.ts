@@ -14,6 +14,12 @@
 export interface PlaybackMix {
   take: boolean;
   chords: boolean;
+  /**
+   * A click counting the take in, so a second voice knows when to come in.
+   * Off until asked for: it is a scaffold for recording against, not part of
+   * the idea (INV-NOTES-088).
+   */
+  count: boolean;
   /** The detected melody over the take. Rides the take's clock, so it needs it. */
   melody: boolean;
 }
@@ -33,17 +39,26 @@ export type TrackLevels = Record<TrackName, number>;
 export const DEFAULT_LEVELS: TrackLevels = {
   take: 1,
   chords: 0.7,
-  melody: 0.6
+  melody: 0.6,
+  // Faint. It is there to be followed, not listened to, and a loud click
+  // over a quiet take is the take you stop hearing.
+  count: 0.35
 };
 
 /** Drawn in this order, and only for the tracks a note actually has. */
-export const TRACK_ORDER: readonly TrackName[] = ['take', 'chords', 'melody'];
+export const TRACK_ORDER: readonly TrackName[] = [
+  'take',
+  'chords',
+  'melody',
+  'count'
+];
 
 /** What a note offers before anything is turned. */
 export const DEFAULT_MIX: PlaybackMix = {
   take: true,
   chords: true,
-  melody: false
+  melody: false,
+  count: false
 };
 
 /**
@@ -79,6 +94,7 @@ export function withOnlyAvailable(
     // Sounds on its own now: the melody read from a take is worth hearing by
     // itself, and the control that used to do that has gone into this list
     // (INT-NOTES-026).
-    melody: mix.melody && available.includes('melody')
+    melody: mix.melody && available.includes('melody'),
+    count: mix.count && available.includes('count')
   };
 }

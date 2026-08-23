@@ -49,6 +49,8 @@ export interface UsePlaybackMixOptions {
   /** How loud each track sits, independent of whether it is on. */
   levels?: TrackLevels;
   accompaniment?: MixAccompaniment;
+  /** The click counting the take in (INV-NOTES-088). */
+  count?: MixAccompaniment;
   /**
    * A voice that follows the take itself rather than the chord track.
    *
@@ -76,6 +78,7 @@ export function usePlaybackMix({
   mix,
   accompaniment,
   voice,
+  count,
   levels
 }: UsePlaybackMixOptions): MixedPlayback {
   const {
@@ -95,7 +98,8 @@ export function usePlaybackMix({
     setTakeLevel(levels.take);
     accompaniment?.setLevel?.(levels.chords);
     voice?.setLevel?.(levels.melody);
-  }, [levels, accompaniment, voice, setTakeLevel]);
+    count?.setLevel?.(levels.count);
+  }, [levels, accompaniment, voice, count, setTakeLevel]);
 
   const wantsTake = mix.take;
   const wantsChords = mix.chords;
@@ -139,6 +143,22 @@ export function usePlaybackMix({
     latestVoice.current = voice;
   }, [voice]);
 
+  const latestCount = useRef(count);
+  useEffect(() => {
+    latestCount.current = count;
+  }, [count]);
+
+  // Counted from the top of the recording, never from where the take has
+  // reached: a count that began mid-take would be counting nothing in.
+  const wantsCount = mix.count;
+  useEffect(() => {
+    if (state === 'playing' && wantsCount) {
+      latestCount.current?.start(takeWanted.current ? takeElapsedMs() : 0);
+    } else {
+      latestCount.current?.stop();
+    }
+  }, [state, wantsCount, takeElapsedMs]);
+
   // Follows the take when there is one, and stands on its own when there is
   // not: the melody read from a take is worth hearing by itself, and making
   // it wait for the take was a rule about clocks, not about listening.
@@ -177,7 +197,8 @@ export function usePlaybackMix({
     // the press sounds nothing rather than the track just turned off.
     const durationMs = Math.max(
       wantsChords ? (latest.current?.durationMs ?? 0) : 0,
-      wantsVoice ? (latestVoice.current?.durationMs ?? 0) : 0
+      wantsVoice ? (latestVoice.current?.durationMs ?? 0) : 0,
+      wantsCount ? (latestCount.current?.durationMs ?? 0) : 0
     );
     if (durationMs <= 0) {
       return;
@@ -185,7 +206,7 @@ export function usePlaybackMix({
     clearEndTimer();
     setChordsRunning(true);
     endTimer.current = setTimeout(() => setChordsRunning(false), durationMs);
-  }, [wantsTake, wantsChords, wantsVoice, playTake, clearEndTimer]);
+  }, [wantsTake, wantsChords, wantsVoice, wantsCount, playTake, clearEndTimer]);
 
   // A track turned mid-playback stops what is sounding, so the next press is
   // the whole of the mix as it now stands rather than half of two.

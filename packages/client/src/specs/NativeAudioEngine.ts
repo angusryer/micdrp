@@ -57,7 +57,16 @@ export interface Spec extends TurboModule {
    * owns. Passing it keeps the location defined once, in files.ts, rather
    * than once here and again in native code (INV-PITCH-011).
    */
-  start(captureDir: string): Promise<void>;
+  /**
+   * `overdub` true when something is playing that the singer must keep
+   * hearing — a layer sung against the take. It changes the audio session:
+   * measurement mode strips processing for the cleanest possible detection,
+   * which is right for a first take and wrong here, because it takes the
+   * session and silences the playback, and because without echo cancellation
+   * the microphone hears the take through the speaker and the detector reads
+   * that back as the thing being sung (INV-NOTES-087).
+   */
+  start(captureDir: string, overdub?: boolean): Promise<void>;
   stop(): Promise<RecordingHandleResult>;
   /**
    * The round trip from asking for a sound to hearing it back through the

@@ -53,7 +53,9 @@ export function useLayerCapture(
     // A modal over a live take costs the take, and this is a take
     // (INV-UPD-004).
     const release = markBusy('capture');
-    await audioEngine.start();
+    // An overdub: the take has to keep sounding, and the microphone must not
+    // hand the detector the take back through the speaker (INV-NOTES-087).
+    await audioEngine.start(true);
     setPending({ role, latencyMs, release });
     setIsRecording(true);
   }, []);

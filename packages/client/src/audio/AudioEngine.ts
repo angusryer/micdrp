@@ -110,14 +110,18 @@ class AudioEngineImpl implements AudioEngineContract {
     return this.ensureWorklet().requestPermission();
   }
 
-  async start(): Promise<void> {
+  /**
+   * `overdub` when something is playing that must keep being heard — a layer
+   * sung against the take (INV-NOTES-087).
+   */
+  async start(overdub = false): Promise<void> {
     if (this.native) {
       this.attachNative();
       // The capture directory is owned by files.ts and handed to native, so a
       // capture lands somewhere durable rather than in a temporary directory
       // the system may reclaim while the note still points at it.
       await ensureDirs();
-      await this.native.start(recordingsDir());
+      await this.native.start(recordingsDir(), overdub);
       return;
     }
     const w = this.ensureWorklet();

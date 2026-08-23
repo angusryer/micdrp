@@ -90,3 +90,39 @@ invariants:
       Stored rather than folded silently into the timings, so a
       correction that is wrong can be seen to be wrong instead of being
       inferred from bass lines that all sit slightly late.
+
+  - id: INV-NOTES-087
+    description: An overdub keeps the take audible and out of the microphone
+    severity: critical
+    check: >
+      A capture recorded while something is playing uses an audio session
+      that leaves the playback sounding and applies echo cancellation; a
+      first take, with nothing playing, keeps the measurement session that
+      strips all processing. Verified by asserting the capture is started
+      as an overdub whenever a layer is being sung.
+
+      Measurement mode is right for a first take — nothing between the
+      voice and the detector — and exactly wrong for a second one. It
+      takes the session, so the take the singer is singing against goes
+      silent; and with no echo cancellation the microphone hears that take
+      through the speaker, so the detector reads the melody back as the
+      bass line it was supposed to be reading.
+
+  - id: INV-NOTES-088
+    description: A second voice is counted in, at the take's own tempo
+    severity: major
+    check: >
+      A click track is offered whenever the take has room before its first
+      note, counting back from that note at the take's own tempo and
+      landing a marked click on the note itself. It counts only into the
+      pickup that exists, and is silent for a take that begins
+      immediately or has no tempo. It is a track like any other, with its
+      own level and mute, off until asked for. Verified by asserting the
+      clicks land on the beat before the first note and that a take with
+      no pickup produces none.
+
+      Singing a second part against a take means knowing when to come in,
+      and a take with a pickup gives no cue at all — the first thing heard
+      is the thing you were supposed to be ready for. Counting into thin
+      air would be worse than nothing: it would teach a tempo the take
+      does not have.

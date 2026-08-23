@@ -34,6 +34,7 @@ const SHARED: GlyphNote[] = [
 const BY_TRACK: Record<TrackName, GlyphNote[]> = {
   take: [],
   chords: [],
+  count: [],
   melody: [
     {
       icon: 'grid',
@@ -55,6 +56,7 @@ const BY_TRACK: Record<TrackName, GlyphNote[]> = {
 
 const SLIDERS: Record<TrackName, string | null> = {
   take: null,
+  count: null,
   chords: 'The lower slider moves the chords by whole octaves. Down for headphones, up for the phone speaker, which has almost nothing in the low register.',
   melody: 'The lower slider moves the melody by whole octaves, centred on the register you sang it in.'
 };

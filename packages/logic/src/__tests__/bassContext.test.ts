@@ -9,6 +9,7 @@
  */
 import {
   alignLayer,
+  countInBeats,
   bassChangeTimes,
   bassPitchClassOver,
   bassSpans
@@ -27,7 +28,12 @@ const note = (midi: number, startMs: number, endMs: number): NoteEvent =>
     clarity: 1
   }) as NoteEvent;
 
-const GRID = { bpm: 120, offsetMs: 0, beatsPerBar: 4, stepsPerBeat: 4 };
+const GRID = {
+  bpm: 120,
+  offsetMs: 0,
+  beatsPerBar: 4,
+  stepsPerBeat: 4
+} as unknown as Parameters<typeof proposeDownbeats>[1];
 
 describe('reading a sung bass', () => {
   it('joins repeats of one pitch class into a single chord', () => {
@@ -154,5 +160,40 @@ describe('INV-NOTES-074: placing an overdub where it was sung', () => {
     const early = alignLayer([note(48, 30, 200)], 100);
     expect(early[0].startMs).toBe(0);
     expect(early).toHaveLength(1);
+  });
+});
+
+describe('INV-NOTES-088: counting a second voice in', () => {
+  it('counts back from the first note at the take\'s own tempo', () => {
+    // 120bpm is a beat every 500ms. Singing starts at 2s, so four beats fit.
+    const clicks = countInBeats(2000, 120);
+    expect(clicks.map((c) => c.startMs)).toEqual([0, 500, 1000, 1500, 2000]);
+  });
+
+  it('marks the beat you come in on differently from the ones before it', () => {
+    const clicks = countInBeats(2000, 120);
+    const last = clicks[clicks.length - 1];
+    expect(last.startMs).toBe(2000);
+    expect(last.midi).not.toBe(clicks[0].midi);
+  });
+
+  it('counts only into the pickup that is actually there', () => {
+    // One beat of room before the singing, so one click plus the downbeat.
+    const clicks = countInBeats(600, 120);
+    expect(clicks.map((c) => c.startMs)).toEqual([100, 600]);
+  });
+
+  it('says nothing for a take that begins immediately', () => {
+    // Nowhere to put a count, and counting into thin air teaches a tempo
+    // the take does not have.
+    expect(countInBeats(0, 120)).toEqual([]);
+  });
+
+  it('says nothing when the take has no tempo to count at', () => {
+    expect(countInBeats(2000, 0)).toEqual([]);
+  });
+
+  it('never counts more than it was asked to, however long the pickup', () => {
+    expect(countInBeats(60000, 120, 4)).toHaveLength(5);
   });
 });

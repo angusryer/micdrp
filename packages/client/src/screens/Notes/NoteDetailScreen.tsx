@@ -94,6 +94,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             durationLabel={formatDuration(note.durationMs)}
             accompaniment={detail.backdrop}
             voice={detail.melodyVoiceMix}
+            count={detail.countMix}
             onDetails={() => setShowDetails(true)}
             onTransport={setTransport}
             trackOptions={(track) => (
