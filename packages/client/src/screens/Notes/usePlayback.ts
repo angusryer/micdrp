@@ -28,7 +28,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { AudioContext } from './audioApi';
-import type { AudioBufferSourceNodeLike, AudioContextLike } from './audioApi';
+import type { AudioBufferSourceNodeLike, GainNodeLike, AudioContextLike } from './audioApi';
 import { usePlaybackClock, useTakeAnchor } from './usePlaybackClock';
 
 export type PlaybackState = 'stopped' | 'loading' | 'playing' | 'error';
@@ -56,6 +56,8 @@ export interface Playback {
   elapsedMs: () => number;
   /** Start at a moment in the take. Omitted, from the beginning. */
   play(fromMs?: number): Promise<void>;
+  /** How loud the take sits under whatever is playing over it, 0..1. */
+  setLevel(level: number): void;
   /** How long the take runs, once it has been decoded at least once. */
   durationMs: number;
   stop(): Promise<void>;
@@ -69,6 +71,10 @@ export function usePlayback({
   // Where this run began, so the counter names a moment in the take rather
   // than time-since-press (INV-NOTES-069).
   const [fromMs, setFromMs] = useState(0);
+  // Read through refs: the level is set while a take is running, and
+  // re-creating the graph to change a number would restart the take.
+  const gainRef = useRef<GainNodeLike | null>(null);
+  const levelRef = useRef(1);
   const [durationMs, setDurationMs] = useState(0);
   const positionMs = usePlaybackClock(state === 'playing', fromMs);
   const anchor = useTakeAnchor();
@@ -129,9 +135,15 @@ export function usePlayback({
       // fires onended, so the control would sit on "playing" forever.
       const offsetMs = Math.min(Math.max(startAtMs, 0), Math.max(0, takeMs - 1));
       setFromMs(offsetMs);
+      // Through a gain rather than straight at the destination: the take is
+      // one voice among several now, and a mix needs somewhere to set it.
+      const level = ctx.createGain();
+      level.gain.value = levelRef.current;
+      level.connect(ctx.destination);
+      gainRef.current = level;
       const source = ctx.createBufferSource();
       source.buffer = audioBuffer;
-      source.connect(ctx.destination);
+      source.connect(level);
       source.onended = () => {
         setState('stopped');
         sourceRef.current = null;
@@ -159,5 +171,20 @@ export function usePlayback({
     setState('stopped');
   }, [teardown]);
 
-  return { state, positionMs, elapsedMs: anchor.elapsedMs, durationMs, play, stop };
+  const setLevel = useCallback((level: number): void => {
+    levelRef.current = Math.max(0, Math.min(1, level));
+    if (gainRef.current) {
+      gainRef.current.gain.value = levelRef.current;
+    }
+  }, []);
+
+  return {
+    state,
+    positionMs,
+    elapsedMs: anchor.elapsedMs,
+    durationMs,
+    play,
+    stop,
+    setLevel
+  };
 }

@@ -27,6 +27,8 @@ jest.mock('react-native-audio-api', () => ({
   AudioContext: jest.fn().mockImplementation(() => ({
     destination: {},
     decodeAudioData: mockDecode,
+    // The take runs through a level now, so the double has to offer one.
+    createGain: () => ({ gain: { value: 1 }, connect: jest.fn() }),
     createBufferSource: () => ({
       buffer: null,
       connect: jest.fn(),

@@ -51,3 +51,29 @@ invariants:
       controls and direct manipulation exclusive — buttons or movement,
       never both — and movement is the one that has to be watched while it
       happens.
+
+  - id: INV-NOTES-082
+    description: Every control sits in the card of the thing it controls
+    severity: major
+    check: >
+      The playback options are one card per thing that can sound. Each
+      carries the same two controls in the same place — a level, and a
+      speaker that mutes — and anything else belonging to that track sits
+      beneath them: its readings as glyph toggles, and a register slider
+      where the track is a line that can be moved. Nothing about a track
+      appears outside that track's card. Verified by asserting each
+      offered track renders a card, and that a track the note lacks
+      renders none.
+
+      The sheet had become a column of switches under a row of pills, so
+      nothing said which control was about which line — "align to the
+      beat" sat as far from the melody as "lift the chords" did. Grouping
+      by subject is what makes a long list readable without reading it.
+
+      Glyphs rather than pill pairs: these are all yes-or-no, and a pair
+      of pills spends a word on each answer to say what a lit or unlit
+      icon says for nothing. The words survive in the accessibility
+      label, which is the one place a name costs nothing.
+
+      The take sits at full and the voices read from it sit under it. They
+      describe the performance; at equal level they argue with it.

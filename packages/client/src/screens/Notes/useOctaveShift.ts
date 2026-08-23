@@ -23,7 +23,7 @@ import { octaveRoom, type NoteEvent } from 'logic';
 export const OCTAVE_LIMIT = 3;
 
 export function useOctaveShift(melody: readonly NoteEvent[]) {
-  const [octaves, setOctaves] = useState(0);
+  const [octaves, setOctaves_] = useState(0);
 
   // Only the shifts that leave every note inside MIDI range. Clamping the
   // ones that would fall off the end would flatten the intervals and play
@@ -35,7 +35,7 @@ export function useOctaveShift(melody: readonly NoteEvent[]) {
 
   const shiftOctave = useCallback(
     (by: number) =>
-      setOctaves((current) => {
+      setOctaves_((current) => {
         const wanted = current + by;
         return wanted > octaveRange.up || wanted < -octaveRange.down
           ? current
@@ -44,7 +44,14 @@ export function useOctaveShift(melody: readonly NoteEvent[]) {
     [octaveRange]
   );
 
-  return { octaves, octaveRange, shiftOctave };
+  /** Go straight to a register, held inside what keeps notes in range. */
+  const setOctaves = useCallback(
+    (wanted: number) =>
+      setOctaves_(Math.max(-octaveRange.down, Math.min(octaveRange.up, wanted))),
+    [octaveRange]
+  );
+
+  return { octaves, octaveRange, shiftOctave, setOctaves };
 }
 
 export default useOctaveShift;

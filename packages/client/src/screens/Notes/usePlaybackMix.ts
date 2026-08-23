@@ -21,7 +21,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { usePlayback, type PlaybackState } from './usePlayback';
-import { sameMix, type PlaybackMix } from './playbackTracks';
+import {
+  sameMix,
+  type PlaybackMix,
+  type TrackLevels
+} from './playbackTracks';
 
 /** How far back a press of rewind goes. About one phrase of a sung idea. */
 export const REWIND_MS = 5000;
@@ -34,12 +38,16 @@ export interface MixAccompaniment {
   stop: () => void;
   /** How long the backdrop runs, in ms; 0 when there is nothing to sound. */
   durationMs: number;
+  /** How loud it sits in the mix, 0..1. Absent on a voice with no level. */
+  setLevel?: (level: number) => void;
 }
 
 export interface UsePlaybackMixOptions {
   /** Produce a playable URL for the take. Called only when a take is played. */
   resolveAudioUri: () => Promise<string | null>;
   mix: PlaybackMix;
+  /** How loud each track sits, independent of whether it is on. */
+  levels?: TrackLevels;
   accompaniment?: MixAccompaniment;
   /**
    * A voice that follows the take itself rather than the chord track.
@@ -67,15 +75,28 @@ export function usePlaybackMix({
   resolveAudioUri,
   mix,
   accompaniment,
-  voice
+  voice,
+  levels
 }: UsePlaybackMixOptions): MixedPlayback {
   const {
     state: takeState,
     elapsedMs: takeElapsedMs,
     positionMs,
     play: playTake,
-    stop: stopTake
+    stop: stopTake,
+    setLevel: setTakeLevel
   } = usePlayback({ resolveAudioUri });
+  // Applied on change rather than at the start of a press: a level moved
+  // while something is sounding must be heard now, not next time.
+  useEffect(() => {
+    if (!levels) {
+      return;
+    }
+    setTakeLevel(levels.take);
+    accompaniment?.setLevel?.(levels.chords);
+    voice?.setLevel?.(levels.melody);
+  }, [levels, accompaniment, voice, setTakeLevel]);
+
   const wantsTake = mix.take;
   const wantsChords = mix.chords;
   const wantsVoice = mix.melody;

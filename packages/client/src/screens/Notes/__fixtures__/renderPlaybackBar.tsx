@@ -11,6 +11,7 @@
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { I18nProvider } from '../../../i18n';
 import { ThemeProvider } from '../../../theme';
@@ -44,7 +45,8 @@ export const renderPlaybackBar = async (
 ) => {
   const rendered = await waitFor(() =>
     render(
-      <I18nProvider>
+      <GestureHandlerRootView>
+        <I18nProvider>
         <ThemeProvider>
           <PlaybackBar
             resolveAudioUri={resolveAudioUri}
@@ -52,7 +54,8 @@ export const renderPlaybackBar = async (
             voice={voice}
           />
         </ThemeProvider>
-      </I18nProvider>
+        </I18nProvider>
+      </GestureHandlerRootView>
     )
   );
   await fireEvent.press(screen.getByLabelText('Playback options'));

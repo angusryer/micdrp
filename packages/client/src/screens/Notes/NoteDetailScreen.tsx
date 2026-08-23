@@ -30,7 +30,7 @@ import { NoteDetailsPage } from './NoteDetailsPage';
 import { NoteHarmonySection } from './NoteHarmonySection';
 import { NoteLandscape } from './NoteLandscape';
 import { NoteShapeSection } from './NoteShapeSection';
-import { PlaybackOptions } from './PlaybackOptions';
+import { TrackOptions } from './TrackOptions';
 import { SelectionSheet } from './SelectionSheet';
 import { formatDuration } from './NoteStats';
 import { PlaybackBar } from './PlaybackBar';
@@ -96,7 +96,9 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             voice={detail.melodyVoiceMix}
             onDetails={() => setShowDetails(true)}
             onTransport={setTransport}
-            options={<PlaybackOptions detail={detail} />}
+            trackOptions={(track) => (
+              <TrackOptions detail={detail} track={track} />
+            )}
           />
         ) : null}
 

@@ -20,6 +20,22 @@ export interface PlaybackMix {
 
 export type TrackName = keyof PlaybackMix;
 
+/** How loud each track sits, 0..1. Separate from whether it is on at all. */
+export type TrackLevels = Record<TrackName, number>;
+
+/**
+ * What each track starts at.
+ *
+ * The take is the thing being judged, so it sits at full; the voices read
+ * from it sit under it, or they argue with the performance instead of
+ * describing it (INV-NOTES-082).
+ */
+export const DEFAULT_LEVELS: TrackLevels = {
+  take: 1,
+  chords: 0.7,
+  melody: 0.6
+};
+
 /** Drawn in this order, and only for the tracks a note actually has. */
 export const TRACK_ORDER: readonly TrackName[] = ['take', 'chords', 'melody'];
 

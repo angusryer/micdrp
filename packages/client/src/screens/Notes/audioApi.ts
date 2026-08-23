@@ -10,9 +10,15 @@ export interface AudioBufferLike {
   duration: number;
 }
 
+/** A level in the path, so the take can be set against the voices over it. */
+export interface GainNodeLike {
+  gain: { value: number };
+  connect(dest: AudioDestinationNodeLike): void;
+}
+
 export interface AudioBufferSourceNodeLike {
   buffer: AudioBufferLike | null;
-  connect(dest: AudioDestinationNodeLike): void;
+  connect(dest: AudioDestinationNodeLike | GainNodeLike): void;
   /** `offset` is where in the buffer to begin, in seconds (INV-NOTES-069). */
   start(when?: number, offset?: number): void;
   stop(when?: number): void;
@@ -27,6 +33,7 @@ export interface AudioContextLike {
   /** Accepts a remote URL, a file:// URI, or raw bytes. */
   decodeAudioData(source: string | ArrayBuffer): Promise<AudioBufferLike>;
   createBufferSource(): AudioBufferSourceNodeLike;
+  createGain(): GainNodeLike;
   close(): Promise<void>;
 }
 

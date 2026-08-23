@@ -20,14 +20,30 @@ import { Icon } from '../../components/Icon';
 import { PlaybackSheet } from './PlaybackSheet';
 import { useTheme } from '../../theme';
 import { PlaybackButton } from './PlaybackButton';
-import { PlaybackMixToggle } from './PlaybackMixToggle';
+import { TrackCard } from './TrackCard';
 import { PlaybackOptionsButton } from './PlaybackOptionsButton';
 import {
+  DEFAULT_LEVELS,
   DEFAULT_MIX,
+  isTrackLocked,
   withOnlyAvailable,
   type PlaybackMix,
+  type TrackLevels,
   type TrackName
 } from './playbackTracks';
+
+/** What each track is called, in the singer's terms rather than the code's. */
+const TRACK_TITLES: Record<TrackName, string> = {
+  take: 'Your take',
+  chords: 'Chords read from it',
+  melody: 'Melody read from it'
+};
+
+const TRACK_HINTS: Record<TrackName, string> = {
+  take: 'The recording itself',
+  chords: 'The harmony your line implies, with its root underneath',
+  melody: 'What the detector heard you sing'
+};
 import { usePlaybackMix, type MixAccompaniment } from './usePlaybackMix';
 
 export type { PlaybackState } from './usePlayback';
@@ -59,7 +75,8 @@ export interface PlaybackBarProps {
    * heard and which is drawn, the register the melody plays in, how loud it
    * sits. Given by the screen so this file never learns what an octave is.
    */
-  options?: React.ReactNode;
+  /** The controls belonging to one track, drawn inside that track's card. */
+  trackOptions?: (track: TrackName) => React.ReactNode;
   /** Open the note's details. Sits beside the options, being its neighbour
       in kind: both open a sheet and neither makes a sound. */
   onDetails?: () => void;
@@ -83,13 +100,24 @@ export function PlaybackBar({
   durationLabel,
   accompaniment,
   voice,
-  options,
+  trackOptions,
   onDetails,
   onTransport
 }: PlaybackBarProps) {
   const { colors } = useTheme();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [mix, setMix] = useState<PlaybackMix>(DEFAULT_MIX);
+  const [levels, setLevels] = useState<TrackLevels>(DEFAULT_LEVELS);
+  const setLevel = useCallback(
+    (track: TrackName, level: number) =>
+      setLevels((current) => ({ ...current, [track]: level })),
+    []
+  );
+  const setAudible = useCallback(
+    (track: TrackName, isAudible: boolean) =>
+      setMix((current) => ({ ...current, [track]: isAudible })),
+    []
+  );
   // Only offer a track this note has. With neither chords nor a melody there
   // is nothing to turn, so the take is all there is and no toggles are shown.
   const offered = useMemo<TrackName[]>(() => {
@@ -113,6 +141,7 @@ export function PlaybackBar({
   const { state, play, stop, rewind, positionMs } = usePlaybackMix({
     resolveAudioUri,
     mix: sounding,
+    levels,
     accompaniment,
     voice
   });
@@ -195,14 +224,23 @@ export function PlaybackBar({
         onClose={() => setIsSheetOpen(false)}
         title="What to play, what to show"
       >
-        {offered.length > 0 ? (
-          <PlaybackMixToggle
-            value={sounding}
-            onChange={setMix}
-            offered={offered}
-          />
-        ) : null}
-        {options}
+        {/* One card per thing that can sound, each with the same level and
+            speaker in the same place, so the eye learns one shape
+            (INV-NOTES-082). */}
+        {offered.map((track) => (
+          <TrackCard
+            key={track}
+            title={TRACK_TITLES[track]}
+            hint={TRACK_HINTS[track]}
+            level={levels[track]}
+            onLevelChange={(level) => setLevel(track, level)}
+            isAudible={sounding[track]}
+            onAudibleChange={(on) => setAudible(track, on)}
+            isLocked={isTrackLocked(track, sounding)}
+          >
+            {trackOptions?.(track)}
+          </TrackCard>
+        ))}
       </PlaybackSheet>
     </View>
   );

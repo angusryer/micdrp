@@ -22,6 +22,8 @@ jest.mock('react-native-audio-api', () => ({
   AudioContext: jest.fn().mockImplementation(() => ({
     destination: {},
     decodeAudioData: mockDecode,
+    // The take runs through a level now, so the double has to offer one.
+    createGain: () => ({ gain: { value: 1 }, connect: jest.fn() }),
     createBufferSource: () => ({
       buffer: null,
       connect: jest.fn(),
@@ -43,8 +45,30 @@ const renderBar = (
   voice?: ReturnType<typeof backdrop>
 ) => renderPlaybackBar(resolve, chords, voice);
 
-/** The pill for one track, whatever way round it currently is. */
-const track = (name: string) => screen.getByText(name);
+/** What each track's card is called, which is what its controls are named. */
+const CARD: Record<string, string> = {
+  Take: 'Your take',
+  Chords: 'Chords read from it',
+  Melody: 'Melody read from it'
+};
+
+/**
+ * The speaker on one track's card, whichever way round it is.
+ *
+ * The mute is a glyph now rather than a pill, so it is found by the name a
+ * screen reader hears — which is the only place the word survives.
+ */
+const track = (name: string) =>
+  screen.getByLabelText(
+    new RegExp(`^(Mute|Unmute) ${CARD[name]}$`)
+  );
+
+/** Whether that track is currently audible, read off the same control. */
+const isOn = (name: string) =>
+  (track(name).props.accessibilityLabel as string).startsWith('Mute');
+
+const isLocked = (name: string) =>
+  track(name).props.accessibilityState?.disabled === true;
 
 describe('turning the tracks a press sounds', () => {
   beforeEach(() => {
@@ -58,14 +82,14 @@ describe('turning the tracks a press sounds', () => {
     await renderBar(chords, jest.fn().mockResolvedValue(REMOTE), melody);
 
     expect(
-      screen.getByRole('checkbox', { name: 'Take', checked: true })
-    ).toBeTruthy();
+      isOn('Take')
+    ).toBe(true);
     expect(
-      screen.getByRole('checkbox', { name: 'Chords', checked: true })
-    ).toBeTruthy();
+      isOn('Chords')
+    ).toBe(true);
     expect(
-      screen.getByRole('checkbox', { name: 'Melody', checked: false })
-    ).toBeTruthy();
+      isOn('Melody')
+    ).toBe(false);
 
     await fireEvent.press(screen.getByLabelText('Play'));
 
@@ -148,8 +172,8 @@ describe('turning the tracks a press sounds', () => {
     // The take is all that is left, so its toggle stops taking a press rather
     // than leaving a play control with nothing behind it.
     expect(
-      screen.getByRole('checkbox', { name: 'Take', disabled: true })
-    ).toBeTruthy();
+      isLocked('Take')
+    ).toBe(true);
   });
 
   it('hands the control back to play when the progression runs out', async () => {
@@ -193,11 +217,10 @@ describe('turning the tracks a press sounds', () => {
       backdrop(3000)
     );
 
-    expect(screen.queryByText('Chords')).toBeNull();
-    expect(screen.getByText('Melody')).toBeTruthy();
+    // No card for a track the note does not have.
+    expect(screen.queryByText(CARD.Chords)).toBeNull();
+    expect(screen.getByText(CARD.Melody)).toBeTruthy();
     // The take is the only thing that can sound, so it cannot be turned off.
-    expect(
-      screen.getByRole('checkbox', { name: 'Take', disabled: true })
-    ).toBeTruthy();
+    expect(isLocked('Take')).toBe(true);
   });
 });

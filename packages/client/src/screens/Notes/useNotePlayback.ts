@@ -75,7 +75,13 @@ export function useNotePlayback(
         backdrop.stop();
         bassVoice.stop();
       },
-      durationMs: Math.max(backdrop.durationMs, bassVoice.durationMs)
+      durationMs: Math.max(backdrop.durationMs, bassVoice.durationMs),
+      // The root sits under the harmony above it by a fixed amount, so one
+      // control moves the pair and keeps their balance (INV-NOTES-040).
+      setLevel: (level: number) => {
+        backdrop.setLevel(level);
+        bassVoice.setLevel(level);
+      }
     }),
     [backdrop, bassVoice]
   );
@@ -88,7 +94,8 @@ export function useNotePlayback(
         }
       },
       stop: () => melodyVoice.stop(),
-      durationMs: melodyTones[melodyTones.length - 1]?.endMs ?? 0
+      durationMs: melodyTones[melodyTones.length - 1]?.endMs ?? 0,
+      setLevel: (level: number) => melodyVoice.setLevel(level)
     }),
     [melodyVoice, isOverTake, melodyTones]
   );

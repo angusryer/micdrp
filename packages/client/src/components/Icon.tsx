@@ -25,7 +25,12 @@ export type IconName =
   | 'rewind'
   | 'stop'
   | 'options'
-  | 'details';
+  | 'details'
+  | 'speaker'
+  | 'speakerOff'
+  | 'grid'
+  | 'eye'
+  | 'headphones';
 
 /** Material-style filled glyphs, authored on a 24×24 viewbox. */
 const ICON_PATHS: Record<IconName, string> = {
@@ -52,6 +57,18 @@ const ICON_PATHS: Record<IconName, string> = {
   // Sliders — opens the playback options (INV-NOTES-075). Deliberately not
   // the cog below: that one means the app's settings, and these are choices
   // about one take.
+  // A speaker cone, and the same with a slash — the pair every mute control
+  // on every device uses, so it is recognised rather than read.
+  speaker: 'M4 9v6h4l5 4V5L8 9H4zm11.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z',
+  speakerOff:
+    'M4 9v6h4l5 4V5L8 9H4zm14.6 3l2.1-2.1-1.4-1.4-2.1 2.1-2.1-2.1-1.4 1.4 2.1 2.1-2.1 2.1 1.4 1.4 2.1-2.1 2.1 2.1 1.4-1.4-2.1-2.1z',
+  // A ruled grid — snapped to the beat, as against left where it was sung.
+  grid: 'M3 3h18v18H3V3zm2 2v4h4V5H5zm6 0v4h4V5h-4zm6 0v4h2V5h-2zM5 11v4h4v-4H5zm6 0v4h4v-4h-4zm6 0v4h2v-4h-2zM5 17v2h4v-2H5zm6 0v2h4v-2h-4zm6 0v2h2v-2h-2z',
+  // An eye — what is drawn, as against what is heard.
+  eye: 'M12 5c-5 0-9 4.5-9 7s4 7 9 7 9-4.5 9-7-4-7-9-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
+  // Headphones — the low voicing, which only carries on them.
+  headphones:
+    'M12 3a9 9 0 0 0-9 9v6a3 3 0 0 0 3 3h2v-8H5v-1a7 7 0 0 1 14 0v1h-3v8h2a3 3 0 0 0 3-3v-6a9 9 0 0 0-9-9z',
   // Lines of text beside a mark — the conventional "details" or "list"
   // glyph, so it is recognised rather than read (INV-NOTES-075).
   details:

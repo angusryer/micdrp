@@ -36,6 +36,8 @@ export interface ChordBackdrop {
   start: (offsetMs?: number) => void;
   /** Silence it. Safe to call when nothing is sounding. */
   stop: () => void;
+  /** How loud this voice sits in the mix, 0..1 of its own peak. */
+  setLevel: (level: number) => void;
   /**
    * How long the whole backdrop runs, in ms; 0 when the melody implied no
    * chords. Played on its own the backdrop is the transport, and this is what
@@ -116,12 +118,17 @@ export function useChordBackdrop(
     [player, tones]
   );
   const stop = useCallback(() => player.stop(), [player]);
+  /** How loud this voice sits in the mix, 0..1 of its own peak. */
+  const setLevel = useCallback(
+    (level: number) => player.setLevel(level),
+    [player]
+  );
 
   // Stable while the track is, so the transport is not handed a fresh object
   // on every render of the screen around it.
   return useMemo(
-    () => ({ start, stop, durationMs }),
-    [start, stop, durationMs]
+    () => ({ start, stop, durationMs, setLevel }),
+    [start, stop, durationMs, setLevel]
   );
 }
 
