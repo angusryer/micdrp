@@ -169,6 +169,14 @@ static double NowMs() {
     reject(@"session_failed", sessionErr.localizedDescription, sessionErr);
     return;
   }
+  // Voice-chat mode sends output to the receiver — the earpiece — whatever
+  // the category options asked for. Overdubbing that way plays the take into
+  // the side of the singer's head at conversation volume, which is
+  // indistinguishable from it not playing at all (INV-NOTES-089).
+  if (isOverdub) {
+    [session overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker
+                               error:nil];
+  }
 
   _engine = [[AVAudioEngine alloc] init];
   AVAudioInputNode *input = _engine.inputNode;

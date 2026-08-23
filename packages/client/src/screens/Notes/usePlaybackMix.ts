@@ -40,6 +40,12 @@ export interface MixAccompaniment {
   durationMs: number;
   /** How loud it sits in the mix, 0..1. Absent on a voice with no level. */
   setLevel?: (level: number) => void;
+  /**
+   * How long everything else waits for this voice before it begins. Only the
+   * count has one: it must finish counting before the beat it counts to
+   * (INV-NOTES-088).
+   */
+  leadInMs?: number;
 }
 
 export interface UsePlaybackMixOptions {
@@ -188,6 +194,17 @@ export function usePlaybackMix({
   }, [clearEndTimer, stopTake]);
 
   const play = useCallback(async (fromMs = 0): Promise<void> => {
+    // The count starts now; everything else waits for it to finish. Timed
+    // rather than sample-accurate on purpose — a count is a scaffold to come
+    // in on, not part of the recording.
+    const leadInMs = wantsCount ? (latestCount.current?.leadInMs ?? 0) : 0;
+    if (leadInMs > 0) {
+      clearEndTimer();
+      setChordsRunning(true);
+      latestCount.current?.start(0);
+      await new Promise((resolve) => setTimeout(resolve, leadInMs));
+      setChordsRunning(false);
+    }
     if (wantsTake) {
       await playTake(fromMs);
       return;

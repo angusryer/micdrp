@@ -128,7 +128,8 @@ export function PlaybackBar({
     if ((voice?.durationMs ?? 0) > 0) {
       extras.push('melody');
     }
-    // Only where there is a pickup to count into.
+    // Wherever there is a tempo to count at. It is most needed on a take
+    // that begins immediately, which is most of them (INV-NOTES-088).
     if ((count?.durationMs ?? 0) > 0) {
       extras.push('count');
     }

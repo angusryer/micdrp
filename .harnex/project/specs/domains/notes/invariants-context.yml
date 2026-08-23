@@ -122,7 +122,28 @@ invariants:
       no pickup produces none.
 
       Singing a second part against a take means knowing when to come in,
-      and a take with a pickup gives no cue at all — the first thing heard
-      is the thing you were supposed to be ready for. Counting into thin
-      air would be worse than nothing: it would teach a tempo the take
-      does not have.
+      and a take gives no cue at all — the first thing heard is the thing
+      you were supposed to be ready for.
+
+      Where the take has no room for the whole count, the take waits
+      rather than the count being cut short. A shortened count is worse
+      than none: the singer comes in on a beat that was never
+      established. This is also the common case — most takes begin near
+      their first note, which is exactly when a second voice most needs
+      telling when to come in, so offering the count only to takes with a
+      pickup offered it almost nowhere.
+
+  - id: INV-NOTES-089
+    description: An overdub plays out of the speaker, not the earpiece
+    severity: critical
+    check: >
+      A capture started as an overdub forces output to the speaker.
+      Verified by asserting the speaker override is applied on the overdub
+      path and not on a plain take.
+
+      The voice-chat session that keeps playback alive and cancels the
+      echo also routes output to the receiver, whatever the category
+      options asked for — it is built for holding a phone to your ear.
+      Left alone it plays the take into the side of the singer's head at
+      conversation volume, which from arm's length is indistinguishable
+      from it not playing at all.

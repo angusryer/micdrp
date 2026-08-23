@@ -9,7 +9,7 @@
  */
 import {
   alignLayer,
-  countInBeats,
+  countIn,
   bassChangeTimes,
   bassPitchClassOver,
   bassSpans
@@ -165,35 +165,44 @@ describe('INV-NOTES-074: placing an overdub where it was sung', () => {
 
 describe('INV-NOTES-088: counting a second voice in', () => {
   it('counts back from the first note at the take\'s own tempo', () => {
-    // 120bpm is a beat every 500ms. Singing starts at 2s, so four beats fit.
-    const clicks = countInBeats(2000, 120);
+    // 120bpm is a beat every 500ms, and 2s of pickup holds all four.
+    const { clicks, leadInMs } = countIn(2000, 120);
+    expect(leadInMs).toBe(0);
     expect(clicks.map((c) => c.startMs)).toEqual([0, 500, 1000, 1500, 2000]);
   });
 
   it('marks the beat you come in on differently from the ones before it', () => {
-    const clicks = countInBeats(2000, 120);
+    const { clicks } = countIn(2000, 120);
     const last = clicks[clicks.length - 1];
     expect(last.startMs).toBe(2000);
     expect(last.midi).not.toBe(clicks[0].midi);
   });
 
-  it('counts only into the pickup that is actually there', () => {
-    // One beat of room before the singing, so one click plus the downbeat.
-    const clicks = countInBeats(600, 120);
-    expect(clicks.map((c) => c.startMs)).toEqual([100, 600]);
+  it('delays the take rather than cutting the count short', () => {
+    // Only 600ms of pickup, but four beats need 2000ms — so the take waits
+    // 1400ms and the count is still four beats.
+    const { clicks, leadInMs } = countIn(600, 120);
+    expect(leadInMs).toBe(1400);
+    expect(clicks).toHaveLength(5);
+    expect(clicks[0].startMs).toBe(0);
+    // The singer still comes in where the take's first note now falls.
+    expect(clicks[clicks.length - 1].startMs).toBe(600 + 1400);
   });
 
-  it('says nothing for a take that begins immediately', () => {
-    // Nowhere to put a count, and counting into thin air teaches a tempo
-    // the take does not have.
-    expect(countInBeats(0, 120)).toEqual([]);
+  it('counts a take in that begins immediately', () => {
+    // The case that matters: most takes start near their first note, and
+    // that is exactly when a second voice most needs telling when to come in.
+    const { clicks, leadInMs } = countIn(0, 120);
+    expect(leadInMs).toBe(2000);
+    expect(clicks).toHaveLength(5);
+    expect(clicks.every((c) => c.startMs >= 0)).toBe(true);
   });
 
   it('says nothing when the take has no tempo to count at', () => {
-    expect(countInBeats(2000, 0)).toEqual([]);
+    expect(countIn(2000, 0)).toEqual({ clicks: [], leadInMs: 0 });
   });
 
-  it('never counts more than it was asked to, however long the pickup', () => {
-    expect(countInBeats(60000, 120, 4)).toHaveLength(5);
+  it('never counts more beats than it was asked for', () => {
+    expect(countIn(60000, 120, 4).clicks).toHaveLength(5);
   });
 });

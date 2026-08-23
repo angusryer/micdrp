@@ -8,7 +8,7 @@
 import { useMemo, useState } from 'react';
 
 import {
-  countInBeats,
+  countIn,
   playbackTargets,
   transposeTargets,
   type NoteEvent,
@@ -53,12 +53,18 @@ export function useNotePlayback(
   // The count-in, as a voice like the others so the mix reaches it. Its
   // clicks come from the take's own tempo, counted back from the first note
   // into whatever pickup is actually there (INV-NOTES-088).
+  const counted = useMemo(
+    () => countIn(melody[0]?.startMs ?? 0, quantized.grid?.bpm ?? 0),
+    [melody, quantized.grid?.bpm]
+  );
   const countTones = useMemo(
     () =>
-      countInBeats(melody[0]?.startMs ?? 0, quantized.grid?.bpm ?? 0).map(
-        (beat) => ({ midi: beat.midi, startMs: beat.startMs, endMs: beat.endMs })
-      ),
-    [melody, quantized.grid?.bpm]
+      counted.clicks.map((beat) => ({
+        midi: beat.midi,
+        startMs: beat.startMs,
+        endMs: beat.endMs
+      })),
+    [counted]
   );
   const countVoice = useMelodyBackdrop(countTones);
   const countMix = useMemo(
@@ -66,9 +72,12 @@ export function useNotePlayback(
       start: (offsetMs = 0) => countVoice.start(offsetMs),
       stop: () => countVoice.stop(),
       durationMs: countTones[countTones.length - 1]?.endMs ?? 0,
+      // What everything else waits for, so the count finishes before the
+      // beat it is counting to arrives (INV-NOTES-088).
+      leadInMs: counted.leadInMs,
       setLevel: (level: number) => countVoice.setLevel(level)
     }),
-    [countVoice, countTones]
+    [countVoice, countTones, counted.leadInMs]
   );
 
   const backdrop = useChordBackdrop(chords.progression);

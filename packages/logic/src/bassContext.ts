@@ -136,40 +136,53 @@ const CLICK_MS = 45;
 const CLICK_MIDI = 96;
 const DOWNBEAT_MIDI = 103;
 
+/** A count, and how long the take must wait for it to finish. */
+export interface CountIn {
+  clicks: CountBeat[];
+  /**
+   * How much silence to put before the take so the whole count fits.
+   *
+   * 0 when the take already has enough pickup to hold it. Otherwise the
+   * take waits: a count that is cut short is worse than none, because the
+   * singer comes in on a beat that was never established.
+   */
+  leadInMs: number;
+}
+
 /**
  * The beats before the singing starts, so a second voice knows when to come
- * in.
+ * in (INV-NOTES-088).
  *
- * Counted backwards from the first sung note at the take's own tempo, and
- * only into the pickup that is actually there: a take recorded with no room
- * before the first note gets no count, because there is nowhere to put one
- * (INV-NOTES-088).
+ * Counted backwards from the first sung note at the take's own tempo. Where
+ * the take has no room for the whole count — most takes, since most begin
+ * near enough their first note — the take is delayed rather than the count
+ * shortened. A count is only useful if it establishes the beat before the
+ * beat you are counting to.
  *
  * The last click lands on the first note itself, which is the one that says
  * "here" rather than "soon".
  */
-export function countInBeats(
+export function countIn(
   firstNoteMs: number,
   bpm: number,
   maxBeats = 4
-): CountBeat[] {
-  if (!(bpm > 0) || !(firstNoteMs > 0)) {
-    return [];
+): CountIn {
+  if (!(bpm > 0) || !(maxBeats > 0)) {
+    return { clicks: [], leadInMs: 0 };
   }
   const beatMs = 60000 / bpm;
-  // Only what fits before the singing: a click at a negative moment is a
-  // click nobody hears, and counting into thin air teaches the wrong tempo.
-  const fits = Math.floor(firstNoteMs / beatMs);
-  const beats = Math.min(maxBeats, fits);
+  const wantedStart = firstNoteMs - maxBeats * beatMs;
+  const leadInMs = Math.max(0, -wantedStart);
+
   const clicks: CountBeat[] = [];
-  for (let i = beats; i >= 1; i -= 1) {
-    const startMs = firstNoteMs - i * beatMs;
+  for (let i = maxBeats; i >= 1; i -= 1) {
+    const startMs = firstNoteMs - i * beatMs + leadInMs;
     clicks.push({ midi: CLICK_MIDI, startMs, endMs: startMs + CLICK_MS });
   }
   clicks.push({
     midi: DOWNBEAT_MIDI,
-    startMs: firstNoteMs,
-    endMs: firstNoteMs + CLICK_MS
+    startMs: firstNoteMs + leadInMs,
+    endMs: firstNoteMs + leadInMs + CLICK_MS
   });
-  return clicks;
+  return { clicks, leadInMs };
 }
