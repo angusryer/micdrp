@@ -13,7 +13,7 @@
  * play button is its player, so a bar there would be a second control for the
  * same take (INV-NOTES-015).
  */
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '../../components/Icon';
@@ -58,6 +58,16 @@ export interface PlaybackBarProps {
    * by the screen so this file never learns what an octave is.
    */
   options?: React.ReactNode;
+  /**
+   * Hands the transport to whatever else needs it — the scrubber above the
+   * graph reads the position and sets it (INT-NOTES-022). Reported rather
+   * than lifted, so this file stays the transport and the screen stays
+   * composition.
+   */
+  onTransport?: (transport: {
+    positionMs: number;
+    seek: (ms: number) => void;
+  }) => void;
 }
 
 export function PlaybackBar({
@@ -65,7 +75,8 @@ export function PlaybackBar({
   durationLabel,
   accompaniment,
   voice,
-  options
+  options,
+  onTransport
 }: PlaybackBarProps) {
   const { colors } = useTheme();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -90,12 +101,28 @@ export function PlaybackBar({
     () => withOnlyAvailable(mix, offered),
     [mix, offered]
   );
-  const { state, play, stop, rewind } = usePlaybackMix({
+  const { state, play, stop, rewind, positionMs } = usePlaybackMix({
     resolveAudioUri,
     mix: sounding,
     accompaniment,
     voice
   });
+
+  // Dragging stops what is sounding and starts again where the finger left
+  // it, rather than scrubbing through the audio: one press of play per
+  // destination is what the transport can actually do.
+  const seek = useCallback(
+    async (ms: number) => {
+      await stop();
+      await play(ms);
+    },
+    [stop, play]
+  );
+
+  useEffect(
+    () => onTransport?.({ positionMs, seek: (ms) => void seek(ms) }),
+    [onTransport, positionMs, seek]
+  );
 
   return (
     <View style={styles.stack}>

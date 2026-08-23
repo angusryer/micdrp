@@ -18,6 +18,7 @@ import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { ChordTrack } from './ChordTrack';
 import { NoteShapeControls } from './NoteShapeControls';
+import { Scrubber } from './Scrubber';
 import type { useNoteDetail } from './useNoteDetail';
 
 /**
@@ -41,6 +42,8 @@ export interface NoteShapeSectionProps {
   /** What is chosen on the graph, and how to choose something else. */
   selection: Selection | null;
   onSelect: (selection: Selection | null) => void;
+  /** Where the take is, and how to go elsewhere in it (INT-NOTES-022). */
+  transport?: { positionMs: number; seek: (ms: number) => void } | null;
 }
 
 export function NoteShapeSection({
@@ -49,7 +52,8 @@ export function NoteShapeSection({
   height,
   showControls = true,
   selection,
-  onSelect
+  onSelect,
+  transport
 }: NoteShapeSectionProps): React.JSX.Element {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -120,6 +124,16 @@ export function NoteShapeSection({
             )}
           >
             {({ contentWidth, beatWidth, timeAxis, pitchAxis, rects }) => (
+              <>
+                {transport != null ? (
+                  <Scrubber
+                    positionMs={transport.positionMs}
+                    timeAxis={timeAxis}
+                    contentWidth={contentWidth}
+                    height={graphHeight}
+                    onSeek={transport.seek}
+                  />
+                ) : null}
               <GraphLayers
                 detail={detail}
                 noteRects={rects}
@@ -131,6 +145,7 @@ export function NoteShapeSection({
                 selection={selection}
                 onSelect={onSelect}
               />
+              </>
             )}
           </ZoomableMelody>
         ) : (

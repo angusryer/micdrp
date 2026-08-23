@@ -12,7 +12,7 @@
  * page is its own piece, so the graph can be handed a whole screen sideways
  * without any of this moving.
  */
-import React from 'react';
+import React, { useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -55,6 +55,12 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   const { width, height } = useWindowDimensions();
   const detail = useNoteDetail(route.params.id);
   const { note, melody } = detail;
+  // Held here so the graph's scrubber and the transport under it are the same
+  // clock rather than two readings of one take (INT-NOTES-022).
+  const [transport, setTransport] = useState<{
+    positionMs: number;
+    seek: (ms: number) => void;
+  } | null>(null);
 
   if (!note) {
     return (
@@ -87,6 +93,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             durationLabel={formatDuration(note.durationMs)}
             accompaniment={detail.backdrop}
             voice={detail.melodyVoiceMix}
+            onTransport={setTransport}
             options={
               <>
                 <MelodyMix
@@ -105,13 +112,14 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
 
         {melody.length > 0 ? (
           <>
-            <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
-              {t('notes.shape')}
-            </Text>
+            {/* The word "Shape" said what the picture already says; the top
+                edge of the graph carries the scrubber instead
+                (INT-NOTES-022). */}
             <NoteShapeSection
               detail={detail}
               width={graphWidth}
               height={MELODY_VIEW_HEIGHT}
+              transport={transport}
               selection={detail.selection}
               onSelect={detail.setSelection}
             />

@@ -146,3 +146,23 @@ interactions:
       to hear — and belong together, off the page until asked for.
     maps_to:
       capability: notes.set_playback_mix
+
+  - id: INT-NOTES-022
+    name: Drag to a moment in the take
+    view: VIEW-NOTES-002
+    precondition: The note has stored audio.
+    steps:
+      - Press and hold the handle above the graph
+      - Drag it left or right
+    outcome: >
+      The handle follows the finger along the take, and letting go plays
+      from the moment it was left on, every track together. While a take
+      is playing the handle travels with it, so the same mark answers
+      "where am I" and "take me there". Dragging it during playback stops
+      the sound until the finger lifts, rather than scrubbing through it.
+
+      The word "Shape" sat above the graph saying what the picture already
+      says. Replacing a label with a control costs no room and turns the
+      top edge of the graph into the one place time is both read and set.
+    maps_to:
+      capability: notes.play
