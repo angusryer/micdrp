@@ -85,6 +85,7 @@
     "emptySubtitle": "Sing an idea above and it's saved here, analysed automatically.",
     "openNote": "Open {{title}}",
     "openAnalysis": "Open analysis",
+    "details": "Notes and analysis",
     "analysis": "Analysis",
     "shape": "Shape",
     "playNote": "Play note",
@@ -222,7 +223,6 @@
   "settings": {
     "title": "Settings",
     "sections": {
-      "analysis": "Analysis",
       "engine": "Engine",
       "appearance": "Appearance",
       "about": "About"

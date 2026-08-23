@@ -26,15 +26,14 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
-import { ExportSheet } from '../Results/ExportSheet';
-import { NoteList } from '../Results/NoteList';
 import { MelodyMix } from './MelodyMix';
 import { MelodyOctave } from './MelodyOctave';
+import { NoteDetailsPage } from './NoteDetailsPage';
 import { NoteHarmonySection } from './NoteHarmonySection';
 import { NoteLandscape } from './NoteLandscape';
 import { NoteShapeSection } from './NoteShapeSection';
 import { SelectionBar } from './SelectionBar';
-import { NoteStats, formatDuration } from './NoteStats';
+import { formatDuration } from './NoteStats';
 import { PlaybackBar } from './PlaybackBar';
 import { useNoteDetail } from './useNoteDetail';
 
@@ -57,6 +56,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   const { note, melody } = detail;
   // Held here so the graph's scrubber and the transport under it are the same
   // clock rather than two readings of one take (INT-NOTES-022).
+  const [showDetails, setShowDetails] = useState(false);
   const [transport, setTransport] = useState<{
     positionMs: number;
     seek: (ms: number) => void;
@@ -136,23 +136,22 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
           </>
         ) : null}
 
-        <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
-          {t('notes.analysis')}
+        {/* Read occasionally, edited never — so behind a control rather
+            than under the graph being worked on (INT-NOTES-023). */}
+        <Text
+          accessibilityRole="button"
+          onPress={() => setShowDetails(true)}
+          style={[styles.details, { color: colors.primary500 }]}
+        >
+          {t('notes.details')}
         </Text>
-        <NoteStats
-          note={note}
-          grid={detail.grid}
-          hasGrid={detail.hasGrid}
-          chordCount={detail.chords.slots.length}
-        />
-
-        <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
-          {t('notes.notesTapToHear')}
-        </Text>
-        <NoteList notes={melody} onPressNote={detail.playNote} />
-
-        <ExportSheet midiUri={detail.midiUri} title={note.title} />
       </ScrollView>
+
+      <NoteDetailsPage
+        detail={detail}
+        isOpen={showDetails}
+        onClose={() => setShowDetails(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -162,5 +161,6 @@ const styles = StyleSheet.create({
   content: { padding: CONTENT_PADDING, gap: 8 },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 22, fontWeight: '700' },
-  sectionTitle: { fontSize: 13, fontWeight: '600', marginTop: 18 }
+  sectionTitle: { fontSize: 13, fontWeight: '600', marginTop: 18 },
+  details: { fontSize: 14, fontWeight: '600', marginTop: 20 }
 });

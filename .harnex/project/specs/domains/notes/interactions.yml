@@ -125,3 +125,25 @@ interactions:
       the singer.
     maps_to:
       capability: notes.export_midi
+
+  - id: INT-NOTES-023
+    name: Look at the notes and the numbers
+    view: VIEW-NOTES-002
+    steps:
+      - Press the details control on the note's page
+    outcome: >
+      A full page rises carrying what the graph does not draw: every note
+      as a row you can tap to hear, what was measured about the take, and
+      the way to export it. Closing it returns to the graph with nothing
+      changed.
+
+      These sat below the graph, so every visit to a note scrolled past
+      them and every edit to the graph pushed them further away. They are
+      read occasionally and edited never, which is exactly what belongs
+      behind a control rather than under the thing being worked on.
+
+      It shares the open note rather than opening its own: reading the
+      take a second time would re-measure it, and two readings of one take
+      can disagree while an edit is still being made.
+    maps_to:
+      capability: notes.open_chord_track
