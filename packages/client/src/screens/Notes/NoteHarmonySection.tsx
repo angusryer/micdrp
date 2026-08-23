@@ -60,19 +60,6 @@ export function NoteHarmonySection({
         }}
         onMuteChange={detail.setLayerMuted}
       />
-      <Text style={[styles.caption, { color: colors.gray300 }]}>
-        {t('notes.harmonyHint')}
-      </Text>
-      {/* Which register the chords occupy, which is really a question about
-          what you are listening on. */}
-      <Text
-        accessibilityRole="button"
-        accessibilityState={{ selected: detail.chordsLifted }}
-        onPress={detail.toggleChordsLifted}
-        style={[styles.caption, { color: colors.primary500 }]}
-      >
-        {t(detail.chordsLifted ? 'notes.chordsLifted' : 'notes.chordsLow')}
-      </Text>
       {chords.hasEdits ? (
         <Text
           accessibilityRole="button"

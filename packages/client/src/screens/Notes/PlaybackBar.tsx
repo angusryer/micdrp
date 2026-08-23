@@ -60,6 +60,9 @@ export interface PlaybackBarProps {
    * sits. Given by the screen so this file never learns what an octave is.
    */
   options?: React.ReactNode;
+  /** Open the note's details. Sits beside the options, being its neighbour
+      in kind: both open a sheet and neither makes a sound. */
+  onDetails?: () => void;
   /**
    * Hands the transport to whatever else needs it — the scrubber above the
    * graph reads the position and sets it (INT-NOTES-022). Reported rather
@@ -81,6 +84,7 @@ export function PlaybackBar({
   accompaniment,
   voice,
   options,
+  onDetails,
   onTransport
 }: PlaybackBarProps) {
   const { colors } = useTheme();
@@ -168,7 +172,22 @@ export function PlaybackBar({
           </Text>
         ) : null}
 
-        <PlaybackOptionsButton onPress={() => setIsSheetOpen(true)} />
+        {/* The two that open a sheet, together at the far end: neither makes
+            a sound, which is what separates them from the transport. */}
+        <View style={styles.sheetOpeners}>
+          {onDetails ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Notes and analysis"
+              onPress={onDetails}
+              hitSlop={8}
+              style={({ pressed }) => [styles.details, { opacity: pressed ? 0.5 : 1 }]}
+            >
+              <Icon name="details" size={20} color={colors.gray300} />
+            </Pressable>
+          ) : null}
+          <PlaybackOptionsButton onPress={() => setIsSheetOpen(true)} />
+        </View>
       </View>
 
       <PlaybackSheet
@@ -193,6 +212,8 @@ export default PlaybackBar;
 
 const styles = StyleSheet.create({
   rewind: { padding: 4, marginRight: 4 },
+  sheetOpeners: { flexDirection: 'row', alignItems: 'center', marginLeft: 'auto' },
+  details: { padding: 6 },
   stack: { gap: 8 },
   container: {
     flexDirection: 'row',

@@ -33,6 +33,21 @@ export interface ZoomableMelodyProps {
   height: number;
   /** Other pitches sharing this axis — the chord notes under the line. */
   alsoShow?: readonly number[];
+  /** A second performance drawn behind the sung line, in its own colour. */
+  underlay?: readonly MelodyNote[];
+  underlayColor?: string;
+  /** Where the recording began, when earlier than the first sung note. */
+  fromMs?: number;
+  /**
+   * Drawn above the melody and inside the same scroll — the scrubber, which
+   * has to sit clear of the drawing rather than over it (INV-NOTES-081).
+   */
+  header?: (frame: {
+    contentWidth: number;
+    timeAxis: MelodyLayout['timeAxis'];
+    firstNoteMs: number;
+  }) => React.ReactNode;
+  headerHeight?: number;
   /**
    * Drawn over the melody, given the drawing's size and both of its axes so
    * whatever it paints lines up with what is under it (INV-NOTES-034).
@@ -71,6 +86,11 @@ export function ZoomableMelody({
   width,
   height,
   alsoShow,
+  underlay,
+  underlayColor,
+  fromMs,
+  header,
+  headerHeight = 0,
   children,
   onScaleChange,
   footer,
@@ -85,6 +105,7 @@ export function ZoomableMelody({
     width,
     height,
     alsoShow,
+    fromMs,
     scroller,
     scrollX,
     onScaleChange
@@ -99,14 +120,37 @@ export function ZoomableMelody({
       <ScrollView
         ref={scroller}
         horizontal
-        style={{ width, height: height + footerHeight }}
+        style={{ width, height: height + headerHeight + footerHeight }}
         showsHorizontalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
         // The drawing sets the width; the scroll view must not stretch it.
         contentContainerStyle={styles.content}
       >
-        <View style={{ width: layout.contentWidth, height }}>
+        {header != null && headerHeight > 0 ? (
+          <View
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: layout.contentWidth,
+              height: headerHeight
+            }}
+          >
+            {header({
+              contentWidth: layout.contentWidth,
+              timeAxis: layout.timeAxis,
+              firstNoteMs: layout.firstNoteMs
+            })}
+          </View>
+        ) : null}
+        <View
+          style={{
+            width: layout.contentWidth,
+            height,
+            marginTop: headerHeight
+          }}
+        >
           <MelodyView
             notes={notes}
             width={width}
@@ -114,6 +158,9 @@ export function ZoomableMelody({
             grid={grid}
             beatWidth={beatWidth}
             alsoShow={alsoShow}
+            fromMs={fromMs}
+            underlay={underlay}
+            underlayColor={underlayColor}
           />
           {children?.({
             contentWidth: layout.contentWidth,
@@ -127,7 +174,7 @@ export function ZoomableMelody({
           <View
             style={{
               position: 'absolute',
-              top: height,
+              top: headerHeight + height,
               left: 0,
               width: layout.contentWidth,
               height: footerHeight

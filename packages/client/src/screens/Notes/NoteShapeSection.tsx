@@ -5,7 +5,7 @@
  * takes its own size rather than reading the window: upright it is a card in
  * a scrolling column, sideways it is the view.
  */
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { octaveLabel } from 'logic';
@@ -31,6 +31,15 @@ const CHORD_STRIP_HEIGHT = 52;
 
 /** Below this the drawing stops being a graph, so it refuses to shrink more. */
 export const MIN_GRAPH_HEIGHT = 96;
+
+/**
+ * The strip above the drawing that carries the scrubber.
+ *
+ * Its own band rather than an overlay: a handle drawn over the graph covers
+ * the notes it is pointing at, which are the thing being looked at
+ * (INV-NOTES-081).
+ */
+const SCRUB_BAND_HEIGHT = 22;
 
 export interface NoteShapeSectionProps {
   detail: ReturnType<typeof useNoteDetail>;
@@ -75,15 +84,25 @@ export function NoteShapeSection({
     gridForView,
     chordPitchesShown,
     chords,
+    bass,
     octaves
   } = detail;
+  // The bass shares the melody's pitch window, so its notes are declared to
+  // the layout that decides that window (INV-NOTES-079).
+  const shownWith = useMemo(
+    () => [...chordPitchesShown, ...(bass ?? []).map((n) => n.midi)],
+    [chordPitchesShown, bass]
+  );
   // The cards ride in the graph's own scroll so each one starts where its
   // chord starts (INV-NOTES-061). They take their room out of the height this
   // section was given rather than adding to it, so the drawing shrinks by
   // exactly what they occupy and the section still fits its slot.
   const hasChords = chords.slots.length > 0;
   const stripHeight = hasChords ? CHORD_STRIP_HEIGHT : 0;
-  const graphHeight = Math.max(MIN_GRAPH_HEIGHT, height - stripHeight);
+  const graphHeight = Math.max(
+    MIN_GRAPH_HEIGHT,
+    height - stripHeight - SCRUB_BAND_HEIGHT
+  );
   // The graph never moves for a transposition — the take was sung where it
   // was sung. This is the only sign of it, and only while it is not zero
   // (INV-NOTES-058).
@@ -107,7 +126,23 @@ export function NoteShapeSection({
             grid={gridForView}
             width={width}
             height={graphHeight}
-            alsoShow={chordPitchesShown}
+            alsoShow={shownWith}
+            underlay={bass}
+            underlayColor={colors.gold}
+            fromMs={0}
+            headerHeight={SCRUB_BAND_HEIGHT}
+            header={({ contentWidth, timeAxis, firstNoteMs }) =>
+              transport != null ? (
+                <Scrubber
+                  positionMs={transport.positionMs}
+                  timeAxis={timeAxis}
+                  contentWidth={contentWidth}
+                  height={SCRUB_BAND_HEIGHT}
+                  firstNoteMs={firstNoteMs}
+                  onSeek={transport.seek}
+                />
+              ) : null
+            }
             onScaleChange={onScaleChange}
             footerHeight={stripHeight}
             footer={({ contentWidth, timeAxis, zoomBy }) => (
@@ -125,15 +160,6 @@ export function NoteShapeSection({
           >
             {({ contentWidth, beatWidth, timeAxis, pitchAxis, rects }) => (
               <>
-                {transport != null ? (
-                  <Scrubber
-                    positionMs={transport.positionMs}
-                    timeAxis={timeAxis}
-                    contentWidth={contentWidth}
-                    height={graphHeight}
-                    onSeek={transport.seek}
-                  />
-                ) : null}
               <GraphLayers
                 detail={detail}
                 noteRects={rects}

@@ -40,39 +40,31 @@ export function LayerControl({
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
-        <View style={styles.labels}>
-          <Text style={[styles.title, { color: colors.typography }]}>
-            {bass ? 'Bass line' : 'Sing the bass line'}
-          </Text>
-          <Text style={[styles.hint, { color: colors.gray300 }]}>
-            {isRecording
-              ? 'Sing the roots you hear under it — tap to finish'
-              : 'Played back while you sing the roots you hear underneath'}
-          </Text>
-        </View>
+        <Text style={[styles.title, { color: colors.typography }]}>
+          Hum a bass line
+        </Text>
+        {/* A record button, which is a red circle everywhere — squared off
+            while it is running, the way every transport says the same thing. */}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={
-            isRecording ? 'Finish the bass line' : 'Record a bass line'
+            isRecording ? 'Finish the bass line' : 'Hum a bass line'
           }
           onPress={isRecording ? onStop : onStart}
-          style={({ pressed }) => [
-            styles.record,
-            {
-              borderColor: colors.neutral500,
-              backgroundColor: isRecording ? colors.error : colors.neutral50,
-              opacity: pressed ? 0.6 : 1
-            }
-          ]}
+          hitSlop={8}
+          style={({ pressed }) => [styles.record, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <Text
+          <View
             style={[
-              styles.recordText,
-              { color: isRecording ? colors.white : colors.primary500 }
+              styles.dot,
+              {
+                backgroundColor: colors.error,
+                borderRadius: isRecording ? 3 : DOT / 2,
+                width: isRecording ? DOT * 0.72 : DOT,
+                height: isRecording ? DOT * 0.72 : DOT
+              }
             ]}
-          >
-            {isRecording ? 'Stop' : bass ? 'Redo' : 'Record'}
-          </Text>
+          />
         </Pressable>
       </View>
 
@@ -109,6 +101,9 @@ export function LayerControl({
 
 export default LayerControl;
 
+/** The record dot's diameter at rest. */
+const DOT = 18;
+
 const styles = StyleSheet.create({
   wrap: { gap: 4 },
   row: {
@@ -121,11 +116,6 @@ const styles = StyleSheet.create({
   labels: { flexShrink: 1 },
   title: { fontSize: 14, fontWeight: '600' },
   hint: { fontSize: 11, marginTop: 2, lineHeight: 15 },
-  record: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingVertical: 7,
-    paddingHorizontal: 16
-  },
-  recordText: { fontSize: 13, fontWeight: '700' }
+  record: { padding: 6 },
+  dot: {}
 });

@@ -151,7 +151,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 5,
     paddingHorizontal: 6,
-    alignItems: 'center'
+    // Left, so the name sits over the downbeat the card starts on: the card
+    // is placed by its left edge (INV-NOTES-061) and centring the label moved
+    // it away from the thing it names.
+    alignItems: 'flex-start'
   },
   label: { fontSize: 15, fontWeight: '700' },
   roman: { fontSize: 10, letterSpacing: 0.4 }

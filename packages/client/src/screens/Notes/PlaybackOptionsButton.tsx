@@ -48,5 +48,5 @@ export default PlaybackOptionsButton;
 
 const styles = StyleSheet.create({
   // Pushed to the far end of the transport row, where the word used to sit.
-  button: { padding: 6, marginLeft: 'auto' }
+  button: { padding: 6 }
 });

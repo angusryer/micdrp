@@ -229,6 +229,7 @@ export function useNoteDetail(id: string) {
     resetNote,
     isCorrected,
     layers,
+    bass,
     setLayerMuted,
     layerCapture,
     selection,

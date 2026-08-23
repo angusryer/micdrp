@@ -51,6 +51,14 @@ export interface MelodyLayoutOptions extends ScaleRequest {
   padding?: number;
   /** Fraction of a pitch lane each note bar fills, 0..1 (default 0.7). */
   laneFill?: number;
+  /**
+   * Where the recording began, when that is earlier than the first note.
+   *
+   * The drawing otherwise starts at the first thing detected, which hides the
+   * pickup — the breath and the count-in before the singing, which is part of
+   * the take and part of where the beat sits (INV-NOTES-080).
+   */
+  fromMs?: number;
   /** Minimum bar thickness in px (default 3). */
   minBarHeight?: number;
   /**
@@ -73,6 +81,11 @@ export interface NoteRect {
 
 export interface MelodyLayout {
   rects: NoteRect[];
+  /**
+   * Where the first detected note starts. The pickup is everything before
+   * it, and this is the line that marks the boundary (INV-NOTES-080).
+   */
+  firstNoteMs: number;
   /** Lowest pitch lane shown (one semitone below the lowest sung note). */
   midiLow: number;
   /** Highest pitch lane shown (one semitone above the highest sung note). */
@@ -110,7 +123,14 @@ export function layoutMelody(
   const lane = innerH / (range + 1);
   const barH = Math.max(minBarH, lane * laneFill);
 
-  const { t0, span } = timeBounds(notes);
+  const bounds = timeBounds(notes);
+  // Widened rather than moved: the notes stay where they are and the window
+  // opens earlier to let the pickup in.
+  const t0 =
+    options.fromMs != null && options.fromMs < bounds.t0
+      ? options.fromMs
+      : bounds.t0;
+  const span = bounds.span + (bounds.t0 - t0);
   const { pxPerMs, contentWidth } = resolveScale(options, span, innerW, pad);
 
   const pitchAxis: PitchAxis = { midiLow, midiHigh, pad, innerH, lane };
@@ -130,6 +150,8 @@ export function layoutMelody(
 
   return {
     rects,
+    /** Where the first detected note starts, which the pickup runs up to. */
+    firstNoteMs: bounds.t0,
     midiLow,
     midiHigh,
     gridLines,

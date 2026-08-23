@@ -24,7 +24,8 @@ export type IconName =
   | 'pause'
   | 'rewind'
   | 'stop'
-  | 'options';
+  | 'options'
+  | 'details';
 
 /** Material-style filled glyphs, authored on a 24×24 viewbox. */
 const ICON_PATHS: Record<IconName, string> = {
@@ -51,6 +52,10 @@ const ICON_PATHS: Record<IconName, string> = {
   // Sliders — opens the playback options (INV-NOTES-075). Deliberately not
   // the cog below: that one means the app's settings, and these are choices
   // about one take.
+  // Lines of text beside a mark — the conventional "details" or "list"
+  // glyph, so it is recognised rather than read (INV-NOTES-075).
+  details:
+    'M3 5h18v2H3V5zm0 6h12v2H3v-2zm0 6h18v2H3v-2zm15-6h3v2h-3v-2z',
   options:
     'M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z',
   // Cog — Account & Settings.

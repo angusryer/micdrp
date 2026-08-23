@@ -10,8 +10,11 @@
  * the moment it marks is under the notes sung at that moment however far the
  * take is scrolled or zoomed (INV-NOTES-034).
  *
- * Drawn just inside the top edge rather than above it: the graph card clips
- * its children, and a handle hanging outside would be cut in half.
+ * It sits in a band above the drawing rather than over it, so it never covers
+ * the notes it is pointing at (INV-NOTES-081), and it cannot be dragged past
+ * the ends of the take — there is nothing to hear beyond them, and a handle
+ * that travels into the pickup would claim a moment the recording does not
+ * have.
  */
 import React, { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -30,6 +33,8 @@ export interface ScrubberProps {
   timeAxis: TimeAxis;
   contentWidth: number;
   height: number;
+  /** Where the singing starts. The handle does not go earlier than this. */
+  firstNoteMs: number;
   /** Take the transport to a moment, in ms. */
   onSeek: (ms: number) => void;
 }
@@ -39,6 +44,7 @@ export function Scrubber({
   timeAxis,
   contentWidth,
   height,
+  firstNoteMs,
   onSeek
 }: ScrubberProps): React.JSX.Element | null {
   const { colors } = useTheme();
@@ -51,12 +57,14 @@ export function Scrubber({
     [timeAxis]
   );
 
+  // Held inside the take. Before the first note is the pickup, which has
+  // nothing to play, and past the last there is nothing left.
   const seekTo = useCallback(
     (x: number) => {
       const last = timeAxis.t0 + timeAxis.span;
-      onSeek(Math.min(Math.max(msForX(x), timeAxis.t0), last));
+      onSeek(Math.min(Math.max(msForX(x), firstNoteMs), last));
     },
-    [msForX, onSeek, timeAxis]
+    [msForX, onSeek, timeAxis, firstNoteMs]
   );
 
   // Everything here is ordinary code, so the gesture runs on the JavaScript
@@ -67,14 +75,18 @@ export function Scrubber({
     .onEnd((e) => seekTo(e.x))
     .runOnJS(true);
 
-  const x = xForMs(timeAxis, positionMs);
+  const x = xForMs(
+    timeAxis,
+    Math.min(Math.max(positionMs, firstNoteMs), timeAxis.t0 + timeAxis.span)
+  );
 
   return (
     <View
       style={[styles.layer, { width: contentWidth, height }]}
       pointerEvents="box-none"
     >
-      {/* Paint: the line marking the moment, down the whole graph. */}
+      {/* A short stem under the handle, pointing at the graph below the
+          band, so the moment is readable without covering the notes. */}
       <View
         pointerEvents="none"
         style={[

@@ -191,3 +191,45 @@ invariants:
       position is a different space once the graph is inset and
       scrolled, and mixing the two silently put a moved line some
       distance from where it was dropped.
+
+  - id: INV-NOTES-079
+    description: A second voice is drawn in a second colour
+    severity: minor
+    check: >
+      A context layer drawn on the graph uses a colour of its own, behind
+      the sung line and never the same as it, and shares the melody's
+      pitch and time axes so a bass note and a sung note at the same pitch
+      sit at the same height. Verified by asserting the layer is placed
+      from the melody's own axes rather than laid out again.
+
+      Laid out separately it would derive its own pitch window from its
+      own notes, and the same pitch would sit at two heights on one
+      drawing — which is the one claim this graph makes.
+
+  - id: INV-NOTES-080
+    description: The pickup before the singing is part of the picture
+    severity: minor
+    check: >
+      The drawing begins where the recording began rather than at the
+      first note detected, and a faint line in its own colour marks where
+      the singing starts. Verified by asserting the window opens earlier
+      than the first note when the recording did, and that the notes stay
+      where they were.
+
+      Starting at the first detected note hides the breath and the count
+      before it, which is where the beat was set. It also makes a take
+      that begins with a pickup look as though it begins on a downbeat.
+
+  - id: INV-NOTES-081
+    description: The scrubber sits clear of the notes it points at
+    severity: minor
+    check: >
+      The handle is drawn in a band above the drawing rather than over it,
+      and travels only between the first and last sung notes. Verified by
+      asserting a position before the first note or past the last is
+      brought inside them.
+
+      A handle over the graph covers the notes it is pointing at, which
+      are the thing being looked at. And there is nothing to hear in the
+      pickup or past the end, so a handle that could be dragged there
+      would offer a moment the recording does not have.

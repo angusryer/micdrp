@@ -94,6 +94,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             durationLabel={formatDuration(note.durationMs)}
             accompaniment={detail.backdrop}
             voice={detail.melodyVoiceMix}
+            onDetails={() => setShowDetails(true)}
             onTransport={setTransport}
             options={<PlaybackOptions detail={detail} />}
           />
@@ -118,9 +119,6 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
               onSelect={detail.setSelection}
             />
 
-            <Text style={[styles.sectionTitle, { color: colors.gray500 }]}>
-              {t('notes.harmony')}
-            </Text>
             {/* The take plays while the layer is sung over it — that is what
                 makes it a layer rather than a second recording. */}
             <NoteHarmonySection
@@ -130,16 +128,6 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             />
           </>
         ) : null}
-
-        {/* Read occasionally, edited never — so behind a control rather
-            than under the graph being worked on (INT-NOTES-023). */}
-        <Text
-          accessibilityRole="button"
-          onPress={() => setShowDetails(true)}
-          style={[styles.details, { color: colors.primary500 }]}
-        >
-          {t('notes.details')}
-        </Text>
       </ScrollView>
 
       <NoteDetailsPage
