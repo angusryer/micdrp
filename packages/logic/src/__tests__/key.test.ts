@@ -12,7 +12,8 @@ function note(midi: number, durationMs: number): NoteEvent {
     endMs: durationMs,
     durationMs,
     cents: 0,
-    clarity: 0.95
+    clarity: 0.95,
+    loudnessDb: null
   };
 }
 

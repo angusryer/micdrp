@@ -13,10 +13,27 @@
 #include "pitch_engine.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "notes.h"
 
 namespace micdrp::dsp {
+
+double windowLevelDb(const float* samples, std::size_t count) {
+  if (samples == nullptr || count == 0) {
+    return kSilenceDb;
+  }
+  double sum = 0.0;
+  for (std::size_t i = 0; i < count; ++i) {
+    const double v = static_cast<double>(samples[i]);
+    sum += v * v;
+  }
+  const double rms = std::sqrt(sum / static_cast<double>(count));
+  if (!(rms > 0.0)) {
+    return kSilenceDb;
+  }
+  return std::max(kSilenceDb, 20.0 * std::log10(rms));
+}
 
 void PitchEngine::configure(const EngineConfig& config) {
   EngineConfig cfg = config;
@@ -88,6 +105,9 @@ std::optional<PitchSample> PitchEngine::tryAnalyze() {
           ? (static_cast<double>(analyzedSamples_) * 1000.0) / cfg.sampleRateHz
           : 0.0;
   sample.clarity = r.clarity;
+  // Measured over the same window the pitch came from, so a note's loudness
+  // is the loudness of the frames that made it that note.
+  sample.levelDb = windowLevelDb(window_.data(), frameSize);
 
   if (r.voiced && r.frequencyHz > 0.0) {
     const NoteReading note = frequencyToNote(r.frequencyHz);

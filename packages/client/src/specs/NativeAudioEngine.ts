@@ -23,6 +23,14 @@ export type PitchSampleEvent = {
   /** Detected fundamental; 0 when unvoiced, never null. */
   frequencyHz: Double;
   clarity: Double;
+  /**
+   * How loud the analysed window was, in dBFS, floored at -80.
+   *
+   * Optional on the wire: a bundle newer than the binary it is running on
+   * will not receive it, and a note whose loudness is unknown has to say so
+   * rather than claim silence (INV-PITCH-020).
+   */
+  levelDb?: Double | null;
   /** Nearest MIDI note, or null when unvoiced. */
   midi?: Double | null;
   cents?: Double | null;

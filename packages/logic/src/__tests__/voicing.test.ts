@@ -15,6 +15,7 @@ import {
   MAX_TONE_OFFSET
 } from '../index';
 import type { ChordSlot } from '../harmony';
+import type { NoteEvent } from '../segmentation';
 import type { ChordVoicing } from '../voicing';
 
 const KEY = { tonic: 0, tonicName: 'C', mode: 'major' as const, confidence: 1 };
@@ -127,11 +128,18 @@ describe('moving the chord carries its voicing along (INV-NOTES-038)', () => {
 });
 
 describe('a voicing is kept the way every other edit is kept (INV-NOTES-039)', () => {
-  const melody = [
-    { midi: 60, startMs: 0, endMs: 500 },
-    { midi: 64, startMs: 500, endMs: 1000 },
-    { midi: 67, startMs: 1000, endMs: 2000 }
-  ];
+  const sung = (midi: number, startMs: number, endMs: number): NoteEvent => ({
+    midi,
+    startMs,
+    endMs,
+    durationMs: endMs - startMs,
+    cents: 0,
+    clarity: 1,
+    // Nothing measured how loud these were, which is a different claim from
+    // their having been silent (INV-PITCH-020).
+    loudnessDb: null
+  });
+  const melody = [sung(60, 0, 500), sung(64, 500, 1000), sung(67, 1000, 2000)];
   const grid = { bpm: 120, offsetMs: 0, beatsPerBar: 4, stepsPerBeat: 4 };
 
   it('round-trips through collect and replay unchanged', () => {

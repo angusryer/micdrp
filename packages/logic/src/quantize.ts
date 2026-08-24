@@ -376,6 +376,7 @@ export function quantizeNotes(
       durationMs: note.durationMs,
       cents: note.cents,
       clarity: note.clarity,
+      loudnessDb: note.loudnessDb,
       gridStartMs: Math.round(gridStartMs),
       gridDurationMs: Math.round(gridDurationMs),
       deviationMs: Math.round(note.startMs - gridStartMs),

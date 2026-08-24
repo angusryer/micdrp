@@ -16,6 +16,32 @@ export interface NoteEventDto {
   cents: number;
   /** Mean clarity across the note, 0..1. */
   clarity: number;
+  /**
+   * How loud the note was, in dBFS, or null when nothing measured it.
+   *
+   * Null rather than a floor value: "nobody looked" and "it was silent" are
+   * different claims and only one of them is about the singing. Notes stored
+   * before this existed are read as null by {@link readMelody}, which is the
+   * one place that knows they can lack it (INV-PITCH-020).
+   */
+  loudnessDb: number | null;
+}
+
+/**
+ * A stored melody as the working shape, which is the same shape.
+ *
+ * The only difference a stored melody can have is age: a note captured before
+ * loudness was measured has no such field, and every reading of it has to say
+ * unknown rather than let `undefined` travel as though it were a number.
+ */
+export function readMelody(raw: unknown): NoteEventDto[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+  return (raw as NoteEventDto[]).map((note) => ({
+    ...note,
+    loudnessDb: typeof note.loudnessDb === 'number' ? note.loudnessDb : null
+  }));
 }
 
 /**
@@ -132,7 +158,7 @@ export function parseLayers(raw: unknown): NoteLayerDto[] {
       // reading for a role we do not know would be worse than admitting none.
       role: v.role === 'bass' ? 'bass' : 'other',
       audioPath: typeof v.audioPath === 'string' ? v.audioPath : null,
-      melody: v.melody,
+      melody: readMelody(v.melody),
       alignedByMs: typeof v.alignedByMs === 'number' ? v.alignedByMs : 0,
       isMuted: v.isMuted === true
     });

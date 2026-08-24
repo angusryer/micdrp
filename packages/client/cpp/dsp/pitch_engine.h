@@ -26,6 +26,19 @@
 
 namespace micdrp::dsp {
 
+// The floor a level is reported at. Digital silence is negative infinity,
+// which is not a number anything downstream can average or compare, so
+// everything quieter than this reads as this.
+constexpr double kSilenceDb = -80.0;
+
+// RMS of a window, in dBFS. Full-scale sine ~= -3 dB, full-scale square 0 dB.
+//
+// Level rides with the pitch rather than being measured separately because it
+// has to describe the same window the pitch came from — a note's loudness is
+// the loudness of the frames that made it that note. Measuring it anywhere
+// else would be a second reading of the same audio, free to disagree.
+double windowLevelDb(const float* samples, std::size_t count);
+
 // Mirrors src/audio/contract.ts PitchSample exactly. midi/cents use a `voiced`
 // flag instead of TS `null`; the bridge maps !voiced -> {midi: null, cents:
 // null, frequencyHz: 0} when marshalling to JS.
@@ -33,6 +46,7 @@ struct PitchSample {
   double timestampMs = 0.0;   // ms from capture start
   double frequencyHz = 0.0;   // 0 when unvoiced
   double clarity = 0.0;       // 0..1 NSDF peak
+  double levelDb = kSilenceDb;  // window RMS in dBFS, floored at kSilenceDb
   int midi = 0;               // nearest MIDI note (valid iff voiced)
   int cents = 0;              // -50..50 deviation (valid iff voiced)
   bool voiced = false;        // false -> midi/cents are null on the wire

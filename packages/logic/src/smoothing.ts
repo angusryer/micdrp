@@ -45,7 +45,13 @@ export function smoothPitch(
       out.push(
         midi == null
           ? rest(f)
-          : { timestampMs: f.timestampMs, midi, cents: f.cents, clarity: f.clarity }
+          : {
+              timestampMs: f.timestampMs,
+              midi,
+              cents: f.cents,
+              clarity: f.clarity,
+              levelDb: f.levelDb
+            }
       );
       continue;
     }
@@ -69,12 +75,28 @@ export function smoothPitch(
     const median = voiced[Math.floor((voiced.length - 1) / 2)];
     // Keep the original cents only when this frame already sat on the median note.
     const cents = gated[i] === median ? f.cents ?? 0 : 0;
-    out.push({ timestampMs: f.timestampMs, midi: median, cents, clarity: f.clarity });
+    out.push({
+      timestampMs: f.timestampMs,
+      midi: median,
+      cents,
+      clarity: f.clarity,
+      // Carried through untouched. Smoothing decides which note was sung; how
+      // loud the microphone heard it is not a thing a median over neighbours
+      // can improve, and rebuilding the frame without it silently emptied
+      // every note's loudness downstream (INV-PITCH-020).
+      levelDb: f.levelDb
+    });
   }
 
   return out;
 }
 
 function rest(f: PitchFrame): PitchFrame {
-  return { timestampMs: f.timestampMs, midi: null, cents: null, clarity: f.clarity };
+  return {
+    timestampMs: f.timestampMs,
+    midi: null,
+    cents: null,
+    clarity: f.clarity,
+    levelDb: f.levelDb
+  };
 }

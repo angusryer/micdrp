@@ -64,3 +64,42 @@ invariants:
 
       It rejects; it does not detect. It cannot say where a note begins,
       only that this one cannot have been meant.
+
+  - id: INV-PITCH-020
+    description: How loud each note was, and whether anyone measured it
+    severity: major
+    check: >
+      Every analysed frame carries the level of the window it was read from,
+      in dBFS with a floor rather than negative infinity, and every note
+      carries the mean of the levels of the frames that made it that note. A
+      note no frame measured reports null, not the floor. Notes that fold
+      together weigh their parts by duration, over the parts that had a
+      reading. Verified by asserting halving the amplitude reads six dB down
+      from anywhere, that two notes keep their difference, that an unmeasured
+      note is null rather than silent, and that it survives the smoothing and
+      the merging that run between the frames and the note.
+
+      In dB because accent is a ratio. What makes the stressed beat of a
+      count-in the stressed one is how many times louder it was than its
+      neighbours, and dB is that ratio written as a number you can subtract.
+      Averaged in dB for the same reason: the mean of the ratios is what
+      "how loud was this note" means, where a mean of pressures is not.
+
+      Measured over the same window the pitch came from, and travelling with
+      it, because a note's loudness is the loudness of the frames that made
+      it that note. Measured separately it would be a second reading of the
+      same audio, free to disagree with the first (Axiom 2).
+
+      Null rather than a floor value when nothing measured it. "Nobody
+      looked" and "it was silent" are different claims and only one of them
+      is about the singing — and the first is ordinary, since a bundle can be
+      newer than the binary it runs inside, and takes captured before this
+      existed are still in the library. Anything reading accent has to be
+      able to tell them apart, or a take from an older engine reads as one
+      sung entirely without emphasis.
+
+      Every stage between the frame and the note has to carry it, and the
+      smoothing is the one that will not by default: it rebuilds each frame
+      to decide which note was sung, and a rebuild that lists the fields it
+      keeps drops this one silently — leaving every note in the take
+      unmeasured with nothing to say why.

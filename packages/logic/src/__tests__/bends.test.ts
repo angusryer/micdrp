@@ -1,6 +1,6 @@
 /**
  * A change of note is at least a semitone; anything nearer is one note
- * bending (INV-PITCH-017, INV-PITCH-018).
+ * bending (INV-PITCH-017, INV-PITCH-020).
  */
 import { dropTooBriefToSing, mergeBends } from '../bends';
 import type { NoteEvent } from '../segmentation';
@@ -12,7 +12,8 @@ function n(midi: number, cents: number, startMs: number, durationMs: number): No
     startMs,
     endMs: startMs + durationMs,
     durationMs,
-    clarity: 0.9
+    clarity: 0.9,
+    loudnessDb: null
   };
 }
 

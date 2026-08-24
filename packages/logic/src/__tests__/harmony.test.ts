@@ -37,7 +37,8 @@ function note(startMs: number, durationMs: number, midi: number): NoteEvent {
     endMs: startMs + durationMs,
     durationMs,
     cents: 0,
-    clarity: 0.95
+    clarity: 0.95,
+    loudnessDb: null
   };
 }
 

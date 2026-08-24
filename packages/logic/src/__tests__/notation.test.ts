@@ -11,10 +11,10 @@ import type { NoteEvent } from '../segmentation';
 
 /** A note sung a little late and a little flat. */
 const sung: NoteEvent[] = [
-  { midi: 60, startMs: 12, endMs: 505, durationMs: 493, cents: -18, clarity: 0.9 },
-  { midi: 62, startMs: 507, endMs: 1010, durationMs: 503, cents: 11, clarity: 0.9 },
-  { midi: 64, startMs: 1013, endMs: 1495, durationMs: 482, cents: -6, clarity: 0.9 },
-  { midi: 65, startMs: 1502, endMs: 2000, durationMs: 498, cents: 4, clarity: 0.9 }
+  { midi: 60, startMs: 12, endMs: 505, durationMs: 493, cents: -18, clarity: 0.9, loudnessDb: null },
+  { midi: 62, startMs: 507, endMs: 1010, durationMs: 503, cents: 11, clarity: 0.9, loudnessDb: null },
+  { midi: 64, startMs: 1013, endMs: 1495, durationMs: 482, cents: -6, clarity: 0.9, loudnessDb: null },
+  { midi: 65, startMs: 1502, endMs: 2000, durationMs: 498, cents: 4, clarity: 0.9, loudnessDb: null }
 ];
 
 describe('shownNotes', () => {

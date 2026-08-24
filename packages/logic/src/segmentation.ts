@@ -11,6 +11,11 @@ export interface PitchFrame {
   midi: number | null;
   cents: number | null;
   clarity: number;
+  /**
+   * How loud this frame was, in dBFS. Absent when the engine did not report
+   * one — an older binary running a newer bundle.
+   */
+  levelDb?: number;
 }
 
 export interface NoteEvent {
@@ -22,6 +27,15 @@ export interface NoteEvent {
   cents: number;
   /** Mean clarity across the note, in [0, 1]. */
   clarity: number;
+  /**
+   * How loud the note was, in dBFS, or null when nothing measured it.
+   *
+   * Null rather than a floor value, because "nobody looked" and "it was
+   * silent" are different claims and only one of them is about the singing.
+   * Anything comparing notes has to be able to tell them apart
+   * (INV-PITCH-020).
+   */
+  loudnessDb: number | null;
 }
 
 export interface SegmentOptions {
@@ -80,6 +94,7 @@ export function segmentNotes(
   /** Fractional MIDI of every frame in the note being built. */
   let pitches: number[] = [];
   let clarities: number[] = [];
+  let levels: number[] = [];
   let centre: number | null = null;
   let startMs = 0;
   let lastVoicedMs = 0;
@@ -95,6 +110,7 @@ export function segmentNotes(
       centre = null;
       pitches = [];
       clarities = [];
+      levels = [];
       awayFrom = null;
       return;
     }
@@ -110,22 +126,31 @@ export function segmentNotes(
         endMs: lastVoicedMs,
         durationMs,
         cents: Math.round((core - midi) * 100),
-        clarity: clarities.reduce((a, b) => a + b, 0) / clarities.length
+        clarity: clarities.reduce((a, b) => a + b, 0) / clarities.length,
+        // In dB, so the average is a ratio rather than a sum of pressures —
+        // which is what makes one note's loudness subtractable from another's
+        // (INV-PITCH-020). Null when no frame carried one.
+        loudnessDb:
+          levels.length > 0
+            ? levels.reduce((a, b) => a + b, 0) / levels.length
+            : null
       });
     }
     centre = null;
     pitches = [];
     clarities = [];
+    levels = [];
     awayFrom = null;
     anchored = false;
   }
 
-  function begin(pitch: number, atMs: number, clarity: number): void {
+  function begin(frame: PitchFrame, pitch: number, atMs: number): void {
     centre = pitch;
     startMs = atMs;
     lastVoicedMs = atMs;
     pitches = [pitch];
-    clarities = [clarity];
+    clarities = [frame.clarity];
+    levels = frame.levelDb != null ? [frame.levelDb] : [];
     awayFrom = null;
     anchored = false;
   }
@@ -142,7 +167,7 @@ export function segmentNotes(
     const pitch = f.midi + (f.cents ?? 0) / 100;
 
     if (centre == null) {
-      begin(pitch, f.timestampMs, f.clarity);
+      begin(f, pitch, f.timestampMs);
       continue;
     }
 
@@ -154,6 +179,9 @@ export function segmentNotes(
       // Still this note, wobble and all.
       pitches.push(pitch);
       clarities.push(f.clarity);
+      if (f.levelDb != null) {
+        levels.push(f.levelDb);
+      }
       lastVoicedMs = f.timestampMs;
       // The centre follows while the note is still arriving — singers slide
       // in, and the first frame is a poor guess at where they are heading —
@@ -181,9 +209,8 @@ export function segmentNotes(
 
     if (f.timestampMs - awaySince >= hold) {
       const from = awaySince;
-      const clarity = f.clarity;
       close();
-      begin(pitch, from, clarity);
+      begin(f, pitch, from);
       lastVoicedMs = f.timestampMs;
     }
   }

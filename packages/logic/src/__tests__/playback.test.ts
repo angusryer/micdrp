@@ -19,6 +19,7 @@ const note = (over: Partial<NoteEvent> = {}): NoteEvent => ({
   durationMs: 500,
   cents: 0,
   clarity: 0.95,
+    loudnessDb: null,
   ...over
 });
 

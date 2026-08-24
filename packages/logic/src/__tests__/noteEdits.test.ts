@@ -6,7 +6,7 @@ import { collectNoteEdits, moveNote, replayNoteEdits } from '../noteEdits';
 import type { NoteEvent } from '../segmentation';
 
 function n(midi: number, startMs: number, endMs: number): NoteEvent {
-  return { midi, startMs, endMs, durationMs: endMs - startMs, cents: 12, clarity: 0.9 };
+  return { midi, startMs, endMs, durationMs: endMs - startMs, cents: 12, clarity: 0.9, loudnessDb: null };
 }
 
 const HEARD = [n(60, 0, 500), n(64, 500, 1000), n(67, 1000, 1500)];

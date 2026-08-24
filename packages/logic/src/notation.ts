@@ -40,7 +40,10 @@ export function notesAsWritten(
     endMs: note.gridStartMs + note.gridDurationMs,
     durationMs: note.gridDurationMs,
     cents: 0,
-    clarity: note.clarity
+    clarity: note.clarity,
+    // Kept, unlike the cents. Notation cannot say a note was fourteen cents
+    // flat, but how loud it was sung is not a thing the grid changes.
+    loudnessDb: note.loudnessDb
   }));
 }
 

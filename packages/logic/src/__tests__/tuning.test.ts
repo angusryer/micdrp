@@ -19,7 +19,7 @@ function take(cents: number[], durationMs = 500): NoteEvent[] {
     endMs: (i + 1) * durationMs,
     durationMs,
     cents: c,
-    clarity: 0.95
+    clarity: 0.95, loudnessDb: null
   }));
 }
 
@@ -122,7 +122,7 @@ describe('recentreNotes', () => {
       endMs: (i + 1) * 500,
       durationMs: 500,
       cents: Math.round((pitch - midi) * 100),
-      clarity: 0.95
+      clarity: 0.95, loudnessDb: null
     };
   }
 

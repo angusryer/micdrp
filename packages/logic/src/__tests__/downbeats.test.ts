@@ -17,7 +17,7 @@ const GRID = {
 } as unknown as MusicalGrid;
 
 function note(midi: number, startMs: number, endMs: number): NoteEvent {
-  return { midi, startMs, endMs, durationMs: endMs - startMs, cents: 0, clarity: 1 };
+  return { midi, startMs, endMs, durationMs: endMs - startMs, cents: 0, clarity: 1, loudnessDb: null };
 }
 
 describe('downbeats are read from the music', () => {

@@ -18,7 +18,7 @@ const GRID = {
 } as unknown as MusicalGrid;
 
 function note(midi: number, startMs: number, endMs: number): NoteEvent {
-  return { midi, startMs, endMs, durationMs: endMs - startMs, cents: 0, clarity: 1 };
+  return { midi, startMs, endMs, durationMs: endMs - startMs, cents: 0, clarity: 1, loudnessDb: null };
 }
 
 /** Four seconds: a C-major stretch, then an F-major one. */

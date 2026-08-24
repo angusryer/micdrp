@@ -124,3 +124,36 @@ describe('a chosen bar line', () => {
     expect(onSelect).toHaveBeenCalled();
   });
 });
+
+describe('INV-PITCH-020: how loud the note was', () => {
+  const selection: Selection = { kind: 'melodyNote', index: 0 };
+  const factsOf = (over: Record<string, unknown>) =>
+    Object.fromEntries(
+      describeSelection(selection, fakeDetail(over), ACCENT, jest.fn()).facts.map(
+        (f) => [f.label, f.value]
+      )
+    );
+
+  it('reports it where the note was measured', () => {
+    expect(
+      factsOf({
+        melody: [
+          {
+            midi: 62,
+            startMs: 0,
+            endMs: 500,
+            cents: 0,
+            clarity: 1,
+            loudnessDb: -18.4
+          }
+        ]
+      }).Loudness
+    ).toBe('-18 dB');
+  });
+
+  it('says nobody measured it, rather than showing nothing', () => {
+    // A take captured before the engine reported levels, or by a binary older
+    // than this bundle. Blank would read as silent.
+    expect(factsOf({}).Loudness).toBe('not measured');
+  });
+});

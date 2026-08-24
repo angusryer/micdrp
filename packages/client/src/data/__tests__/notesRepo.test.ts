@@ -27,7 +27,7 @@ import { notesRepo } from '../notesRepo';
 import { backend } from '../../lib/backend';
 
 const MELODY = [
-  { midi: 60, startMs: 0, endMs: 400, durationMs: 400, cents: 0, clarity: 0.9 }
+  { midi: 60, startMs: 0, endMs: 400, durationMs: 400, cents: 0, clarity: 0.9, loudnessDb: null }
 ];
 
 const INPUT = {

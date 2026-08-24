@@ -25,6 +25,14 @@ export interface PitchSample {
   frequencyHz: number;
   /** NSDF clarity / confidence, 0..1. */
   clarity: number;
+  /**
+   * How loud the analysed window was, in dBFS, floored at -80.
+   *
+   * Absent when the binary predates it: a bundle can be newer than the app it
+   * is running inside, and a frame with no reading must not be taken for a
+   * silent one (INV-PITCH-020).
+   */
+  levelDb?: number;
   /** Nearest MIDI note number; null when unvoiced. */
   midi: number | null;
   /** Deviation from the nearest note in cents (-50..50); null when unvoiced. */

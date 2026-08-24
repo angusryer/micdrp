@@ -19,7 +19,8 @@ import {
   appError,
   audioExtensionOf,
   parseInterpretations,
-  parseLayers
+  parseLayers,
+  readMelody
 } from 'shared';
 import type {
   CreateNoteInput,
@@ -48,9 +49,14 @@ const NOTES_COLLECTION = COLLECTIONS.notes;
 // Row <-> DTO mapping (the only place snake_case meets camelCase)
 // ---------------------------------------------------------------------------
 
-/** Coerce the JSONB `melody_json` column into a typed {@link NoteEventDto}[]. */
+/**
+ * Coerce the JSONB `melody_json` column into a typed {@link NoteEventDto}[].
+ *
+ * Through `readMelody`, which is what knows a note stored before loudness was
+ * measured has to read as unknown rather than as silent (INV-PITCH-020).
+ */
 function toMelody(json: unknown): NoteEventDto[] {
-  return Array.isArray(json) ? (json as NoteEventDto[]) : [];
+  return readMelody(json);
 }
 
 /** Map a Postgres row to the camelCase {@link NoteDto} wire shape. */

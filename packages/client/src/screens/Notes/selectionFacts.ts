@@ -43,6 +43,17 @@ export interface SelectionDescription {
 
 const seconds = (ms: number): string => `${(ms / 1000).toFixed(2)}s`;
 
+/**
+ * How loud it was, or that nobody measured it.
+ *
+ * Not measured is its own reading rather than a blank: a take captured before
+ * the engine reported levels, or one recorded by a binary older than this
+ * bundle, has no number and saying zero would be a lie (INV-PITCH-020).
+ */
+function loudness(db: number | null): string {
+  return db == null ? 'not measured' : `${Math.round(db)} dB`;
+}
+
 /** Cents as a signed reading, or "in tune" when there is nothing to report. */
 function centsOff(cents: number): string {
   const rounded = Math.round(cents);
@@ -129,6 +140,7 @@ function describeSungNote(
           // What the detector heard against the note it settled on. The
           // reason a note looks wrong is usually here.
           { label: 'Tuning', value: centsOff(note.cents) },
+          { label: 'Loudness', value: loudness(note.loudnessDb) },
           {
             label: 'Read as',
             value: isCorrected ? 'moved by hand' : 'detected'

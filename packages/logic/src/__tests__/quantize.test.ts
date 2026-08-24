@@ -8,7 +8,7 @@ function note(startMs: number, durationMs = 400, midi = 60): NoteEvent {
     endMs: Math.round(startMs + durationMs),
     durationMs: Math.round(durationMs),
     cents: 0,
-    clarity: 0.95
+    clarity: 0.95, loudnessDb: null
   };
 }
 

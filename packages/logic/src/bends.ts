@@ -9,7 +9,7 @@
  * Read afterwards, in company, they are obvious: a change of note is at least
  * a semitone, because that is what a different note is. Anything nearer than
  * that is the same note bending, and the evidence is entirely in how near it
- * sits to what surrounds it (INV-PITCH-018).
+ * sits to what surrounds it (INV-PITCH-020).
  */
 import type { NoteEvent } from './segmentation';
 
@@ -53,6 +53,22 @@ function pitchOf(note: NoteEvent): number {
  * out. Taking the longer is what makes a scooped note read at the pitch it
  * settled on rather than somewhere between there and where it started.
  */
+/** How loud the two together were, by how long each of them lasted. */
+function weighDb(a: NoteEvent, b: NoteEvent): number | null {
+  const parts = [a, b].filter((n) => n.loudnessDb != null);
+  if (parts.length === 0) {
+    return null;
+  }
+  const total = parts.reduce((sum, n) => sum + n.durationMs, 0);
+  if (!(total > 0)) {
+    return parts[0].loudnessDb;
+  }
+  return (
+    parts.reduce((sum, n) => sum + (n.loudnessDb ?? 0) * n.durationMs, 0) /
+    total
+  );
+}
+
 function fold(a: NoteEvent, b: NoteEvent): NoteEvent {
   const held = a.durationMs >= b.durationMs ? a : b;
   const startMs = Math.min(a.startMs, b.startMs);
@@ -67,7 +83,11 @@ function fold(a: NoteEvent, b: NoteEvent): NoteEvent {
     clarity:
       total > 0
         ? (a.clarity * a.durationMs + b.clarity * b.durationMs) / total
-        : held.clarity
+        : held.clarity,
+    // Weighted the same way, and only over the parts that had a reading: a
+    // fragment nobody measured must not drag the note towards silence
+    // (INV-PITCH-020).
+    loudnessDb: weighDb(a, b)
   };
 }
 
