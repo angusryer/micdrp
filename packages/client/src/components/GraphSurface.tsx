@@ -12,14 +12,15 @@
  * nothing is grabbed by accident because nothing is grabbed that was not
  * first chosen.
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 
 import type { ChordToneRect } from './chordLayout';
 import type { NoteRect } from './melodyLayout';
 import type { BarHandlePoint, Chosen } from './graphSelection';
-import { useGraphGestures } from './useGraphGestures';
+import { DragLoupe } from './DragLoupe';
+import { useGraphGestures, type DragPreview } from './useGraphGestures';
 
 export interface GraphSurfaceProps {
   width: number;
@@ -63,6 +64,11 @@ export function GraphSurface({
   onAddBar,
   onHear
 }: GraphSurfaceProps): React.JSX.Element {
+  // Held here rather than reported upward: the readout belongs over the
+  // graph it is placing something on, and nothing above needs to know a drag
+  // is in flight (INV-NOTES-025).
+  const [preview, setPreview] = useState<DragPreview | null>(null);
+
   const gesture = useGraphGestures({
     tones,
     bars,
@@ -76,13 +82,24 @@ export function GraphSurface({
     onMoveTone,
     onMoveNote,
     onAddBar,
-    onHear
+    onHear,
+    onPreview: setPreview
   });
 
   return (
-    <GestureDetector gesture={gesture}>
-      <View style={[styles.fill, { width, height }]} />
-    </GestureDetector>
+    <>
+      <GestureDetector gesture={gesture}>
+        <View style={[styles.fill, { width, height }]} />
+      </GestureDetector>
+      <DragLoupe
+        isVisible={preview != null}
+        touchX={preview?.x ?? 0}
+        touchY={preview?.y ?? 0}
+        bounds={{ width, height }}
+        value={preview?.value ?? ''}
+        caption={preview?.caption}
+      />
+    </>
   );
 }
 

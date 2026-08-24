@@ -13,6 +13,7 @@ import { tapped } from '../utilities/haptics';
 import type { ChordToneRect } from './chordLayout';
 import type { NoteRect } from './melodyLayout';
 import { snapToStep } from '../screens/Notes/barDragAxis';
+import { midiToLabel } from '../screens/Results/NoteList';
 import {
   isChosen,
   selectionAt,
@@ -63,6 +64,22 @@ export interface GraphGestureOptions {
    * makes a drag its own audition (INV-NOTES-070).
    */
   onHear?: (midi: number) => void;
+  /**
+   * What is under the thumb while one thing is being dragged, or null when
+   * nothing is. A person cannot judge a placement they are covering with
+   * their own hand (INV-NOTES-025).
+   */
+  onPreview?: (preview: DragPreview | null) => void;
+}
+
+/** The readout that follows a drag: where the finger is, and what it means. */
+export interface DragPreview {
+  x: number;
+  y: number;
+  /** The pitch it would become. */
+  value: string;
+  /** How far it has come, so a small move is legible as a small move. */
+  caption: string;
 }
 
 export function useGraphGestures({
@@ -78,7 +95,8 @@ export function useGraphGestures({
   onMoveTone,
   onMoveNote,
   onAddBar,
-  onHear
+  onHear,
+  onPreview
 }: GraphGestureOptions) {
   /** How far the current drag has already been committed. */
   const applied = useRef(0);
@@ -122,9 +140,19 @@ export function useGraphGestures({
     [bars, notes, onSelect, tones, selection]
   );
 
-  /** Hold an object to add it to the set, or take it back out. */
+  /**
+   * Hold an object to add it to the set, or take it back out.
+   *
+   * Only once something is already chosen. Holding is how a set is grown, and
+   * a set of one is where growing starts — with nothing chosen there is
+   * nothing to add to, and the hold means what it always meant
+   * (INV-NOTES-093).
+   */
   const alsoChoose = useCallback(
     (x: number, y: number) => {
+      if (selection.length === 0) {
+        return false;
+      }
       const found = selectionAt(x, y, tones, bars, notes);
       if (!found) {
         return false;
@@ -213,6 +241,21 @@ export function useGraphGestures({
                 onHear?.(grabbedMidi.current + wanted);
               }
             }
+            // Only for one thing. With a set in hand there is no single note
+            // to name, and a readout claiming one would name the wrong one.
+            if (selection.length === 1 && grabbedMidi.current != null) {
+              onPreview?.({
+                x: e.x,
+                y: e.y,
+                value: midiToLabel(grabbedMidi.current + wanted),
+                caption:
+                  wanted === 0
+                    ? 'where it was'
+                    : `${wanted > 0 ? '+' : ''}${wanted} semitone${
+                        Math.abs(wanted) === 1 ? '' : 's'
+                      }`
+              });
+            }
             return;
           }
           // Bars: every chosen line moves by the same number of steps, read
@@ -232,11 +275,13 @@ export function useGraphGestures({
             }
           }
         })
+        .onFinalize(() => onPreview?.(null))
         .runOnJS(true),
     [
       bars,
       notes,
       onHear,
+      onPreview,
       onMoveBar,
       onMoveNote,
       onMoveTone,

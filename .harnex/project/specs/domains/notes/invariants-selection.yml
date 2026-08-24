@@ -116,6 +116,11 @@ invariants:
       already chosen would make the first selection feel different from
       the second.
 
+      Adding only applies once something is chosen. A set is grown from a
+      set of one, so with nothing chosen there is nothing to add to and
+      the hold keeps the meaning it always had — a downbeat where there is
+      empty space, and nothing at all on an object.
+
   - id: INV-NOTES-094
     description: A chosen thing can be found from its own row
     severity: minor
