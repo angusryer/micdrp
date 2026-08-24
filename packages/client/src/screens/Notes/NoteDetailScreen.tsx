@@ -76,7 +76,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   // Sideways, the graph is the view (INV-NOTES-041). Same state either way,
   // so turning the phone changes the presentation and nothing about the note.
   if (width > height && melody.length > 0) {
-    return <NoteLandscape detail={detail} width={width} />;
+    return <NoteLandscape detail={detail} />;
   }
 
   const graphWidth = width - 2 * CONTENT_PADDING - 2;

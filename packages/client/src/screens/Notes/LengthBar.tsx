@@ -25,8 +25,11 @@ import { useTheme } from '../../theme';
 const NOTCH_PX = 26;
 
 export interface LengthBarProps {
-  /** Change the length by this many sixteenths. Negative shortens. */
-  onResize: (steps: number) => void;
+  /**
+   * Change the length by this many sixteenths, from one end or the other.
+   * Negative shortens.
+   */
+  onResize: (steps: number, edge: 'start' | 'end') => void;
   /** False when the take has no tempo, so a sixteenth means nothing. */
   canResize: boolean;
   /** Put every length back to what was heard. Absent when none were changed. */
@@ -55,8 +58,10 @@ export function LengthBar({
             return;
           }
           // Pulling the right edge right lengthens; pulling the left edge
-          // left lengthens too, which is why the side decides the sign.
-          onResize((notches - applied) * side);
+          // left lengthens too, which is why the side decides the sign. Which
+          // end moved is what the notes are told, since one moves where they
+          // end and the other where they begin.
+          onResize((notches - applied) * side, side > 0 ? 'end' : 'start');
           setApplied(notches);
         })
         .onFinalize(() => {

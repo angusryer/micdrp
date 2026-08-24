@@ -35,14 +35,15 @@ invariants:
       correction is a claim like any other.
 
   - id: INV-NOTES-095
-    description: A lengthened note joins its own pitch and stops against another
+    description: A note grows from either end, joining its own pitch and stopping at another
     severity: critical
     check: >
-      Changing a note's length leaves every other note where it is. Where
-      the change makes one note reach into the next: at the same pitch the
-      two become one, running to whichever ended later; at a different
-      pitch it stops where the neighbour begins and the neighbour is
-      untouched. No two notes ever sound at once, and a note cannot be
+      Changing a note's length leaves every other note where it is. Either
+      end moves: the right edge changes where the notes end, the left edge
+      where they begin, and each leaves the other end alone. Where the
+      change makes one note reach into a neighbour: at the same pitch the
+      two become one, spanning both; at a different pitch the note being
+      pulled stops at the neighbour's edge and the neighbour is untouched. No two notes ever sound at once, and a note cannot be
       shortened past being a note. Verified by asserting untouched notes do
       not move, that a same-pitch neighbour is absorbed however far the
       drag goes, that a different-pitch neighbour survives it intact, and
@@ -89,11 +90,14 @@ invariants:
     description: Length is dragged in notches, and the handle comes home
     severity: minor
     check: >
-      The length control changes the chosen notes by one beat per notch of
-      travel, each notch committing once as it is crossed, and its handle
-      returns to where it started when the finger lifts. It says so when
+      The length control changes the chosen notes by one sixteenth per
+      notch of travel, each notch committing once as it is crossed, and its
+      handle returns to where it started when the finger lifts. Its two
+      ends are not a mirror of one another: which end was dragged travels
+      with the change, since one moves where the notes end and the other
+      where they begin. It says so when
       the take has no steady beat, rather than offering a control that
-      cannot act. Verified by asserting one beat per notch, no repeat
+      cannot act. Verified by asserting one sixteenth per notch, no repeat
       while a notch is held, and a reset on release.
 
       Notched rather than accelerating: acceleration makes the same

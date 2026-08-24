@@ -46,10 +46,14 @@ export const MIN_NOTE_MS = 60;
  * here would change how many notes there are, and the edits are paired with
  * what was heard by position — so the count has to survive this step.
  */
+/** Which end of a note is being pulled. */
+export type NoteEdge = 'start' | 'end';
+
 export function resizeNotes(
   notes: readonly NoteEvent[],
   chosen: readonly number[],
-  deltaMs: number
+  deltaMs: number,
+  edge: NoteEdge = 'end'
 ): NoteEvent[] {
   const wanted = new Set(chosen);
   return notes.map((note, i) => {
@@ -59,8 +63,25 @@ export function resizeNotes(
     // Never shorter than a note can be: past that it is a click, and a
     // length of nothing is not an edit anybody meant.
     const length = Math.max(MIN_NOTE_MS, note.endMs - note.startMs + deltaMs);
-    const endMs = note.startMs + length;
-    return { ...note, endMs, durationMs: length };
+    if (edge === 'end') {
+      // Held at a neighbour of another pitch. Clamped here, where which note
+      // is being pulled is known — settling later can only guess, and would
+      // shorten whichever came first (INV-NOTES-095).
+      const after = notes[i + 1];
+      const limit =
+        after && Math.round(after.midi) !== Math.round(note.midi)
+          ? after.startMs
+          : Infinity;
+      const endMs = Math.min(note.startMs + length, limit);
+      return { ...note, endMs, durationMs: endMs - note.startMs };
+    }
+    const before = notes[i - 1];
+    const floor =
+      before && Math.round(before.midi) !== Math.round(note.midi)
+        ? before.endMs
+        : -Infinity;
+    const startMs = Math.max(note.endMs - length, floor);
+    return { ...note, startMs, durationMs: note.endMs - startMs };
   });
 }
 

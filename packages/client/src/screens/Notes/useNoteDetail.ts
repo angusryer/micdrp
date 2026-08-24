@@ -19,6 +19,7 @@ import {
   resizeNotes,
   quantize,
   readMetre,
+  type NoteEdge,
   type NoteEvent
 } from 'logic';
 import type { InterpretationDto } from 'shared';
@@ -266,7 +267,7 @@ export function useNoteDetail(id: string) {
    * its neighbour joins with it (INV-NOTES-095).
    */
   const resizeChosen = useCallback(
-    (steps: number) => {
+    (steps: number, edge: NoteEdge = 'end') => {
       const chosen = selection.flatMap((one) =>
         one.kind === 'melodyNote' ? [one.index] : []
       );
@@ -278,7 +279,7 @@ export function useNoteDetail(id: string) {
       interpretation.updateNotes(
         collectNoteEdits(
           heard,
-          resizeNotes(melody, chosen, (steps * beatMs) / perBeat)
+          resizeNotes(melody, chosen, (steps * beatMs) / perBeat, edge)
         )
       );
     },

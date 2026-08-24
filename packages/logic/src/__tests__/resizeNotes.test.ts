@@ -41,7 +41,10 @@ describe('changing how long a note lasts', () => {
     // a length you were happy with keeps sliding away while you work on the
     // note before it.
     const longer = resizeNotes(PHRASE, [0], 200);
-    expect(longer[0].endMs).toBe(700);
+    // Stopped at its neighbour rather than reaching the 700 it was pulled to,
+    // and stopped here rather than at settle time: which note is being pulled
+    // is only known here, and the length readout has to be honest as it moves.
+    expect(longer[0].endMs).toBe(600);
     expect(longer[1].startMs).toBe(600);
     expect(longer[2].startMs).toBe(1100);
   });
@@ -140,5 +143,45 @@ describe('INV-NOTES-096: a timing edit finds its note again', () => {
     const edits = collectNoteEdits(PHRASE, moved);
     expect(edits[0].startMs).toBeUndefined();
     expect(replayNoteEdits(PHRASE, edits)[1].startMs).toBe(600);
+  });
+});
+
+describe('pulling the left edge', () => {
+  // Generous gaps, so there is somewhere to grow backwards into. In PHRASE
+  // the notes sit against each other and every backward pull clamps at once.
+  const SPACED = [note(60, 0, 400), note(64, 1000, 1400), note(67, 2000, 2400)];
+  const SPACED_HELD = [note(60, 0, 400), note(60, 1000, 1400)];
+
+  it('moves where the notes begin, not where they end', () => {
+    const longer = resizeNotes(SPACED, [1], 200, 'start');
+    expect(longer[1].startMs).toBe(800);
+    expect(longer[1].endMs).toBe(1400);
+  });
+
+  it('stops against a neighbour of a different pitch', () => {
+    // The note being pulled is the one that stops. Clamping at settle time
+    // could only guess, and would shorten whichever came first.
+    const longer = resizeNotes(SPACED, [1], 5000, 'start');
+    expect(longer[1].startMs).toBe(SPACED[0].endMs);
+    expect(longer[0]).toEqual(SPACED[0]);
+  });
+
+  it('runs back into a neighbour of the same pitch, to be joined', () => {
+    const longer = resizeNotes(SPACED_HELD, [1], 800, 'start');
+    expect(longer[1].startMs).toBe(200);
+    const settled = settleOverlaps(longer);
+    expect(settled).toHaveLength(1);
+    expect(settled[0].endMs).toBe(1400);
+  });
+
+  it('will not shorten a note past being a note', () => {
+    const shorter = resizeNotes(SPACED, [1], -10_000, 'start');
+    expect(shorter[1].endMs - shorter[1].startMs).toBe(MIN_NOTE_MS);
+  });
+
+  it('leaves the other end where it was', () => {
+    for (const delta of [-100, 200]) {
+      expect(resizeNotes(SPACED, [1], delta, 'start')[1].endMs).toBe(1400);
+    }
   });
 });

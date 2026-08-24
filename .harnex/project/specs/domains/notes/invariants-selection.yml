@@ -134,3 +134,26 @@ invariants:
       a bar apart — and the graph is the only place they are
       distinguishable. Without this, choosing four things means losing
       track of which row is which the moment they are chosen.
+
+  - id: INV-NOTES-099
+    description: Sideways, the selection arrives beside the graph, not over it
+    severity: major
+    check: >
+      With the phone held sideways, choosing something brings its details in
+      from the right edge as a panel that takes width, and the graph narrows
+      to what is left rather than being covered. Both presentations show the
+      same content, and the panel offers a way to put the selection down.
+      Verified by asserting the graph is drawn to a measured width as well as
+      a measured height, that the panel is absent until something is chosen,
+      and that it can be dismissed.
+
+      Sideways the short dimension is the graph, which is what the view is
+      for: a sheet rising from the bottom takes the height the view exists to
+      provide and covers the thing being acted on. Width is the dimension
+      there is spare, so the panel takes that instead. It sits in the row
+      rather than floating above the graph, because drawing over the bars
+      would hide the same bars from the other side.
+
+      The panel has no grabber to drag away, unlike the upright sheet, so
+      putting the selection down has to be offered explicitly. Without it the
+      graph stays narrow for the rest of the session.
