@@ -14,8 +14,8 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
 		1933D748D5F3E4026E5387AA /* mpm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DF912EB0FAD01209D28881AA /* mpm.cpp */; };
-		51A2B3C4D5E6F70819202160 /* ring_buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202161 /* ring_buffer.cpp */; };
-		51A2B3C4D5E6F70819202162 /* pitch_engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202163 /* pitch_engine.cpp */; };
+		27B44E0411942958E76CBDED /* ring_buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ACE2C527E1C9B83EBBBB7DA4 /* ring_buffer.cpp */; };
+		8EA8AA89BF7B9D7F006716EB /* pitch_engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 879036582854690EBECA5046 /* pitch_engine.cpp */; };
 		33F9A61EE3BC9A916E1D82E8 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B06DFC5A1521D1B52F8C216B /* PrivacyInfo.xcprivacy */; };
 		51A2B3C4D5E6F70819202122 /* SynthModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202123 /* SynthModule.mm */; };
 		51A2B3C4D5E6F70819202125 /* synth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202126 /* synth.cpp */; };
@@ -88,8 +88,8 @@
 		C68CB312D3A22CF16FFF453D /* AudioEngineModule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = AudioEngineModule.h; sourceTree = "<group>"; };
 		DCE7820ABC08442729B30AF3 /* notes.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = notes.h; path = ../cpp/dsp/notes.h; sourceTree = "<group>"; };
 		DF912EB0FAD01209D28881AA /* mpm.cpp */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.cpp; name = mpm.cpp; path = ../cpp/dsp/mpm.cpp; sourceTree = "<group>"; };
-		51A2B3C4D5E6F70819202161 /* ring_buffer.cpp */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.cpp; name = ring_buffer.cpp; path = ../cpp/dsp/ring_buffer.cpp; sourceTree = "<group>"; };
-		51A2B3C4D5E6F70819202163 /* pitch_engine.cpp */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.cpp; name = pitch_engine.cpp; path = ../cpp/dsp/pitch_engine.cpp; sourceTree = "<group>"; };
+		ACE2C527E1C9B83EBBBB7DA4 /* ring_buffer.cpp */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.cpp; name = ring_buffer.cpp; path = ../cpp/dsp/ring_buffer.cpp; sourceTree = "<group>"; };
+		879036582854690EBECA5046 /* pitch_engine.cpp */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.cpp; name = pitch_engine.cpp; path = ../cpp/dsp/pitch_engine.cpp; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -153,8 +153,8 @@
 				AA11BB22CC33DD44EE55FF88 /* InstallInfoModule.h */,
 				AA11BB22CC33DD44EE55FF77 /* InstallInfoModule.mm */,
 				DF912EB0FAD01209D28881AA /* mpm.cpp */,
-				51A2B3C4D5E6F70819202161 /* ring_buffer.cpp */,
-				51A2B3C4D5E6F70819202163 /* pitch_engine.cpp */,
+				ACE2C527E1C9B83EBBBB7DA4 /* ring_buffer.cpp */,
+				879036582854690EBECA5046 /* pitch_engine.cpp */,
 				31A3F1DA1B4AD9D5214AEBC3 /* mpm.h */,
 				9562B779ABDCD05E23FEB32B /* notes.cpp */,
 				DCE7820ABC08442729B30AF3 /* notes.h */,
@@ -506,8 +506,8 @@
 				64FE505DA0AB8147C0E9A420 /* AudioEngineModule.mm in Sources */,
 				AA11BB22CC33DD44EE55FF66 /* InstallInfoModule.mm in Sources */,
 				1933D748D5F3E4026E5387AA /* mpm.cpp in Sources */,
-				51A2B3C4D5E6F70819202160 /* ring_buffer.cpp in Sources */,
-				51A2B3C4D5E6F70819202162 /* pitch_engine.cpp in Sources */,
+				27B44E0411942958E76CBDED /* ring_buffer.cpp in Sources */,
+				8EA8AA89BF7B9D7F006716EB /* pitch_engine.cpp in Sources */,
 				0730E62C3B640AEB23864E9A /* notes.cpp in Sources */,
 				51A2B3C4D5E6F70819202122 /* SynthModule.mm in Sources */,
 				51A2B3C4D5E6F7081920212B /* SynthEngine.mm in Sources */,

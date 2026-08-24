@@ -87,6 +87,34 @@ describe('one streaming pitch engine', () => {
     ]);
   });
 
+  it('builds that engine into the app, rather than only into the tests', () => {
+    // The shared engine was never in the Xcode target: it compiled under the
+    // host CMake build and its tests were green, while the app ran the other
+    // one. "There is one engine" only means anything if it is the one shipped.
+    const project = readFileSync(
+      join(ROOT, 'ios', 'micdrp.xcodeproj', 'project.pbxproj'),
+      'utf8'
+    );
+    for (const source of ['pitch_engine.cpp', 'ring_buffer.cpp', 'mpm.cpp']) {
+      expect(project).toContain(`${source} in Sources`);
+    }
+  });
+
+  it('gives every project entry its own id', () => {
+    // Hand-editing the project file is how a source gets added to the target,
+    // and reusing an id already in it makes Xcode read one entry as another —
+    // which fails at parse, minutes into an archive, naming an unrelated file.
+    const project = readFileSync(
+      join(ROOT, 'ios', 'micdrp.xcodeproj', 'project.pbxproj'),
+      'utf8'
+    );
+    const ids = [...project.matchAll(/^\t\t([0-9A-F]{24}) \/\*/gm)].map(
+      (m) => m[1]
+    );
+    expect(ids.length).toBeGreaterThan(10);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it('keeps the bridge free of a shell of its own', () => {
     // Everything under ios/ is the bridge: sessions, routing, marshalling. The
     // moment analysis moves back in there, this is two engines again.
