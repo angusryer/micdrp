@@ -60,3 +60,36 @@ invariants:
       always welcome, and because a long drag across an octave is twelve
       notes nobody asked for. The same voice the graph already auditions
       with, so a drag can never sound over a tap.
+
+  - id: INV-NOTES-091
+    description: Moving the playhead is not a transport command
+    severity: major
+    check: >
+      Dragging the handle, or tapping anywhere along the bar it sits in,
+      moves where a press of play would start and sounds nothing. A press
+      then begins from there. Moving it while something is sounding stops
+      that rather than seeking through it. Verified by asserting the
+      scrubber's callback places the head without entering the playing
+      state.
+
+      A scrubber that played what it passed over made placing the head
+      impossible without hearing it, so choosing where to listen from cost
+      a burst of audio every time. The head is a position; play is a verb;
+      they were the same control.
+
+      Stopping rather than seeking live is what this transport can
+      honestly do: it starts at a moment, it does not jump to one, and a
+      stutter would be a worse answer than a stop.
+
+  - id: INV-NOTES-092
+    description: The tap that chose a thing puts it down again
+    severity: minor
+    check: >
+      Tapping the object already chosen clears the selection; tapping a
+      different one takes its place. Verified by asserting a second tap on
+      the same object reports nothing chosen.
+
+      Letting go otherwise meant finding empty space to tap, and a graph
+      carrying bar lines, chord notes and sung notes has little of it —
+      the likeliest outcome of hunting for a gap is choosing something
+      else by mistake.

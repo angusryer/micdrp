@@ -74,8 +74,16 @@ export interface MixedPlayback {
   play(fromMs?: number): Promise<void>;
   /** Stop, then resume this many ms earlier — never before the start. */
   rewind(byMs?: number): Promise<void>;
-  /** Where the take is now, in ms. */
+  /** Where the take is now, or where it will start from, in ms. */
   positionMs: number;
+  /**
+   * Put the playhead somewhere without starting anything.
+   *
+   * Moving the head is not a transport command: a scrubber that played what
+   * it passed over would make placing the head impossible without hearing it
+   * (INV-NOTES-091).
+   */
+  cueTo: (ms: number) => void;
   stop(): Promise<void>;
 }
 
@@ -115,6 +123,9 @@ export function usePlaybackMix({
   // the melody, or both. No decode, so nothing to be loading or in error
   // over: it is running or it is not.
   const [chordsRunning, setChordsRunning] = useState(false);
+  // Where a press would start from. It is where the take stopped, or wherever
+  // the playhead was last put.
+  const [cueMs, setCueMs] = useState(0);
   const endTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearEndTimer = useCallback(() => {
     if (endTimer.current) {
@@ -193,7 +204,7 @@ export function usePlaybackMix({
     await stopTake();
   }, [clearEndTimer, stopTake]);
 
-  const play = useCallback(async (fromMs = 0): Promise<void> => {
+  const play = useCallback(async (fromMs = cueMs): Promise<void> => {
     // The count starts now; everything else waits for it to finish. Timed
     // rather than sample-accurate on purpose — a count is a scaffold to come
     // in on, not part of the recording.
@@ -223,7 +234,15 @@ export function usePlaybackMix({
     clearEndTimer();
     setChordsRunning(true);
     endTimer.current = setTimeout(() => setChordsRunning(false), durationMs);
-  }, [wantsTake, wantsChords, wantsVoice, wantsCount, playTake, clearEndTimer]);
+  }, [
+    wantsTake,
+    wantsChords,
+    wantsVoice,
+    wantsCount,
+    playTake,
+    clearEndTimer,
+    cueMs
+  ]);
 
   // A track turned mid-playback stops what is sounding, so the next press is
   // the whole of the mix as it now stands rather than half of two.
@@ -243,12 +262,36 @@ export function usePlaybackMix({
     async (byMs = REWIND_MS): Promise<void> => {
       const to = Math.max(0, takeElapsedMs() - byMs);
       await stop();
+      setCueMs(to);
       await play(to);
     },
     [takeElapsedMs, stop, play]
   );
 
-  return { state, play, stop, rewind, positionMs };
+  // Playing, it is where the take has reached; stopped, it is where a press
+  // would start — one mark for one idea, rather than a position that means
+  // nothing until something is sounding.
+  const cueTo = useCallback(
+    (ms: number) => {
+      setCueMs(Math.max(0, ms));
+      // Moving the head while something is sounding stops it rather than
+      // seeking live: this transport can only start at a moment, not jump to
+      // one, and a stutter would be a worse answer than a stop.
+      if (state === 'playing') {
+        void stop();
+      }
+    },
+    [state, stop]
+  );
+
+  return {
+    state,
+    play,
+    stop,
+    rewind,
+    positionMs: state === 'playing' ? positionMs : cueMs,
+    cueTo
+  };
 }
 
 export default usePlaybackMix;

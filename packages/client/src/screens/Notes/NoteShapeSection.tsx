@@ -37,9 +37,10 @@ export const MIN_GRAPH_HEIGHT = 96;
  *
  * Its own band rather than an overlay: a handle drawn over the graph covers
  * the notes it is pointing at, which are the thing being looked at
- * (INV-NOTES-081).
+ * (INV-NOTES-081). Tall enough to tap anywhere along, since tapping it is how
+ * the head is placed (INV-NOTES-091).
  */
-const SCRUB_BAND_HEIGHT = 22;
+const SCRUB_BAND_HEIGHT = 34;
 
 export interface NoteShapeSectionProps {
   detail: ReturnType<typeof useNoteDetail>;

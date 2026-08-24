@@ -143,7 +143,7 @@ export function PlaybackBar({
     () => withOnlyAvailable(mix, offered),
     [mix, offered]
   );
-  const { state, play, stop, rewind, positionMs } = usePlaybackMix({
+  const { state, play, stop, rewind, positionMs, cueTo } = usePlaybackMix({
     resolveAudioUri,
     mix: sounding,
     levels,
@@ -152,26 +152,16 @@ export function PlaybackBar({
     count
   });
 
-  // Dragging stops what is sounding and starts again where the finger left
-  // it, rather than scrubbing through the audio: one press of play per
-  // destination is what the transport can actually do.
-  const seek = useCallback(
-    async (ms: number) => {
-      await stop();
-      await play(ms);
-    },
-    [stop, play]
-  );
-
   useEffect(
     () =>
       onTransport?.({
         positionMs,
-        seek: (ms) => void seek(ms),
+        // Moving the head, not a transport command (INV-NOTES-091).
+        seek: cueTo,
         play: () => void play(),
         stop: () => void stop()
       }),
-    [onTransport, positionMs, seek, play, stop]
+    [onTransport, positionMs, cueTo, play, stop]
   );
 
   return (

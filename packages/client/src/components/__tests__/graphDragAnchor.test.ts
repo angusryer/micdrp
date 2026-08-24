@@ -92,3 +92,55 @@ describe('dragging what is chosen', () => {
     expect(moves).toEqual([11, 12, 13]);
   });
 });
+
+describe('INV-NOTES-092: tapping the chosen thing puts it down', () => {
+  const NOTES = [
+    { x: 10, y: 20, width: 30, height: 6, cy: 23, midi: 60 }
+  ] as never;
+
+  const chooseAt = async (selection: Selection | null) => {
+    const chosen: (Selection | null)[] = [];
+    const { result } = await renderHook(() =>
+      useGraphGestures({
+        tones: [],
+        bars: [],
+        notes: NOTES,
+        laneHeight: 10,
+        originX: 0,
+        stepWidth: 10,
+        selection,
+        onSelect: (next) => chosen.push(next),
+        onMoveBar: jest.fn(),
+        onMoveTone: jest.fn(),
+        onMoveNote: jest.fn(),
+        onAddBar: jest.fn()
+      })
+    );
+    const composed = result.current as { toGestureArray: () => unknown[] };
+    const tap = composed
+      .toGestureArray()
+      .find(
+        (g) =>
+          (g as { config?: { testId?: string } }).config?.testId ===
+          'graph-select'
+      ) as { handlers: { onEnd: (e: unknown) => void } };
+    tap.handlers.onEnd({ x: 20, y: 23 });
+    return chosen;
+  };
+
+  it('chooses it when nothing is chosen', async () => {
+    expect(await chooseAt(null)).toEqual([{ kind: 'melodyNote', index: 0 }]);
+  });
+
+  it('puts it down when it is the one already chosen', async () => {
+    // Otherwise letting go means hunting for empty space on a graph that has
+    // very little of it.
+    expect(await chooseAt({ kind: 'melodyNote', index: 0 })).toEqual([null]);
+  });
+
+  it('takes the place of a different thing that was chosen', async () => {
+    expect(await chooseAt({ kind: 'barLine', lineIndex: 2 })).toEqual([
+      { kind: 'melodyNote', index: 0 }
+    ]);
+  });
+});

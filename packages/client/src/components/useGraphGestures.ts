@@ -14,6 +14,7 @@ import type { ChordToneRect } from './chordLayout';
 import type { NoteRect } from './melodyLayout';
 import { snapToStep } from '../screens/Notes/barDragAxis';
 import {
+  isSame,
   selectionAt,
   touchesSelection,
   type BarHandlePoint,
@@ -104,9 +105,13 @@ export function useGraphGestures({
       if (found) {
         tapped();
       }
-      onSelect(found);
+      // Tapping the chosen thing again puts it down. The same tap that picked
+      // it up is the obvious way to let go of it, and hunting for empty space
+      // to tap is a poor substitute on a graph with little of it
+      // (INV-NOTES-092).
+      onSelect(isSame(found, selection) ? null : found);
     },
-    [bars, notes, onSelect, tones]
+    [bars, notes, onSelect, tones, selection]
   );
 
   const tap = useMemo(

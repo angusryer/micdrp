@@ -25,7 +25,7 @@ import { xForMs, type TimeAxis } from '../../components/melodyScale';
 
 /** The handle, and the reach around it a thumb actually gets. */
 const HANDLE = 16;
-const REACH = 22;
+const REACH = 34;
 
 export interface ScrubberProps {
   /** Where the take is now, in ms. */
@@ -75,6 +75,16 @@ export function Scrubber({
     .onEnd((e) => seekTo(e.x))
     .runOnJS(true);
 
+  // A tap puts the head where you tapped. A pan never fires for a touch that
+  // does not move, so without this the only way to reach a moment is to drag
+  // to it from wherever the head happens to be (INV-NOTES-091).
+  const tap = Gesture.Tap()
+    .withTestId('scrub-tap')
+    .onEnd((e) => seekTo(e.x))
+    .runOnJS(true);
+
+  const gesture = Gesture.Race(drag, tap);
+
   const x = xForMs(
     timeAxis,
     Math.min(Math.max(positionMs, firstNoteMs), timeAxis.t0 + timeAxis.span)
@@ -94,7 +104,7 @@ export function Scrubber({
           { left: x, height, backgroundColor: colors.primary500 }
         ]}
       />
-      <GestureDetector gesture={drag}>
+      <GestureDetector gesture={gesture}>
         <View style={[styles.reach, { width: contentWidth, height: REACH }]}>
           <View
             testID="scrub-handle"
