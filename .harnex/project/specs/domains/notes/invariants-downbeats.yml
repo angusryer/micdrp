@@ -119,3 +119,25 @@ invariants:
       count, never by the fitter merely being confident.
 
       A person moving a line still outranks all of it (INT-NOTES-012).
+
+  - id: INV-NOTES-113
+    description: The counted beats are marked, and are not music
+    severity: minor
+    check: >
+      Where a count was read (INV-PITCH-022), its notes are drawn as ground
+      rather than as the line, and everything that reads harmony reads the
+      played half of the take instead of the whole of it. Both halves are
+      kept. Verified by asserting the chord reading is given the notes after
+      the count, and that a take nobody counted is split into nothing and
+      everything.
+
+      A count is a performance: it was sung, it is in the recording, and
+      hiding it would be the app deciding something was not sung. What it is
+      not is music. "One two three four" states a tempo and implies no
+      harmony, so reading chords from it puts a chord over the counting and
+      drags the key estimate towards whatever pitch the counting happened to
+      sit on.
+
+      Drawn as ground for the same reason the pickup is (INV-NOTES-107): the
+      eye needs to see that the recording contains it while reading the tune
+      as starting where the tune starts.

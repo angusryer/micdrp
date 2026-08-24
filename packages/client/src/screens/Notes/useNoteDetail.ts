@@ -19,6 +19,7 @@ import {
   resizeNotes,
   shiftNotes,
   quantize,
+  splitOffCount,
   readMetre,
   type NoteEdge,
   type NoteEvent
@@ -154,6 +155,12 @@ export function useNoteDetail(id: string) {
   const grid = quantized.grid;
   const hasGrid = grid.bpm > 0 && melody.length > 1;
 
+  // What was counted, and what was played. The count is a performance and
+  // stays on the graph, but it is not music: it states a tempo and implies no
+  // harmony, so everything that reads harmony reads the played half
+  // (INV-NOTES-113).
+  const { counted, played } = useMemo(() => splitOffCount(melody), [melody]);
+
   // A second take sung against this one, when there is one. The bass layer
   // is the one that carries harmony: it names the root and states where the
   // chord changes, which are the two things a melody alone only implies
@@ -236,7 +243,7 @@ export function useNoteDetail(id: string) {
   // that runs to the next (INV-NOTES-048). Handing the arrangement in is what
   // makes dragging a line move the harmony with it, rather than leaving two
   // structures drawn on one timeline to drift apart.
-  const chords = useChordTrack(melody, grid, {
+  const chords = useChordTrack(played, grid, {
     savedEdits: interpretation.savedEdits,
     onEditsChanged: interpretation.update,
     floorMidi,
@@ -349,6 +356,7 @@ export function useNoteDetail(id: string) {
     midiUri,
     correctNote,
     resetNote,
+    countedNotes: counted.length,
     resizeChosen,
     shiftChosen,
     nudgeChosen,

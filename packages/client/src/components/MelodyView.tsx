@@ -62,6 +62,13 @@ export interface MelodyViewProps {
   /** Where the recording ended, when later than the last note (INV-NOTES-108). */
   toMs?: number;
   /**
+   * How many of the opening notes were somebody counting, not singing.
+   *
+   * A count is always the leading run (INV-PITCH-022), so a number is enough
+   * and no note needs a flag of its own.
+   */
+  countedNotes?: number;
+  /**
    * A second performance drawn behind the sung line — the bass hummed
    * against it. Its own colour, because it is a different voice and reading
    * the picture depends on telling them apart (INV-NOTES-079).
@@ -80,6 +87,7 @@ export function MelodyView({
   alsoShow,
   fromMs,
   toMs,
+  countedNotes = 0,
   underlay,
   underlayColor
 }: MelodyViewProps): React.JSX.Element {
@@ -207,17 +215,25 @@ export function MelodyView({
             opacity={0.55}
           />
         ))}
-        {layout.rects.map((r, i) => (
-          <RoundedRect
-            key={i}
-            x={r.x}
-            y={r.y}
-            width={r.width}
-            height={r.height}
-            r={radius}
-            color={barColor}
-          />
-        ))}
+        {layout.rects.map((r, i) => {
+          // The counted beats are a performance and belong on the graph, but
+          // they are not the music: drawn as the ground they sit on rather
+          // than as the line, so the tune reads as starting where it does
+          // (INV-NOTES-113).
+          const isCount = i < countedNotes;
+          return (
+            <RoundedRect
+              key={i}
+              x={r.x}
+              y={r.y}
+              width={r.width}
+              height={r.height}
+              r={radius}
+              color={isCount ? colors.gray300 : barColor}
+              opacity={isCount ? 0.45 : 1}
+            />
+          );
+        })}
       </Canvas>
     </View>
   );

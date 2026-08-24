@@ -40,6 +40,8 @@ export interface ZoomableMelodyProps {
   fromMs?: number;
   /** Where the recording ended, when later than the last note (INV-NOTES-108). */
   toMs?: number;
+  /** How many opening notes were counting rather than singing. */
+  countedNotes?: number;
   /**
    * Drawn above the melody and inside the same scroll — the scrubber, which
    * has to sit clear of the drawing rather than over it (INV-NOTES-081).
@@ -92,6 +94,7 @@ export function ZoomableMelody({
   underlayColor,
   fromMs,
   toMs,
+  countedNotes,
   header,
   headerHeight = 0,
   children,
@@ -164,6 +167,7 @@ export function ZoomableMelody({
             alsoShow={alsoShow}
             fromMs={fromMs}
             toMs={toMs}
+            countedNotes={countedNotes}
             underlay={underlay}
             underlayColor={underlayColor}
           />

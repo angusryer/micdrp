@@ -183,3 +183,40 @@ invariants:
       Beat one is the first counted beat rather than a fitted phase. Somebody
       counting put beat one where they put it, and re-deriving it from the
       audio afterwards would discard the clearest statement in the take.
+
+  - id: INV-PITCH-023
+    description: A re-articulated note is a new note
+    severity: major
+    check: >
+      A run of short notes on one pitch, each stopping before the next, is
+      read as that many notes. A note is ended by a gap in which the level
+      collapses, however brief; a gap in which the level holds is the detector
+      flickering and is ridden out as before. Notes separated by a real
+      silence are not joined as a bend, and a note briefer than the
+      articulation limit is kept when its spacing to a neighbour shows it was
+      played short rather than slipped. Verified by asserting eight tongued
+      sixteenths read as eight notes at their own onsets, and that a held note
+      survives detector dropouts, an ordinary swell, and unmeasured levels
+      intact.
+
+      "da da da da" on one pitch came back as a single held note, and nothing
+      in the reading was wrong on its own terms: the segmenter splits on a
+      change of pitch, and the pitch never changed. The articulation is not in
+      the pitch at all. It is in the envelope, and until every frame carried a
+      level (INV-PITCH-020) there was nothing to read it from.
+
+      The level is also what makes splitting safe. A stop consonant collapses
+      it by tens of dB; a detector losing confidence for a frame does not move
+      it at all. Splitting on the gap alone would shatter every sustained note
+      in the app, which is exactly what the gap tolerance exists to prevent —
+      so the tolerance stays, and the collapse is what overrides it.
+
+      Three stages had to agree, and each was wrong in the same way. The bend
+      merger joined any two notes within a semitone regardless of the silence
+      between them, so the pieces were put back together immediately: a bend
+      is the voice sliding without stopping, and its parts touch. The brevity
+      filter measured how long a note SOUNDED, when the limit it encodes is
+      how fast one note can follow another — the body cannot re-articulate ten
+      times a second, but it has no trouble making a short sound and stopping.
+
+      Takes with no measured level keep exactly the reading they had.

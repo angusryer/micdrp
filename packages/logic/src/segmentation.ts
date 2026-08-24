@@ -61,6 +61,17 @@ export interface SegmentOptions {
    * it stayed, not which semitone it touched.
    */
   pitchHoldMs?: number;
+  /**
+   * How far the level must fall during a gap for it to be an articulation
+   * rather than the detector flickering (default 12dB).
+   *
+   * A note is split on a change of pitch, which says nothing about "da da da"
+   * on one pitch — that articulation lives entirely in the envelope. A stop
+   * consonant collapses the level by tens of dB; a detector losing confidence
+   * for a frame does not move it at all, and that difference is what makes
+   * splitting here safe (INV-PITCH-023).
+   */
+  articulationDropDb?: number;
 }
 
 /**
@@ -70,6 +81,9 @@ export interface SegmentOptions {
  * taken over a whole oscillation rather than part of one.
  */
 const ANCHOR_MS = 200;
+
+const mean = (values: readonly number[]): number =>
+  values.reduce((a, b) => a + b, 0) / values.length;
 
 /** The middle value, which a scoop into a note does not drag. */
 function median(values: number[]): number {
@@ -88,6 +102,7 @@ export function segmentNotes(
   const maxGap = options.maxGapMs ?? 40;
   const vibrato = options.vibratoSemitones ?? 0.6;
   const hold = options.pitchHoldMs ?? 90;
+  const articulationDrop = options.articulationDropDb ?? 12;
 
   const notes: NoteEvent[] = [];
 
@@ -157,8 +172,17 @@ export function segmentNotes(
 
   for (const f of frames) {
     if (f.midi == null) {
-      // Unvoiced frame: end the current note only if the gap is too long.
-      if (centre != null && f.timestampMs - lastVoicedMs > maxGap) {
+      // A gap of two kinds. One is the detector losing confidence while the
+      // singing continues, which `maxGap` exists to ride out. The other is
+      // the singer stopping — a tongued consonant, a breath — and that is a
+      // note ending however brief it is. The level tells them apart: silence
+      // collapses it, a flicker does not (INV-PITCH-023).
+      const quiet =
+        centre != null &&
+        f.levelDb != null &&
+        levels.length > 0 &&
+        mean(levels) - f.levelDb >= articulationDrop;
+      if (centre != null && (quiet || f.timestampMs - lastVoicedMs > maxGap)) {
         close();
       }
       continue;

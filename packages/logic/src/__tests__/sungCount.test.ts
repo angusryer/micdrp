@@ -13,7 +13,7 @@
  * makes loudness the thing the whole feature rests on, and takes with no
  * measured loudness keep the tempo they have always had.
  */
-import { readSungCount } from '../sungCount';
+import { readSungCount, splitOffCount } from '../sungCount';
 import type { NoteEvent } from '../segmentation';
 
 const beat = (
@@ -149,5 +149,33 @@ describe('how much the count is trusted', () => {
     const short = readSungCount(counted(500, 5))?.confidence ?? 0;
     const long = readSungCount(counted(500, 9))?.confidence ?? 0;
     expect(long).toBeGreaterThanOrEqual(short);
+  });
+});
+
+describe('INV-NOTES-113: the count is kept, but is not music', () => {
+  it('separates what was counted from what was played', () => {
+    const take = [...counted(500, 5), beat(3000, -14), beat(3600, -14)];
+    const { counted: head, played } = splitOffCount(take);
+    expect(head).toHaveLength(5);
+    expect(played.map((n) => n.startMs)).toEqual([3000, 3600]);
+  });
+
+  it('keeps both halves, rather than dropping the count', () => {
+    // It was sung. Hiding it would be the app deciding otherwise.
+    const take = [...counted(500, 5), beat(3000, -14)];
+    const { counted: head, played } = splitOffCount(take);
+    expect(head.length + played.length).toBe(take.length);
+  });
+
+  it('calls the whole take music when nobody counted', () => {
+    const take = [0, 1, 2, 3].map((i) => beat(i * 400));
+    const { counted: head, played } = splitOffCount(take);
+    expect(head).toEqual([]);
+    expect(played).toHaveLength(4);
+  });
+
+  it('gives the music back in time order whatever order it arrived in', () => {
+    const take = [beat(3000, -14), ...counted(500, 5)];
+    expect(splitOffCount(take).played.map((n) => n.startMs)).toEqual([3000]);
   });
 });

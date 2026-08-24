@@ -32,6 +32,11 @@ export const MIN_ARTICULATION_MS = 90;
 
 export interface BendOptions {
   /**
+   * The widest silence two notes may be separated by and still be one note
+   * bending (default 40ms, matching the segmenter's own tolerance).
+   */
+  maxJoinGapMs?: number;
+  /**
    * How far apart two notes must be to be different notes, in semitones
    * (default 1).
    *
@@ -104,6 +109,11 @@ export function mergeBends(
   options: BendOptions = {}
 ): NoteEvent[] {
   const step = options.stepSemitones ?? 1;
+  // A bend is continuous: the voice slides from one pitch to the next without
+  // stopping, so its parts touch. Two notes separated by real silence were
+  // separated on purpose, and joining them across the gap is what turned "da
+  // da da da" into one held note (INV-PITCH-023).
+  const maxGap = options.maxJoinGapMs ?? 40;
   if (notes.length < 2) {
     return [...notes];
   }
@@ -114,6 +124,9 @@ export function mergeBends(
     let nearest = -1;
     let nearestGap = step;
     for (let i = 0; i + 1 < current.length; i++) {
+      if (current[i + 1].startMs - current[i].endMs > maxGap) {
+        continue;
+      }
       const gap = Math.abs(pitchOf(current[i + 1]) - pitchOf(current[i]));
       // The closest pair first, so a fragment joins the note it actually
       // belongs to rather than whichever it happened to sit left of.
@@ -137,6 +150,12 @@ export function mergeBends(
 /**
  * Drop anything too brief to have been sung on purpose.
  *
+ * The limit is on how fast one note can FOLLOW another, not on how long a
+ * note may sound. The body cannot re-articulate faster than about ten times a
+ * second; it has no trouble at all making a short sound and then stopping.
+ * Measuring the sounding duration conflated the two and threw away every
+ * staccato note in the take (INV-PITCH-023).
+ *
  * Run after merging, not before: a scoop is brief and belongs to its note, so
  * discarding short things first would throw away the approach rather than
  * joining it. What survives merging and is still this short was never a note
@@ -149,5 +168,23 @@ export function dropTooBriefToSing(
   notes: readonly NoteEvent[],
   minMs: number = MIN_ARTICULATION_MS
 ): NoteEvent[] {
-  return notes.filter((n) => n.durationMs >= minMs);
+  return notes.filter((note, i) => {
+    if (note.durationMs >= minMs) {
+      return true;
+    }
+    // Short, but is it short because it was played short? The spacing to its
+    // neighbour says: a deliberate staccato leaves room around it, and a
+    // detector slip is crowded up against whatever it slipped out of. The
+    // last note of a run has only a note before it, and belongs to the run
+    // just as much as the ones that do have a next.
+    const next = notes[i + 1];
+    const previous = notes[i - 1];
+    const spacing =
+      next != null
+        ? next.startMs - note.startMs
+        : previous != null
+          ? note.startMs - previous.startMs
+          : 0;
+    return spacing >= minMs;
+  });
 }

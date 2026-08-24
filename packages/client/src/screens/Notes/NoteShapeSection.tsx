@@ -136,6 +136,8 @@ export function NoteShapeSection({
             // The whole recording, so a take that ran on after the last
             // note is not drawn as one that stopped there (INV-NOTES-108).
             toMs={detail.note?.durationMs}
+            // Marked, not hidden: they were sung (INV-NOTES-113).
+            countedNotes={detail.countedNotes}
             headerHeight={SCRUB_BAND_HEIGHT}
             header={({ contentWidth, timeAxis, firstNoteMs }) =>
               transport != null ? (

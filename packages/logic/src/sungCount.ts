@@ -51,6 +51,35 @@ export interface SungCount {
   confidence: number;
 }
 
+/**
+ * The take split into what was counted and what was played.
+ *
+ * The counted beats are a performance — they were sung, they are in the
+ * recording, and they belong on the graph. What they are not is music: "one
+ * two three four" states a tempo and implies no harmony, so reading chords
+ * from it produces a chord over the counting and drags the key estimate
+ * towards whatever pitch the counting happened to sit on (INV-NOTES-113).
+ *
+ * Both halves are returned rather than the count being dropped, because
+ * hiding part of a take would be the app deciding something was not sung.
+ */
+export function splitOffCount(notes: readonly NoteEvent[]): {
+  counted: NoteEvent[];
+  played: NoteEvent[];
+} {
+  const sorted = [...notes].sort((a, b) => a.startMs - b.startMs);
+  const count = readSungCount(sorted);
+  if (count == null) {
+    return { counted: [], played: sorted };
+  }
+  // By position rather than by time: the count is the opening run, and a note
+  // of the music beginning exactly as the count ends belongs to the music.
+  return {
+    counted: sorted.slice(0, count.beats),
+    played: sorted.slice(count.beats)
+  };
+}
+
 const median = (values: readonly number[]): number => {
   const sorted = [...values].sort((a, b) => a - b);
   const mid = sorted.length >> 1;
