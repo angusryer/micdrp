@@ -13,12 +13,13 @@
  * melody's length is left to the screen (it owns the transport timer), keeping
  * this hook free of timer/teardown races.
  */
+import { trackBus } from '../Notes/trackRegistry';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { findMelody, melodyDurationMs, type TargetNote } from 'logic';
 import { type SharedValue } from 'react-native-reanimated';
 
-import { createTonePlayer, SynthBus } from '../../audio/synthPlayer';
+import { createTonePlayer } from '../../audio/synthPlayer';
 import { detectHeadphonesConnected } from '../../audio/outputRoute';
 import {
   DEFAULT_ENGINE_CONFIG,
@@ -78,7 +79,7 @@ export function usePracticeSession(
 
   const durationMs = useMemo(() => melodyDurationMs(targets), [targets]);
 
-  const playerRef = useRef(createTonePlayer(SynthBus.Melody));
+  const playerRef = useRef(createTonePlayer(trackBus('melody')));
   const cancelledRef = useRef(false);
   const [phase, setPhase] = useState<PracticePhase>('idle');
 

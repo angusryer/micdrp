@@ -21,22 +21,33 @@ import {
   type ReferenceTonePlayer
 } from './referenceTone';
 
-/** Which of the native engine's busses a player sounds on. */
+/**
+ * Which of the native engine's buses a player sounds on.
+ *
+ * Numbers rather than names natively: the synth's whole notion of a bus is an
+ * index into a level array, so what one means is decided here and adding one
+ * costs no build at all (INV-NOTES-121).
+ *
+ * These are the buses that are not tracks — a tapped note, and the chord root
+ * under the rest of the harmony. The tracks take theirs from the registry,
+ * counting up from zero, so the two ranges must not overlap: these start
+ * where the registry stops.
+ */
+export const AUDITION_BUS = 8;
+export const BASS_BUS = 9;
+
 export const SynthBus = {
-  Take: 0,
-  Melody: 1,
-  Chords: 2,
-  Audition: 3,
-  Bass: 4,
-  /**
-   * The metronome. Its own bus because it shared the melody's until now, so
-   * turning the click down turned the tune down with it (INV-NOTES-119).
-   */
-  Click: 5,
-  /** The struck sounds read out of the take (INV-NOTES-120). */
-  Rhythm: 6
+  Audition: AUDITION_BUS,
+  Bass: BASS_BUS
 } as const;
-export type SynthBusValue = (typeof SynthBus)[keyof typeof SynthBus];
+/**
+ * A bus, as a number.
+ *
+ * Any index the engine has room for is a bus. Narrowing this to a union of
+ * named ones would put the registry's numbers outside the type and make
+ * adding a track a change here as well (INV-NOTES-121).
+ */
+export type SynthBusValue = number;
 
 /**
  * The per-note peak the old players used by default. A caller's `peakGain`

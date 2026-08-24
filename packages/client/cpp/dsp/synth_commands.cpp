@@ -8,8 +8,7 @@ namespace micdrp {
 
 Bus busFromIndex(double index) {
   const int i = static_cast<int>(index);
-  return (i >= 0 && i < static_cast<int>(Bus::Count)) ? static_cast<Bus>(i)
-                                                      : Bus::Melody;
+  return (i >= 0 && i < kMaxBuses) ? static_cast<Bus>(i) : Bus::Melody;
 }
 
 std::int64_t samplesFromMs(double ms, double sampleRateHz) {

@@ -5,6 +5,7 @@
  * describes hearing it. They are genuinely separate concerns: the reading of
  * a take does not depend on whether anything is currently sounding.
  */
+import { trackBus } from './trackRegistry';
 import { useMemo, useState } from 'react';
 
 import {
@@ -97,7 +98,7 @@ export function useNotePlayback(
   );
   // Its own bus. It shared the melody's until now, so turning the click down
   // turned the tune down with it (INV-NOTES-119).
-  const countVoice = useMelodyBackdrop(countTones, SynthBus.Click);
+  const countVoice = useMelodyBackdrop(countTones, trackBus('count'));
   const countMix = useMemo(
     () => ({
       start: (offsetMs = 0) => countVoice.start(offsetMs),
@@ -124,7 +125,7 @@ export function useNotePlayback(
       })),
     [hits]
   );
-  const rhythmVoice = useMelodyBackdrop(rhythmTones, SynthBus.Rhythm);
+  const rhythmVoice = useMelodyBackdrop(rhythmTones, trackBus('rhythm'));
   const rhythmMix = useMemo(
     () => ({
       start: (offsetMs = 0) => rhythmVoice.start(offsetMs),

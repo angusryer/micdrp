@@ -26,7 +26,7 @@ constexpr float kTwoPi = 6.283185307179586f;
 
 int busIndex(Bus bus) {
   const int i = static_cast<int>(bus);
-  return (i >= 0 && i < static_cast<int>(Bus::Count)) ? i : 0;
+  return (i >= 0 && i < kMaxBuses) ? i : 0;
 }
 
 }  // namespace

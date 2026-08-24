@@ -12,13 +12,13 @@
  * own AudioContext, separate from the tap/audition player, so tapping a note
  * or a chord during playback does not cut the backdrop off.
  */
+import { trackBus } from './trackRegistry';
 import { useCallback, useEffect, useMemo } from 'react';
 
 import type { ChordPlayback, TargetNote } from 'logic';
 
 import {
   createTonePlayer,
-  SynthBus,
   type SynthBusValue
 } from '../../audio/synthPlayer';
 
@@ -99,7 +99,7 @@ export function useChordBackdrop(
   progression: readonly ChordPlayback[],
   options: ChordBackdropOptions = {}
 ): ChordBackdrop {
-  const { bus = SynthBus.Chords, peakGain = BACKDROP_PEAK_GAIN } = options;
+  const { bus = trackBus('chords'), peakGain = BACKDROP_PEAK_GAIN } = options;
   const player = useMemo(
     () => createTonePlayer(bus, { peakGain }),
     [bus, peakGain]

@@ -9,11 +9,12 @@
  * backdrop and from tap-to-audition: three things may sound at once and none
  * should cut another off.
  */
+import { trackBus } from './trackRegistry';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import type { TargetNote } from 'logic';
 
-import { createTonePlayer, SynthBus, type SynthBusValue } from '../../audio/synthPlayer';
+import { createTonePlayer } from '../../audio/synthPlayer';
 import { shiftTones } from './useChordBackdrop';
 
 /**
@@ -37,7 +38,7 @@ export function useMelodyBackdrop(
    * two voices on one bus share a level, so turning one down turns the other
    * down with it (INV-NOTES-119).
    */
-  bus: SynthBusValue = SynthBus.Melody
+  bus: number = trackBus('melody')
 ): MelodyBackdrop {
   const player = useMemo(() => createTonePlayer(bus), [bus]);
   const level = useRef(DEFAULT_MELODY_LEVEL);

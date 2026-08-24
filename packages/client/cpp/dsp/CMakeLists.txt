@@ -22,6 +22,7 @@
 #   ./build/dsp_level_test       # prints "LEVEL OK", exit 0
 #   ./build/dsp_fft_test         # prints "FFT OK", exit 0
 #   ./build/dsp_spectral_test    # prints "SPECTRAL OK", exit 0
+#   ./build/dsp_bench            # prints a timing table, then "BENCH OK"
 
 cmake_minimum_required(VERSION 3.16)
 project(micdrp_dsp_core LANGUAGES CXX)
@@ -80,6 +81,11 @@ target_link_libraries(dsp_fft_test PRIVATE micdrp_dsp)
 add_executable(dsp_spectral_test __tests__/spectral_test.cpp)
 target_link_libraries(dsp_spectral_test PRIVATE micdrp_dsp)
 
+# What the hot path costs. Prints a table; fails only if a frame costs more
+# than the time it represents, which is the one number worth a threshold.
+add_executable(dsp_bench __tests__/bench.cpp)
+target_link_libraries(dsp_bench PRIVATE micdrp_dsp)
+
 # Host test for the ms/bus translation the platform layer speaks.
 add_executable(dsp_commands_test __tests__/synth_commands_test.cpp)
 target_link_libraries(dsp_commands_test PRIVATE micdrp_dsp)
@@ -92,3 +98,4 @@ add_test(NAME dsp_commands COMMAND dsp_commands_test)
 add_test(NAME dsp_level COMMAND dsp_level_test)
 add_test(NAME dsp_fft COMMAND dsp_fft_test)
 add_test(NAME dsp_spectral COMMAND dsp_spectral_test)
+add_test(NAME dsp_bench COMMAND dsp_bench)

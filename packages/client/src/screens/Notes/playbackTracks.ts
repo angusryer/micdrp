@@ -9,32 +9,26 @@
  *
  * Its own file so `usePlaybackMix` stays the transport and nothing else.
  */
+import { TRACKS, type TrackName } from './trackRegistry';
 
-/** Which tracks a press sounds. Each is turned on and off on its own. */
-export interface PlaybackMix {
-  take: boolean;
-  chords: boolean;
-  /**
-   * A click counting the take in, so a second voice knows when to come in.
-   * Off until asked for: it is a scaffold for recording against, not part of
-   * the idea (INV-NOTES-088).
-   */
-  count: boolean;
-  /** The detected melody over the take. Rides the take's clock, so it needs it. */
-  melody: boolean;
-  /**
-   * The struck sounds read out of the take, sounded as drums.
-   *
-   * Off until asked for, like the melody: it is a reading of the take, and
-   * the take already contains the sound it is reading (INV-NOTES-120).
-   */
-  rhythm: boolean;
-}
+/**
+ * Which tracks a press sounds. Each is turned on and off on its own.
+ *
+ * Derived from the registry rather than written out, so a track declared
+ * there is a track the mixer already knows about (INV-NOTES-121).
+ */
+export type PlaybackMix = Record<TrackName, boolean>;
 
-export type TrackName = keyof PlaybackMix;
+export type { TrackName };
 
 /** How loud each track sits, 0..1. Separate from whether it is on at all. */
 export type TrackLevels = Record<TrackName, number>;
+
+const fromTracks = <T>(pick: (track: (typeof TRACKS)[number]) => T) =>
+  Object.fromEntries(TRACKS.map((track) => [track.name, pick(track)])) as Record<
+    TrackName,
+    T
+  >;
 
 /**
  * What each track starts at.
@@ -43,35 +37,20 @@ export type TrackLevels = Record<TrackName, number>;
  * from it sit under it, or they argue with the performance instead of
  * describing it (INV-NOTES-082).
  */
-export const DEFAULT_LEVELS: TrackLevels = {
-  take: 1,
-  chords: 0.7,
-  melody: 0.6,
-  rhythm: 0.6,
-  // Faint. It is there to be followed, not listened to, and a loud click
-  // over a quiet take is the take you stop hearing.
-  count: 0.35
-};
-
-/** Drawn in this order, and only for the tracks a note actually has. */
-export const TRACK_ORDER: readonly TrackName[] = [
-  'take',
-  'chords',
-  'melody',
-  'rhythm',
-  'count'
-];
+export const DEFAULT_LEVELS: TrackLevels = fromTracks((t) => t.level);
 
 /** What a note offers before anything is turned. */
-export const DEFAULT_MIX: PlaybackMix = {
-  take: true,
-  chords: true,
-  melody: false,
-  // Off until asked for, like the melody: it is a reading of the take and
-  // the take already contains the sound it is reading (INV-NOTES-120).
-  rhythm: false,
-  count: false
-};
+export const DEFAULT_MIX: PlaybackMix = fromTracks((t) => t.startsOn);
+
+/** What the options sheet calls each one. */
+export const TRACK_TITLES: Record<TrackName, string> = fromTracks(
+  (t) => t.title
+);
+
+/** Drawn in this order, and only for the tracks a note actually has. */
+export const TRACK_ORDER: readonly TrackName[] = TRACKS.map(
+  (track) => track.name
+);
 
 /**
  * Whether a track's toggle is unavailable rather than merely off.
@@ -95,19 +74,20 @@ export function sameMix(a: PlaybackMix, b: PlaybackMix): boolean {
   return TRACK_ORDER.every((track) => a[track] === b[track]);
 }
 
-/** The mix as it actually sounds, with tracks the note does not have removed. */
+/**
+ * The mix as it actually sounds, with tracks the note does not have removed.
+ *
+ * The take is always available — it is the recording, not a reading of it.
+ * Everything else sounds only where the note has something for it to sound,
+ * so a control can never claim a sound nothing makes (INT-NOTES-026).
+ */
 export function withOnlyAvailable(
   mix: PlaybackMix,
   available: readonly TrackName[]
 ): PlaybackMix {
-  return {
-    take: mix.take,
-    chords: mix.chords && available.includes('chords'),
-    rhythm: mix.rhythm && available.includes('rhythm'),
-    // Sounds on its own now: the melody read from a take is worth hearing by
-    // itself, and the control that used to do that has gone into this list
-    // (INT-NOTES-026).
-    melody: mix.melody && available.includes('melody'),
-    count: mix.count && available.includes('count')
-  };
+  return fromTracks(
+    (track) =>
+      mix[track.name] &&
+      (track.role === 'recording' || available.includes(track.name))
+  );
 }

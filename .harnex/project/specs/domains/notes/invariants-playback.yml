@@ -264,3 +264,35 @@ invariants:
       the take already contains the sound it is reading. Offered only where
       something was struck, because a control for a track that would make no
       sound is a control that lies.
+
+  - id: INV-NOTES-121
+    description: A track is declared once, and costs no build
+    severity: major
+    check: >
+      Every track is one entry in a registry naming what it is, what it is
+      called, whether it starts on, and how loud it sits. The mix, the levels,
+      the titles, the order and the availability rules all derive from it, and
+      each track's mixer bus is its position in the list. No two tracks share
+      a bus, and no track's bus collides with the buses that are not tracks.
+      Verified by asserting every derived map matches the registry entry for
+      entry, that the buses are distinct and in range, and — by adding a
+      track — that nothing else needs changing.
+
+      A track used to be spelled out in six places plus a C++ enum, so adding
+      one meant an Xcode build and a TestFlight upload to hand the synth an
+      integer the caller already knew. The synth's entire notion of a bus is
+      an index into a level array; it has never known what "chords" means, and
+      naming them natively was the only thing that made a track a native
+      change. The array is a capacity now, and what a bus means is decided in
+      TypeScript.
+
+      The tedium was not the reason to fix it. The click was given the
+      melody's bus, so turning the click down turned the tune down with it and
+      neither control did what it said (INV-NOTES-119) — a duplicated list
+      does not merely cost edits, it lets two things claim the same thing and
+      says nothing about it.
+
+      What a track does not declare is how it is drawn. A melodic track is
+      pitch against time and a percussive one is lanes; those are different
+      pictures, and two of a thing is not a pattern worth an abstraction. The
+      role names which reading a track gets (INV-NOTES-115) and stops there.

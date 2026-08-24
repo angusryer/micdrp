@@ -25,20 +25,13 @@ import { GlyphGuideSheet } from './GlyphGuideSheet';
 import { TrackCard } from './TrackCard';
 import { PlaybackOptionsButton } from './PlaybackOptionsButton';
 import {
+  TRACK_TITLES,
   isTrackLocked,
   withOnlyAvailable,
   type PlaybackMix,
   type TrackName
 } from './playbackTracks';
 
-/** What each track is called, in the singer's terms rather than the code's. */
-const TRACK_TITLES: Record<TrackName, string> = {
-  take: 'Your take',
-  chords: 'Chords read from your take',
-  melody: 'Transcription of your take',
-  rhythm: 'Drums read from your take',
-  count: 'Count-in'
-};
 import { usePlaybackMix, type MixAccompaniment } from './usePlaybackMix';
 
 export type { PlaybackState } from './usePlayback';

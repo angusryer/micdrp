@@ -5,6 +5,11 @@
 import type { Spec } from '../../specs/NativeSynth';
 import type { AudioContextLike } from '../referenceTone';
 
+/** Two buses by number: what they mean is the registry's business. */
+const MELODY_BUS = 1;
+const AUDITION_BUS = 8;
+const CHORDS_BUS = 2;
+
 type SynthPlayerModule = typeof import('../synthPlayer');
 
 const makeSynth = () => ({
@@ -34,7 +39,7 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe('without the native module (INV-NOTES-030)', () => {
   it('falls back to the per-context player instead of going silent', () => {
-    const { createTonePlayer, SynthBus } = load(null);
+    const { createTonePlayer } = load(null);
     const oscillators: unknown[] = [];
     const ctx: AudioContextLike = {
       currentTime: 0,
@@ -57,7 +62,7 @@ describe('without the native module (INV-NOTES-030)', () => {
       close: jest.fn()
     };
 
-    const player = createTonePlayer(SynthBus.Melody, { createContext: () => ctx });
+    const player = createTonePlayer(MELODY_BUS, { createContext: () => ctx });
     player.play([{ midi: 69, startMs: 0, endMs: 500 }]);
     expect(oscillators).toHaveLength(1);
   });
@@ -66,9 +71,9 @@ describe('without the native module (INV-NOTES-030)', () => {
 describe('with the native module', () => {
   it('anchors the schedule to the engine clock, on the given bus', async () => {
     const synth = makeSynth();
-    const { createTonePlayer, SynthBus } = load(synth);
+    const { createTonePlayer } = load(synth);
 
-    const player = createTonePlayer(SynthBus.Melody);
+    const player = createTonePlayer(MELODY_BUS);
     player.play([{ midi: 69, startMs: 0, endMs: 500 }]);
     await flush();
 
@@ -81,11 +86,11 @@ describe('with the native module', () => {
 
   it('keeps peakGain meaning what it meant against the old players', async () => {
     const synth = makeSynth();
-    const { createTonePlayer, SynthBus } = load(synth);
+    const { createTonePlayer } = load(synth);
 
     // Old effective amplitude was level * peakGain; the bus level preserves it
     // relative to the old default peak of 0.2.
-    const player = createTonePlayer(SynthBus.Chords, { peakGain: 0.06 });
+    const player = createTonePlayer(CHORDS_BUS, { peakGain: 0.06 });
     player.play([{ midi: 60, startMs: 0, endMs: 100 }]);
     await flush();
     expect(synth.setBusLevel).toHaveBeenLastCalledWith(2, expect.closeTo(0.3));
@@ -96,10 +101,10 @@ describe('with the native module', () => {
 
   it('stops its own bus, and the engine only when the last player leaves', async () => {
     const synth = makeSynth();
-    const { createTonePlayer, SynthBus } = load(synth);
+    const { createTonePlayer } = load(synth);
 
-    const melody = createTonePlayer(SynthBus.Melody);
-    const chords = createTonePlayer(SynthBus.Chords);
+    const melody = createTonePlayer(MELODY_BUS);
+    const chords = createTonePlayer(CHORDS_BUS);
     melody.play([{ midi: 69, startMs: 0, endMs: 500 }]);
     chords.play([{ midi: 60, startMs: 0, endMs: 500 }]);
     await flush();
@@ -117,9 +122,9 @@ describe('with the native module', () => {
     const synth = makeSynth();
     let startEngine: () => void = () => {};
     synth.start.mockReturnValue(new Promise<void>((r) => (startEngine = r)));
-    const { createTonePlayer, SynthBus } = load(synth);
+    const { createTonePlayer } = load(synth);
 
-    const player = createTonePlayer(SynthBus.Audition);
+    const player = createTonePlayer(AUDITION_BUS);
     player.play([{ midi: 69, startMs: 0, endMs: 500 }]);
     player.stop();
     startEngine();
@@ -131,9 +136,9 @@ describe('with the native module', () => {
 
   it('treats an empty melody as stop, like the old player did', async () => {
     const synth = makeSynth();
-    const { createTonePlayer, SynthBus } = load(synth);
+    const { createTonePlayer } = load(synth);
 
-    const player = createTonePlayer(SynthBus.Melody);
+    const player = createTonePlayer(MELODY_BUS);
     player.play([{ midi: 69, startMs: 0, endMs: 500 }]);
     await flush();
     player.play([]);

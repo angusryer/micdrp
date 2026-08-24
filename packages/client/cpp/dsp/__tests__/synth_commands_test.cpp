@@ -31,10 +31,15 @@ void testBusFromIndex() {
   // the melody the way the click used to (INV-NOTES-119, INV-NOTES-120).
   check(micdrp::busFromIndex(5) == Bus::Click, "5 is Click");
   check(micdrp::busFromIndex(6) == Bus::Rhythm, "6 is Rhythm");
-  // Out of range reads as Melody rather than indexing past the levels array.
-  // Bus::Count is the sentinel and is itself out of range.
-  check(micdrp::busFromIndex(static_cast<int>(Bus::Count)) == Bus::Melody,
-        "the sentinel falls back to Melody");
+  // A bus this file has no name for is still a bus. What one means is decided
+  // in TS, and adding a track must not need a build (INV-NOTES-121).
+  check(static_cast<int>(micdrp::busFromIndex(9)) == 9, "9 is a bus like any other");
+  check(static_cast<int>(micdrp::busFromIndex(micdrp::kMaxBuses - 1)) ==
+            micdrp::kMaxBuses - 1,
+        "and so is the last one");
+  // Past the array reads as Melody rather than indexing off the end.
+  check(micdrp::busFromIndex(micdrp::kMaxBuses) == Bus::Melody,
+        "one past the end falls back to Melody");
   check(micdrp::busFromIndex(-1) == Bus::Melody, "-1 falls back to Melody");
   check(micdrp::busFromIndex(1.9) == Bus::Melody, "1.9 truncates to Melody");
 }

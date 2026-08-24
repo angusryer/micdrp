@@ -31,11 +31,7 @@ const SHARED: GlyphNote[] = [
   }
 ];
 
-const BY_TRACK: Record<TrackName, GlyphNote[]> = {
-  take: [],
-  chords: [],
-  count: [],
-  rhythm: [],
+const BY_TRACK: Partial<Record<TrackName, GlyphNote[]>> = {
   melody: [
     {
       icon: 'grid',
@@ -55,10 +51,7 @@ const BY_TRACK: Record<TrackName, GlyphNote[]> = {
   ]
 };
 
-const SLIDERS: Record<TrackName, string | null> = {
-  take: null,
-  count: null,
-  rhythm: null,
+const SLIDERS: Partial<Record<TrackName, string | null>> = {
   chords: 'The lower slider moves the chords by whole octaves. Down for headphones, up for the phone speaker, which has almost nothing in the low register.',
   melody: 'The lower slider moves the melody by whole octaves, centred on the register you sang it in.'
 };
@@ -83,8 +76,11 @@ export function GlyphGuideSheet({
     }
   }, [track]);
 
-  const glyphs = track ? [...SHARED, ...BY_TRACK[track]] : [];
-  const slider = track ? SLIDERS[track] : null;
+  // A track with nothing of its own gets the shared glyphs and no more: most
+  // have none, and listing an empty entry per track is the drift the registry
+  // exists to prevent (INV-NOTES-121).
+  const glyphs = track ? [...SHARED, ...(BY_TRACK[track] ?? [])] : [];
+  const slider = track ? (SLIDERS[track] ?? null) : null;
 
   return (
     <TrueSheet
