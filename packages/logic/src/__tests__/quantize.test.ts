@@ -164,3 +164,45 @@ describe('quantize — deviation reporting', () => {
     expect(result.notes).toHaveLength(drifts.length);
   });
 });
+
+describe('INV-PITCH-022: a count overrules the inference', () => {
+  /** "ONE two three ONE two three" at 100bpm, stressed on each bar. */
+  const waltzCount = (bpm: number, beats: number): NoteEvent[] => {
+    const beatMs = 60000 / bpm;
+    return Array.from({ length: beats }, (_, i) => ({
+      ...note(i * beatMs, beatMs * 0.4),
+      loudnessDb: i % 3 === 0 ? -9 : -17
+    }));
+  };
+
+  it('takes the tempo from the count rather than fitting one', () => {
+    const grid = fitGrid(waltzCount(100, 7));
+    expect(grid.bpm).toBe(100);
+  });
+
+  it('takes the metre from where the stresses fell', () => {
+    const grid = fitGrid(waltzCount(100, 7));
+    expect(grid.beatsPerBar).toBe(3);
+    expect(grid.timeSignature).toBe('3/4');
+    expect(grid.meterIsStated).toBe(true);
+  });
+
+  it('puts beat one where the counting started, not where a fit lands it', () => {
+    // Somebody counting put beat one where they put it, and that is not a
+    // thing to re-derive from the audio afterwards.
+    const late = waltzCount(100, 7).map((n) => ({
+      ...n,
+      startMs: n.startMs + 250,
+      endMs: n.endMs + 250
+    }));
+    expect(fitGrid(late).offsetMs).toBe(250);
+  });
+
+  it('leaves a take with no count exactly as it was', () => {
+    // The whole risk of this reading is hijacking music that was never
+    // counted, so the fitter's own answer has to survive untouched.
+    const plain = withDownbeats(120, 3, 8);
+    expect(fitGrid(plain).beatsPerBar).toBe(3);
+    expect(fitGrid(plain).timeSignature).toBe('3/4');
+  });
+});

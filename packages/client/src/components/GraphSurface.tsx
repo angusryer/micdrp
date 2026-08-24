@@ -98,6 +98,7 @@ export function GraphSurface({
         bounds={{ width, height }}
         value={preview?.value ?? ''}
         caption={preview?.caption}
+        midi={preview?.midi}
       />
     </>
   );

@@ -221,3 +221,44 @@ invariants:
       Measured rather than assumed because the sheet sizes itself to its
       content, and its content is whatever was chosen — one note's facts, or a
       list of nine.
+
+  - id: INV-NOTES-110
+    description: The loupe shows the note, not only its name
+    severity: minor
+    check: >
+      While a note is being dragged, the readout above the finger shows the
+      lanes around the pitch it would become, with the note drawn in its own,
+      highest at the top as on the graph. Verified by asserting the strip is
+      drawn when a pitch is given and absent when none is.
+
+      The name alone answers "what will this become" and leaves "where is
+      that" to be worked out from a word, while the thing that would answer it
+      is under the hand. This is what the text cursor's bubble does: it shows
+      the letters either side of where the cursor would land, so the placement
+      is seen rather than recalled.
+
+  - id: INV-NOTES-111
+    description: A note can be moved without being covered
+    severity: major
+    check: >
+      The selection sheet offers a control that moves everything chosen: up
+      and down by a semitone, left and right by a sixteenth, notched so one
+      notch is one step. The sideways bar is withheld where the take has no
+      tempo. Moving in time keeps each note's length, leaves other notes where
+      they are, and stops against a neighbour rather than pushing it along.
+      Verified by asserting a shifted note keeps its duration, that neighbours
+      do not move, that a set moves as one, and that the time bar is absent
+      without a grid.
+
+      Dragging on the graph is the fast way and stays the fast way, but the
+      thing being aimed at is under the hand aiming at it and a semitone lane
+      is a few points tall. The loupe answers that by showing what is covered
+      (INV-NOTES-110); this answers it by covering nothing — the hand is in
+      the sheet and the note is on the graph, in full view, moving.
+
+      Notched for the same reason the length control is: a heavy thumb cannot
+      land between two steps, so "up one semitone" is a thing that can be
+      asked for exactly rather than aimed at.
+
+      It also moves a set, which dragging does but awkwardly — several chosen
+      notes have no single thing to put a finger on.

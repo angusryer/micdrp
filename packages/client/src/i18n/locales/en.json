@@ -253,8 +253,12 @@
       "hopSizeHint": "Quick ornaments and grace notes, where the pitch moves between readings.",
       "minFrequencyHint": "Singing at the very bottom of your range, where low notes go undetected.",
       "maxFrequencyHint": "Whistling, or a high falsetto — most whistling sits above the usual ceiling.",
-      "clarityThresholdHint": "Whistling, or singing softly in a quiet room, where notes are missed rather than wrong.",
-      "emitRateHint": "Watching the live pitch line while you sing — how smoothly it moves."
+      "clarityThresholdHint": "Which pitch is heard when a note is ambiguous — lower it and octaves start being read wrong. Not the one for notes going missing.",
+      "emitRateHint": "Watching the live pitch line while you sing — how smoothly it moves.",
+      "voicedClarityMin": "Faintest note",
+      "voicedLevelDb": "Silence floor",
+      "voicedClarityMinHint": "Whistling, or singing softly in a quiet room, where notes are missed rather than wrong. Lower it to hear fainter notes.",
+      "voicedLevelDbHint": "Recording somewhere with a hum or hiss, where silence comes back as notes. Raise it to ignore more of the quiet."
     },
     "appearance": {
       "themeHint": "Theme changes apply instantly.",

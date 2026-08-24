@@ -20,6 +20,7 @@
  * Pure, dependency-free, ES5-safe Math only.
  */
 
+import { readSungCount, type SungCount } from './sungCount';
 import type { NoteEvent } from './segmentation';
 import {
   calibrateConfidence,
@@ -281,6 +282,14 @@ export function fitGrid(notes: readonly NoteEvent[]): MusicalGrid {
   // beats is written 6/8 rather than 2/4.
   const timeSignature = isCompound ? `${beatsPerBar * 3}/8` : `${beatsPerBar}/4`;
 
+  // A count beats every inference. Everything above deduces a beat from music;
+  // a count is somebody stating one out loud before playing, and the only job
+  // left is not to lose it (INV-PITCH-022).
+  const counted = readSungCount(sorted);
+  if (counted != null && counted.confidence >= COUNT_MIN_CONFIDENCE) {
+    return gridFromCount(counted, isCompound);
+  }
+
   return {
     bpm: bpm,
     // An unstated metre still has a known PHASE — we just do not know which
@@ -294,6 +303,38 @@ export function fitGrid(notes: readonly NoteEvent[]): MusicalGrid {
     confidence: calibrateConfidence(pulse.strength, support),
     meterConfidence: meterConfidence,
     meterIsStated: stated
+  };
+}
+
+/** Below this a count was too ragged to have been one (INV-PITCH-022). */
+const COUNT_MIN_CONFIDENCE = 0.6;
+
+/**
+ * The grid a count states outright.
+ *
+ * Its phase is the first counted beat rather than a fitted offset: the person
+ * counting put beat one where they put it, and that is not something to
+ * re-derive from the audio afterwards.
+ */
+function gridFromCount(counted: SungCount, isCompound: boolean): MusicalGrid {
+  const beatsPerBar = counted.beatsPerBar;
+  // A count states a beat and a bar; it says nothing about how the beat
+  // subdivides, so that reading is left as the fitter found it.
+  const compound = isCompound;
+  const bpm = Math.round(
+    Math.min(MAX_BPM, Math.max(MIN_BPM, 60000 / counted.beatMs))
+  );
+  return {
+    bpm,
+    offsetMs: Math.round(counted.startMs),
+    beatsPerBar,
+    isCompound: compound,
+    stepsPerBeat: compound ? COMPOUND_STEPS_PER_BEAT : SIMPLE_STEPS_PER_BEAT,
+    timeSignature: compound ? `${beatsPerBar * 3}/8` : `${beatsPerBar}/4`,
+    confidence: counted.confidence,
+    // Stated, in the strongest sense the word has here: somebody counted it.
+    meterConfidence: counted.confidence,
+    meterIsStated: true
   };
 }
 

@@ -149,3 +149,37 @@ invariants:
       being asked. "Too quiet to be anything" is about loudness, and loudness
       is now measured (INV-PITCH-020); clarity is a measure of shape, and a
       quiet, perfectly periodic whistle has a clear shape and a low level.
+
+  - id: INV-PITCH-022
+    description: A counted tempo overrules an inferred one
+    severity: major
+    check: >
+      A run of evenly spaced notes at the head of a take, whose loudness shows
+      a repeating accent, is read as a count: its interval is the beat, its
+      accent period is the bar, and beat one is where the counting started.
+      That grid replaces the fitted one. Anything without accents is not a
+      count and is left to the fitter untouched. Verified by asserting a
+      counted waltz comes back as 3/4 at the counted tempo with beat one where
+      it was counted, and that a take with no count is unchanged.
+
+      Every other tempo reading here infers a beat from music, which is
+      genuinely hard: onsets fall on some beats and not others, syncopation
+      lies, and the strongest periodicity is often twice or half what a person
+      would tap. A count is not an inference — it is somebody stating the
+      tempo out loud before playing — so the only job is to not lose it.
+
+      The accents are what make it a count, and they are the whole reason this
+      needs per-note loudness (INV-PITCH-020). Even spacing alone describes a
+      metronomic melody exactly as well, and the first version of this read
+      any steady opening as a stated tempo: a waltz came back as 4/4, and
+      eighth notes came back as quarters, because one inter-onset interval was
+      taken for one beat. A reading that overrules another has to be sure
+      rather than plausible.
+
+      Takes whose loudness was never measured therefore have no count and keep
+      the tempo they have always had, which is the correct answer for every
+      recording made before this existed.
+
+      Beat one is the first counted beat rather than a fitted phase. Somebody
+      counting put beat one where they put it, and re-deriving it from the
+      audio afterwards would discard the clearest statement in the take.

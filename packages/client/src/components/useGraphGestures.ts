@@ -77,8 +77,10 @@ export interface GraphGestureOptions {
 export interface DragPreview {
   x: number;
   y: number;
-  /** The pitch it would become. */
+  /** The pitch it would become, named. */
   value: string;
+  /** And as a number, so the loupe can draw it in its lane (INV-NOTES-110). */
+  midi: number;
   /** How far it has come, so a small move is legible as a small move. */
   caption: string;
 }
@@ -251,6 +253,7 @@ export function useGraphGestures({
               onPreview?.({
                 x: e.x,
                 y: e.y,
+                midi: grabbedMidi.current + wanted,
                 value: midiToLabel(grabbedMidi.current + wanted),
                 caption:
                   wanted === 0

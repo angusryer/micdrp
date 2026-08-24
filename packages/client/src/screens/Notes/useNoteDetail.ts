@@ -17,6 +17,7 @@ import {
   proposeDownbeats,
   replayNoteEdits,
   resizeNotes,
+  shiftNotes,
   quantize,
   readMetre,
   type NoteEdge,
@@ -288,6 +289,41 @@ export function useNoteDetail(id: string) {
     [selection, grid.bpm, grid.stepsPerBeat, melody, heard, interpretation]
   );
 
+  /** Move the chosen notes in time, a sixteenth a step (INV-NOTES-111). */
+  const shiftChosen = useCallback(
+    (steps: number) => {
+      const chosen = selection.flatMap((one) =>
+        one.kind === 'melodyNote' ? [one.index] : []
+      );
+      const beatMs = grid.bpm > 0 ? 60000 / grid.bpm : 0;
+      const perBeat = grid.stepsPerBeat > 0 ? grid.stepsPerBeat : 4;
+      if (chosen.length === 0 || !(beatMs > 0) || steps === 0) {
+        return;
+      }
+      interpretation.updateNotes(
+        collectNoteEdits(
+          heard,
+          shiftNotes(melody, chosen, (steps * beatMs) / perBeat)
+        )
+      );
+    },
+    [selection, grid.bpm, grid.stepsPerBeat, melody, heard, interpretation]
+  );
+
+  /** Move the chosen notes by whole semitones, from the sheet. */
+  const nudgeChosen = useCallback(
+    (semitones: number) => {
+      for (const one of selection) {
+        if (one.kind === 'melodyNote') {
+          correctNote(one.index, semitones);
+        } else if (one.kind === 'chordTone') {
+          chords.moveTone(one.slot, one.tone, semitones);
+        }
+      }
+    },
+    [selection, correctNote, chords]
+  );
+
   const playback = useNotePlayback(melody, quantized, chords);
 
   return {
@@ -314,6 +350,8 @@ export function useNoteDetail(id: string) {
     correctNote,
     resetNote,
     resizeChosen,
+    shiftChosen,
+    nudgeChosen,
     resetLengths,
     hasResized,
     isCorrected,

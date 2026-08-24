@@ -164,6 +164,8 @@ const ENGINE_FIELDS: EngineFieldSpec[] = [
   { key: 'minFrequencyHz', labelKey: 'settings.engine.minFrequency', hintKey: 'settings.engine.minFrequencyHint', step: 10, min: 20, max: 500, unit: 'Hz' },
   { key: 'maxFrequencyHz', labelKey: 'settings.engine.maxFrequency', hintKey: 'settings.engine.maxFrequencyHint', step: 50, min: 200, max: 4000, unit: 'Hz' },
   { key: 'clarityThreshold', labelKey: 'settings.engine.clarityThreshold', hintKey: 'settings.engine.clarityThresholdHint', step: 0.05, min: 0, max: 1, decimals: 2 },
+  { key: 'voicedClarityMin', labelKey: 'settings.engine.voicedClarityMin', hintKey: 'settings.engine.voicedClarityMinHint', step: 0.05, min: 0, max: 1, decimals: 2 },
+  { key: 'voicedLevelDb', labelKey: 'settings.engine.voicedLevelDb', hintKey: 'settings.engine.voicedLevelDbHint', step: 5, min: -80, max: -20, unit: 'dB' },
   { key: 'emitRateHz', labelKey: 'settings.engine.emitRate', hintKey: 'settings.engine.emitRateHint', step: 10, min: 10, max: 120, unit: 'Hz' }
 ];
 

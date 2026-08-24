@@ -11,7 +11,8 @@ import {
   settleOverlaps,
   MIN_NOTE_MS,
   replayNoteEdits,
-  resizeNotes
+  resizeNotes,
+  shiftNotes
 } from '../noteEdits';
 import type { NoteEvent } from '../segmentation';
 
@@ -183,5 +184,64 @@ describe('pulling the left edge', () => {
     for (const delta of [-100, 200]) {
       expect(resizeNotes(SPACED, [1], delta, 'start')[1].endMs).toBe(1400);
     }
+  });
+});
+
+describe('INV-NOTES-111: moving a note in time', () => {
+  const SPACED = [note(60, 0, 400), note(64, 1000, 1400), note(67, 2000, 2400)];
+
+  it('keeps its length, unlike pulling an edge', () => {
+    const [, moved] = shiftNotes(SPACED, [1], 200);
+    expect(moved.startMs).toBe(1200);
+    expect(moved.endMs).toBe(1600);
+    expect(moved.durationMs).toBe(400);
+  });
+
+  it('goes backwards as readily as forwards', () => {
+    expect(shiftNotes(SPACED, [1], -300)[1].startMs).toBe(700);
+  });
+
+  it('leaves every other note where it was', () => {
+    const moved = shiftNotes(SPACED, [1], 200);
+    expect(moved[0]).toEqual(SPACED[0]);
+    expect(moved[2]).toEqual(SPACED[2]);
+  });
+
+  it('stops against a neighbour rather than pushing it along', () => {
+    // The same rule as lengthening: nothing is shoved, and nothing is
+    // swallowed (INV-NOTES-095).
+    const far = shiftNotes(SPACED, [1], 5000);
+    expect(far[1].endMs).toBeLessThanOrEqual(SPACED[2].startMs);
+    expect(far[2]).toEqual(SPACED[2]);
+  });
+
+  it('stops against the neighbour behind it too', () => {
+    const back = shiftNotes(SPACED, [1], -5000);
+    expect(back[1].startMs).toBe(SPACED[0].endMs);
+    expect(back[0]).toEqual(SPACED[0]);
+  });
+
+  it('never travels back before the recording began', () => {
+    expect(shiftNotes(SPACED, [0], -5000)[0].startMs).toBe(0);
+  });
+
+  it('moves a whole selection together, keeping its shape', () => {
+    // Two chosen notes move as one phrase: the second is not an obstacle to
+    // the first, or a set could never move at all.
+    const moved = shiftNotes(SPACED, [0, 1], 200);
+    expect(moved[0].startMs).toBe(200);
+    expect(moved[1].startMs).toBe(1200);
+  });
+
+  it('runs into a neighbour of its own pitch, to be joined', () => {
+    const held = [note(60, 0, 400), note(60, 1000, 1400)];
+    const moved = shiftNotes(held, [1], -800);
+    expect(moved[1].startMs).toBe(200);
+    expect(settleOverlaps(moved)).toHaveLength(1);
+  });
+
+  it('does nothing when nothing is chosen, or nothing is asked', () => {
+    expect(shiftNotes(SPACED, [], 500)).toEqual(SPACED);
+    expect(shiftNotes(SPACED, [1], 0)).toEqual(SPACED);
   });
 });

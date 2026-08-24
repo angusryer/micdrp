@@ -49,6 +49,44 @@ export const MIN_NOTE_MS = 60;
 /** Which end of a note is being pulled. */
 export type NoteEdge = 'start' | 'end';
 
+/**
+ * Move the chosen notes in time, keeping their lengths.
+ *
+ * Unlike a resize, both ends travel together: this is the note happening
+ * earlier or later, not lasting longer. Neighbours stay where they are, and a
+ * note that reaches one stops against it — the same rule as lengthening, for
+ * the same reason (INV-NOTES-095). Nothing is pushed along.
+ */
+export function shiftNotes(
+  notes: readonly NoteEvent[],
+  chosen: readonly number[],
+  deltaMs: number
+): NoteEvent[] {
+  const wanted = new Set(chosen);
+  return notes.map((note, i) => {
+    if (!wanted.has(i) || deltaMs === 0) {
+      return note;
+    }
+    const length = note.endMs - note.startMs;
+    const neighbour = deltaMs > 0 ? notes[i + 1] : notes[i - 1];
+    // A neighbour of the same pitch is not an obstacle: run into it and the
+    // two are one held note, which settling will join.
+    const blocks =
+      neighbour != null &&
+      !wanted.has(deltaMs > 0 ? i + 1 : i - 1) &&
+      Math.round(neighbour.midi) !== Math.round(note.midi);
+    let startMs = note.startMs + deltaMs;
+    if (blocks && deltaMs > 0) {
+      startMs = Math.min(startMs, neighbour.startMs - length);
+    } else if (blocks) {
+      startMs = Math.max(startMs, neighbour.endMs);
+    }
+    // Never before the recording began.
+    startMs = Math.max(0, startMs);
+    return { ...note, startMs, endMs: startMs + length, durationMs: length };
+  });
+}
+
 export function resizeNotes(
   notes: readonly NoteEvent[],
   chosen: readonly number[],

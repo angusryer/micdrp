@@ -14,7 +14,16 @@ const analysis = en.settings.analysis as Record<string, string>;
 
 /** Every field the settings screen steps, by the key its hint is stored under. */
 const HINTED = [
-  ...['frameSize', 'hopSize', 'minFrequency', 'maxFrequency', 'clarityThreshold', 'emitRate'].map(
+  ...[
+    'frameSize',
+    'hopSize',
+    'minFrequency',
+    'maxFrequency',
+    'clarityThreshold',
+    'voicedClarityMin',
+    'voicedLevelDb',
+    'emitRate'
+  ].map(
     (key) => ({ where: 'engine', key, text: engine[`${key}Hint`] })
   ),
   ...['windowMs', 'minConfidence'].map((key) => ({
@@ -32,9 +41,19 @@ describe('the settings screen', () => {
 
   it('says where a quiet whistle is lost, on the knob that fixes it', () => {
     // The case that prompted this. Both halves matter: the ceiling excludes
-    // whistling outright, and the clarity gate drops soft singing.
+    // whistling outright, and the voicing floor drops soft singing.
     expect(engine.maxFrequencyHint.toLowerCase()).toContain('whistl');
-    expect(engine.clarityThresholdHint.toLowerCase()).toContain('quiet');
+    expect(engine.voicedClarityMinHint.toLowerCase()).toContain('quiet');
+  });
+
+  it('does not send someone to the knob that will not fix it', () => {
+    // clarityThreshold used to carry the quiet-whistle description, and it
+    // was the wrong knob: it chooses WHICH pitch, and lowering it invites
+    // octave errors while doing nothing about notes going missing
+    // (INV-PITCH-021). A hint pointing at the wrong control is worse than
+    // none, because it gets followed.
+    expect(engine.clarityThresholdHint.toLowerCase()).not.toContain('missed');
+    expect(engine.clarityThresholdHint.toLowerCase()).toContain('octave');
   });
 
   it('describes a situation rather than which way to turn it', () => {

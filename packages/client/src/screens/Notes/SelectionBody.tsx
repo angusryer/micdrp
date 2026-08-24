@@ -12,6 +12,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Chosen } from '../../components/graphSelection';
 import { useTheme } from '../../theme';
 import { LengthBar } from './LengthBar';
+import { NudgePad } from './NudgePad';
 import { SelectionRows } from './SelectionRows';
 import { describeSelection } from './selectionFacts';
 import type { useNoteDetail } from './useNoteDetail';
@@ -38,8 +39,22 @@ export function SelectionBody({
 
   return (
     <ScrollView contentContainerStyle={styles.body}>
-      {/* At the top, because it acts on everything chosen and the list
-          below it is what "everything" means (INV-NOTES-097). */}
+      {/* At the top, because these act on everything chosen and the list
+          below is what "everything" means (INV-NOTES-097). Moving comes
+          before lengthening: a wrong note is the commoner correction, and it
+          is the one drag is worst at (INV-NOTES-111). */}
+      {selection.some(
+        (one) => one.kind === 'melodyNote' || one.kind === 'chordTone'
+      ) ? (
+        <NudgePad
+          onPitch={detail.nudgeChosen}
+          onTime={detail.shiftChosen}
+          canMoveInTime={
+            detail.hasGrid &&
+            selection.every((one) => one.kind === 'melodyNote')
+          }
+        />
+      ) : null}
       {selection.some((one) => one.kind === 'melodyNote') ? (
         <LengthBar
           onResize={detail.resizeChosen}

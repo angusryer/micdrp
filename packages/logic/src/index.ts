@@ -15,6 +15,7 @@ export * from './key';
 export * from './tempo';
 export * from './melodies';
 export * from './analysis';
+export * from './sungCount';
 export * from './quantize';
 export * from './bars';
 export * from './barEdits';
