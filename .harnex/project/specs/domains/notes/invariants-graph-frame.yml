@@ -176,3 +176,48 @@ invariants:
       Under everything, and faint enough to be ground. A hatch that competed
       with the rules or the notes would be a mark on the graph rather than the
       surface it is drawn on, which is the opposite of what it is for.
+
+  - id: INV-NOTES-108
+    description: The graph is the whole recording, both ends
+    severity: major
+    check: >
+      The time axis runs from where the recording began to where it ended,
+      not from the first detected note to the last. The stretch after the last
+      note is drawn as the same faint ground as the pickup (INV-NOTES-107). A
+      stated end earlier than the singing is ignored rather than truncating
+      it. Verified by asserting the axis reaches the recording's end, that the
+      notes do not move when the window widens, and that an end before the
+      last note is refused.
+
+      The pickup was already let in at the start (INV-NOTES-080) and the tail
+      was not, so the graph was asymmetric: silence before the singing was
+      drawn and silence after it was simply absent. A take that ran on after
+      the last note therefore looked cut off at exactly the point detection
+      stopped finding things.
+
+      That matters most where detection is weakest. A quiet note at the end of
+      a take that the detector missed does not read as a missed note — it
+      reads as a recording that ended early, which is a claim about the
+      hardware rather than about the reading. Drawing the whole recording puts
+      the missing note back in view as a gap in ground that is plainly there.
+
+  - id: INV-NOTES-109
+    description: A page under a sheet can still be scrolled clear of it
+    severity: major
+    check: >
+      While the selection sheet is up, the page beneath keeps room at its foot
+      equal to what the sheet is covering, so its last row can be scrolled
+      into view. The sheet reports that height from where it actually settled
+      rather than it being assumed, and gives the room back when it goes.
+      Verified by asserting the reported cover is the screen below the sheet's
+      position, that it is never negative, and that dismissal returns zero.
+
+      The sheet is undimmed and non-modal so the page stays live behind it
+      (INV-NOTES-078). That promise is only half kept if the page cannot be
+      reached: the bottom of the column sat under the sheet and scrolling
+      there sprang back, because the content ended where it always had and
+      there was nothing below to scroll to.
+
+      Measured rather than assumed because the sheet sizes itself to its
+      content, and its content is whatever was chosen — one note's facts, or a
+      list of nine.

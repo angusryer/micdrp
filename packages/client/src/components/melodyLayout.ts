@@ -59,6 +59,15 @@ export interface MelodyLayoutOptions extends ScaleRequest {
    * the take and part of where the beat sits (INV-NOTES-080).
    */
   fromMs?: number;
+  /**
+   * Where the recording ended, when that is later than the last note.
+   *
+   * The same claim as `fromMs` at the other end, and it has to be made
+   * separately or the drawing stops at the last thing detected — so a take
+   * that ran on after the singing looks cut off, and a quiet note the
+   * detector missed looks like a recording that ended early (INV-NOTES-108).
+   */
+  toMs?: number;
   /** Minimum bar thickness in px (default 3). */
   minBarHeight?: number;
   /**
@@ -86,6 +95,12 @@ export interface MelodyLayout {
    * it, and this is the line that marks the boundary (INV-NOTES-080).
    */
   firstNoteMs: number;
+  /**
+   * Where the last detected note ends. The take runs on past it whenever the
+   * recording did, and that stretch is the same kind of ground as the pickup:
+   * recorded, but nothing sung in it (INV-NOTES-108).
+   */
+  lastNoteMs: number;
   /** Lowest pitch lane shown (one semitone below the lowest sung note). */
   midiLow: number;
   /** Highest pitch lane shown (one semitone above the highest sung note). */
@@ -130,7 +145,9 @@ export function layoutMelody(
     options.fromMs != null && options.fromMs < bounds.t0
       ? options.fromMs
       : bounds.t0;
-  const span = bounds.span + (bounds.t0 - t0);
+  const end = bounds.t0 + bounds.span;
+  const t1 = options.toMs != null && options.toMs > end ? options.toMs : end;
+  const span = t1 - t0;
   const { pxPerMs, contentWidth } = resolveScale(options, span, innerW, pad);
 
   const pitchAxis: PitchAxis = { midiLow, midiHigh, pad, innerH, lane };
@@ -152,6 +169,8 @@ export function layoutMelody(
     rects,
     /** Where the first detected note starts, which the pickup runs up to. */
     firstNoteMs: bounds.t0,
+    /** Where the last detected note ends, after which the take runs on. */
+    lastNoteMs: end,
     midiLow,
     midiHigh,
     gridLines,

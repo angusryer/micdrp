@@ -129,3 +129,45 @@ describe('layoutMelody — grid rules', () => {
     expect(layout.gridLines).toEqual([]);
   });
 });
+
+describe('INV-NOTES-108: the graph is the whole recording', () => {
+  const NOTES = [
+    { midi: 60, startMs: 1000, endMs: 1500 },
+    { midi: 64, startMs: 1500, endMs: 2000 }
+  ];
+  const SIZE = { width: 300, height: 200 };
+
+  it('reaches the end of the take, not the end of the singing', () => {
+    // A take that ran on after the last note used to be drawn as one that
+    // stopped there, so the tail simply was not on the graph.
+    const laid = layoutMelody(NOTES, { ...SIZE, fromMs: 0, toMs: 5000 });
+    expect(laid.timeAxis.t0).toBe(0);
+    expect(laid.timeAxis.t0 + laid.timeAxis.span).toBe(5000);
+  });
+
+  it('says where the singing stopped, so the tail can be drawn as ground', () => {
+    const laid = layoutMelody(NOTES, { ...SIZE, fromMs: 0, toMs: 5000 });
+    expect(laid.firstNoteMs).toBe(1000);
+    expect(laid.lastNoteMs).toBe(2000);
+  });
+
+  it('opens the window at both ends, keeping the notes where they are', () => {
+    const tight = layoutMelody(NOTES, SIZE);
+    const wide = layoutMelody(NOTES, { ...SIZE, fromMs: 0, toMs: 5000 });
+    // Same notes, same times: the window widened rather than the take moving.
+    expect(tight.firstNoteMs).toBe(wide.firstNoteMs);
+    expect(tight.lastNoteMs).toBe(wide.lastNoteMs);
+  });
+
+  it('ignores an end earlier than the singing, rather than truncating it', () => {
+    // A duration shorter than the notes is a disagreement, and the notes are
+    // the thing actually detected.
+    const laid = layoutMelody(NOTES, { ...SIZE, toMs: 1200 });
+    expect(laid.timeAxis.t0 + laid.timeAxis.span).toBe(2000);
+  });
+
+  it('needs no end at all, and then stops at the last note', () => {
+    const laid = layoutMelody(NOTES, SIZE);
+    expect(laid.timeAxis.t0 + laid.timeAxis.span).toBe(2000);
+  });
+});

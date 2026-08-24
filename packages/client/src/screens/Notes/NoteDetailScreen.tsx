@@ -62,6 +62,10 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   // Held here so the graph's scrubber and the transport under it are the same
   // clock rather than two readings of one take (INT-NOTES-022).
   const [showDetails, setShowDetails] = useState(false);
+  // What the selection sheet is covering, so the page can be scrolled clear
+  // of it. It sits over a live page rather than a dimmed one, and a page
+  // whose bottom row cannot be reached is live in name only (INV-NOTES-109).
+  const [sheetCover, setSheetCover] = useState(0);
   const [transport, setTransport] = useState<{
     positionMs: number;
     seek: (ms: number) => void;
@@ -92,7 +96,12 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.neutral300 }]}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          sheetCover > 0 ? { paddingBottom: sheetCover } : null
+        ]}
+      >
         <Text style={[styles.title, { color: colors.typography }]}>
           {note.title}
         </Text>
@@ -135,6 +144,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
               detail={detail}
               selection={detail.selection}
               onSelect={detail.setSelection}
+              onCover={setSheetCover}
             />
 
             {/* The take plays while the layer is sung over it — that is what

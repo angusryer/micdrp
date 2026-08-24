@@ -38,6 +38,8 @@ export interface ZoomableMelodyProps {
   underlayColor?: string;
   /** Where the recording began, when earlier than the first sung note. */
   fromMs?: number;
+  /** Where the recording ended, when later than the last note (INV-NOTES-108). */
+  toMs?: number;
   /**
    * Drawn above the melody and inside the same scroll — the scrubber, which
    * has to sit clear of the drawing rather than over it (INV-NOTES-081).
@@ -89,6 +91,7 @@ export function ZoomableMelody({
   underlay,
   underlayColor,
   fromMs,
+  toMs,
   header,
   headerHeight = 0,
   children,
@@ -106,6 +109,7 @@ export function ZoomableMelody({
     height,
     alsoShow,
     fromMs,
+    toMs,
     scroller,
     scrollX,
     onScaleChange
@@ -159,6 +163,7 @@ export function ZoomableMelody({
             beatWidth={beatWidth}
             alsoShow={alsoShow}
             fromMs={fromMs}
+            toMs={toMs}
             underlay={underlay}
             underlayColor={underlayColor}
           />

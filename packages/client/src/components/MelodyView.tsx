@@ -59,6 +59,8 @@ export interface MelodyViewProps {
   alsoShow?: readonly number[];
   /** Where the recording began, when earlier than the first sung note. */
   fromMs?: number;
+  /** Where the recording ended, when later than the last note (INV-NOTES-108). */
+  toMs?: number;
   /**
    * A second performance drawn behind the sung line — the bass hummed
    * against it. Its own colour, because it is a different voice and reading
@@ -77,6 +79,7 @@ export function MelodyView({
   beatWidth,
   alsoShow,
   fromMs,
+  toMs,
   underlay,
   underlayColor
 }: MelodyViewProps): React.JSX.Element {
@@ -85,8 +88,16 @@ export function MelodyView({
 
   const layout = useMemo(
     () =>
-      layoutMelody(notes, { width, height, grid, beatWidth, alsoShow, fromMs }),
-    [notes, width, height, grid, beatWidth, alsoShow, fromMs]
+      layoutMelody(notes, {
+        width,
+        height,
+        grid,
+        beatWidth,
+        alsoShow,
+        fromMs,
+        toMs
+      }),
+    [notes, width, height, grid, beatWidth, alsoShow, fromMs, toMs]
   );
   // Placed on the melody's OWN axes rather than laid out again: a second
   // layout would derive its own pitch window from its own notes, and the same
@@ -110,16 +121,31 @@ export function MelodyView({
   // What was actually drawn — `width` when fitted, wider when it scrolls.
   const drawnWidth = layout.contentWidth;
 
-  // The recorded-but-not-sung stretch, drawn as ground rather than as empty
-  // graph (INV-NOTES-107). One path, since a long pickup at a close zoom is
-  // a hundred diagonals and each one drawn separately is a hundred nodes.
-  const pickup = useMemo(() => {
-    if (!(layout.timeAxis.t0 < layout.firstNoteMs)) {
-      return null;
+  // The recorded-but-not-sung stretches, drawn as ground rather than as empty
+  // graph (INV-NOTES-107). Both ends, in one path: the take runs on after the
+  // last note whenever the recording did, and leaving that off made a take
+  // look cut short (INV-NOTES-108). One path, since a long stretch at a close
+  // zoom is a hundred diagonals and each drawn alone is a hundred nodes.
+  const unsung = useMemo(() => {
+    const axis = layout.timeAxis;
+    const path = Skia.Path.Make();
+    let any = false;
+    if (axis.t0 < layout.firstNoteMs) {
+      writePickupHatch(path, 0, xForMs(axis, layout.firstNoteMs), height);
+      any = true;
     }
-    const right = xForMs(layout.timeAxis, layout.firstNoteMs);
-    return writePickupHatch(Skia.Path.Make(), 0, right, height);
-  }, [layout.timeAxis, layout.firstNoteMs, height]);
+    const end = axis.t0 + axis.span;
+    if (layout.lastNoteMs < end) {
+      writePickupHatch(
+        path,
+        xForMs(axis, layout.lastNoteMs),
+        xForMs(axis, end),
+        height
+      );
+      any = true;
+    }
+    return any ? path : null;
+  }, [layout.timeAxis, layout.firstNoteMs, layout.lastNoteMs, height]);
 
   const radius = Math.min(4, height / 16);
 
@@ -127,9 +153,9 @@ export function MelodyView({
     <View style={[styles.wrap, { width: drawnWidth, height }]}>
       <Canvas style={{ width: drawnWidth, height }}>
         {/* Under everything: it is ground, not a mark on the graph. */}
-        {pickup != null ? (
+        {unsung != null ? (
           <Path
-            path={pickup}
+            path={unsung}
             style="stroke"
             strokeWidth={StyleSheet.hairlineWidth}
             color={colors.gray300}

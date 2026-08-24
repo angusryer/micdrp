@@ -93,12 +93,30 @@ jest.mock('react-native-mmkv', () => {
 
 // @lodev09/react-native-true-sheet: the real module throws at import when the
 // native side is absent, which is every test. Render the children inline so a
-// sheet's contents are still queryable, and no-op the imperative methods.
+// sheet's contents are still queryable, and report the lifecycle the real one
+// reports — presenting tells the page how far up the screen the sheet came,
+// which is what the page underneath needs in order to scroll clear of it.
+//
+// TRUE_SHEET_POSITION is the Y the mock claims to have settled at; a test that
+// cares about the room left over sets it.
+globalThis.TRUE_SHEET_POSITION = 500;
 jest.mock('@lodev09/react-native-true-sheet', () => {
   const React = require('react');
   class TrueSheet extends React.Component {
-    present() { return Promise.resolve(); }
-    dismiss() { return Promise.resolve(); }
+    present() {
+      this.props.onDidPresent?.({
+        nativeEvent: {
+          index: 0,
+          position: globalThis.TRUE_SHEET_POSITION,
+          detent: 0
+        }
+      });
+      return Promise.resolve();
+    }
+    dismiss() {
+      this.props.onDidDismiss?.({ nativeEvent: null });
+      return Promise.resolve();
+    }
     render() {
       return React.createElement(React.Fragment, null, this.props.children);
     }

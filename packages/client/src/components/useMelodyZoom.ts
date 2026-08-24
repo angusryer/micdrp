@@ -33,6 +33,8 @@ export interface MelodyZoomOptions {
   alsoShow?: readonly number[];
   /** Where the recording began, so the pickup is inside the scale's window. */
   fromMs?: number;
+  /** Where the recording ended, when later than the last note. */
+  toMs?: number;
   scroller: React.RefObject<ScrollView | null>;
   scrollX: React.RefObject<number>;
   onScaleChange?: (state: { isDefault: boolean; reset: () => void }) => void;
@@ -45,6 +47,7 @@ export function useMelodyZoom({
   height,
   alsoShow,
   fromMs,
+  toMs,
   scroller,
   scrollX,
   onScaleChange
@@ -61,8 +64,16 @@ export function useMelodyZoom({
 
   const layout = useMemo(
     () =>
-      layoutMelody(notes, { width, height, grid, beatWidth, alsoShow, fromMs }),
-    [notes, width, height, grid, beatWidth, alsoShow, fromMs]
+      layoutMelody(notes, {
+        width,
+        height,
+        grid,
+        beatWidth,
+        alsoShow,
+        fromMs,
+        toMs
+      }),
+    [notes, width, height, grid, beatWidth, alsoShow, fromMs, toMs]
   );
 
   // Zooming out stops when the whole take fits, pickup included: past that

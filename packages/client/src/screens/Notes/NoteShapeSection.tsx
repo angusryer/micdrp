@@ -133,6 +133,9 @@ export function NoteShapeSection({
             underlay={bass}
             underlayColor={colors.gold}
             fromMs={0}
+            // The whole recording, so a take that ran on after the last
+            // note is not drawn as one that stopped there (INV-NOTES-108).
+            toMs={detail.note?.durationMs}
             headerHeight={SCRUB_BAND_HEIGHT}
             header={({ contentWidth, timeAxis, firstNoteMs }) =>
               transport != null ? (
