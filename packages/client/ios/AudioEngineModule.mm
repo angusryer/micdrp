@@ -326,20 +326,7 @@ static double NowMs() {
   }
   _lastEmitMs = now;
 
-  const PitchSample &s = emitted.back();
-  NSDictionary *body = @{
-    @"timestampMs": @(s.timestampMs),
-    @"frequencyHz": @(s.frequencyHz),
-    @"clarity": @(s.clarity),
-    @"levelDb": @(s.levelDb),
-    @"centroidHz": @(s.centroidHz),
-    @"flatness": @(s.flatness),
-    @"rolloffHz": @(s.rolloffHz),
-    @"fluxDb": @(s.fluxDb),
-    @"midi": (s.voiced ? @(s.midi) : (id)[NSNull null]),
-    @"cents": (s.voiced ? @(s.cents) : (id)[NSNull null]),
-  };
-  [self emitOnPitch:body];
+  [self emitOnPitch:[self pitchSampleBody:emitted.back()]];
 }
 
 /**
@@ -424,6 +411,105 @@ static double NowMs() {
                                        ? AVAudioSessionPortOverrideNone
                                        : AVAudioSessionPortOverrideSpeaker
                              error:nil];
+}
+
+/**
+ * Read a recording back through the engine, off the audio path entirely.
+ *
+ * The audio is the only part of a take that cannot be recomputed. Everything
+ * else — the melody, the hits, the chords, the grid — is a reading of it, so
+ * being able to read it again is what carries an improved engine back to the
+ * takes already in the library (INV-NOTES-116).
+ *
+ * Its own engine instance, so a re-read can never disturb a capture in
+ * progress, and no ring buffer: there is no producer to race with and no
+ * deadline to miss, so the file is analysed a window at a time as fast as it
+ * decodes.
+ */
+- (void)analyzeFile:(NSString *)uri
+            resolve:(RCTPromiseResolveBlock)resolve
+             reject:(RCTPromiseRejectBlock)reject {
+  NSURL *url = [NSURL URLWithString:uri];
+  if (url == nil || url.isFileURL == NO) {
+    url = [NSURL fileURLWithPath:uri];
+  }
+  NSError *openError = nil;
+  AVAudioFile *file = [[AVAudioFile alloc] initForReading:url error:&openError];
+  if (file == nil) {
+    reject(@"unreadable", openError.localizedDescription ?: @"cannot read", openError);
+    return;
+  }
+
+  // Mono float32 at the file's own rate: the engine is configured to match,
+  // so nothing is resampled and the timestamps are the file's own.
+  AVAudioFormat *format =
+      [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
+                                       sampleRate:file.fileFormat.sampleRate
+                                         channels:1
+                                      interleaved:NO];
+  AVAudioConverter *converter =
+      [[AVAudioConverter alloc] initFromFormat:file.processingFormat toFormat:format];
+  if (converter == nil) {
+    reject(@"unconvertible", @"cannot read this recording as mono", nil);
+    return;
+  }
+
+  EngineConfig cfg = _config;
+  cfg.sampleRateHz = format.sampleRate;
+  auto engine = std::make_shared<PitchEngine>();
+  engine->configure(cfg);
+
+  const AVAudioFrameCount chunk = (AVAudioFrameCount)cfg.frameSize * 8;
+  NSMutableArray *out = [NSMutableArray array];
+  while (true) {
+    AVAudioPCMBuffer *read =
+        [[AVAudioPCMBuffer alloc] initWithPCMFormat:file.processingFormat
+                                      frameCapacity:chunk];
+    NSError *readError = nil;
+    if (![file readIntoBuffer:read error:&readError] || read.frameLength == 0) {
+      break;
+    }
+    AVAudioPCMBuffer *mono =
+        [[AVAudioPCMBuffer alloc] initWithPCMFormat:format frameCapacity:chunk];
+    NSError *convertError = nil;
+    __block BOOL supplied = NO;
+    [converter convertToBuffer:mono
+                         error:&convertError
+            withInputFromBlock:^AVAudioBuffer *(AVAudioPacketCount count,
+                                                AVAudioConverterInputStatus *status) {
+              if (supplied) {
+                *status = AVAudioConverterInputStatus_NoDataNow;
+                return nil;
+              }
+              supplied = YES;
+              *status = AVAudioConverterInputStatus_HaveData;
+              return read;
+            }];
+    if (mono.frameLength == 0 || mono.floatChannelData == nullptr) {
+      continue;
+    }
+    engine->push(mono.floatChannelData[0], (std::size_t)mono.frameLength);
+    while (auto s = engine->tryAnalyze()) {
+      [out addObject:[self pitchSampleBody:*s]];
+    }
+  }
+  resolve(out);
+}
+
+/** One frame as JS sees it. The one place a PitchSample crosses the bridge. */
+- (NSDictionary *)pitchSampleBody:(const PitchSample &)s {
+  return @{
+    @"timestampMs": @(s.timestampMs),
+    @"frequencyHz": @(s.frequencyHz),
+    @"clarity": @(s.clarity),
+    @"levelDb": @(s.levelDb),
+    @"centroidHz": @(s.centroidHz),
+    @"flatness": @(s.flatness),
+    @"rolloffHz": @(s.rolloffHz),
+    @"fluxDb": @(s.fluxDb),
+    @"midi": (s.voiced ? @(s.midi) : (id)[NSNull null]),
+    @"cents": (s.voiced ? @(s.cents) : (id)[NSNull null]),
+  };
 }
 
 - (void)stop:(RCTPromiseResolveBlock)resolve

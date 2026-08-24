@@ -104,6 +104,17 @@ export interface Spec extends TurboModule {
    * (INV-NOTES-074). 0 when the session cannot say.
    */
   roundTripLatencyMs(): Promise<Double>;
+  /**
+   * Read a recording back through the engine, off the audio path entirely.
+   *
+   * The audio is the only thing about a take that cannot be recomputed
+   * (INV-NOTES-116). Everything else is a reading of it, so being able to
+   * read it again is what makes every improvement to the engine reach the
+   * takes already in the library rather than only the next one.
+   *
+   * No real-time constraint: it runs as fast as the file can be decoded.
+   */
+  analyzeFile(uri: string): Promise<PitchSampleEvent[]>;
 
   /** Throttled live frames for the duration of a capture. */
   readonly onPitch: EventEmitter<PitchSampleEvent>;

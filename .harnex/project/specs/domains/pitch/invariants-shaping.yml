@@ -319,3 +319,26 @@ invariants:
       answer — frequency, clarity, midi, cents, each to a tolerance — rather
       than bit patterns. An implementation that is numerically equivalent is
       the kind of change it was built to permit.
+
+  - id: INV-PITCH-027
+    description: An onset is read from the spectrum where the spectrum is there
+    severity: major
+    check: >
+      A note is split at a re-attack when the frame's spectral flux says
+      enough of its energy newly arrived. Where no flux was measured, the
+      level's shape stands in as before. Verified by asserting a split where
+      the spectrum turns over at a constant level, no split where it does not,
+      no split on a fast level climb with a settled spectrum, and that takes
+      with no spectrum read exactly as they did.
+
+      The level rule works and needs two thresholds to do it: how far the
+      level must climb and how quickly. Both are proxies for one question —
+      whether something new started — and they answer it wrongly in both
+      directions. A re-attack that does not get louder is invisible to them,
+      and a swell that does is indistinguishable from one.
+
+      An attack rearranges the spectrum and a note continuing does not,
+      however its loudness drifts, so flux answers directly what the level
+      could only approximate. The proxy stays for takes recorded before the
+      spectrum was measured, which is the only place it is still the best
+      available reading.

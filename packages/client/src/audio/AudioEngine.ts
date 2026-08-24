@@ -147,6 +147,29 @@ class AudioEngineImpl implements AudioEngineContract {
     }
   }
 
+  /**
+   * Read a recording back through the engine.
+   *
+   * The audio is the only part of a take that cannot be recomputed; the
+   * melody, the hits, the chords and the grid are all readings of it. This is
+   * what carries an improved engine back to takes recorded before it existed
+   * (INV-NOTES-116).
+   *
+   * Empty where there is no engine to read with — the worklet tier has no
+   * file decoder — and empty rather than throwing, so a caller can offer the
+   * re-read and simply find there is nothing new to say.
+   */
+  async analyzeFile(uri: string): Promise<PitchSample[]> {
+    if (!this.native) {
+      return [];
+    }
+    try {
+      return (await this.native.analyzeFile(uri)) as PitchSample[];
+    } catch {
+      return [];
+    }
+  }
+
   async stop(): Promise<RecordingHandle> {
     if (this.native) {
       const handle = await this.native.stop();

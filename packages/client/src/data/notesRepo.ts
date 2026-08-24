@@ -25,6 +25,7 @@ import {
 import type {
   CreateNoteInput,
   InterpretationDto,
+  HitDto,
   NoteDto,
   NoteEventDto,
   NoteLayerDto
@@ -59,6 +60,15 @@ function toMelody(json: unknown): NoteEventDto[] {
   return readMelody(json);
 }
 
+/** Columns added after the row type was written, read without asserting. */
+const extra = (row: NoteRow): Record<string, unknown> =>
+  row as unknown as Record<string, unknown>;
+
+/** The struck sounds, or none where a take was read before they were sought. */
+function toHits(json: unknown): HitDto[] {
+  return Array.isArray(json) ? (json as HitDto[]) : [];
+}
+
 /** Map a Postgres row to the camelCase {@link NoteDto} wire shape. */
 function rowToDto(row: NoteRow): NoteDto {
   return {
@@ -71,6 +81,13 @@ function rowToDto(row: NoteRow): NoteDto {
     // '' means nothing was attached; the DTO models absence as null.
     audioPath: row.audio.length > 0 ? row.audio : null,
     melody: toMelody(row.melody_json),
+    hits: toHits(extra(row).hits_json),
+    // Absent means the oldest reading, which is what a take stored before
+    // this existed was given (INV-NOTES-116).
+    analysisVersion:
+      typeof extra(row).analysis_version === 'number'
+        ? (extra(row).analysis_version as number)
+        : undefined,
     key: row.key,
     tempoBpm: row.tempo_bpm,
     inTuneRatio: row.in_tune_ratio,
@@ -232,6 +249,34 @@ export const notesRepo = {
       });
     } catch (error) {
       throw appError(AppErrorCode.Unknown, 'Could not save the layers', error);
+    }
+  },
+
+  /**
+   * Replace the reading of a take with a fresh one.
+   *
+   * Only the derived parts: the audio is untouched and the interpretations
+   * are left exactly as they are, because edits are anchored to the moment
+   * the detector first heard them and replay against whatever is read now
+   * (INV-NOTES-116).
+   */
+  async saveReading(
+    noteId: string,
+    reading: {
+      melody: readonly NoteEventDto[];
+      hits: readonly HitDto[];
+      analysisVersion: number;
+    }
+  ): Promise<void> {
+    try {
+      await backend.collection(COLLECTIONS.notes).update(noteId, {
+        melody_json: reading.melody,
+        hits_json: reading.hits,
+        analysis_version: reading.analysisVersion,
+        note_count: reading.melody.length
+      });
+    } catch (error) {
+      throw appError(AppErrorCode.Network, 'Could not save the new reading', error);
     }
   },
 

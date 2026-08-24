@@ -20,6 +20,7 @@ import {
   shiftNotes,
   quantize,
   splitOffCount,
+  isStale,
   readMetre,
   type NoteEdge,
   type NoteEvent
@@ -30,7 +31,8 @@ import {
   chordPitches,
   HEADPHONE_FLOOR_MIDI
 } from '../../components/chordLayout';
-import { cachedNotes } from '../../data/notesSync';
+import { cacheReading, cachedNotes } from '../../data/notesSync';
+import { rereadTake } from '../../analysis/reread';
 import { notesRepo } from '../../data/notesRepo';
 import { useBarLayout } from './useBarLayout';
 import { useChordTrack } from './useChordTrack';
@@ -49,7 +51,13 @@ const FLASH_MS = 700;
 const EMPTY_READINGS: InterpretationDto[] = [];
 
 export function useNoteDetail(id: string) {
-  const note = useMemo(() => cachedNotes().find((n) => n.id === id), [id]);
+  // Bumped when the take is re-read, so the whole page recomputes from the
+  // new reading rather than from the one it opened with (INV-NOTES-116).
+  const [readingAt, setReadingAt] = useState(0);
+  const note = useMemo(
+    () => cachedNotes().find((n) => n.id === id),
+    [id, readingAt]
+  );
   const heard = (note?.melody ?? []) as NoteEvent[];
 
   // Mint the audio URL when Play is pressed rather than here: the token it
@@ -334,6 +342,26 @@ export function useNoteDetail(id: string) {
     [selection, correctNote, chords]
   );
 
+  /**
+   * Read this take again with whatever the engine can do now.
+   *
+   * Only the derived parts are replaced. The interpretation is left alone —
+   * edits are anchored to the moment the detector first heard them and replay
+   * against whatever is read now, and an edit whose note is gone simply finds
+   * nothing, which is what the warning says (INV-NOTES-116).
+   */
+  const reread = useCallback(async () => {
+    const uri = note?.audioPath ? await resolveAudio() : null;
+    const fresh = await rereadTake(uri);
+    if (fresh == null || note == null) {
+      return false;
+    }
+    cacheReading(note.id, fresh);
+    await notesRepo.saveReading(note.id, fresh);
+    setReadingAt((was) => was + 1);
+    return true;
+  }, [note, resolveAudio]);
+
   const playback = useNotePlayback(melody, quantized, chords);
 
   return {
@@ -361,6 +389,9 @@ export function useNoteDetail(id: string) {
     correctNote,
     resetNote,
     countedNotes: counted.length,
+    /** True where this take would read differently if it were read again. */
+    isStale: isStale(note?.analysisVersion),
+    reread,
     resizeChosen,
     shiftChosen,
     nudgeChosen,

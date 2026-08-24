@@ -55,7 +55,7 @@ export interface PitchSample {
 export interface EngineConfig {
   sampleRateHz: number; // default 44100
   frameSize: number; // analysis window, default 2048
-  hopSize: number; // default 1024
+  hopSize: number; // default 512
   minFrequencyHz: number; // default 70
   maxFrequencyHz: number; // default 1200
   /**
@@ -79,7 +79,12 @@ export interface EngineConfig {
 export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   sampleRateHz: 44100,
   frameSize: 2048,
-  hopSize: 1024,
+  // Half a frame used to be the hop. Halving it again doubles the time
+  // resolution of every onset — 23ms of uncertainty becomes 12ms, which is
+  // the difference between placing a fast attack and rounding it to the
+  // nearest other one. Affordable only because the detector became fifteen
+  // times cheaper (INV-PITCH-026).
+  hopSize: 512,
   minFrequencyHz: 70,
   maxFrequencyHz: 1200,
   clarityThreshold: 0.9,
@@ -117,6 +122,15 @@ export interface AudioEngine {
   stop(): Promise<RecordingHandle>;
   /** Request the OS microphone permission. Resolves true if granted. */
   requestPermission(): Promise<boolean>;
+  /**
+   * Read a recording back through the engine and return every frame.
+   *
+   * The audio is the only part of a take that cannot be recomputed; the
+   * melody, the hits, the chords and the grid are all readings of it. This is
+   * what lets an improved engine reach a take recorded before it existed
+   * (INV-NOTES-116). Returns an empty array where the file cannot be read.
+   */
+  analyzeFile(uri: string): Promise<PitchSample[]>;
   /** Subscribe to the throttled live PitchSample stream. Returns an unsubscribe fn. */
   onPitch(cb: (sample: PitchSample) => void): () => void;
   /** Subscribe to coarse engine-state transitions. Returns an unsubscribe fn. */

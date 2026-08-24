@@ -198,3 +198,60 @@ describe('notes re-attacked on the breath', () => {
     expect(read(unmeasured)).toHaveLength(1);
   });
 });
+
+/**
+ * INV-PITCH-027 — the spectrum says an onset outright.
+ *
+ * The level-rise rule works and needed two thresholds to do it: how far the
+ * level must climb, and how quickly. Both are proxies for one question, which
+ * is whether something new started — and an attack rearranges the spectrum
+ * while a note continuing does not, however its loudness drifts.
+ *
+ * Flux answers it directly, so it is preferred wherever the engine reports it.
+ * The level rule stays for takes recorded before the spectrum was measured.
+ */
+function withFlux(frames: PitchFrame[], fluxAt: (i: number) => number) {
+  return frames.map((f, i) => ({ ...f, fluxDb: fluxAt(i) }));
+}
+
+describe('onsets read from the spectrum', () => {
+  /** One pitch, steady level, with the spectrum turning over periodically. */
+  const held = (ms: number): PitchFrame[] =>
+    Array.from({ length: Math.ceil(ms / HOP) }, (_, i) => ({
+      timestampMs: i * HOP,
+      midi: 62,
+      cents: 0,
+      clarity: 1,
+      levelDb: -12
+    }));
+
+  it('splits where the spectrum turned over, with no level change at all', () => {
+    // The case the level rule cannot see: a re-attack that does not get
+    // louder. Every frame is -12dB throughout.
+    const attacksEvery = 30;
+    const frames = withFlux(held(1200), (i) =>
+      i > 0 && i % attacksEvery === 0 ? -2 : -40
+    );
+    expect(read(frames).length).toBeGreaterThan(3);
+  });
+
+  it('leaves a note whose spectrum is not moving alone', () => {
+    expect(read(withFlux(held(1200), () => -40))).toHaveLength(1);
+  });
+
+  it('ignores the level rule entirely once flux is there to be read', () => {
+    // A big, fast level climb with a settled spectrum is a swell, and the
+    // proxy would have called it an attack.
+    const swelling = held(1200).map((f, i) => ({
+      ...f,
+      levelDb: -30 + (i % 20) * 1.2,
+      fluxDb: -40
+    }));
+    expect(read(swelling)).toHaveLength(1);
+  });
+
+  it('falls back to the level rule on takes with no spectrum', () => {
+    // Everything recorded before the transform existed still reads as it did.
+    expect(read(aspirated({ midi: 62, slotMs: 300, count: 4 }))).toHaveLength(4);
+  });
+});

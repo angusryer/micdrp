@@ -198,3 +198,41 @@ invariants:
       What a note is does not change with the role. Two roles disagreeing
       about the same singing would be two segmenters wearing one name, which
       is the failure INV-PITCH-021 exists to prevent.
+
+  - id: INV-NOTES-116
+    description: The audio is the take; everything else is a reading of it
+    severity: critical
+    check: >
+      A take can be read again from its recording, replacing the melody, the
+      hits and everything derived from them, and carrying the version of the
+      reading that produced them. The interpretation is not touched. The
+      offer appears only on a take an older reading produced, states that the
+      reading will be replaced before it is taken, and reports when the
+      recording could not be opened rather than appearing to succeed.
+      Verified by asserting the offer is absent on a current take, present on
+      an older one, that it names what it replaces, and that a failure to open
+      says so.
+
+      A take has exactly two things that cannot be produced again: the
+      recording, and what a person did to it. The melody, the hits, the
+      chords, the grid, the key and the tempo are all readings of the first.
+      Treating them as stored facts rather than as a cache is what made every
+      improvement to the engine reach only the next recording — the library
+      kept whatever it was given on the day.
+
+      So re-reading goes back to the audio rather than to stored frames.
+      Frames would let the symbolic stages improve and nothing else, and the
+      changes worth carrying back are as often in the engine: a detector that
+      hears a quiet whistle, or a transform that can tell a thump from a hiss,
+      is no use to a take whose frames were captured before it existed.
+
+      The version is what makes staleness a fact rather than a guess. Without
+      it the only honest offer is one on every take in the library, which
+      trains a person to ignore it. A version from the future is not stale: a
+      bundle can be older than the take it is reading, and re-reading there
+      would be the one case that makes things worse.
+
+      Interpretations survive because edits are anchored to the moment the
+      detector first heard them (INV-NOTES-096) and replay against whatever is
+      read now. An edit whose note is no longer heard finds nothing, which is
+      the honest outcome and precisely what the warning has to say.

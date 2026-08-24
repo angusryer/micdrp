@@ -11,7 +11,7 @@
  * Writes still go cloud-first via `notesRepo`; the cache is only ever derived
  * from a successful cloud read.
  */
-import type { NoteDto } from 'shared';
+import type { HitDto, NoteDto, NoteEventDto } from 'shared';
 
 import { notesRepo } from './notesRepo';
 import { NOTES_INDEX_KEY, listNotes, type NoteMeta } from './notesCache';
@@ -34,6 +34,8 @@ export function dtoToMeta(dto: NoteDto): NoteMeta {
     sampleRateHz: dto.sampleRateHz,
     audioPath: dto.audioPath,
     melody: dto.melody,
+    hits: dto.hits ?? [],
+    analysisVersion: dto.analysisVersion,
     layers: dto.layers ?? [],
     interpretations: dto.interpretations,
     key: dto.key ?? undefined,
@@ -74,4 +76,25 @@ export async function syncNotes(): Promise<NoteMeta[]> {
  */
 export function cachedNotes(): NoteMeta[] {
   return listNotes();
+}
+
+/**
+ * Replace one note's reading in the local cache.
+ *
+ * Written straight in rather than waiting for the next sync, so the graph
+ * redraws the moment a take is re-read rather than on some later round trip
+ * (INV-NOTES-116).
+ */
+export function cacheReading(
+  noteId: string,
+  reading: { melody: NoteEventDto[]; hits: HitDto[]; analysisVersion: number }
+): void {
+  const index: Record<string, NoteMeta> = {};
+  for (const meta of listNotes()) {
+    index[meta.id] =
+      meta.id === noteId
+        ? { ...meta, ...reading, noteCount: reading.melody.length }
+        : meta;
+  }
+  setJSON(NOTES_INDEX_KEY, index);
 }

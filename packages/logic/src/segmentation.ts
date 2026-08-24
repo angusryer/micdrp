@@ -97,6 +97,17 @@ export interface SegmentOptions {
   aspirationRiseDb?: number;
   /** How recent the dip must be for the climb to count (default 70ms). */
   onsetWindowMs?: number;
+  /**
+   * How much of a frame's energy must be newly arrived for it to be an attack
+   * (default -6dB, meaning about a quarter of it).
+   *
+   * The direct reading of an onset, and the one preferred wherever the engine
+   * reports it. An attack rearranges the spectrum; a note continuing does not,
+   * however its loudness drifts. The level rise below is what takes over on
+   * takes recorded before the spectrum was measured — it answers the same
+   * question by a proxy, and needed two thresholds to do it (INV-PITCH-027).
+   */
+  onsetFluxDb?: number;
 }
 
 /**
@@ -158,6 +169,7 @@ export function segmentNotes(
   const articulationDrop = options.articulationDropDb ?? 12;
   const aspirationRise = options.aspirationRiseDb ?? 8;
   const onsetWindow = options.onsetWindowMs ?? 70;
+  const onsetFlux = options.onsetFluxDb ?? -6;
 
   const notes: NoteEvent[] = [];
 
@@ -260,9 +272,16 @@ export function segmentNotes(
     const window = anchored ? vibrato : vibrato * 2;
     if (Math.abs(pitch - centre) <= window) {
       // Still this note, wobble and all.
-      // A climb out of a recent dip, at one pitch and with no silence
-      // between: the note was pushed again on the breath (INV-PITCH-024).
-      const trough = risenFrom(recent, f, onsetWindow, aspirationRise);
+      // Something new started, at one pitch and with no silence between: the
+      // note was pushed again (INV-PITCH-024). The spectrum says so outright
+      // where it was measured; where it was not, the level's shape is the
+      // proxy that has to stand in (INV-PITCH-027).
+      const trough =
+        f.fluxDb != null
+          ? f.fluxDb >= onsetFlux
+            ? f.timestampMs
+            : null
+          : risenFrom(recent, f, onsetWindow, aspirationRise);
       if (trough != null && trough - startMs >= minDuration) {
         lastVoicedMs = trough;
         close();

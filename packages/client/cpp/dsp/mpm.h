@@ -27,7 +27,7 @@ namespace micdrp::dsp {
 struct EngineConfig {
   double sampleRateHz = 44100.0;
   std::size_t frameSize = 2048;
-  std::size_t hopSize = 1024;
+  std::size_t hopSize = 512;
   double minFrequencyHz = 70.0;
   double maxFrequencyHz = 1200.0;
   // MPM's peak-picking parameter: which NSDF peak counts as the fundamental,

@@ -15,6 +15,7 @@ export * from './key';
 export * from './tempo';
 export * from './melodies';
 export * from './analysis';
+export * from './analysisVersion';
 export * from './percussion';
 export * from './readTake';
 export * from './sungCount';

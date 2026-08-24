@@ -44,6 +44,19 @@ export function readMelody(raw: unknown): NoteEventDto[] {
   }));
 }
 
+/** One struck sound — mirrors `logic`'s `Hit` field-for-field. */
+export interface HitDto {
+  atMs: number;
+  durationMs: number;
+  loudnessDb: number;
+  /** Where its energy sat, or null when nothing measured it. */
+  centroidHz: number | null;
+  /** How noise-like it was, or null when nothing measured it. */
+  flatness: number | null;
+  kind: 'thump' | 'tap' | 'hiss' | 'unknown';
+  confidence: number;
+}
+
 /**
  * What a layer is for, which decides how it is read.
  *
@@ -52,7 +65,7 @@ export function readMelody(raw: unknown): NoteEventDto[] {
  * read — a layer nobody knows how to interpret is still a performance worth
  * having, and inventing a reading for it would be worse than admitting none.
  */
-export type LayerRole = 'bass' | 'other';
+export type LayerRole = 'bass' | 'drums' | 'melody' | 'other';
 
 /**
  * A second take sung against the first.
@@ -68,6 +81,10 @@ export interface NoteLayerDto {
   audioPath: string | null;
   /** What was detected in it, in the take's own timeline. */
   melody: NoteEventDto[];
+  /** The struck sounds in this layer, where it was read for them. */
+  hits?: HitDto[];
+  /** Which reading produced them (INV-NOTES-116). */
+  analysisVersion?: number;
   /**
    * How far this layer's own clock was shifted to line up with the take.
    *
@@ -94,8 +111,25 @@ export interface NoteDto {
   sampleRateHz: number;
   /** Storage path of the captured audio, or null. */
   audioPath: string | null;
-  /** The symbolic melody — source of truth for all corpus analysis. */
+  /**
+   * The symbolic melody.
+   *
+   * A reading of the audio rather than a source of truth: the recording and
+   * the interpretations are the only parts of a take that cannot be produced
+   * again, and this can be re-read from the audio whenever the engine
+   * improves (INV-NOTES-116).
+   */
   melody: NoteEventDto[];
+  /**
+   * The struck sounds in the take — mouth drums rather than notes. Absent on
+   * anything read before they were looked for, which is not an error.
+   */
+  hits?: HitDto[];
+  /**
+   * Which reading produced the above. Absent means the oldest one, since that
+   * is what a take stored before this existed was given (INV-NOTES-116).
+   */
+  analysisVersion?: number;
   /** Detected key, e.g. "A minor", or null. */
   key: string | null;
   tempoBpm: number | null;
@@ -133,6 +167,8 @@ export interface CreateNoteInput {
   noteCount: number;
   rangeLowMidi?: number | null;
   rangeHighMidi?: number | null;
+  hits?: HitDto[];
+  analysisVersion?: number;
 }
 
 /**
@@ -159,6 +195,9 @@ export function parseLayers(raw: unknown): NoteLayerDto[] {
       role: v.role === 'bass' ? 'bass' : 'other',
       audioPath: typeof v.audioPath === 'string' ? v.audioPath : null,
       melody: readMelody(v.melody),
+      hits: Array.isArray(v.hits) ? v.hits : [],
+      analysisVersion:
+        typeof v.analysisVersion === 'number' ? v.analysisVersion : undefined,
       alignedByMs: typeof v.alignedByMs === 'number' ? v.alignedByMs : 0,
       isMuted: v.isMuted === true
     });

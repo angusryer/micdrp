@@ -11,10 +11,14 @@
  * This module is the single READ path for that cache. The cache is *written*
  * exclusively by `notesSync.ts` (server-authoritative, one whole-index write).
  */
-import type { NoteEventDto } from 'shared';
+import type {
+  HitDto,
+  InterpretationDto,
+  NoteEventDto,
+  NoteLayerDto
+} from 'shared';
 
 import { getJSON } from './store';
-import type { NoteLayerDto, InterpretationDto } from 'shared';
 
 /** MMKV key under which the whole `id -> NoteMeta` index is stored. */
 export const NOTES_INDEX_KEY = 'notes.index';
@@ -38,8 +42,18 @@ export interface NoteMeta {
    * durable path keeps, and the URL is minted when playback starts.
    */
   audioPath: string | null;
-  /** The symbolic melody — source of truth for all corpus analysis. */
+  /**
+   * The symbolic melody.
+   *
+   * A reading of the audio, not a source of truth: the recording and the
+   * interpretations are the only parts that cannot be produced again, and
+   * this is re-read whenever the engine improves (INV-NOTES-116).
+   */
   melody: NoteEventDto[];
+  /** The struck sounds. Absent on a take read before they were sought. */
+  hits?: HitDto[];
+  /** Which reading produced them. Absent means the oldest one. */
+  analysisVersion?: number;
   key?: string;
   tempoBpm?: number;
   inTuneRatio?: number;

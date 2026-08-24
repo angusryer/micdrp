@@ -21,6 +21,7 @@ import { useTranslation } from '../../i18n';
 import { ExportSheet } from '../Results/ExportSheet';
 import { NoteList } from '../Results/NoteList';
 import { NoteStats } from './NoteStats';
+import { RereadCard } from './RereadCard';
 import type { useNoteDetail } from './useNoteDetail';
 
 export interface NoteDetailsPageProps {
@@ -75,6 +76,9 @@ export function NoteDetailsPage({
             {t('notes.notesTapToHear')}
           </Text>
           <NoteList notes={melody} onPressNote={detail.playNote} />
+
+          {/* Last, because it replaces everything above it (INV-NOTES-116). */}
+          <RereadCard isStale={detail.isStale} onReread={detail.reread} />
 
           <ExportSheet midiUri={detail.midiUri} title={note.title} />
         </ScrollView>
