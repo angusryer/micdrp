@@ -18,8 +18,11 @@ import {
   dropTooBriefToSing,
   mergeBends,
   recentreNotes,
+  readPercussion,
   segmentNotes,
   smoothPitch,
+  ANALYSIS_VERSION,
+  type Hit,
   type NoteEvent,
   type TargetNote
 } from 'logic';
@@ -36,6 +39,8 @@ const MIN_TEMPO_CONFIDENCE = 0.4;
 export interface CaptureAnalysis {
   /** Discrete sung notes — the symbolic melody (`NoteEvent` ≡ `NoteEventDto`). */
   melody: NoteEvent[];
+  /** The struck sounds — mouth drums rather than notes (INV-PITCH-025). */
+  hits: Hit[];
   /** The fields needed to persist this capture as a note. */
   noteInput: Omit<CreateNoteInput, 'title'>;
 }
@@ -58,6 +63,10 @@ export function analyzeCapture(handle: RecordingHandle): CaptureAnalysis {
   const { notes } = recentreNotes(
     dropTooBriefToSing(mergeBends(segmentNotes(smoothed, segmentOptions())))
   );
+  // The struck sounds in the same take. A first take is a person switching
+  // between humming and drumming without announcing it, so it is read both
+  // ways (INV-NOTES-115).
+  const hits = readPercussion(handle.samples);
   const hasNotes = notes.length > 0;
 
   // Intonation steadiness: how cleanly each sustained pitch was held (no grade).
@@ -82,6 +91,7 @@ export function analyzeCapture(handle: RecordingHandle): CaptureAnalysis {
 
   return {
     melody: notes,
+    hits,
     noteInput: {
       durationMs: handle.durationMs,
       sampleRateHz: handle.sampleRateHz,
@@ -93,7 +103,12 @@ export function analyzeCapture(handle: RecordingHandle): CaptureAnalysis {
       meanCentsError: hasNotes ? score.meanCentsError : null,
       noteCount: notes.length,
       rangeLowMidi: low,
-      rangeHighMidi: high
+      rangeHighMidi: high,
+      hits,
+      // Stamped with the reading that produced all of the above, so a later
+      // engine can tell this take apart from one it has already read
+      // (INV-NOTES-116).
+      analysisVersion: ANALYSIS_VERSION
     }
   };
 }

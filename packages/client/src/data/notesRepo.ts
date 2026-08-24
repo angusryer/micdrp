@@ -152,6 +152,8 @@ export const notesRepo = {
     form.append('duration_ms', String(input.durationMs));
     form.append('sample_rate_hz', String(input.sampleRateHz));
     form.append('melody_json', JSON.stringify(input.melody));
+    form.append('hits_json', JSON.stringify(input.hits ?? []));
+    form.append('analysis_version', String(input.analysisVersion ?? 1));
     form.append('note_count', String(input.noteCount));
     if (input.key != null) form.append('key', input.key);
     if (input.tempoBpm != null) form.append('tempo_bpm', String(input.tempoBpm));

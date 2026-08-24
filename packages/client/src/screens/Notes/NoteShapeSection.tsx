@@ -15,6 +15,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { octaveLabel } from 'logic';
 
 import { GraphLayers } from './GraphLayers';
+import { RhythmBand, rhythmBandHeight } from '../../components/RhythmBand';
 import type { Chosen, Selection } from '../../components/graphSelection';
 import { MelodyView } from '../../components/MelodyView';
 import { ZoomableMelody } from '../../components/ZoomableMelody';
@@ -107,9 +108,13 @@ export function NoteShapeSection({
   // exactly what they occupy and the section still fits its slot.
   const hasChords = chords.slots.length > 0;
   const stripHeight = hasChords ? CHORD_STRIP_HEIGHT : 0;
+  // The drums take their room out of the same height everything else does, so
+  // a take with rhythm in it does not grow taller than its slot — the drawing
+  // gives way, as it does for the chord strip (INV-NOTES-060).
+  const bandHeight = rhythmBandHeight(detail.hits);
   const graphHeight = Math.max(
     MIN_GRAPH_HEIGHT,
-    height - stripHeight - SCRUB_BAND_HEIGHT
+    height - stripHeight - bandHeight - SCRUB_BAND_HEIGHT
   );
   // The graph never moves for a transposition — the take was sung where it
   // was sung. This is the only sign of it, and only while it is not zero
@@ -152,8 +157,19 @@ export function NoteShapeSection({
               ) : null
             }
             onScaleChange={onScaleChange}
-            footerHeight={stripHeight}
+            footerHeight={stripHeight + bandHeight}
             footer={({ contentWidth, timeAxis, zoomBy }) => (
+              <>
+                {/* Above the chords and below the drawing: the drums are a
+                    performance, and the chords are a reading of one
+                    (INV-NOTES-117). */}
+                <RhythmBand
+                  hits={detail.hits}
+                  timeAxis={timeAxis}
+                  contentWidth={contentWidth}
+                  height={bandHeight}
+                />
+                <View style={{ marginTop: bandHeight }}>
               <ChordTrack
                 slots={chords.slots}
                 timeAxis={timeAxis}
@@ -164,6 +180,8 @@ export function NoteShapeSection({
                 onAudition={detail.auditionChord}
                 onRevert={chords.revert}
               />
+                </View>
+              </>
             )}
           >
             {({ contentWidth, timeAxis, pitchAxis, rects }) => (

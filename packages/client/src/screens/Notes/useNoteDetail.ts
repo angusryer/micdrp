@@ -25,7 +25,7 @@ import {
   type NoteEdge,
   type NoteEvent
 } from 'logic';
-import type { InterpretationDto } from 'shared';
+import type { HitDto, InterpretationDto } from 'shared';
 
 import {
   chordPitches,
@@ -49,6 +49,9 @@ const FLASH_MS = 700;
 
 /** Stable, so a note with no readings does not look like a new one each render. */
 const EMPTY_READINGS: InterpretationDto[] = [];
+
+/** Likewise for a take with nothing struck in it. */
+const EMPTY_HITS: HitDto[] = [];
 
 export function useNoteDetail(id: string) {
   // Bumped when the take is re-read, so the whole page recomputes from the
@@ -169,6 +172,10 @@ export function useNoteDetail(id: string) {
   // harmony, so everything that reads harmony reads the played half
   // (INV-NOTES-113).
   const { counted, played } = useMemo(() => splitOffCount(melody), [melody]);
+
+  // Stable when there are none, so a take with no drums does not look like a
+  // different take on every render.
+  const hits = useMemo(() => note?.hits ?? EMPTY_HITS, [note]);
 
   // A second take sung against this one, when there is one. The bass layer
   // is the one that carries harmony: it names the root and states where the
@@ -389,6 +396,8 @@ export function useNoteDetail(id: string) {
     correctNote,
     resetNote,
     countedNotes: counted.length,
+    /** The struck sounds in this take (INV-PITCH-025). */
+    hits,
     /** True where this take would read differently if it were read again. */
     isStale: isStale(note?.analysisVersion),
     reread,

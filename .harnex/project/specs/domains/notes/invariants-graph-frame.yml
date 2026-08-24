@@ -262,3 +262,38 @@ invariants:
 
       It also moves a set, which dragging does but awkwardly — several chosen
       notes have no single thing to put a finger on.
+
+  - id: INV-NOTES-117
+    description: The struck sounds get a band of their own, on the graph's axis
+    severity: major
+    check: >
+      Hits are drawn in a band inside the graph's own scroll, placed
+      horizontally by the graph's own time axis and vertically by what they
+      sounded like — brightest lane at the top, deepest at the bottom, and a
+      lane for a hit whose kind was never worked out. Only the lanes in use
+      take room, and the band takes its height out of the graph's slot rather
+      than adding to it. It takes no touches. Verified by asserting a mark per
+      hit including unknown ones, that the band is empty and takes no height
+      when nothing was struck, that one kind of hit yields one lane, and that
+      a harder hit is drawn larger.
+
+      A band of its own because a hit has no pitch. There is no height on the
+      melody graph that means anything for it, and placing one there would be
+      inventing a pitch for a sound that has none — the same category error as
+      giving a drum a note name.
+
+      On the graph's own time axis, handed in rather than derived, so a drum
+      sits under the note it was struck against at every zoom and scroll
+      position. This is the rule the chord cards follow (INV-NOTES-061) and
+      the one the downbeats had to be fixed for twice (INV-NOTES-104): two
+      mappings over one timeline disagree eventually, and the disagreement is
+      invisible until it is large.
+
+      Only the lanes in use, because a take of nothing but thumps drawn as
+      three empty rows and one full one says the app was expecting something
+      that did not happen.
+
+      Drawn from how hard each was struck rather than from how sure the app is
+      that it was a drum. Confidence is a fact about the reading, not about the
+      sound, and expressing it as loudness would draw a softly-struck hit the
+      app is certain of more weakly than a loud one it is guessing at.
