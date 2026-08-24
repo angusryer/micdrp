@@ -36,6 +36,15 @@ export interface AudioContextLike {
    * can be exact (INV-NOTES-126).
    */
   currentTime: number;
+  /**
+   * Whether the clock above is running.
+   *
+   * A context made while a recording session is live can arrive suspended,
+   * and a suspended context's clock does not advance — so a start booked
+   * against it is booked for a time that never comes (INV-NOTES-127).
+   */
+  state?: string;
+  resume?(): Promise<void>;
   /** Accepts a remote URL, a file:// URI, or raw bytes. */
   decodeAudioData(source: string | ArrayBuffer): Promise<AudioBufferLike>;
   createBufferSource(): AudioBufferSourceNodeLike;

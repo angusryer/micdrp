@@ -403,3 +403,32 @@ invariants:
       its own effect. The chords, the transcription, the drums and the click
       were each placed against a slightly different idea of where the take had
       reached, so they were out of time with each other as well as with it.
+
+  - id: INV-NOTES-127
+    description: A take is never booked against a clock that is not moving
+    severity: critical
+    check: >
+      Before a take is started, a context that is not running is asked to
+      start. Where its clock then runs, the take is booked ahead of it; where
+      the clock is stopped, absent or not a number, the take is started at
+      once instead. Pressing play makes a sound whatever state the context is
+      in. Verified by asserting a running clock is booked ahead of, a
+      suspended one is resumed and then booked ahead of, and one that will not
+      resume — or reports no clock — is started at once.
+
+      Starting the take at a moment chosen in advance is what lets everything
+      lined up against it be exact rather than estimated (INV-NOTES-126). That
+      only holds for a clock that advances. A context made while a recording
+      session is live can arrive suspended, and a suspended clock does not
+      move — so a booking against it is a booking for a time that never comes,
+      and nothing sounds at all.
+
+      That is what silenced the whole backing while recording a bass line: the
+      capture holds the session, the playback context could not start, and a
+      take booked half a second into a clock frozen at zero simply waited
+      forever.
+
+      It went unseen because the context double had no clock. Every test took
+      the "start now" path while the device took the other one, so the suite
+      stayed green over silence. The double reports a clock and a state now,
+      and both paths are exercised.

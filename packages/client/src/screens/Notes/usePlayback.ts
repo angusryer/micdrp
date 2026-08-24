@@ -169,12 +169,23 @@ export function usePlayback({
         void ctx.close().catch(() => undefined);
         ctxRef.current = null;
       };
-      // At a moment we choose rather than "as soon as possible". Started at
-      // 0 the take begins at whatever block boundary comes next, and the
-      // anchor taken beside the call could only estimate it — an error that
-      // lands on everything scheduled against the take (INV-NOTES-126).
-      const beginsAtMs = audioNowMs() + SCHEDULE_LEAD_MS;
-      source.start(ctx.currentTime + SCHEDULE_LEAD_MS / 1000, offsetMs / 1000);
+      // A context made while a recording session is live can arrive
+      // suspended, and a suspended clock does not advance (INV-NOTES-127).
+      if (ctx.state != null && ctx.state !== 'running') {
+        await ctx.resume?.();
+      }
+      // At a moment we choose rather than "as soon as possible", so what is
+      // lined up against the take can be exact rather than estimated
+      // (INV-NOTES-126) — but only where the clock is one that moves. Booked
+      // against a stopped clock, a take is booked for a time that never
+      // comes, and the sound never arrives at all (INV-NOTES-127).
+      const clock = ctx.currentTime;
+      const canBook = Number.isFinite(clock) && ctx.state !== 'suspended';
+      const beginsAtMs = audioNowMs() + (canBook ? SCHEDULE_LEAD_MS : 0);
+      source.start(
+        canBook ? clock + SCHEDULE_LEAD_MS / 1000 : 0,
+        offsetMs / 1000
+      );
       // Whichever arrives first puts the control back to play.
       clearEndsAt();
       endsAt.current = setTimeout(

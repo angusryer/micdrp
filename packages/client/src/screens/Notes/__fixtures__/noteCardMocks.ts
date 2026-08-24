@@ -16,6 +16,28 @@ export const REMOTE =
   'https://micdrp-backend.fly.dev/api/files/notes/abc123/audio.wav?token=t0ken';
 
 /** Replacement for react-native-audio-api. */
+/**
+ * What state the next AudioContext will report, and where its clock stands.
+ *
+ * Faithful on purpose. The double used to have neither, so a take booked
+ * against the context clock fell straight to the "start now" path in every
+ * test while the device took the other one — and a booking made against a
+ * suspended clock never arrives, which is silence no test could see
+ * (INV-NOTES-127).
+ */
+export const audioContext = {
+  state: 'running',
+  currentTime: 12.5,
+  /** True where the session will not let the context start — a live capture. */
+  willNotResume: false
+};
+export const mockResume = jest.fn().mockImplementation(() => {
+  if (!audioContext.willNotResume) {
+    audioContext.state = 'running';
+  }
+  return Promise.resolve();
+});
+
 export const audioApiMock = () => ({
   AudioContext: jest.fn().mockImplementation(() => ({
     destination: {},
@@ -29,6 +51,13 @@ export const audioApiMock = () => ({
       stop: jest.fn(),
       onended: null
     }),
+    get state() {
+      return audioContext.state;
+    },
+    get currentTime() {
+      return audioContext.currentTime;
+    },
+    resume: mockResume,
     close: jest.fn().mockResolvedValue(undefined)
   }))
 });
@@ -47,6 +76,9 @@ export const notesRepoMock = () => ({
 /** Clear every call and re-arm the happy path: a 12-second take, resolvable. */
 export const resetNoteCardMocks = (): void => {
   jest.clearAllMocks();
+  audioContext.state = 'running';
+  audioContext.currentTime = 12.5;
+  audioContext.willNotResume = false;
   mockDecode.mockResolvedValue({ duration: 12 });
   mockAudioUrlFor.mockResolvedValue(REMOTE);
 };
