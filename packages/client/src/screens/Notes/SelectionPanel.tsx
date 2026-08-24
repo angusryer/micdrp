@@ -89,7 +89,10 @@ const styles = StyleSheet.create({
   panel: {
     width: PANEL_WIDTH,
     borderLeftWidth: StyleSheet.hairlineWidth,
-    borderRadius: 16,
+    // Rounded on the side that faces the graph only: it is flush against the
+    // right edge of the screen, and a corner rounded there reads as a mistake.
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
     marginLeft: 10,
     overflow: 'hidden'
   },

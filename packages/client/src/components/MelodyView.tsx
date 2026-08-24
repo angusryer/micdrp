@@ -13,8 +13,15 @@
  */
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Canvas, Line, RoundedRect, vec } from '@shopify/react-native-skia';
+import {
+  Canvas,
+  DashPathEffect,
+  Line,
+  RoundedRect,
+  vec
+} from '@shopify/react-native-skia';
 
+import { metreLineStyle } from './metreLines';
 import { useTheme } from '../theme';
 import {
   layoutMelody,
@@ -105,7 +112,11 @@ export function MelodyView({
   return (
     <View style={[styles.wrap, { width: drawnWidth, height }]}>
       <Canvas style={{ width: drawnWidth, height }}>
-        {/* Rules first, so the melody always reads on top of its own grid. */}
+        {/* Rules first, so the melody always reads on top of its own grid.
+            Dotted and very faint, because this is a metre the system applied
+            rather than anything a person placed: solid rules read as content
+            and outshone the downbeats, which are the lines that can actually
+            be picked up and moved (INV-NOTES-102). */}
         {layout.gridLines.map((g, i) => (
           <Line
             key={`g${i}`}
@@ -113,7 +124,10 @@ export function MelodyView({
             p2={vec(g.x, height)}
             strokeWidth={g.isBar ? 1 : StyleSheet.hairlineWidth}
             color={g.isBar ? colors.neutral500 : colors.neutral100}
-          />
+            opacity={metreLineStyle(g.isBar).opacity}
+          >
+            <DashPathEffect intervals={[...metreLineStyle(g.isBar).intervals]} />
+          </Line>
         ))}
         {/* Where the singing starts, with the pickup before it. Fainter and
             its own colour: it marks a boundary in the recording rather than

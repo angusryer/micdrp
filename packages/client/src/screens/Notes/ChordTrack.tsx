@@ -12,6 +12,12 @@
  * lives in ChordCard; the cards answer only vertical drags and taps, so a
  * sideways drag still travels the take (INV-NOTES-017).
  *
+ * The strip is its own ground — a slightly different background from the
+ * drawing and one faint line along its top — rather than a row of framed
+ * cards. The frames spent width on themselves at exactly the scale where a
+ * chord is already too narrow to read, and said nothing the position of the
+ * card did not (INV-NOTES-103).
+ *
  * Nothing is ever drawn wider than the chord it describes. A chord too narrow
  * at this scale becomes a mark rather than a squeezed card (INV-NOTES-063) —
  * a card allowed to overflow its span covers its neighbour, and a hidden
@@ -23,6 +29,7 @@ import { StyleSheet, View } from 'react-native';
 import type { ChordSlot } from 'logic';
 
 import { xForMs, type TimeAxis } from '../../components/melodyScale';
+import { useTheme } from '../../theme';
 import { ChordCard } from './ChordCard';
 import { ChordSqueeze } from './ChordSqueeze';
 
@@ -63,11 +70,22 @@ export function ChordTrack({
   onAudition,
   onRevert
 }: ChordTrackProps): React.JSX.Element | null {
+  const { colors } = useTheme();
   if (slots.length === 0) {
     return null;
   }
   return (
-    <View style={[styles.row, { width: contentWidth }]}>
+    <View
+      testID="chord-strip"
+      style={[
+        styles.row,
+        {
+          width: contentWidth,
+          backgroundColor: colors.neutral100,
+          borderTopColor: colors.neutral500
+        }
+      ]}
+    >
       {slots.map((slot, index) => {
         const left = xForMs(timeAxis, slot.startMs);
         // Its own span, never more: a card wider than its chord sits on the
@@ -111,6 +129,12 @@ const CARD_GAP = 4;
 export default ChordTrack;
 
 const styles = StyleSheet.create({
-  row: { flex: 1, paddingVertical: 2 },
+  row: {
+    flex: 1,
+    paddingTop: 3,
+    // Enough to say where the drawing stops and the reading of it begins,
+    // and no more: a heavier rule reads as a bar line (INV-NOTES-103).
+    borderTopWidth: StyleSheet.hairlineWidth
+  },
   slot: { position: 'absolute', top: 0 }
 });

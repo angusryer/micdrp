@@ -1,0 +1,85 @@
+# How much of the screen the graph gets, and what is drawn over it. Split from
+# invariants-graph.yml to stay inside the 150-line spec-file budget (Axiom 3).
+invariants:
+  - id: INV-NOTES-100
+    description: The playhead runs the height of the graph, over the notes
+    severity: major
+    check: >
+      Where the take has reached is drawn as a vertical line spanning the
+      whole drawing, over the notes rather than behind them, and it takes no
+      touches. It marks nothing for a moment outside the take. Verified by
+      asserting the line is the graph's full height, that it is transparent
+      to touch, and that it is absent before the start and after the end.
+
+      The scrubber's handle sits in a band above the drawing so it never
+      covers the notes it points at (INV-NOTES-081). That solves the handle
+      and leaves the position: a mark only in the band answers "where am I"
+      for the top edge of the graph and leaves the eye to trace downward and
+      guess. The line is the answer carried the whole way.
+
+      Over rather than under, because the notes are what the position is
+      being read against — a playhead hidden behind the bar it is passing is
+      not telling anyone where the take is. Transparent to touch, because it
+      crosses every note in the take and a line that swallowed touches would
+      make the notes under it unpickable.
+
+  - id: INV-NOTES-101
+    description: The graph runs to the edges of the screen
+    severity: major
+    check: >
+      The drawing has no border and no rounded corners, and reaches the edges
+      of the screen: upright it breaks out of the page's own margins, and
+      sideways it runs from the left edge to the right edge, or to the
+      selection panel when one is out (INV-NOTES-099). Verified by asserting
+      the graph is drawn to the full room it was measured into, with nothing
+      subtracted for a frame.
+
+      Every pixel of width is a moment of the take, and every pixel of height
+      is a semitone of the range. A frame spends both on saying where the
+      drawing stops, which the drawing already says — and it spends them at
+      the scale where they are scarcest, since a take runs past the screen
+      and is reached by scrolling (INV-NOTES-032).
+
+  - id: INV-NOTES-102
+    description: The applied metre is drawn quieter than the downbeats
+    severity: major
+    check: >
+      The bar and beat rules the system laid down are dotted and drawn at
+      well under the strength of the downbeat lines above them, with a bar's
+      rule a little stronger than a beat's. Verified by asserting both are
+      dotted with more gap than mark, that both sit under half the downbeat's
+      strength, and that a bar reads more easily than a beat within it.
+
+      There are two kinds of vertical line on this graph and only one of them
+      can be picked up. A downbeat is a claim a person placed and can move
+      (INV-NOTES-045); the metre is a reading the system produced from it.
+      Drawn with equal weight the reading looked like the more important of
+      the two, so the lines that could be moved read as scenery and the
+      scenery read as content — and there was nothing on the screen to say
+      which was which.
+
+      Dotted rather than merely faint, because faintness alone is a matter of
+      degree and reads as the same kind of thing drawn more weakly. A dotted
+      line reads as a ruling, which is what it is.
+
+  - id: INV-NOTES-103
+    description: The chord strip is its own ground, not a row of frames
+    severity: minor
+    check: >
+      The chord cards under the graph carry no border. The strip they sit in
+      has a background of its own, distinguishable from the drawing above it,
+      separated by a single hairline. A chord that was edited is still marked.
+      Verified by asserting the strip has its own background and a hairline
+      top border, and that an unedited card draws neither border nor fill.
+
+      A card is placed by its left edge on the downbeat it describes
+      (INV-NOTES-061), so its position already says which chord it is and a
+      frame around it said nothing further. It was not free: the frame took
+      width at exactly the scale where a chord is already too narrow to name
+      and has to be drawn as a mark instead (INV-NOTES-063).
+
+      The strip keeps a ground of its own because it is a reading of the
+      drawing rather than part of it, and the eye needs to know where one
+      stops. One hairline is enough to say so — anything heavier reads as a
+      bar line, which is the one thing a horizontal rule on this graph must
+      not look like.

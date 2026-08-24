@@ -79,7 +79,10 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
     return <NoteLandscape detail={detail} />;
   }
 
-  const graphWidth = width - 2 * CONTENT_PADDING - 2;
+  // The full screen, not the padded column. Every pixel of width is a moment
+  // of the take, so the graph breaks out of the page's margins rather than
+  // spending them on white space (INV-NOTES-101).
+  const graphWidth = width;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.neutral300 }]}>
@@ -108,15 +111,17 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             {/* The word "Shape" said what the picture already says; the top
                 edge of the graph carries the scrubber instead
                 (INT-NOTES-022). */}
-            <NoteShapeSection
-              detail={detail}
-              width={graphWidth}
-              height={MELODY_VIEW_HEIGHT}
-              transport={transport}
-              selection={detail.selection}
-              onSelect={detail.setSelection}
-              flashing={detail.flashing}
-            />
+            <View style={styles.fullBleed}>
+              <NoteShapeSection
+                detail={detail}
+                width={graphWidth}
+                height={MELODY_VIEW_HEIGHT}
+                transport={transport}
+                selection={detail.selection}
+                onSelect={detail.setSelection}
+                flashing={detail.flashing}
+              />
+            </View>
             <SelectionSheet
               detail={detail}
               selection={detail.selection}
@@ -146,6 +151,8 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   content: { padding: CONTENT_PADDING, gap: 8 },
+  // Out through the page's own margins, to the edges of the screen.
+  fullBleed: { marginHorizontal: -CONTENT_PADDING },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 22, fontWeight: '700' },
   sectionTitle: { fontSize: 13, fontWeight: '600', marginTop: 18 },

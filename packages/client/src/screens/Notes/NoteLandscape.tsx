@@ -36,11 +36,13 @@ import { PlaybackBar } from './PlaybackBar';
 import { SelectionPanel } from './SelectionPanel';
 import type { useNoteDetail } from './useNoteDetail';
 
-/** Breathing room at the edges; less than upright, since space is the point. */
+/**
+ * Breathing room above and below only. Sideways the graph runs from the left
+ * edge of the screen to the right edge — or to the selection panel when one
+ * is out — because every pixel of width is a moment of the take
+ * (INV-NOTES-101).
+ */
 const EDGE_PADDING = 12;
-
-/** The graph card's own border, which sits inside the space it is given. */
-const CARD_BORDER = 2;
 
 
 
@@ -74,8 +76,8 @@ export function NoteLandscape({
                transport is the exception: it is what the view is for. */
               <NoteShapeSection
                 detail={detail}
-                width={room.width - CARD_BORDER}
-                height={Math.max(MIN_GRAPH_HEIGHT, room.height - CARD_BORDER)}
+                width={room.width}
+                height={Math.max(MIN_GRAPH_HEIGHT, room.height)}
                 showControls={false}
                 selection={detail.selection}
                 onSelect={detail.setSelection}
@@ -90,13 +92,16 @@ export function NoteLandscape({
             onSelect={detail.setSelection}
           />
         </View>
-        {/* Everything together, without turning the phone back to reach it. */}
+        {/* Everything together, without turning the phone back to reach it.
+            Padded on its own, since the graph above it is not. */}
         {note?.audioPath ? (
+          <View style={styles.transport}>
           <PlaybackBar
             resolveAudioUri={detail.resolveAudio}
             accompaniment={detail.backdrop}
             voice={detail.melodyVoiceMix}
           />
+          </View>
         ) : null}
       </View>
     </SafeAreaView>
@@ -107,7 +112,8 @@ export default NoteLandscape;
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  frame: { flex: 1, padding: EDGE_PADDING },
+  frame: { flex: 1, paddingVertical: EDGE_PADDING },
+  transport: { paddingHorizontal: EDGE_PADDING },
   row: { flex: 1, flexDirection: 'row', minHeight: MIN_GRAPH_HEIGHT },
   // minHeight lets it shrink below its content, which is what makes it the
   // piece that gives way rather than the piece that overflows.

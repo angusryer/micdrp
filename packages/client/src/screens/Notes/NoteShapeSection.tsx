@@ -2,8 +2,12 @@
  * NoteShapeSection — the melody graph and what sounds it.
  *
  * The piece the landscape layout hands the whole screen to, which is why it
- * takes its own size rather than reading the window: upright it is a card in
+ * takes its own size rather than reading the window: upright it is a band in
  * a scrolling column, sideways it is the view.
+ *
+ * It has no border and no rounded corners. Every pixel of width is a moment
+ * of the take, and framing the drawing spent them on a frame — so it runs to
+ * the edges of whatever it is given (INV-NOTES-101).
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -18,6 +22,7 @@ import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { ChordTrack } from './ChordTrack';
 import { NoteShapeControls } from './NoteShapeControls';
+import { Playhead } from './Playhead';
 import { Scrubber } from './Scrubber';
 import type { useNoteDetail } from './useNoteDetail';
 
@@ -27,7 +32,7 @@ import type { useNoteDetail } from './useNoteDetail';
  * Sized to the cards, which are sized like the transport's own controls: the
  * strip is a reading of the take, not the main event on the screen.
  */
-const CHORD_STRIP_HEIGHT = 52;
+const CHORD_STRIP_HEIGHT = 40;
 
 /** Below this the drawing stops being a graph, so it refuses to shrink more. */
 export const MIN_GRAPH_HEIGHT = 96;
@@ -113,12 +118,7 @@ export function NoteShapeSection({
 
   return (
     <>
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: colors.neutral50, borderColor: colors.neutral500 }
-        ]}
-      >
+      <View style={[styles.card, { backgroundColor: colors.neutral50 }]}>
         {/* A beat is a fixed width here and the take scrolls past the screen,
             so a bar is the same size in every take and wide enough to put a
             finger on (INV-NOTES-032). Without a grid there is no beat to
@@ -163,18 +163,28 @@ export function NoteShapeSection({
           >
             {({ contentWidth, beatWidth, timeAxis, pitchAxis, rects }) => (
               <>
-              <GraphLayers
-                detail={detail}
-                noteRects={rects}
-                contentWidth={contentWidth}
-                beatWidth={beatWidth}
-                height={graphHeight}
-                timeAxis={timeAxis}
-                pitchAxis={pitchAxis}
-                selection={selection}
-                onSelect={onSelect}
-                flashing={flashing}
-              />
+                <GraphLayers
+                  detail={detail}
+                  noteRects={rects}
+                  contentWidth={contentWidth}
+                  beatWidth={beatWidth}
+                  height={graphHeight}
+                  timeAxis={timeAxis}
+                  pitchAxis={pitchAxis}
+                  selection={selection}
+                  onSelect={onSelect}
+                  flashing={flashing}
+                />
+                {/* Last, so the moment reads over the notes it is passing
+                    rather than behind them (INV-NOTES-100). */}
+                {transport != null ? (
+                  <Playhead
+                    positionMs={transport.positionMs}
+                    timeAxis={timeAxis}
+                    contentWidth={contentWidth}
+                    height={graphHeight}
+                  />
+                ) : null}
               </>
             )}
           </ZoomableMelody>
@@ -218,7 +228,9 @@ export function NoteShapeSection({
 export default NoteShapeSection;
 
 const styles = StyleSheet.create({
-  card: { borderWidth: 1, borderRadius: 12, overflow: 'hidden' },
+  // No border and no radius: the drawing runs to the edges of its slot
+  // (INV-NOTES-101).
+  card: { overflow: 'hidden' },
   octaveBadge: {
     position: 'absolute',
     top: 6,

@@ -124,3 +124,40 @@ describe('the chord track under the bars', () => {
     expect(placements()).toHaveLength(0);
   });
 });
+
+describe('INV-NOTES-103: the strip is its own ground, not a row of frames', () => {
+  /** Flattened style of a node, however many pieces it was built from. */
+  const styleOf = (node: { props: Record<string, unknown> }) => {
+    const style = node.props.style;
+    return Object.assign(
+      {},
+      ...(Array.isArray(style) ? (style as object[]) : [style as object])
+    ) as Record<string, unknown>;
+  };
+
+  it('sits on a different ground from the drawing above it', async () => {
+    await renderTrack();
+    const strip = styleOf(screen.getByTestId('chord-strip'));
+    expect(strip.backgroundColor).toBeTruthy();
+  });
+
+  it('is separated by one faint line rather than a rule', async () => {
+    await renderTrack();
+    const strip = styleOf(screen.getByTestId('chord-strip'));
+    // Heavier than a hairline and it reads as a bar line, which is the one
+    // thing a horizontal rule on a music graph must not look like.
+    expect(strip.borderTopWidth).toBeLessThanOrEqual(1);
+    expect(strip.borderTopWidth as number).toBeGreaterThan(0);
+    expect(strip.borderTopColor).toBeTruthy();
+  });
+
+  it('draws no frame around a chord it simply read', async () => {
+    await renderTrack();
+    const card = styleOf(screen.getAllByLabelText(/C/)[0]);
+    // The card's position already says which chord it is (INV-NOTES-061), so
+    // a border around it spent width saying nothing — at exactly the scale
+    // where width is what a chord is short of.
+    expect(card.borderWidth ?? 0).toBe(0);
+    expect(card.backgroundColor).toBe('transparent');
+  });
+});

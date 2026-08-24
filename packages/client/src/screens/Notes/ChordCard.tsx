@@ -114,10 +114,11 @@ export function ChordCard({
         style={[
           styles.card,
           {
-            backgroundColor: slot.isEdited
-              ? colors.primary100
-              : colors.neutral100,
-            borderColor: slot.isEdited ? colors.primary500 : colors.neutral500
+            // Nothing drawn for a card as read: the strip is its own ground
+            // and the card's position already says which chord it is
+            // (INV-NOTES-103). An edited one still shows, because that is a
+            // claim about the take rather than decoration.
+            backgroundColor: slot.isEdited ? colors.primary100 : 'transparent'
           },
           // Sized to the chord it describes, so the left edge lands on the
           // downbeat and the card covers what it is talking about.
@@ -147,15 +148,14 @@ const styles = StyleSheet.create({
   // the strip is a reading of the take, not the main event on the screen.
   card: {
     minWidth: 44,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 10,
-    paddingVertical: 5,
-    paddingHorizontal: 6,
+    borderRadius: 8,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
     // Left, so the name sits over the downbeat the card starts on: the card
     // is placed by its left edge (INV-NOTES-061) and centring the label moved
     // it away from the thing it names.
     alignItems: 'flex-start'
   },
-  label: { fontSize: 15, fontWeight: '700' },
-  roman: { fontSize: 10, letterSpacing: 0.4 }
+  label: { fontSize: 14, fontWeight: '700' },
+  roman: { fontSize: 9, letterSpacing: 0.4 }
 });

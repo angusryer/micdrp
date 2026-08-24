@@ -7,6 +7,10 @@
  * case, and either would otherwise drag the metre out from under the singer
  * (INT-NOTES-012).
  *
+ * Drawn solid, against a metre drawn dotted. The two used to compete, and the
+ * system's rules won — so the lines that could be picked up looked like
+ * scenery and the ones that were scenery looked like content (INV-NOTES-102).
+ *
  * Once held, the line follows the finger (INV-NOTES-045) and the first real
  * movement decides the direction for the rest of the gesture (INV-NOTES-046):
  * sideways says where it goes, upward says away. Everything that moves is a
@@ -16,6 +20,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { DOWNBEAT_OPACITY } from '../../components/metreLines';
 import type { BarHandle } from './barRulerModel';
 
 export interface BarLineHandleProps {
@@ -59,6 +64,6 @@ const GRAB_WIDTH = 44;
 
 const styles = StyleSheet.create({
   grab: { position: 'absolute', top: 0, width: GRAB_WIDTH, alignItems: 'center' },
-  line: { width: 2, height: '100%', opacity: 0.9 },
+  line: { width: 2, height: '100%', opacity: DOWNBEAT_OPACITY },
   chosen: { width: 4, opacity: 1 }
 });

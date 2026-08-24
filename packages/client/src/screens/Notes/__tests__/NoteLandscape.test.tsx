@@ -91,11 +91,12 @@ describe('a note held sideways', () => {
     await renderSideways();
 
     await layout(700, 260);
-    // Its own border sits inside that room, so the drawing is that much less.
-    expect(shapeHeights[shapeHeights.length - 1]).toBe(258);
+    // All of it. There is no border to sit inside any more: the drawing runs
+    // to the edges of the room it was given (INV-NOTES-101).
+    expect(shapeHeights[shapeHeights.length - 1]).toBe(260);
     // Width comes from the same measurement now that the selection panel can
     // take some of it (INV-NOTES-099).
-    expect(shapeWidths[shapeWidths.length - 1]).toBe(698);
+    expect(shapeWidths[shapeWidths.length - 1]).toBe(700);
   });
 
   it('INV-NOTES-062: can sound the take from where it is being looked at', async () => {
@@ -130,7 +131,7 @@ describe('a note held sideways', () => {
     await layout(430, 260);
 
     expect(shapeWidths[shapeWidths.length - 1]).toBeLessThan(full);
-    expect(shapeHeights[shapeHeights.length - 1]).toBe(258);
+    expect(shapeHeights[shapeHeights.length - 1]).toBe(260);
   });
 
   it('offers the panel only once something is chosen', async () => {
