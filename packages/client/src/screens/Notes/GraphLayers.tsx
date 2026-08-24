@@ -23,7 +23,7 @@ import { layoutChordTones } from '../../components/chordLayout';
 import type { MelodyLayout, NoteRect } from '../../components/melodyLayout';
 import type { Chosen, Selection } from '../../components/graphSelection';
 import { useTheme } from '../../theme';
-import { BarRulerOverlay } from './BarRulerOverlay';
+import { BarRuler } from './BarRuler';
 import { barHandles } from './barRulerModel';
 import type { useNoteDetail } from './useNoteDetail';
 
@@ -32,7 +32,6 @@ export interface GraphLayersProps {
   /** The sung notes as drawn, so touching one lands where it looks. */
   noteRects: readonly NoteRect[];
   contentWidth: number;
-  beatWidth: number;
   height: number;
   timeAxis: MelodyLayout['timeAxis'];
   pitchAxis: MelodyLayout['pitchAxis'];
@@ -46,7 +45,6 @@ export function GraphLayers({
   detail,
   noteRects,
   contentWidth,
-  beatWidth,
   height,
   timeAxis,
   pitchAxis,
@@ -55,7 +53,7 @@ export function GraphLayers({
   flashing
 }: GraphLayersProps): React.JSX.Element {
   const { colors } = useTheme();
-  const { melody, gridForView, chords, floorMidi, bars } = detail;
+  const { gridForView, chords, floorMidi, bars } = detail;
 
   const tones = useMemo(
     () => layoutChordTones(chords.slots, timeAxis, pitchAxis, floorMidi),
@@ -116,21 +114,17 @@ export function GraphLayers({
         height={height}
         selected={chosenTone}
       />
-      {/* Over the melody rather than beside it: the bars are a claim about
-          this take, and correcting one means seeing both. Paint only. */}
-      {gridForView != null ? (
-        <BarRulerOverlay
-          bars={bars}
-          notes={melody}
-          grid={gridForView}
-          width={contentWidth}
-          height={height}
-          beatWidth={beatWidth}
-          selectedLine={
-            firstBar?.kind === 'barLine' ? firstBar.lineIndex : null
-          }
-        />
-      ) : null}
+      {/* The same handles the surface below reads touches from, so a line is
+          drawn exactly where it can be picked up. It used to lay itself out
+          again from the notes, which produced a second time axis that did not
+          know about the pickup — so every line was drawn the length of the
+          pickup earlier than the downbeat it marked (INV-NOTES-104). */}
+      <BarRuler
+        handles={handles}
+        width={contentWidth}
+        height={height}
+        selectedLine={firstBar?.kind === 'barLine' ? firstBar.lineIndex : null}
+      />
       {/* Above both, and the only thing that reads a touch. */}
       {geometry != null ? (
         <GraphSurface

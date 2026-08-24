@@ -7,9 +7,10 @@
  * case, and either would otherwise drag the metre out from under the singer
  * (INT-NOTES-012).
  *
- * Drawn solid, against a metre drawn dotted. The two used to compete, and the
- * system's rules won — so the lines that could be picked up looked like
- * scenery and the ones that were scenery looked like content (INV-NOTES-102).
+ * Drawn for the chosen line only. Every downbeat is marked by the dotted rule
+ * behind the notes, from the same arrangement; a solid line over each of them
+ * said it twice, and read as a second kind of object that could not be picked
+ * up (INV-NOTES-104).
  *
  * Once held, the line follows the finger (INV-NOTES-045) and the first real
  * movement decides the direction for the rest of the gesture (INV-NOTES-046):
@@ -27,17 +28,12 @@ export interface BarLineHandleProps {
   handle: BarHandle;
   height: number;
   color: string;
-  /** Colour a line takes while it is the chosen thing. */
-  chosenColor: string;
-  isChosen: boolean;
 }
 
 export function BarLineHandle({
   handle,
   height,
-  color,
-  chosenColor,
-  isChosen
+  color
 }: BarLineHandleProps): React.JSX.Element {
   const { x } = handle;
   return (
@@ -46,13 +42,7 @@ export function BarLineHandle({
       pointerEvents="none"
       testID={`bar-line-${handle.lineIndex}`}
     >
-      <View
-        style={[
-          styles.line,
-          isChosen ? styles.chosen : null,
-          { backgroundColor: isChosen ? chosenColor : color }
-        ]}
-      />
+      <View style={[styles.line, { backgroundColor: color }]} />
     </View>
   );
 }
@@ -64,6 +54,5 @@ const GRAB_WIDTH = 44;
 
 const styles = StyleSheet.create({
   grab: { position: 'absolute', top: 0, width: GRAB_WIDTH, alignItems: 'center' },
-  line: { width: 2, height: '100%', opacity: DOWNBEAT_OPACITY },
-  chosen: { width: 4, opacity: 1 }
+  line: { width: 4, height: '100%', opacity: DOWNBEAT_OPACITY }
 });

@@ -1,18 +1,27 @@
 /**
- * INV-NOTES-102 — the applied metre stays quieter than the downbeats.
+ * INV-NOTES-102 — what each kind of vertical line is drawn at.
  *
- * On the graph there are two kinds of vertical line and only one of them can
- * be picked up. The metre is a reading the system produced; a downbeat is a
- * claim a person placed and can move. Drawn with equal weight the wrong one
- * looked like the important one, and the lines that could be moved read as
- * scenery.
+ * Three things are drawn down the graph and they are not the same kind of
+ * claim. A bar's rule marks a downbeat, which can be picked up and moved. A
+ * beat's rule marks the pulse between them, which cannot. And a solid line
+ * marks the one downbeat currently in hand.
+ *
+ * The order has to hold: the line in hand over the bar rule over the beat
+ * rule. Drawn any other way the picture says the wrong thing about which
+ * lines can be touched, which is exactly what it used to say.
  */
 import { DOWNBEAT_OPACITY, metreLineStyle } from '../metreLines';
 
-describe('the applied metre', () => {
-  it('never draws as strongly as the lines that can be moved', () => {
+describe('the drawn metre', () => {
+  it('reads a downbeat more plainly than the pulse under it', () => {
+    expect(metreLineStyle(true).opacity).toBeGreaterThan(
+      metreLineStyle(false).opacity
+    );
+  });
+
+  it('never draws as strongly as the downbeat actually in hand', () => {
     for (const isBar of [true, false]) {
-      expect(metreLineStyle(isBar).opacity).toBeLessThan(DOWNBEAT_OPACITY / 2);
+      expect(metreLineStyle(isBar).opacity).toBeLessThan(DOWNBEAT_OPACITY);
     }
   });
 
@@ -20,15 +29,18 @@ describe('the applied metre', () => {
     for (const isBar of [true, false]) {
       const [on, off] = metreLineStyle(isBar).intervals;
       expect(on).toBeGreaterThan(0);
-      // More gap than mark: a dash that is mostly ink is a solid line with
-      // nicks in it.
-      expect(off).toBeGreaterThan(on);
+      // A dash mostly made of ink is a solid line with nicks in it.
+      expect(off).toBeGreaterThanOrEqual(on);
     }
   });
 
-  it('reads a bar more easily than a beat within it', () => {
-    expect(metreLineStyle(true).opacity).toBeGreaterThan(
-      metreLineStyle(false).opacity
-    );
+  it('leaves more gap in the pulse than in the downbeats', () => {
+    // The beat rule is texture; the bar rule is something to follow across
+    // the take, so it is the more continuous of the two.
+    const ink = (isBar: boolean) => {
+      const [on, off] = metreLineStyle(isBar).intervals;
+      return on / (on + off);
+    };
+    expect(ink(true)).toBeGreaterThan(ink(false));
   });
 });

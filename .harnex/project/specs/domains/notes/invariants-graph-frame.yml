@@ -41,22 +41,21 @@ invariants:
       and is reached by scrolling (INV-NOTES-032).
 
   - id: INV-NOTES-102
-    description: The applied metre is drawn quieter than the downbeats
+    description: Each kind of vertical line is drawn at its own weight
     severity: major
     check: >
-      The bar and beat rules the system laid down are dotted and drawn at
-      well under the strength of the downbeat lines above them, with a bar's
-      rule a little stronger than a beat's. Verified by asserting both are
-      dotted with more gap than mark, that both sit under half the downbeat's
-      strength, and that a bar reads more easily than a beat within it.
+      Three things are drawn down the graph, in this order of strength: the
+      solid line marking the downbeat currently in hand, the dotted rule
+      marking every downbeat, and the fainter dotted rule marking the pulse
+      between them. The two rules are dotted, with more gap in the pulse than
+      in the downbeats. Verified by asserting a bar's rule reads more strongly
+      than a beat's, that both stay under the line in hand, that both are
+      dotted, and that the bar's rule is the more continuous of the two.
 
-      There are two kinds of vertical line on this graph and only one of them
-      can be picked up. A downbeat is a claim a person placed and can move
-      (INV-NOTES-045); the metre is a reading the system produced from it.
-      Drawn with equal weight the reading looked like the more important of
-      the two, so the lines that could be moved read as scenery and the
-      scenery read as content — and there was nothing on the screen to say
-      which was which.
+      The order is what says which lines can be touched. A downbeat can be
+      picked up and moved (INV-NOTES-045); the pulse between them cannot.
+      Drawn at equal weight the picture said nothing about the difference,
+      and the eye had no way to tell a thing it could act on from a ruling.
 
       Dotted rather than merely faint, because faintness alone is a matter of
       degree and reads as the same kind of thing drawn more weakly. A dotted
@@ -83,3 +82,34 @@ invariants:
       stops. One hairline is enough to say so — anything heavier reads as a
       bar line, which is the one thing a horizontal rule on this graph must
       not look like.
+
+      Each card carries a faint tick down its left edge. Without frames the
+      strip is one field of text, and the tick is what says a chord starts
+      here rather than continuing from the one before it — the same thing the
+      frame said, at the one edge where it was carrying information.
+
+  - id: INV-NOTES-104
+    description: A downbeat is drawn where it can be picked up
+    severity: critical
+    check: >
+      The rule drawn for a downbeat and the handle the touch surface reads
+      come from one arrangement through one time axis. The dotted rules mark
+      the arrangement's own lines whether a person placed them or they were
+      read from the music, and the pulse between them is still drawn. A solid
+      line is drawn for the downbeat in hand and for no other. Verified by
+      asserting the painting layer and the listening layer are handed the same
+      array, that a downbeat lands past the pickup rather than at the start of
+      the recording, and that beats survive an arrangement.
+
+      Two layers each worked this out for itself, and the one that listened
+      laid the take out again from the notes alone — so it never learned the
+      recording began before the singing did, and placed every line the whole
+      length of the pickup earlier than the downbeat it marked. Each was
+      correct against its own arithmetic, which is why nothing caught it: the
+      only fix that holds is that there is one answer rather than two that
+      agree today (Axiom 2).
+
+      A solid line for every downbeat, on top of the dotted rule already
+      marking it, said the same thing twice and read as a second kind of
+      object that could not be selected. What is left is the one job the
+      dotted rule cannot do, which is to show which line is in hand.

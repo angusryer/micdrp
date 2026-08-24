@@ -125,6 +125,14 @@ export function ChordCard({
           width != null ? { width, minWidth: 0, paddingHorizontal: 2 } : null
         ]}
       >
+        {/* A faint mark on the left edge, where the downbeat is. Without a
+            frame the strip is one field of text, and this is what says a
+            chord starts here rather than continuing from the last
+            (INV-NOTES-103). */}
+        <View
+          style={[styles.tick, { backgroundColor: colors.gray300 }]}
+          pointerEvents="none"
+        />
         {/* No bar number any more: the card sits on its own downbeat, so
             the position says what the number used to (INV-NOTES-061). */}
         <Text
@@ -150,11 +158,23 @@ const styles = StyleSheet.create({
     minWidth: 44,
     borderRadius: 8,
     paddingVertical: 2,
-    paddingHorizontal: 4,
+    // Room on the left for the tick, so the label does not sit on it.
+    paddingLeft: 7,
+    paddingRight: 4,
     // Left, so the name sits over the downbeat the card starts on: the card
     // is placed by its left edge (INV-NOTES-061) and centring the label moved
     // it away from the thing it names.
     alignItems: 'flex-start'
+  },
+  // Full height and hairline-thin: it marks the downbeat the card starts on
+  // without becoming a frame again.
+  tick: {
+    position: 'absolute',
+    left: 0,
+    top: 2,
+    bottom: 2,
+    width: StyleSheet.hairlineWidth * 2,
+    opacity: 0.5
   },
   label: { fontSize: 14, fontWeight: '700' },
   roman: { fontSize: 9, letterSpacing: 0.4 }

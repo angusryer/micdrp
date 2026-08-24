@@ -186,9 +186,11 @@ export function useNoteDetail(id: string) {
             offsetMs: grid.offsetMs,
             beatsPerBar: grid.beatsPerBar,
             stepsPerBeat: grid.stepsPerBeat,
-            // Only once someone has arranged them: before that the even
-            // spacing detection proposed is what should be drawn.
-            ...(bars.isArranged ? { barSteps: bars.layout.lines } : {})
+            // Always the arrangement's own lines, arranged by hand or read
+            // from the music. Drawing an even division while the downbeats
+            // sat elsewhere put the picture and the thing you can pick up in
+            // two different places (INV-NOTES-104).
+            barSteps: bars.layout.lines
           }
         : undefined,
     [

@@ -68,6 +68,37 @@ export const MIN_LEGIBLE_BEAT_PX = 9;
  * Lines outside the sung span are skipped: the view is scaled to the melody,
  * so a bar line before the first note or after the last has nothing to mark.
  */
+/**
+ * The plain beats across a span, skipping any that a bar line already marks.
+ *
+ * Dropped entirely once a beat is too narrow to read as a rule: below that
+ * width they stop being a pulse and become texture (INV-NOTES-033).
+ */
+function beatRules(
+  grid: MelodyGrid,
+  beatMs: number,
+  t0: number,
+  t1: number,
+  pxPerMs: number,
+  xOf: (timeMs: number) => number,
+  onABar: ReadonlySet<number>
+): GridLine[] {
+  if (beatMs * pxPerMs < MIN_LEGIBLE_BEAT_PX) {
+    return [];
+  }
+  const lines: GridLine[] = [];
+  const first = Math.ceil((t0 - grid.offsetMs) / beatMs);
+  const last = Math.floor((t1 - grid.offsetMs) / beatMs);
+  for (let beat = first; beat <= last; beat++) {
+    const timeMs = grid.offsetMs + beat * beatMs;
+    if (onABar.has(Math.round(timeMs))) {
+      continue;
+    }
+    lines.push({ x: xOf(timeMs), isBar: false, bar: null });
+  }
+  return lines;
+}
+
 export function layoutGridLines(
   grid: MelodyGrid,
   t0: number,
@@ -86,11 +117,15 @@ export function layoutGridLines(
   const xOf = (timeMs: number) =>
     xForMs({ t0, span, pad, innerW: 0, pxPerMs }, timeMs);
 
-  // An arrangement someone has made replaces the even spacing entirely: its
-  // bars differ from one another, which is the whole point of arranging them.
+  // Where the bars are is an answer someone owns — read from the music or
+  // arranged by hand — and it replaces the even spacing entirely: its bars
+  // differ from one another, which is the whole point of arranging them. The
+  // beats inside them are still drawn, since the bars saying where they are
+  // is no reason to stop saying where the pulse is.
   if (grid.barSteps && grid.stepsPerBeat && grid.stepsPerBeat > 0) {
     const stepMs = beatMs / grid.stepsPerBeat;
-    const lines: GridLine[] = [];
+    const bars: GridLine[] = [];
+    const onABar = new Set<number>();
     let bar = 0;
     for (const step of grid.barSteps) {
       const timeMs = grid.offsetMs + step * stepMs;
@@ -98,9 +133,15 @@ export function layoutGridLines(
         continue;
       }
       bar += 1;
-      lines.push({ x: xOf(timeMs), isBar: true, bar, step });
+      onABar.add(Math.round(timeMs));
+      bars.push({ x: xOf(timeMs), isBar: true, bar, step });
     }
-    return lines;
+    // Bars last, so a bar line is never hidden under a beat rule drawn at
+    // the same moment.
+    return [
+      ...beatRules(grid, beatMs, t0, t1, pxPerMs, xOf, onABar),
+      ...bars
+    ];
   }
 
   const lines: GridLine[] = [];

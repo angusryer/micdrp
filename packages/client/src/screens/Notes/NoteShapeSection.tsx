@@ -161,13 +161,12 @@ export function NoteShapeSection({
               />
             )}
           >
-            {({ contentWidth, beatWidth, timeAxis, pitchAxis, rects }) => (
+            {({ contentWidth, timeAxis, pitchAxis, rects }) => (
               <>
                 <GraphLayers
                   detail={detail}
                   noteRects={rects}
                   contentWidth={contentWidth}
-                  beatWidth={beatWidth}
                   height={graphHeight}
                   timeAxis={timeAxis}
                   pitchAxis={pitchAxis}
