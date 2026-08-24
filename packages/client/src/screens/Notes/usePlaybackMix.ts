@@ -164,43 +164,48 @@ export function usePlaybackMix({
     latestVoice.current = voice;
   }, [voice]);
 
+  const latestRhythm = useRef(rhythm);
+  useEffect(() => {
+    latestRhythm.current = rhythm;
+  }, [rhythm]);
+
   const latestCount = useRef(count);
   useEffect(() => {
     latestCount.current = count;
   }, [count]);
 
-  // Counted from the top of the recording, never from where the take has
-  // reached: a count that began mid-take would be counting nothing in.
   const wantsCount = mix.count;
-  useEffect(() => {
-    if (state === 'playing' && wantsCount) {
-      latestCount.current?.start(takeWanted.current ? takeElapsedMs() : 0);
-    } else {
-      latestCount.current?.stop();
-    }
-  }, [state, wantsCount, takeElapsedMs]);
+  const wantsRhythm = mix.rhythm;
 
-  // Follows the take when there is one, and stands on its own when there is
-  // not: the melody read from a take is worth hearing by itself, and making
-  // it wait for the take was a rule about clocks, not about listening.
+  /**
+   * Every voice, started against one reading of the clock.
+   *
+   * One reading because each voice used to take its own, in its own effect —
+   * so the chords, the melody, the drums and the click were each placed
+   * against a slightly different idea of where the take had reached, and were
+   * out of time with each other as well as with it (INV-NOTES-126).
+   *
+   * Placed where the take has reached rather than at its top: the take is
+   * already running by the time this commits (INV-NOTES-020). A voice sounding
+   * without a take has nothing to catch up to and starts at zero.
+   */
   useEffect(() => {
-    if (state === 'playing' && wantsVoice) {
-      latestVoice.current?.start(takeWanted.current ? takeElapsedMs() : 0);
-    } else {
-      latestVoice.current?.stop();
+    const at = takeWanted.current ? takeElapsedMs() : 0;
+    const running = state === 'playing';
+    const voices = [
+      [latest.current, wantsChords],
+      [latestVoice.current, wantsVoice],
+      [latestRhythm.current, wantsRhythm],
+      [latestCount.current, wantsCount]
+    ] as const;
+    for (const [player, wanted] of voices) {
+      if (running && wanted) {
+        player?.start(at);
+      } else {
+        player?.stop();
+      }
     }
-  }, [state, wantsVoice, takeElapsedMs]);
-
-  useEffect(() => {
-    if (state === 'playing' && wantsChords) {
-      // The take is already running by the time this commits, so the backdrop
-      // is placed where the take has reached rather than at its top
-      // (INV-NOTES-020). Chords alone have nothing to catch up to.
-      latest.current?.start(takeWanted.current ? takeElapsedMs() : 0);
-    } else {
-      latest.current?.stop();
-    }
-  }, [state, wantsChords, takeElapsedMs]);
+  }, [state, wantsChords, wantsVoice, wantsRhythm, wantsCount, takeElapsedMs]);
 
   const stop = useCallback(async (): Promise<void> => {
     clearEndTimer();

@@ -13,6 +13,8 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { SCHEDULE_LEAD_MS, audioNowMs } from '../../audio/audioClock';
+
 /** Re-read the clock twice a second — a counter shown to the second needs no more. */
 const TICK_MS = 500;
 
@@ -43,18 +45,36 @@ export function usePlaybackClock(running: boolean, fromMs = 0): number {
 }
 
 /**
- * The instant the audio itself started, and how far past it we are now.
+ * The instant the audio itself started, and where the take will be when
+ * something scheduled now actually sounds.
  *
- * Read at the moment something else has to be lined up with a take already
- * running — the chord backdrop, which is scheduled a render and an audio
- * context after the take began (INV-NOTES-020). A ref, not state: the reader
- * wants the value as it is when it asks, and marking the anchor must not
- * re-render the transport that just started.
+ * On the audio device's clock, not the wall clock. The synth schedules on the
+ * engine's sample clock; a take anchored to `Date.now()` was being lined up
+ * against a different clock entirely, and two clocks that are not the same
+ * clock drift rather than differing by a constant (INV-NOTES-126).
+ *
+ * The lead is included on purpose. A voice scheduled now does not sound now —
+ * it sounds a lead later, by which time the take has moved on — so the offset
+ * a voice is given has to be where the take WILL be, not where it is.
+ *
+ * A ref, not state: the reader wants the value as it is when it asks, and
+ * marking the anchor must not re-render the transport that just started.
  */
 export interface TakeAnchor {
-  /** Record that the audio has just started. */
-  mark: () => void;
-  /** Milliseconds since the last mark; 0 before the first one. */
+  /**
+   * Record when the audio starts, on the audio clock.
+   *
+   * Given a moment, that moment; given none, now. A caller that scheduled the
+   * take to begin at a known time in the future says so, and the anchor is
+   * exact rather than an estimate taken beside the call (INV-NOTES-126).
+   */
+  mark: (atMs?: number) => void;
+  /**
+   * Where the take will be when something scheduled now actually sounds.
+   *
+   * 0 before the first mark. Includes the scheduling lead, because a voice
+   * scheduled now sounds a lead later and the take will have moved on.
+   */
   elapsedMs: () => number;
 }
 
@@ -62,13 +82,13 @@ export function useTakeAnchor(): TakeAnchor {
   const startedAt = useRef<number | null>(null);
   return useMemo(
     () => ({
-      mark: () => {
-        startedAt.current = Date.now();
+      mark: (atMs = audioNowMs()) => {
+        startedAt.current = atMs;
       },
       elapsedMs: () =>
         startedAt.current === null
           ? 0
-          : Math.max(0, Date.now() - startedAt.current)
+          : Math.max(0, audioNowMs() + SCHEDULE_LEAD_MS - startedAt.current)
     }),
     []
   );

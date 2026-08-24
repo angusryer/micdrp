@@ -63,6 +63,22 @@ describe('NoteCard take clock', () => {
     );
   });
 
+  it('counts from the position it is given, not one of its own', async () => {
+    // The player was lifted out of the card so one note can sound its whole
+    // mix (INV-NOTES-124). The counter had to survive that: it reads the
+    // position reported back rather than keeping a clock.
+    const { getByTestId, getByLabelText } = await renderNoteCard(
+      noteWith('notes/n1/audio.wav'),
+      undefined,
+      7_000
+    );
+
+    await fireEvent.press(getByLabelText('Play note'));
+    await waitFor(() =>
+      expect(getByTestId('note-card-time')).toHaveTextContent('0:07 / 0:12')
+    );
+  });
+
   it('is the length alone on a card with no stored audio', async () => {
     const { getByTestId } = await renderNoteCard(noteWith(null));
 

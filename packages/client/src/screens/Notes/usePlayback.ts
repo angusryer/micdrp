@@ -30,6 +30,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AudioContext } from './audioApi';
 import type { AudioBufferSourceNodeLike, GainNodeLike, AudioContextLike } from './audioApi';
 import { usePlaybackClock, useTakeAnchor } from './usePlaybackClock';
+import { SCHEDULE_LEAD_MS, audioNowMs } from '../../audio/audioClock';
 
 export type PlaybackState = 'stopped' | 'loading' | 'playing' | 'error';
 
@@ -168,15 +169,21 @@ export function usePlayback({
         void ctx.close().catch(() => undefined);
         ctxRef.current = null;
       };
-      source.start(0, offsetMs / 1000);
+      // At a moment we choose rather than "as soon as possible". Started at
+      // 0 the take begins at whatever block boundary comes next, and the
+      // anchor taken beside the call could only estimate it — an error that
+      // lands on everything scheduled against the take (INV-NOTES-126).
+      const beginsAtMs = audioNowMs() + SCHEDULE_LEAD_MS;
+      source.start(ctx.currentTime + SCHEDULE_LEAD_MS / 1000, offsetMs / 1000);
       // Whichever arrives first puts the control back to play.
       clearEndsAt();
       endsAt.current = setTimeout(
         () => setState('stopped'),
         Math.max(0, takeMs - offsetMs)
       );
-      // The take's clock starts here, not at the press — decode sits between.
-      anchor.mark();
+      // The take's clock starts when the take does, which is a moment we
+      // named rather than one we noticed afterwards.
+      anchor.mark(beginsAtMs - offsetMs);
       sourceRef.current = source;
       setState('playing');
     } catch (err) {

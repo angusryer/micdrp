@@ -13,19 +13,18 @@
  * carries the take's clock, counting the position while it runs
  * (INV-NOTES-016).
  */
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { MelodyView } from '../../components/MelodyView';
 import type { NoteMeta } from '../../data/notesCache';
-import { usePlayback } from './usePlayback';
 import { useListening } from './useListening';
+import type { PlaybackState } from './usePlayback';
 import { NoteCardActions } from './NoteCardActions';
 import { NoteCardMeta } from './NoteCardMeta';
 import { formatPlaybackCounter } from './noteCardFormat';
-import { notesRepo } from '../../data/notesRepo';
 
 /** Horizontal space consumed by the list padding (16) + card padding (14) each side. */
 const CARD_HORIZONTAL_INSET = 2 * (16 + 14);
@@ -35,37 +34,39 @@ export interface NoteCardProps {
   /** Open the note's detail/analysis. */
   onOpen(id: string): void;
   onDelete(id: string): void;
+  /** True while this note is the one sounding (INV-NOTES-124). */
+  isPlaying: boolean;
+  /** Ask for this note to sound, or to stop if it already is. */
+  onTogglePlay(id: string): void;
+  /** How far the sound has got, when this is the note making it. */
+  positionMs?: number;
 }
 
-export function NoteCard({ note, onOpen, onDelete }: NoteCardProps) {
+export function NoteCard({
+  note,
+  onOpen,
+  onDelete,
+  isPlaying,
+  onTogglePlay,
+  positionMs = 0
+}: NoteCardProps) {
   const { colors, dimensions } = useTheme();
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
 
-  // Mint the audio URL when Play is pressed rather than here: the token it
-  // carries is good for about two minutes (INV-NOTES-014).
-  const resolveAudio = useCallback(
-    () => notesRepo.audioUrlFor(note.id, note.audioPath),
-    [note.id, note.audioPath]
-  );
-
-  const { state, positionMs, play, stop, setLevel } = usePlayback({
-    resolveAudioUri: resolveAudio
-  });
-
-  // The balance this note was left at. A take set quiet in the note is quiet
-  // from the list too, or the list is playing a different thing from the one
-  // the note plays (INV-NOTES-124).
+  // The card asks for the sound rather than making it. One note sounds at a
+  // time, and it sounds the whole mix that note was balanced to — which needs
+  // the note read, and reading it once per row would not be affordable
+  // (INV-NOTES-124).
   const listening = useListening(note.id);
-  const takeLevel = listening.levels.take;
   const isTakeAudible = listening.mix.take;
-  useEffect(() => setLevel(takeLevel), [setLevel, takeLevel]);
+  const state: PlaybackState = isPlaying ? 'playing' : 'stopped';
 
   // Press play → the take starts and the button reads Stop. Press again → the
   // audio stops and it reads Play. There is no third thing to press.
   const handleTogglePlay = useCallback((): void => {
-    void (state === 'playing' ? stop() : play());
-  }, [state, play, stop]);
+    onTogglePlay(note.id);
+  }, [onTogglePlay, note.id]);
   const handleOpen = useCallback(
     (): void => onOpen(note.id),
     [onOpen, note.id]

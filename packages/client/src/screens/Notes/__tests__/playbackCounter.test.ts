@@ -8,6 +8,7 @@
 import { act, renderHook } from '@testing-library/react-native';
 
 import { formatPlaybackCounter } from '../noteCardFormat';
+import { SCHEDULE_LEAD_MS } from '../../../audio/audioClock';
 import { usePlaybackClock, useTakeAnchor } from '../usePlaybackClock';
 
 describe('formatPlaybackCounter', () => {
@@ -82,15 +83,17 @@ describe('useTakeAnchor', () => {
     expect(result.current.elapsedMs()).toBe(0);
   });
 
-  it('reports the gap between the audio starting and being asked', async () => {
-    // This gap is what the backdrop is scheduled against (INV-NOTES-020): the
-    // render and the audio context that sit between the two moments.
+  it('reports where the take will be when a voice scheduled now sounds', async () => {
+    // Not where it is. A voice scheduled now does not sound now — it sounds a
+    // lead later, by which time the take has moved on — so lining one up
+    // against the take's current position places it early by exactly that
+    // lead (INV-NOTES-126).
     const { result } = await renderHook(() => useTakeAnchor());
 
     result.current.mark();
     jest.advanceTimersByTime(120);
 
-    expect(result.current.elapsedMs()).toBe(120);
+    expect(result.current.elapsedMs()).toBe(120 + SCHEDULE_LEAD_MS);
   });
 
   it('starts again from the moment of the next press', async () => {
@@ -101,6 +104,25 @@ describe('useTakeAnchor', () => {
     result.current.mark();
     jest.advanceTimersByTime(40);
 
-    expect(result.current.elapsedMs()).toBe(40);
+    expect(result.current.elapsedMs()).toBe(40 + SCHEDULE_LEAD_MS);
+  });
+
+  it('takes the moment it is given, rather than the moment it was called', async () => {
+    // A caller that scheduled the take to begin at a known time says so, and
+    // the anchor is exact instead of an estimate taken beside the call.
+    const { result } = await renderHook(() => useTakeAnchor());
+
+    result.current.mark(Date.now() - 300);
+
+    expect(result.current.elapsedMs()).toBe(300 + SCHEDULE_LEAD_MS);
+  });
+
+  it('never reports a take that has not started yet as running', async () => {
+    // A take scheduled to begin in the future is not behind the playhead.
+    const { result } = await renderHook(() => useTakeAnchor());
+
+    result.current.mark(Date.now() + 5_000);
+
+    expect(result.current.elapsedMs()).toBe(0);
   });
 });

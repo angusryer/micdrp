@@ -4,6 +4,10 @@
  * `await waitFor(() => render(...))` before touching any query, matching
  * CaptureSection.test.tsx — a bare render leaves `screen` unbound here. Each
  * caller uses the returned queries rather than the shared `screen`.
+ *
+ * The card no longer owns a player: one note sounds at a time and the screen
+ * holds which (INV-NOTES-124). This stands in for that screen, so what the
+ * card's own control does is still testable in one place.
  */
 import { render, waitFor } from '@testing-library/react-native';
 import React from 'react';
@@ -24,12 +28,46 @@ export const noteWith = (audioPath: string | null): NoteMeta =>
     audioPath
   }) as unknown as NoteMeta;
 
-export const renderNoteCard = (note: NoteMeta) =>
+/** The screen's job, in miniature: remember which note was asked for. */
+function OneCard({
+  note,
+  onTogglePlay,
+  positionMs = 0
+}: {
+  note: NoteMeta;
+  onTogglePlay?: (id: string) => void;
+  positionMs?: number;
+}) {
+  const [playingId, setPlayingId] = React.useState<string | null>(null);
+  return (
+    <NoteCard
+      note={note}
+      onOpen={jest.fn()}
+      onDelete={jest.fn()}
+      isPlaying={playingId === note.id}
+      positionMs={playingId === note.id ? positionMs : 0}
+      onTogglePlay={(id) => {
+        onTogglePlay?.(id);
+        setPlayingId((was) => (was === id ? null : id));
+      }}
+    />
+  );
+}
+
+export const renderNoteCard = (
+  note: NoteMeta,
+  onTogglePlay?: (id: string) => void,
+  positionMs = 0
+) =>
   waitFor(() =>
     render(
       <I18nProvider>
         <ThemeProvider>
-          <NoteCard note={note} onOpen={jest.fn()} onDelete={jest.fn()} />
+          <OneCard
+            note={note}
+            onTogglePlay={onTogglePlay}
+            positionMs={positionMs}
+          />
         </ThemeProvider>
       </I18nProvider>
     )

@@ -26,10 +26,8 @@ jest.mock('../../../data/notesRepo', () =>
 );
 
 import {
-  REMOTE,
   mockAudioUrlFor,
   mockDecode,
-  mockStart,
   resetNoteCardMocks
 } from '../__fixtures__/noteCardMocks';
 import { noteWith, renderNoteCard } from '../__fixtures__/renderNoteCard';
@@ -37,15 +35,29 @@ import { noteWith, renderNoteCard } from '../__fixtures__/renderNoteCard';
 describe('NoteCard play control', () => {
   beforeEach(resetNoteCardMocks);
 
-  it('starts playback on the first press, with no second press', async () => {
+  it('asks for the note on the first press, with no second press', async () => {
+    // The card no longer makes the sound. One note sounds at a time, and it
+    // sounds the whole mix that note was balanced to — which needs the note
+    // read, and reading it once per row would not be affordable
+    // (INV-NOTES-124). So the card asks, and the screen sounds.
+    const asked = jest.fn();
+    await renderNoteCard(noteWith('notes/n1/audio.wav'), asked);
+
+    await fireEvent.press(screen.getByLabelText('Play note'));
+
+    expect(asked).toHaveBeenCalledWith('n1');
+    expect(asked).toHaveBeenCalledTimes(1);
+  });
+
+  it('mints no URL and decodes nothing itself', async () => {
+    // What it stopped doing. The player that replaced it is mounted for the
+    // one note being played, so nothing is resolved per row.
     await renderNoteCard(noteWith('notes/n1/audio.wav'));
 
     await fireEvent.press(screen.getByLabelText('Play note'));
 
-    // One press: the URL is minted and the decoded buffer is started.
-    await waitFor(() => expect(mockStart).toHaveBeenCalled());
-    expect(mockAudioUrlFor).toHaveBeenCalledWith('n1', 'notes/n1/audio.wav');
-    expect(mockDecode).toHaveBeenCalledWith(REMOTE);
+    expect(mockAudioUrlFor).not.toHaveBeenCalled();
+    expect(mockDecode).not.toHaveBeenCalled();
   });
 
   it('does not resolve or decode anything before the press', async () => {

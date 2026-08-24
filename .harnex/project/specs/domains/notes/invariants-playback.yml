@@ -332,8 +332,17 @@ invariants:
       would be playing a different thing from the one the note plays — the
       same recording, at a volume nobody chose.
 
-      A silenced take is not offered rather than played anyway: a control that
-      produces nothing is worse than one that is plainly unavailable.
+      The whole mix, not the take alone. A take is a recording of a person
+      singing over nothing; the note plays the chords, the transcription and
+      the drums with it, and a list playing only the recording is playing a
+      different piece of music from the same file.
+
+      One note sounds at a time, and the player is mounted for that note
+      alone. Sounding a mix needs the note read, which costs about a sixth of
+      a second for two minutes of audio — affordable once on a press, and not
+      affordable once per row. The card asks; the screen sounds. The card's
+      counter reads the position reported back to it, because lifting the
+      player out must not cost the thing the player was showing.
 
   - id: INV-NOTES-125
     description: The beat can be felt instead of heard
@@ -359,3 +368,38 @@ invariants:
       Beats already behind the playhead are skipped rather than fired late. A
       tap after its beat reads as the next one, and three at once reads as a
       single beat rather than three.
+
+  - id: INV-NOTES-126
+    description: Everything sounding is measured against one clock
+    severity: critical
+    check: >
+      The take and every voice sounding with it are placed against the audio
+      device's clock, not the wall clock, and against one reading of it rather
+      than one each. The take begins at a moment chosen in advance rather than
+      as soon as possible, and its anchor is that moment. A voice is given
+      where the take WILL be when the voice sounds, not where it is. Verified
+      by asserting the anchor reports a position including the scheduling
+      lead, that it takes a stated moment rather than the moment of the call,
+      and that a take not yet begun reports nothing elapsed.
+
+      The synth schedules on the engine's sample clock, which advances with
+      the audio device. The take was tracked with the wall clock, which
+      advances with the CPU. Two clocks that are not the same clock do not
+      merely differ by a constant — they drift, so a backdrop that started in
+      time wanders out of it over a long take, and no fixed correction can
+      hold it.
+
+      Starting the take at a named moment removes the other half. Started "as
+      soon as possible" it begins at whatever block boundary comes next, and
+      an anchor taken beside the call could only estimate that — an error
+      landing on everything scheduled against the take.
+
+      The lead is part of the position because a voice scheduled now does not
+      sound now: it sounds a lead later, by which time the take has moved on.
+      Lining a voice up against where the take is places it early by exactly
+      that lead, every time.
+
+      One reading for all of them because each voice used to take its own, in
+      its own effect. The chords, the transcription, the drums and the click
+      were each placed against a slightly different idea of where the take had
+      reached, so they were out of time with each other as well as with it.

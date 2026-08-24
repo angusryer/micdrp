@@ -8,7 +8,7 @@
  *
  * The per-audio-frame path never crosses React state — see useRecordController.
  */
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -32,6 +32,7 @@ import type {
 import type { NoteMeta } from '../../data/notesCache';
 import { CaptureSection } from './CaptureSection';
 import { NoteCard } from './NoteCard';
+import { NoteMixPlayer } from './NoteMixPlayer';
 import { useNoteCapture } from './useNoteCapture';
 import { useNotes } from './useNotes';
 
@@ -89,11 +90,32 @@ export function NotesScreen(): React.JSX.Element {
     [notes, remove, t]
   );
 
+  // One note sounds at a time, and it sounds the mix that note was balanced
+  // to. Held here rather than in the cards because reading a take to sound it
+  // costs about a sixth of a second, which is affordable once on a press and
+  // not once per row (INV-NOTES-124).
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const [playingAtMs, setPlayingAtMs] = useState(0);
+  const togglePlay = useCallback(
+    (id: string) => {
+      setPlayingAtMs(0);
+      setPlayingId((was: string | null) => (was === id ? null : id));
+    },
+    []
+  );
+
   const renderItem = useCallback(
     ({ item }: { item: NoteMeta }) => (
-      <NoteCard note={item} onOpen={openNote} onDelete={handleRemove} />
+      <NoteCard
+        note={item}
+        onOpen={openNote}
+        onDelete={handleRemove}
+        isPlaying={playingId === item.id}
+        onTogglePlay={togglePlay}
+        positionMs={playingId === item.id ? playingAtMs : 0}
+      />
     ),
-    [openNote, handleRemove]
+    [openNote, handleRemove, playingId, togglePlay, playingAtMs]
   );
 
   return (
@@ -135,6 +157,16 @@ export function NotesScreen(): React.JSX.Element {
           )
         }
       />
+      {/* Draws nothing. Mounted for whichever note is sounding and no other,
+          and unmounting it is how the sound stops (INV-NOTES-124). */}
+      {playingId != null ? (
+        <NoteMixPlayer
+          key={playingId}
+          noteId={playingId}
+          onEnded={() => setPlayingId(null)}
+          onPosition={setPlayingAtMs}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }

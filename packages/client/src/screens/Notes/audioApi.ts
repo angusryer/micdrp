@@ -30,6 +30,12 @@ export type AudioDestinationNodeLike = object;
 
 export interface AudioContextLike {
   destination: AudioDestinationNodeLike;
+  /**
+   * The context's own clock, in seconds. Used to start a take at a moment we
+   * know rather than "as soon as possible", so what it is lined up against
+   * can be exact (INV-NOTES-126).
+   */
+  currentTime: number;
   /** Accepts a remote URL, a file:// URI, or raw bytes. */
   decodeAudioData(source: string | ArrayBuffer): Promise<AudioBufferLike>;
   createBufferSource(): AudioBufferSourceNodeLike;
