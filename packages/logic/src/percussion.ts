@@ -9,9 +9,14 @@
  *
  * What identifies one is the absence of the thing notes have, plus the
  * presence of two things silence does not: it is loud, it is unpitched, and it
- * is over quickly. What KIND of hit it is comes from brightness alone — a
+ * is over quickly. What KIND of hit it is comes from where its energy sits — a
  * "puh" and a "tss" are both unvoiced and both brief, and differ in nothing
  * else the engine reports.
+ *
+ * "Unpitched" is now asked directly. Spectral flatness says whether a sound
+ * has a tone in it at all; periodicity says how well the waveform correlates
+ * with itself, which answers the same question only by inference and gets it
+ * wrong on anything breathy (INV-PITCH-026).
  *
  * Best effort, and named that way on purpose. A take is a person switching
  * between humming and drumming without announcing it, so this has to guess;
@@ -30,7 +35,9 @@ export interface Hit {
   /** How hard it was struck, in dBFS. */
   loudnessDb: number;
   /** Where its energy sat, or null when nothing measured it. */
-  brightnessHz: number | null;
+  centroidHz: number | null;
+  /** How noise-like it was, 0..1, or null when nothing measured it. */
+  flatness: number | null;
   kind: HitKind;
   /** 0..1 — how much this looked like a hit rather than a clipped note. */
   confidence: number;
@@ -43,6 +50,11 @@ export interface PercussionOptions {
   maxDurationMs?: number;
   /** More periodic than this and it is pitched (default 0.5). */
   maxClarity?: number;
+  /**
+   * Flatter than this and the sound has no tone in it, whatever the
+   * periodicity said (default 0.25). The direct question.
+   */
+  minFlatness?: number;
   /** Below this a hit is a thump; above `hissAboveHz` it is a hiss. */
   thumpBelowHz?: number;
   hissAboveHz?: number;
@@ -53,22 +65,26 @@ interface Run {
   fromMs: number;
   toMs: number;
   peakDb: number;
-  brightness: number[];
+  centroid: number[];
+  flatness: number[];
 }
 
 function classify(
-  brightnessHz: number | null,
+  centroidHz: number | null,
   thumpBelow: number,
   hissAbove: number
 ): HitKind {
-  if (brightnessHz == null) {
+  if (centroidHz == null) {
     return 'unknown';
   }
-  if (brightnessHz < thumpBelow) {
+  if (centroidHz < thumpBelow) {
     return 'thump';
   }
-  return brightnessHz > hissAbove ? 'hiss' : 'tap';
+  return centroidHz > hissAbove ? 'hiss' : 'tap';
 }
+
+const mean = (values: readonly number[]): number | null =>
+  values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null;
 
 /**
  * How sure we are this was struck rather than sung.
@@ -95,6 +111,7 @@ export function readPercussion(
   const minLevel = options.minLevelDb ?? -45;
   const maxDuration = options.maxDurationMs ?? 140;
   const maxClarity = options.maxClarity ?? 0.5;
+  const minFlatness = options.minFlatness ?? 0.25;
   const thumpBelow = options.thumpBelowHz ?? 700;
   const hissAbove = options.hissAboveHz ?? 3500;
 
@@ -107,16 +124,14 @@ export function readPercussion(
     }
     const durationMs = endMs - run.fromMs;
     if (durationMs > 0 && durationMs <= maxDuration) {
-      const brightnessHz =
-        run.brightness.length > 0
-          ? run.brightness.reduce((a, b) => a + b, 0) / run.brightness.length
-          : null;
+      const centroidHz = mean(run.centroid);
       hits.push({
         atMs: run.fromMs,
         durationMs,
         loudnessDb: run.peakDb,
-        brightnessHz,
-        kind: classify(brightnessHz, thumpBelow, hissAbove),
+        centroidHz,
+        flatness: mean(run.flatness),
+        kind: classify(centroidHz, thumpBelow, hissAbove),
         confidence: sureness(durationMs, maxDuration)
       });
     }
@@ -125,9 +140,14 @@ export function readPercussion(
 
   for (const frame of frames) {
     const loud = frame.levelDb != null && frame.levelDb >= minLevel;
-    // Unpitched: either the engine reported no note, or it reported one it
-    // barely believes. A hit has no fundamental to find.
-    const unpitched = frame.midi == null || frame.clarity < maxClarity;
+    // Unpitched. Flatness answers this directly where it was measured: a
+    // sound with no tone in it is flat, whatever its waveform happened to
+    // correlate with. Where it was not, fall back to periodicity, which is
+    // what older takes have (INV-PITCH-026).
+    const unpitched =
+      frame.flatness != null
+        ? frame.flatness >= minFlatness
+        : frame.midi == null || frame.clarity < maxClarity;
     if (!loud || !unpitched) {
       finish(frame.timestampMs);
       continue;
@@ -137,15 +157,19 @@ export function readPercussion(
         fromMs: frame.timestampMs,
         toMs: frame.timestampMs,
         peakDb: frame.levelDb as number,
-        brightness: []
+        centroid: [],
+        flatness: []
       };
     }
     run.toMs = frame.timestampMs;
     run.peakDb = Math.max(run.peakDb, frame.levelDb as number);
-    // Zero is "no rate to state" rather than "very low" (INV-PITCH-025), so
-    // it is left out rather than dragging the average down.
-    if (frame.brightnessHz != null && frame.brightnessHz > 0) {
-      run.brightness.push(frame.brightnessHz);
+    // Zero means "nothing to state" rather than "very low", so it is left out
+    // rather than dragging the average down (INV-PITCH-026).
+    if (frame.centroidHz != null && frame.centroidHz > 0) {
+      run.centroid.push(frame.centroidHz);
+    }
+    if (frame.flatness != null) {
+      run.flatness.push(frame.flatness);
     }
   }
   // A take that ends mid-hit still ends the hit.

@@ -16,6 +16,8 @@
 #include <cstddef>
 #include <vector>
 
+#include "fft.h"
+
 namespace micdrp::dsp {
 
 // Mirrors src/audio/contract.ts EngineConfig. Defaults match
@@ -51,6 +53,28 @@ struct PitchResult {
   bool voiced = false;       // true iff a confident pitch was accepted
 };
 
+/**
+ * What the spectrum says about a window, beyond its pitch.
+ *
+ * Free: the pitch detector transforms the frame anyway to get its
+ * autocorrelation, and these fall out of the magnitude it passes through on
+ * the way (INV-PITCH-026).
+ */
+struct Spectral {
+  /// Energy-weighted mean frequency. Where the sound sits.
+  double centroidHz = 0.0;
+  /// 0..1. Near 1 is noise, near 0 is a tone. Says WHETHER it is pitched,
+  /// which periodicity answers only indirectly.
+  double flatness = 0.0;
+  /// The frequency below which 85% of the energy lies. Separates a bright
+  /// sound with a low fundamental from a genuinely high one.
+  double rolloffHz = 0.0;
+  /// How much the spectrum changed since the previous frame, in dB. The
+  /// standard onset signal: an attack rearranges the spectrum, a sustain
+  /// does not.
+  double fluxDb = 0.0;
+};
+
 class Mpm {
  public:
   Mpm() = default;
@@ -68,12 +92,27 @@ class Mpm {
   // maxFrequency}). Does not allocate when n <= the configured frameSize.
   PitchResult detect(const float* frame, std::size_t n);
 
+  /// What the last detect() found in the spectrum it had to compute anyway.
+  const Spectral& spectral() const { return spectral_; }
+
  private:
+  void sizeTransform(std::size_t n);
+  void transform(const float* frame, std::size_t n);
+  void readSpectrum(std::size_t n);
+
   EngineConfig config_{};
-  // float32 to mirror logic/mpm.ts Float32Array nsdf exactly (acf/div are
+  // float32 to mirror logic/mpm.ts Float32Array nsdf exactly (acf is
   // accumulated in double, matching JS number, then narrowed on store).
   std::vector<float> nsdf_{};
   std::vector<std::size_t> maxPositions_{};  // per-hump local-max lags
+  Fft fft_{};
+  std::vector<double> re_{};      // transform scratch, sized in configure
+  std::vector<double> im_{};
+  std::vector<double> power_{};   // |X|^2, kept for the spectral readings
+  std::vector<double> lastPower_{};  // the frame before, for flux
+  std::vector<double> energy_{};  // prefix sums of x^2, for the NSDF divisor
+  Spectral spectral_{};
+  bool hasPrevious_ = false;
 };
 
 }  // namespace micdrp::dsp

@@ -27,7 +27,8 @@ const frames = (
     cents: null,
     clarity: 0,
     levelDb: -75,
-    brightnessHz: 0,
+    centroidHz: 0,
+    flatness: 0,
     ...make(i)
   }));
 
@@ -37,14 +38,16 @@ const sung = (at: number, ms: number) =>
     cents: 0,
     clarity: 0.95,
     levelDb: -14,
-    brightnessHz: 294
+    centroidHz: 294,
+    flatness: 0.02
   }));
 
-const struck = (at: number, ms: number, brightnessHz = 300) =>
+const struck = (at: number, ms: number, centroidHz = 300) =>
   frames(Math.ceil(ms / HOP), at, () => ({
     clarity: 0.1,
     levelDb: -14,
-    brightnessHz
+    centroidHz,
+    flatness: 0.7
   }));
 
 const silence = (at: number, ms: number) => frames(Math.ceil(ms / HOP), at, () => ({}));

@@ -6,9 +6,10 @@
  * twice: the voicing floor threw it out for having no periodicity, and the
  * brevity filter threw out whatever survived for being too short.
  *
- * What kind of hit it was comes from brightness alone. A "puh" and a "tss"
- * are both unvoiced and both brief; nothing else the engine reports
- * distinguishes them.
+ * What kind of hit it was comes from where its energy sits. A "puh" and a
+ * "tss" are both unvoiced and both brief; nothing else the engine reports
+ * distinguishes them. Whether it is unpitched at all is read from flatness,
+ * which asks the question directly.
  */
 import { readPercussion, type Hit } from '../percussion';
 import type { PitchFrame } from '../segmentation';
@@ -20,9 +21,9 @@ function hit(options: {
   atMs: number;
   durationMs: number;
   levelDb?: number;
-  brightnessHz?: number;
+  centroidHz?: number;
 }): PitchFrame[] {
-  const { atMs, durationMs, levelDb = -14, brightnessHz = 1500 } = options;
+  const { atMs, durationMs, levelDb = -14, centroidHz = 1500 } = options;
   const frames: PitchFrame[] = [];
   for (let t = 0; t < durationMs; t += HOP) {
     frames.push({
@@ -31,7 +32,8 @@ function hit(options: {
       cents: null,
       clarity: 0.1,
       levelDb,
-      brightnessHz
+      centroidHz,
+      flatness: 0.7
     });
   }
   return frames;
@@ -45,7 +47,8 @@ const quiet = (fromMs: number, toMs: number): PitchFrame[] =>
     cents: null,
     clarity: 0,
     levelDb: -75,
-    brightnessHz: 0
+    centroidHz: 0,
+    flatness: 0.7
   }));
 
 /** A sung note: pitched, clear, and held. */
@@ -56,7 +59,8 @@ const sung = (fromMs: number, toMs: number): PitchFrame[] =>
     cents: 0,
     clarity: 0.95,
     levelDb: -14,
-    brightnessHz: 294
+    centroidHz: 294,
+    flatness: 0.02
   }));
 
 const kinds = (hits: Hit[]) => hits.map((h) => h.kind);
@@ -79,11 +83,11 @@ describe('hits in a take', () => {
     // The whole reason brightness is measured. Every other reading is the
     // same for all three.
     const frames = [
-      ...hit({ atMs: 0, durationMs: 50, brightnessHz: 300 }),
+      ...hit({ atMs: 0, durationMs: 50, centroidHz: 300 }),
       ...quiet(50, 200),
-      ...hit({ atMs: 200, durationMs: 50, brightnessHz: 1800 }),
+      ...hit({ atMs: 200, durationMs: 50, centroidHz: 1800 }),
       ...quiet(250, 400),
-      ...hit({ atMs: 400, durationMs: 50, brightnessHz: 6000 })
+      ...hit({ atMs: 400, durationMs: 50, centroidHz: 6000 })
     ];
     expect(kinds(readPercussion(frames))).toEqual(['thump', 'tap', 'hiss']);
   });
@@ -127,24 +131,53 @@ describe('what is not a hit', () => {
     expect(readPercussion(unmeasured)).toEqual([]);
   });
 
-  it('says it does not know the kind when brightness is absent', () => {
-    // An older binary reports no brightness. A hit is still a hit; what it
-    // sounded like is simply unknown, which is not the same as a thump.
-    const noBrightness = hit({ atMs: 0, durationMs: 50 }).map((f) => ({
+  it('says it does not know the kind when the spectrum is absent', () => {
+    // An older binary reports no spectrum. A hit is still a hit — found by
+    // periodicity, as it always was — and what it sounded like is simply
+    // unknown, which is not the same as a thump.
+    const noSpectrum = hit({ atMs: 0, durationMs: 50 }).map((f) => ({
       ...f,
-      brightnessHz: undefined
+      centroidHz: undefined,
+      flatness: undefined
     }));
-    const found = readPercussion(noBrightness);
+    const found = readPercussion(noSpectrum);
     expect(found).toHaveLength(1);
     expect(found[0].kind).toBe('unknown');
-    expect(found[0].brightnessHz).toBeNull();
+    expect(found[0].centroidHz).toBeNull();
+    expect(found[0].flatness).toBeNull();
+  });
+
+  it('trusts flatness over periodicity where it has it', () => {
+    // A breathy sound can correlate well enough with itself to look pitched.
+    // Flatness asks the question the other way round and gets it right.
+    const breathy = hit({ atMs: 0, durationMs: 50 }).map((f) => ({
+      ...f,
+      midi: 62,
+      cents: 0,
+      clarity: 0.9,
+      flatness: 0.8
+    }));
+    expect(readPercussion(breathy)).toHaveLength(1);
+  });
+
+  it('leaves a tone alone even when its waveform correlates poorly', () => {
+    const wobbly = [0, 1, 2, 3, 4].map((i) => ({
+      timestampMs: i * 10,
+      midi: 62,
+      cents: 0,
+      clarity: 0.2,
+      levelDb: -14,
+      centroidHz: 294,
+      flatness: 0.03
+    }));
+    expect(readPercussion(wobbly)).toEqual([]);
   });
 
   it('does not read silence as the darkest possible thump', () => {
     // Brightness is zero when there was no rate worth stating, and averaging
     // that in would drag every hit towards "thump".
-    const patchy = hit({ atMs: 0, durationMs: 50, brightnessHz: 6000 }).map(
-      (f, i) => (i % 2 === 0 ? f : { ...f, brightnessHz: 0 })
+    const patchy = hit({ atMs: 0, durationMs: 50, centroidHz: 6000 }).map(
+      (f, i) => (i % 2 === 0 ? f : { ...f, centroidHz: 0 })
     );
     expect(readPercussion(patchy)[0].kind).toBe('hiss');
   });
@@ -153,11 +186,11 @@ describe('what is not a hit', () => {
 describe('a take that mixes the two', () => {
   it('reads the hits and leaves the singing alone', () => {
     const frames = [
-      ...hit({ atMs: 0, durationMs: 50, brightnessHz: 300 }),
+      ...hit({ atMs: 0, durationMs: 50, centroidHz: 300 }),
       ...quiet(50, 200),
       ...sung(200, 900),
       ...quiet(900, 1000),
-      ...hit({ atMs: 1000, durationMs: 50, brightnessHz: 6000 })
+      ...hit({ atMs: 1000, durationMs: 50, centroidHz: 6000 })
     ];
     const found = readPercussion(frames);
     expect(found).toHaveLength(2);

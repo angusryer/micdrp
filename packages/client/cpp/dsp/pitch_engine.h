@@ -22,7 +22,6 @@
 #include <vector>
 
 #include "level.h"
-#include "timbre.h"
 #include "mpm.h"
 #include "ring_buffer.h"
 
@@ -39,7 +38,12 @@ struct PitchSample {
   double frequencyHz = 0.0;   // 0 when unvoiced
   double clarity = 0.0;       // 0..1 NSDF peak
   double levelDb = kSilenceDb;  // window RMS in dBFS, floored at kSilenceDb
-  double brightnessHz = kNoBrightness;  // zero-crossing rate as a frequency
+  // What the spectrum said. Free: the detector transforms the frame anyway
+  // to get its autocorrelation (INV-PITCH-026).
+  double centroidHz = 0.0;   // where the energy sits
+  double flatness = 0.0;     // 0..1, near 1 is noise and near 0 is a tone
+  double rolloffHz = 0.0;    // 85% of the energy lies below this
+  double fluxDb = 0.0;       // how much the spectrum moved since last frame
   int midi = 0;               // nearest MIDI note (valid iff voiced)
   int cents = 0;              // -50..50 deviation (valid iff voiced)
   bool voiced = false;        // false -> midi/cents are null on the wire

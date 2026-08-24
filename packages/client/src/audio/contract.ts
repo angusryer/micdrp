@@ -34,11 +34,17 @@ export interface PitchSample {
    */
   levelDb?: number;
   /**
-   * The zero-crossing rate as a frequency. For a pitched note it lands near
-   * the fundamental; for noise it says where the energy is, which is what
-   * tells a "puh" from a "tss" (INV-PITCH-025).
+   * What the spectrum said. All four come free of the transform the pitch
+   * detector runs to get its autocorrelation (INV-PITCH-026).
    */
-  brightnessHz?: number;
+  /** Energy-weighted mean frequency: where the sound sits. */
+  centroidHz?: number;
+  /** 0..1. Near 1 is noise, near 0 is a tone. Whether it is pitched at all. */
+  flatness?: number;
+  /** The frequency below which 85% of the energy lies. */
+  rolloffHz?: number;
+  /** How far the spectrum moved since the last frame, in dB. An attack. */
+  fluxDb?: number;
   /** Nearest MIDI note number; null when unvoiced. */
   midi: number | null;
   /** Deviation from the nearest note in cents (-50..50); null when unvoiced. */

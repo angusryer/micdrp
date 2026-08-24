@@ -32,11 +32,14 @@ export type PitchSampleEvent = {
    */
   levelDb?: Double | null;
   /**
-   * The zero-crossing rate as a frequency — where the energy sits, for sounds
-   * with no pitch to report (INV-PITCH-025). Optional for the same reason as
-   * levelDb: a bundle can be newer than the binary under it.
+   * What the spectrum said, which is what a sound with no pitch is described
+   * by (INV-PITCH-026). Optional for the same reason as levelDb: a bundle can
+   * be newer than the binary under it.
    */
-  brightnessHz?: Double | null;
+  centroidHz?: Double | null;
+  flatness?: Double | null;
+  rolloffHz?: Double | null;
+  fluxDb?: Double | null;
   /** Nearest MIDI note, or null when unvoiced. */
   midi?: Double | null;
   cents?: Double | null;

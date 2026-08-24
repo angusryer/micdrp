@@ -281,3 +281,41 @@ invariants:
       counted as dark. Counted, it would drag every hit towards "thump" — and
       silence, whose every sample sits exactly on zero, would otherwise read
       as the brightest thing in the take.
+
+  - id: INV-PITCH-026
+    description: The detector transforms the frame, and reads the spectrum on the way
+    severity: critical
+    check: >
+      The NSDF's autocorrelation is computed as a transform, a magnitude and a
+      transform back, with the denominator taken from a running sum of squares.
+      The magnitude spectrum it passes through yields the centroid, the
+      flatness, the rolloff and the flux, which travel with the pitch. Silence
+      reports none of them rather than arbitrary values, and none of them
+      change with how loud the take was recorded. The detector still agrees
+      with the TS oracle. Verified by checking the transform against results
+      known by hand and against the direct sum it replaces, by asserting each
+      spectral reading on signals whose answer is known, and by the parity
+      test continuing to pass.
+
+      The autocorrelation was a double loop: about two million multiply-adds
+      per frame, measured at nine percent of one core before anything else in
+      the app ran. Autocorrelation is a transform, a magnitude, and a
+      transform back, which is O(n log n) — measured at 134us against 2094us,
+      a fifteenfold saving, with the detector left agreeing with its oracle.
+
+      The reason this is one invariant rather than two is that the expensive
+      question and the unanswerable one turned out to have the same answer.
+      Telling a thumped sound from a hissed one needs the spectrum; the
+      detector was already computing and discarding it every frame. The
+      earlier stopgap — a zero-crossing rate — was a worse proxy for the same
+      number, and is gone rather than kept alongside.
+
+      Flatness deserves its own mention because it replaces an inference.
+      Whether a sound is pitched was being read from how well its waveform
+      correlated with itself, which answers a different question and is wrong
+      on anything breathy. Flatness asks directly.
+
+      Parity survives because the parity test always compared the musical
+      answer — frequency, clarity, midi, cents, each to a tolerance — rather
+      than bit patterns. An implementation that is numerically equivalent is
+      the kind of change it was built to permit.

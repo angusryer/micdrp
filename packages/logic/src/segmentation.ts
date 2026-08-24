@@ -17,11 +17,17 @@ export interface PitchFrame {
    */
   levelDb?: number;
   /**
-   * Where the frame's energy sat, as a frequency. For a note it lands near
-   * the fundamental; for noise it is what tells a thump from a hiss
-   * (INV-PITCH-025). Absent for the same reason as `levelDb`.
+   * What the spectrum said about the frame. Absent for the same reason as
+   * `levelDb`: a binary older than the bundle reading it (INV-PITCH-026).
    */
-  brightnessHz?: number;
+  /** Energy-weighted mean frequency: where the sound sits. */
+  centroidHz?: number;
+  /** 0..1. Near 1 is noise, near 0 is a tone. */
+  flatness?: number;
+  /** The frequency below which most of the energy lies. */
+  rolloffHz?: number;
+  /** How far the spectrum moved since the last frame, in dB. */
+  fluxDb?: number;
 }
 
 export interface NoteEvent {

@@ -91,11 +91,14 @@ std::optional<PitchSample> PitchEngine::tryAnalyze() {
   // Measured over the same window the pitch came from, so a note's loudness
   // is the loudness of the frames that made it that note.
   sample.levelDb = windowLevelDb(window_.data(), frameSize);
-  // Where the energy sits, for sounds that have no pitch to report. A "puh"
-  // and a "tss" are both unvoiced and differ almost entirely in this
-  // (INV-PITCH-025).
-  sample.brightnessHz =
-      windowBrightnessHz(window_.data(), frameSize, cfg.sampleRateHz);
+  // Where the energy sits and what shape it is in. A "puh" and a "tss" are
+  // both unvoiced and differ in almost nothing else (INV-PITCH-025), and all
+  // of it comes out of the transform the detector already ran.
+  const Spectral& spectral = mpm_.spectral();
+  sample.centroidHz = spectral.centroidHz;
+  sample.flatness = spectral.flatness;
+  sample.rolloffHz = spectral.rolloffHz;
+  sample.fluxDb = spectral.fluxDb;
 
   // Voiced is three questions, asked separately because they have different
   // answers: did MPM find a peak it believes is the fundamental, was that peak
