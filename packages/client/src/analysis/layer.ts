@@ -11,18 +11,18 @@
  * with the layer than without one (INV-NOTES-074).
  */
 import {
+  ANALYSIS_VERSION,
   alignLayer,
-  dropTooBriefToSing,
-  mergeBends,
+  readTake,
   recentreNotes,
-  segmentNotes,
-  smoothPitch,
+  type Hit,
   type NoteEvent
 } from 'logic';
 import type { NoteLayerDto, LayerRole } from 'shared';
 
 import type { RecordingHandle } from '../audio/contract';
 import { segmentOptions } from './segmentSettings';
+import { takeRoleFor } from './layerRoles';
 
 export interface LayerCapture {
   /** The layer, ready to store beside the take it was sung over. */
@@ -44,13 +44,17 @@ export function analyzeLayer(
   role: LayerRole,
   latencyMs: number
 ): LayerCapture {
-  const smoothed = smoothPitch(handle.samples);
+  // Read the way its role says. A bass line is all notes; a drum layer is all
+  // hits. The role was being carried to storage and never consulted, so a
+  // layer recorded as drums was read as singing (INV-NOTES-122).
+  const { notes, hits } = readTake(handle.samples, takeRoleFor(role), {
+    segment: segmentOptions()
+  });
   // Read against the centre this layer was sung at, exactly as a take is: a
   // bass hummed a little flat throughout should still name the root it means
-  // rather than the one it landed nearest (INV-PITCH-013).
-  const { notes: heard } = recentreNotes(
-    dropTooBriefToSing(mergeBends(segmentNotes(smoothed, segmentOptions())))
-  );
+  // rather than the one it landed nearest (INV-PITCH-013). Only notes have a
+  // centre — a struck sound has no pitch to recentre.
+  const { notes: heard } = recentreNotes(notes);
 
   return {
     heard,
@@ -59,10 +63,27 @@ export function analyzeLayer(
       role,
       audioPath: handle.uri,
       melody: alignLayer(heard, latencyMs),
+      hits: alignHits(hits, latencyMs),
+      analysisVersion: ANALYSIS_VERSION,
       alignedByMs: latencyMs > 0 ? latencyMs : 0,
       isMuted: false
     }
   };
+}
+
+/**
+ * Shift the hits by the same amount the notes were shifted.
+ *
+ * A layer is heard back through the speaker and recorded again, so everything
+ * in it lands late by the round trip. Correcting the notes and not the hits
+ * would put a drum and the note it was struck with in two different places
+ * (INV-NOTES-074).
+ */
+function alignHits(hits: readonly Hit[], latencyMs: number): Hit[] {
+  if (!(latencyMs > 0)) {
+    return [...hits];
+  }
+  return hits.map((hit) => ({ ...hit, atMs: Math.max(0, hit.atMs - latencyMs) }));
 }
 
 export default analyzeLayer;

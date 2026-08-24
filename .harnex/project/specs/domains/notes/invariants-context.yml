@@ -236,3 +236,38 @@ invariants:
       detector first heard them (INV-NOTES-096) and replay against whatever is
       read now. An edit whose note is no longer heard finds nothing, which is
       the honest outcome and precisely what the warning has to say.
+
+  - id: INV-NOTES-122
+    description: A layer is a recording; a track is a channel
+    severity: major
+    check: >
+      A layer carries audio, a role and a reading of its own, and its role
+      decides how it is read: a bass line and a melody for notes, drums for
+      hits, anything undeclared the way a first take is read. A role the build
+      has never seen falls back to undeclared rather than refusing. A layer's
+      hits are shifted by the same latency its notes are. Verified by
+      asserting each role maps to its reading, that an unknown one falls back,
+      and that every role says what it is for.
+
+      The two are deliberately different and stay different. A TRACK is a
+      channel in the mixer — a level, a switch and a bus, declared once
+      (INV-NOTES-121) — and most tracks are readings of the take that own no
+      audio at all. A LAYER is a second performance: it owns a recording, and
+      a recording is the one thing about a take that cannot be produced again
+      (INV-NOTES-116). Every layer sounds through a track and no track needs a
+      layer, which is the whole of the relationship.
+
+      Merging them would lose exactly that. A reading can be thrown away and
+      made afresh; a recording cannot, and a model that cannot tell them apart
+      cannot safely re-read anything.
+
+      The role had been carried all the way to storage and never consulted, so
+      a layer recorded as drums was read as singing — the reader was told what
+      it was looking at and ignored it. Being told is worth more than any
+      amount of cleverness on ambiguous input (INV-NOTES-115), and it was the
+      reason for declaring the role in the first place.
+
+      Hits are aligned with the notes because a layer is heard back through
+      the speaker and recorded again, so everything in it lands late by the
+      round trip (INV-NOTES-074). Correcting one and not the other would put a
+      drum and the note struck with it in two different places.
