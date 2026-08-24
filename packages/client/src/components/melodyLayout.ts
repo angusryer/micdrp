@@ -75,6 +75,15 @@ export interface MelodyLayoutOptions extends ScaleRequest {
    * the vertical window takes them in rather than letting them fall off it.
    */
   alsoShow?: readonly number[];
+  /**
+   * A second performance drawn behind the sung line, laid out on the same
+   * axes rather than on its own.
+   *
+   * Here rather than in the drawing, so the thing that paints a layer note
+   * and the thing that hit-tests it work from one set of rectangles — the
+   * failure the downbeats had to be fixed for twice (INV-NOTES-104).
+   */
+  underlay?: readonly MelodyNote[];
 }
 
 /** One positioned note bar plus its centre, which is what a touch aims at. */
@@ -90,6 +99,8 @@ export interface NoteRect {
 
 export interface MelodyLayout {
   rects: NoteRect[];
+  /** The second performance's notes, on the same axes (INV-NOTES-118). */
+  underRects: NoteRect[];
   /**
    * Where the first detected note starts. The pickup is everything before
    * it, and this is the line that marks the boundary (INV-NOTES-080).
@@ -160,6 +171,18 @@ export function layoutMelody(
     return { x, y: cy - barH / 2, width, height: barH, cy, midi: n.midi };
   });
 
+  const underRects: NoteRect[] = (options.underlay ?? []).map((n) => {
+    const cy = yForMidi(pitchAxis, n.midi);
+    return {
+      x: xForMs(timeAxis, n.startMs),
+      y: cy - barH / 2,
+      width: Math.max(2, (n.endMs - n.startMs) * pxPerMs - 1),
+      height: barH,
+      cy,
+      midi: n.midi
+    };
+  });
+
   const gridLines =
     options.grid && notes.length > 0
       ? layoutGridLines(options.grid, t0, span, pad, pxPerMs)
@@ -167,6 +190,7 @@ export function layoutMelody(
 
   return {
     rects,
+    underRects,
     /** Where the first detected note starts, which the pickup runs up to. */
     firstNoteMs: bounds.t0,
     /** Where the last detected note ends, after which the take runs on. */

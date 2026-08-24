@@ -27,7 +27,14 @@ export const SynthBus = {
   Melody: 1,
   Chords: 2,
   Audition: 3,
-  Bass: 4
+  Bass: 4,
+  /**
+   * The metronome. Its own bus because it shared the melody's until now, so
+   * turning the click down turned the tune down with it (INV-NOTES-119).
+   */
+  Click: 5,
+  /** The struck sounds read out of the take (INV-NOTES-120). */
+  Rhythm: 6
 } as const;
 export type SynthBusValue = (typeof SynthBus)[keyof typeof SynthBus];
 

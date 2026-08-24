@@ -29,7 +29,6 @@ import { useTheme } from '../theme';
 import {
   layoutMelody,
   xForMs,
-  yForMidi,
   type MelodyGrid,
   type MelodyNote
 } from './melodyLayout';
@@ -103,29 +102,16 @@ export function MelodyView({
         beatWidth,
         alsoShow,
         fromMs,
-        toMs
+        toMs,
+        underlay
       }),
-    [notes, width, height, grid, beatWidth, alsoShow, fromMs, toMs]
+    [notes, width, height, grid, beatWidth, alsoShow, fromMs, toMs, underlay]
   );
-  // Placed on the melody's OWN axes rather than laid out again: a second
-  // layout would derive its own pitch window from its own notes, and the same
-  // pitch would sit at two heights on one drawing. The caller passes the bass
-  // pitches through `alsoShow` so the shared window already makes room.
-  const under = useMemo(() => {
-    if (!underlay?.length) {
-      return [];
-    }
-    const barH = Math.max(2, layout.pitchAxis.lane * 0.7);
-    return underlay.map((n) => {
-      const cy = yForMidi(layout.pitchAxis, n.midi);
-      return {
-        x: xForMs(layout.timeAxis, n.startMs),
-        y: cy - barH / 2,
-        width: Math.max(2, (n.endMs - n.startMs) * layout.timeAxis.pxPerMs - 1),
-        height: barH
-      };
-    });
-  }, [underlay, layout]);
+  // Laid out with the melody rather than beside it, so the thing that paints
+  // a layer note and the thing that hit-tests it read one set of rectangles
+  // (INV-NOTES-118). The caller passes the layer's pitches through `alsoShow`
+  // as well, so the shared window already makes room for them.
+  const under = layout.underRects;
   // What was actually drawn — `width` when fitted, wider when it scrolls.
   const drawnWidth = layout.contentWidth;
 

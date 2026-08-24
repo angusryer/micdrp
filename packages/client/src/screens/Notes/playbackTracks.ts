@@ -22,6 +22,13 @@ export interface PlaybackMix {
   count: boolean;
   /** The detected melody over the take. Rides the take's clock, so it needs it. */
   melody: boolean;
+  /**
+   * The struck sounds read out of the take, sounded as drums.
+   *
+   * Off until asked for, like the melody: it is a reading of the take, and
+   * the take already contains the sound it is reading (INV-NOTES-120).
+   */
+  rhythm: boolean;
 }
 
 export type TrackName = keyof PlaybackMix;
@@ -40,6 +47,7 @@ export const DEFAULT_LEVELS: TrackLevels = {
   take: 1,
   chords: 0.7,
   melody: 0.6,
+  rhythm: 0.6,
   // Faint. It is there to be followed, not listened to, and a loud click
   // over a quiet take is the take you stop hearing.
   count: 0.35
@@ -50,6 +58,7 @@ export const TRACK_ORDER: readonly TrackName[] = [
   'take',
   'chords',
   'melody',
+  'rhythm',
   'count'
 ];
 
@@ -58,6 +67,9 @@ export const DEFAULT_MIX: PlaybackMix = {
   take: true,
   chords: true,
   melody: false,
+  // Off until asked for, like the melody: it is a reading of the take and
+  // the take already contains the sound it is reading (INV-NOTES-120).
+  rhythm: false,
   count: false
 };
 
@@ -91,6 +103,7 @@ export function withOnlyAvailable(
   return {
     take: mix.take,
     chords: mix.chords && available.includes('chords'),
+    rhythm: mix.rhythm && available.includes('rhythm'),
     // Sounds on its own now: the melody read from a take is worth hearing by
     // itself, and the control that used to do that has gone into this list
     // (INT-NOTES-026).

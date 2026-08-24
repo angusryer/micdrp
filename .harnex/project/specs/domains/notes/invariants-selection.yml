@@ -165,3 +165,35 @@ invariants:
       The panel has no grabber to drag away, unlike the upright sheet, so
       putting the selection down has to be offered explicitly. Without it the
       graph stays narrow for the rest of the session.
+
+  - id: INV-NOTES-118
+    description: Everything drawn on the graph can be chosen
+    severity: major
+    check: >
+      A struck sound in the rhythm band and a note from a layer sung under the
+      take are both selectable, by the one surface that reads every touch, and
+      both report their facts in the sheet. Where a layer note and a sung note
+      are both under a touch, the sung one wins. The band is inside the
+      drawing's touch surface rather than below it. Verified by asserting a
+      touch in the band names the nearest hit, that a layer note is found
+      where nothing was sung over it, and that the sung line wins a tie.
+
+      The graph could point at three kinds of thing while the take contained
+      five. The drums and the second take were drawn and could not be touched,
+      which makes them decoration rather than part of the reading — and the
+      layer especially, since it is the thing that states where the harmony
+      changes.
+
+      The sung line wins a tie because it is drawn in front. A rule that
+      matched the drawing order is the only one that will not surprise: a
+      person aims at what they can see.
+
+      The band had to move inside the drawing for this. One surface reads
+      every touch on the graph (INT-NOTES-015), and a band below it was
+      outside that surface — so making hits touchable meant either extending
+      the surface or giving the band gestures of its own, and the second is
+      how the chord notes became unreachable the first time.
+
+      A layer note offers no correction. The layer is context for reading the
+      take, and moving its pitches would be editing the evidence rather than
+      the reading.

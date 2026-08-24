@@ -18,7 +18,7 @@ import { GestureDetector } from 'react-native-gesture-handler';
 
 import type { ChordToneRect } from './chordLayout';
 import type { NoteRect } from './melodyLayout';
-import type { BarHandlePoint, Chosen } from './graphSelection';
+import type { BarHandlePoint, Chosen, HitPoint } from './graphSelection';
 import { DragLoupe } from './DragLoupe';
 import { useGraphGestures, type DragPreview } from './useGraphGestures';
 
@@ -28,6 +28,10 @@ export interface GraphSurfaceProps {
   tones: readonly ChordToneRect[];
   bars: readonly BarHandlePoint[];
   notes: readonly NoteRect[];
+  /** The layer's notes, drawn behind the sung line (INV-NOTES-118). */
+  layerNotes?: readonly NoteRect[];
+  /** Where each struck sound's mark sits, in the band below the drawing. */
+  hits?: readonly HitPoint[];
   /** Height of one semitone lane, for turning a drag into pitch. */
   laneHeight: number;
   /** Step zero and step size, for turning a drag into a grid position. */
@@ -53,6 +57,8 @@ export function GraphSurface({
   tones,
   bars,
   notes,
+  layerNotes = [],
+  hits = [],
   laneHeight,
   originX,
   stepWidth,
@@ -73,6 +79,8 @@ export function GraphSurface({
     tones,
     bars,
     notes,
+    layerNotes,
+    hits,
     laneHeight,
     originX,
     stepWidth,

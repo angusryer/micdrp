@@ -8,7 +8,7 @@
 import { useMemo, useState } from 'react';
 
 import {
-  countIn,
+  metronome,
   playbackTargets,
   transposeTargets,
   type NoteEvent,
@@ -27,10 +27,32 @@ import { useOctaveShift } from './useOctaveShift';
 import { usePreviewVoice } from './usePreviewVoice';
 
 
+/**
+ * What register each kind of hit speaks in.
+ *
+ * A struck sound has no pitch, so these are not its pitch — they are how the
+ * synth is asked to stand in for a drum it has no voice for. Low for a thump,
+ * high for a hiss, so the kit is legible by ear the way the band is by eye
+ * (INV-NOTES-120).
+ */
+const HIT_PITCH: Record<string, number> = {
+  thump: 40,
+  tap: 64,
+  hiss: 92,
+  unknown: 64
+};
+
+/** How long a struck sound rings. Short: a hit is a moment. */
+const HIT_SOUND_MS = 40;
+
 export function useNotePlayback(
   melody: readonly NoteEvent[],
   quantized: ReturnType<typeof quantize>,
-  chords: ReturnType<typeof useChordTrack>
+  chords: ReturnType<typeof useChordTrack>,
+  /** How long the recording runs, so the click keeps time to the end of it. */
+  durationMs = 0,
+  /** The struck sounds read out of the take (INV-NOTES-120). */
+  hits: readonly { atMs: number; kind: string }[] = []
 ) {
   // Play sounds the backdrop with the take, or on its own, or not at all —
   // whichever the choice beside the play control is set to (INV-NOTES-019).
@@ -50,12 +72,19 @@ export function useNotePlayback(
   );
   const melodyVoice = useMelodyBackdrop(melodyTones);
 
-  // The count-in, as a voice like the others so the mix reaches it. Its
-  // clicks come from the take's own tempo, counted back from the first note
-  // into whatever pickup is actually there (INV-NOTES-088).
+  // The click, as a voice like the others so the mix reaches it. It counts
+  // you in from the take's own tempo (INV-NOTES-088) and then keeps going —
+  // keeping time through a take is the same job as counting into it, so it is
+  // one voice rather than two (INV-NOTES-119).
   const counted = useMemo(
-    () => countIn(melody[0]?.startMs ?? 0, quantized.grid?.bpm ?? 0),
-    [melody, quantized.grid?.bpm]
+    () =>
+      metronome(
+        melody[0]?.startMs ?? 0,
+        quantized.grid?.bpm ?? 0,
+        durationMs,
+        quantized.grid?.beatsPerBar ?? 4
+      ),
+    [melody, quantized.grid?.bpm, quantized.grid?.beatsPerBar, durationMs]
   );
   const countTones = useMemo(
     () =>
@@ -66,7 +95,9 @@ export function useNotePlayback(
       })),
     [counted]
   );
-  const countVoice = useMelodyBackdrop(countTones);
+  // Its own bus. It shared the melody's until now, so turning the click down
+  // turned the tune down with it (INV-NOTES-119).
+  const countVoice = useMelodyBackdrop(countTones, SynthBus.Click);
   const countMix = useMemo(
     () => ({
       start: (offsetMs = 0) => countVoice.start(offsetMs),
@@ -78,6 +109,30 @@ export function useNotePlayback(
       setLevel: (level: number) => countVoice.setLevel(level)
     }),
     [countVoice, countTones, counted.leadInMs]
+  );
+
+  // The struck sounds, sounded. A hit has no pitch, so each kind is given a
+  // register to speak in: low for a thump, high for a hiss. Standing in for
+  // drums with the tone voice the synth has, rather than waiting for a noise
+  // voice it does not (INV-NOTES-120).
+  const rhythmTones = useMemo(
+    () =>
+      hits.map((hit) => ({
+        midi: HIT_PITCH[hit.kind] ?? HIT_PITCH.unknown,
+        startMs: hit.atMs,
+        endMs: hit.atMs + HIT_SOUND_MS
+      })),
+    [hits]
+  );
+  const rhythmVoice = useMelodyBackdrop(rhythmTones, SynthBus.Rhythm);
+  const rhythmMix = useMemo(
+    () => ({
+      start: (offsetMs = 0) => rhythmVoice.start(offsetMs),
+      stop: () => rhythmVoice.stop(),
+      durationMs: rhythmTones[rhythmTones.length - 1]?.endMs ?? 0,
+      setLevel: (level: number) => rhythmVoice.setLevel(level)
+    }),
+    [rhythmVoice, rhythmTones]
   );
 
   const backdrop = useChordBackdrop(chords.progression);
@@ -132,6 +187,7 @@ export function useNotePlayback(
 
   return {
     countMix,
+    rhythmMix,
     playbackMode,
     setPlaybackMode,
     ...octave,

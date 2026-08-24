@@ -20,6 +20,7 @@ import { ChordBand } from '../../components/ChordBand';
 import { GraphSurface } from '../../components/GraphSurface';
 import { SelectionGlow } from '../../components/SelectionGlow';
 import { layoutChordTones } from '../../components/chordLayout';
+import { layoutHits } from '../../components/rhythmLanes';
 import type { MelodyLayout, NoteRect } from '../../components/melodyLayout';
 import type { Chosen, Selection } from '../../components/graphSelection';
 import { useTheme } from '../../theme';
@@ -33,6 +34,10 @@ export interface GraphLayersProps {
   noteRects: readonly NoteRect[];
   contentWidth: number;
   height: number;
+  /** The layer's notes, laid out with the melody (INV-NOTES-118). */
+  noteRectsUnder?: readonly NoteRect[];
+  /** Room below the drawing holding the rhythm band, on the same surface. */
+  underHeight?: number;
   timeAxis: MelodyLayout['timeAxis'];
   pitchAxis: MelodyLayout['pitchAxis'];
   selection: Chosen;
@@ -46,6 +51,8 @@ export function GraphLayers({
   noteRects,
   contentWidth,
   height,
+  noteRectsUnder = [],
+  underHeight = 0,
   timeAxis,
   pitchAxis,
   selection,
@@ -89,6 +96,19 @@ export function GraphLayers({
       : null;
   const firstBar = selection.find((one) => one.kind === 'barLine');
 
+  // Where each struck sound's mark sits, in the band below the drawing. The
+  // same layout the band paints from, offset into the surface's coordinates,
+  // so a hit can be touched exactly where it is drawn (INV-NOTES-118).
+  const hitPoints = useMemo(
+    () =>
+      layoutHits(detail.hits, timeAxis, underHeight).map((mark) => ({
+        index: mark.index,
+        x: mark.x,
+        y: height + mark.y
+      })),
+    [detail.hits, timeAxis, underHeight, height]
+  );
+
   return (
     <>
       {/* Underneath everything it lights, so the chosen thing blooms at its
@@ -99,8 +119,10 @@ export function GraphLayers({
         tones={tones}
         bars={handles}
         notes={noteRects}
+        layerNotes={noteRectsUnder}
+        hits={hitPoints}
         width={contentWidth}
-        height={height}
+        height={height + underHeight}
         colour={colors.primary500}
       />
       {/* The chords as individual notes, on the same pitch ruler as the line
@@ -129,10 +151,12 @@ export function GraphLayers({
       {geometry != null ? (
         <GraphSurface
           width={contentWidth}
-          height={height}
+          height={height + underHeight}
           tones={tones}
           bars={handles}
           notes={noteRects}
+          layerNotes={noteRectsUnder}
+          hits={hitPoints}
           laneHeight={pitchAxis.lane}
           originX={geometry.originX}
           stepWidth={geometry.stepWidth}

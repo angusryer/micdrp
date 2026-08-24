@@ -36,6 +36,7 @@ const TRACK_TITLES: Record<TrackName, string> = {
   take: 'Your take',
   chords: 'Chords read from your take',
   melody: 'Transcription of your take',
+  rhythm: 'Drums read from your take',
   count: 'Count-in'
 };
 import { usePlaybackMix, type MixAccompaniment } from './usePlaybackMix';
@@ -70,6 +71,8 @@ export interface PlaybackBarProps {
   voice?: MixAccompaniment;
   /** The click counting the take in (INV-NOTES-088). */
   count?: MixAccompaniment;
+  /** The struck sounds read out of the take (INV-NOTES-120). */
+  rhythm?: MixAccompaniment;
   /**
    * Anything else that decides what a press sounds — or how the take is read
    * while it does — shown in the same list as the tracks: which reading is
@@ -102,6 +105,7 @@ export function PlaybackBar({
   accompaniment,
   voice,
   count,
+  rhythm,
   trackOptions,
   onDetails,
   onTransport,
@@ -130,8 +134,19 @@ export function PlaybackBar({
     if ((count?.durationMs ?? 0) > 0) {
       extras.push('count');
     }
+    // Only where something was actually struck. A take of pure singing has
+    // no drums, and a control for a track that would make no sound is a
+    // control that lies (INV-NOTES-120).
+    if ((rhythm?.durationMs ?? 0) > 0) {
+      extras.push('rhythm');
+    }
     return extras.length > 0 ? ['take', ...extras] : [];
-  }, [accompaniment?.durationMs, voice?.durationMs, count?.durationMs]);
+  }, [
+    accompaniment?.durationMs,
+    voice?.durationMs,
+    count?.durationMs,
+    rhythm?.durationMs
+  ]);
 
   // What the toggles both draw and hand back: a track the note lacks, or a
   // melody with no take left under it, is off in fact, so drawing it on would
@@ -146,7 +161,8 @@ export function PlaybackBar({
     levels,
     accompaniment,
     voice,
-    count
+    count,
+    rhythm
   });
 
   useEffect(
@@ -194,9 +210,32 @@ export function PlaybackBar({
           </Text>
         ) : null}
 
-        {/* The two that open a sheet, together at the far end: neither makes
-            a sound, which is what separates them from the transport. */}
+        {/* The click is the one track you reach for mid-take, so it is the
+            one with a switch out here. Its level stays in the options with
+            every other level, because that is set once and this is not
+            (INV-NOTES-119). */}
         <View style={styles.sheetOpeners}>
+          {offered.includes('count') ? (
+            <Pressable
+              accessibilityRole="switch"
+              accessibilityState={{ checked: sounding.count }}
+              accessibilityLabel={
+                sounding.count ? 'Turn the click off' : 'Turn the click on'
+              }
+              onPress={() => setAudible('count', !sounding.count)}
+              hitSlop={8}
+              style={({ pressed }) => [
+                styles.details,
+                { opacity: pressed ? 0.5 : 1 }
+              ]}
+            >
+              <Icon
+                name={sounding.count ? 'metronome' : 'metronomeOff'}
+                size={20}
+                color={sounding.count ? colors.primary500 : colors.gray300}
+              />
+            </Pressable>
+          ) : null}
           {onDetails ? (
             <Pressable
               accessibilityRole="button"

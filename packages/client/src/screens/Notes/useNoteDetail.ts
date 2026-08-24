@@ -369,7 +369,13 @@ export function useNoteDetail(id: string) {
     return true;
   }, [note, resolveAudio]);
 
-  const playback = useNotePlayback(melody, quantized, chords);
+  const playback = useNotePlayback(
+    melody,
+    quantized,
+    chords,
+    note?.durationMs ?? 0,
+    hits
+  );
 
   return {
     note,

@@ -35,6 +35,8 @@ export interface MelodyZoomOptions {
   fromMs?: number;
   /** Where the recording ended, when later than the last note. */
   toMs?: number;
+  /** The second performance, laid out on the same axes (INV-NOTES-118). */
+  underlay?: readonly MelodyNote[];
   scroller: React.RefObject<ScrollView | null>;
   scrollX: React.RefObject<number>;
   onScaleChange?: (state: { isDefault: boolean; reset: () => void }) => void;
@@ -48,6 +50,7 @@ export function useMelodyZoom({
   alsoShow,
   fromMs,
   toMs,
+  underlay,
   scroller,
   scrollX,
   onScaleChange
@@ -71,9 +74,10 @@ export function useMelodyZoom({
         beatWidth,
         alsoShow,
         fromMs,
-        toMs
+        toMs,
+        underlay
       }),
-    [notes, width, height, grid, beatWidth, alsoShow, fromMs, toMs]
+    [notes, width, height, grid, beatWidth, alsoShow, fromMs, toMs, underlay]
   );
 
   // Zooming out stops when the whole take fits, pickup included: past that

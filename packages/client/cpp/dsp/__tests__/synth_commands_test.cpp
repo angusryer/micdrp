@@ -27,8 +27,14 @@ void testBusFromIndex() {
   check(micdrp::busFromIndex(0) == Bus::Take, "0 is Take");
   check(micdrp::busFromIndex(3) == Bus::Audition, "3 is Audition");
   check(micdrp::busFromIndex(4) == Bus::Bass, "4 is Bass");
+  // The click and the drums have their own, so neither shares a level with
+  // the melody the way the click used to (INV-NOTES-119, INV-NOTES-120).
+  check(micdrp::busFromIndex(5) == Bus::Click, "5 is Click");
+  check(micdrp::busFromIndex(6) == Bus::Rhythm, "6 is Rhythm");
   // Out of range reads as Melody rather than indexing past the levels array.
-  check(micdrp::busFromIndex(5) == Bus::Melody, "5 falls back to Melody");
+  // Bus::Count is the sentinel and is itself out of range.
+  check(micdrp::busFromIndex(static_cast<int>(Bus::Count)) == Bus::Melody,
+        "the sentinel falls back to Melody");
   check(micdrp::busFromIndex(-1) == Bus::Melody, "-1 falls back to Melody");
   check(micdrp::busFromIndex(1.9) == Bus::Melody, "1.9 truncates to Melody");
 }

@@ -100,6 +100,7 @@ export function NoteLandscape({
             resolveAudioUri={detail.resolveAudio}
             accompaniment={detail.backdrop}
             voice={detail.melodyVoiceMix}
+            rhythm={detail.rhythmMix}
             listening={detail.listening}
           />
           </View>

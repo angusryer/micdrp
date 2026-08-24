@@ -75,6 +75,12 @@ export function describeSelection(
   if (selection.kind === 'melodyNote') {
     return describeSungNote(selection, detail, accent);
   }
+  if (selection.kind === 'layerNote') {
+    return describeLayerNote(selection, detail, accent);
+  }
+  if (selection.kind === 'hit') {
+    return describeHit(selection, detail, accent);
+  }
   return describeBarLine(selection, detail, accent, onSelect);
 }
 
@@ -148,6 +154,70 @@ function describeSungNote(
         ]
       : [],
     actions
+  };
+}
+
+/**
+ * A note from the second take sung against this one.
+ *
+ * The same facts as a sung note, because it is one — a different performance,
+ * read the same way (INV-NOTES-118). What it does not offer is a correction:
+ * the layer is context for reading the take, and moving its pitches would be
+ * editing the evidence rather than the reading.
+ */
+function describeLayerNote(
+  selection: Extract<Selection, { kind: 'layerNote' }>,
+  detail: ReturnType<typeof useNoteDetail>,
+  accent: string
+): SelectionDescription {
+  const note = detail.bass?.[selection.index];
+  return {
+    title: note ? midiToLabel(note.midi) : 'Layer note',
+    accent,
+    facts: note
+      ? [
+          { label: 'Starts', value: seconds(note.startMs) },
+          { label: 'Lasts', value: seconds(note.endMs - note.startMs) },
+          { label: 'Tuning', value: centsOff(note.cents) },
+          { label: 'Part of', value: 'the layer you sang under this' }
+        ]
+      : [],
+    actions: note
+      ? [{ label: 'Hear it', run: () => detail.playNote(note.midi) }]
+      : []
+  };
+}
+
+/** A struck sound: a moment and a timbre, with no pitch to report. */
+function describeHit(
+  selection: Extract<Selection, { kind: 'hit' }>,
+  detail: ReturnType<typeof useNoteDetail>,
+  accent: string
+): SelectionDescription {
+  const hit = detail.hits[selection.index];
+  const named: Record<string, string> = {
+    thump: 'Thump',
+    tap: 'Tap',
+    hiss: 'Hiss',
+    unknown: 'Struck'
+  };
+  return {
+    title: hit ? named[hit.kind] : 'Struck',
+    accent,
+    facts: hit
+      ? [
+          { label: 'At', value: seconds(hit.atMs) },
+          { label: 'Lasts', value: seconds(hit.durationMs) },
+          { label: 'Loudness', value: `${Math.round(hit.loudnessDb)} dB` },
+          {
+            label: 'Pitch',
+            // Not a failure to detect one. A struck sound has none, and
+            // saying "unknown" would invite someone to go looking.
+            value: 'none — this was struck, not sung'
+          }
+        ]
+      : [],
+    actions: []
   };
 }
 

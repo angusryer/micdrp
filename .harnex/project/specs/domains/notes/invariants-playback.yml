@@ -211,3 +211,56 @@ invariants:
       chords is not a reading of the music, and freezing it into one would be
       a category error — so this is a local listening preference and stays
       local, syncing nowhere.
+
+  - id: INV-NOTES-119
+    description: The click keeps time, and is switched from the transport
+    severity: major
+    check: >
+      The metronome counts the take in and then goes on clicking to the end of
+      it, accented on the downbeat from the arrangement's own bar length. It
+      sounds on a bus of its own. It can be turned on and off from the
+      transport, while its level stays with every other level in the options.
+      Verified by asserting the metronome's opening clicks are exactly the
+      count's, that it continues past them to the end of the take, that it
+      accents, and that it is silent without a tempo.
+
+      The count was only ever the beats before the first note, which is what
+      you need to come in on time and nothing at all once you have. Keeping
+      time through a take is that same job continued, so it is the same clicks
+      continued — one voice rather than two, with the count as its opening
+      bars.
+
+      Its own bus because it did not have one. It sounded on the melody's, so
+      turning the click down turned the tune down with it and neither control
+      did what it said. Two voices on one bus share a level, which is not a
+      mixer.
+
+      Switched from the transport because it is the one track reached for
+      mid-take: the click goes on and off while working, where a level is set
+      once and left. The level stays in the options with every other level, so
+      the options remain the place where everything is set and the transport
+      remains the place where things are done.
+
+  - id: INV-NOTES-120
+    description: The struck sounds can be heard
+    severity: major
+    check: >
+      The hits read out of a take sound as their own track, on their own bus,
+      with their own level, offered only where something was actually struck.
+      Each kind speaks in its own register. Off until asked for. Verified by
+      asserting the track appears only when there are hits and that each kind
+      is given a distinct pitch.
+
+      A reading nobody can hear cannot be checked. The drums were being found,
+      stored and drawn, and the only way to know whether the app had heard
+      what you played was to compare a picture against a memory.
+
+      The registers are not pitches. A struck sound has none; they are how the
+      synth is asked to stand in for a drum it has no voice for, low for a
+      thump and high for a hiss, so the kit is legible by ear the way the band
+      is by eye. When the synth gains a noise voice this is where it goes.
+
+      Off until asked for, like the melody: it is a reading of the take, and
+      the take already contains the sound it is reading. Offered only where
+      something was struck, because a control for a track that would make no
+      sound is a control that lies.

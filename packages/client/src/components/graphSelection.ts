@@ -25,7 +25,11 @@ export interface BarHandlePoint {
 export type Selection =
   | { kind: 'barLine'; lineIndex: number }
   | { kind: 'chordTone'; slot: number; tone: number }
-  | { kind: 'melodyNote'; index: number };
+  | { kind: 'melodyNote'; index: number }
+  /** A note from a second take sung against this one (INV-NOTES-118). */
+  | { kind: 'layerNote'; index: number }
+  /** A struck sound, in the rhythm band below the drawing (INV-NOTES-118). */
+  | { kind: 'hit'; index: number };
 
 /** How far from a bar line a touch still means that line. */
 export const BAR_REACH = 22;
@@ -35,6 +39,9 @@ export const TONE_REACH = 22;
 
 /** How far from a sung note a touch still means that note. */
 export const NOTE_REACH = 20;
+
+/** How far from a struck sound's mark a touch still means that sound. */
+export const HIT_REACH = 16;
 
 /**
  * Everything chosen at once, which is always of one kind (INV-NOTES-093).
@@ -86,6 +93,12 @@ export function isSame(a: Selection | null, b: Selection | null): boolean {
   if (a.kind === 'melodyNote' && b.kind === 'melodyNote') {
     return a.index === b.index;
   }
+  if (a.kind === 'layerNote' && b.kind === 'layerNote') {
+    return a.index === b.index;
+  }
+  if (a.kind === 'hit' && b.kind === 'hit') {
+    return a.index === b.index;
+  }
   return false;
 }
 
@@ -96,13 +109,37 @@ export function isSame(a: Selection | null, b: Selection | null): boolean {
  * line spans the whole height and is easy to hit from anywhere, while a note
  * is a few points tall and can only be meant deliberately.
  */
+/** A struck sound as the surface needs it: where its mark was drawn. */
+export interface HitPoint {
+  index: number;
+  x: number;
+  y: number;
+}
+
 export function selectionAt(
   x: number,
   y: number,
   tones: readonly ChordToneRect[],
   bars: readonly BarHandlePoint[],
-  notes: readonly NoteRect[] = []
+  notes: readonly NoteRect[] = [],
+  layerNotes: readonly NoteRect[] = [],
+  hits: readonly HitPoint[] = []
 ): Selection | null {
+  // The rhythm band first, and by distance in both directions. It sits below
+  // the drawing in a region of its own, so a touch there is unambiguous —
+  // nothing else is drawn in it (INV-NOTES-118).
+  let bestHit = -1;
+  let bestHitGap = HIT_REACH;
+  for (const point of hits) {
+    const gap = Math.hypot(x - point.x, y - point.y);
+    if (gap <= bestHitGap) {
+      bestHitGap = gap;
+      bestHit = point.index;
+    }
+  }
+  if (bestHit >= 0) {
+    return { kind: 'hit', index: bestHit };
+  }
   let bestTone: ChordToneRect | null = null;
   let bestToneGap = TONE_REACH;
   for (const rect of tones) {
@@ -135,6 +172,24 @@ export function selectionAt(
     return { kind: 'melodyNote', index: bestNote };
   }
 
+  // The layer after the sung line: it is drawn behind, so a touch that could
+  // mean either means the one in front (INV-NOTES-118).
+  let bestLayer = -1;
+  let bestLayerGap = NOTE_REACH;
+  layerNotes.forEach((rect, index) => {
+    if (x < rect.x || x > rect.x + rect.width) {
+      return;
+    }
+    const gap = Math.abs(y - rect.cy);
+    if (gap <= bestLayerGap) {
+      bestLayerGap = gap;
+      bestLayer = index;
+    }
+  });
+  if (bestLayer >= 0) {
+    return { kind: 'layerNote', index: bestLayer };
+  }
+
   let bestBar: BarHandlePoint | null = null;
   let bestBarGap = BAR_REACH;
   for (const bar of bars) {
@@ -154,10 +209,15 @@ export function touchesSelection(
   y: number,
   tones: readonly ChordToneRect[],
   bars: readonly BarHandlePoint[],
-  notes: readonly NoteRect[] = []
+  notes: readonly NoteRect[] = [],
+  layerNotes: readonly NoteRect[] = [],
+  hits: readonly HitPoint[] = []
 ): boolean {
   if (!selection) {
     return false;
   }
-  return isSame(selection, selectionAt(x, y, tones, bars, notes));
+  return isSame(
+    selection,
+    selectionAt(x, y, tones, bars, notes, layerNotes, hits)
+  );
 }

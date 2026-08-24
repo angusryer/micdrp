@@ -55,8 +55,10 @@ export interface UsePlaybackMixOptions {
   /** How loud each track sits, independent of whether it is on. */
   levels?: TrackLevels;
   accompaniment?: MixAccompaniment;
-  /** The click counting the take in (INV-NOTES-088). */
+  /** The click counting the take in and keeping time (INV-NOTES-119). */
   count?: MixAccompaniment;
+  /** The struck sounds read out of the take (INV-NOTES-120). */
+  rhythm?: MixAccompaniment;
   /**
    * A voice that follows the take itself rather than the chord track.
    *
@@ -93,6 +95,7 @@ export function usePlaybackMix({
   accompaniment,
   voice,
   count,
+  rhythm,
   levels
 }: UsePlaybackMixOptions): MixedPlayback {
   const {
@@ -113,7 +116,8 @@ export function usePlaybackMix({
     accompaniment?.setLevel?.(levels.chords);
     voice?.setLevel?.(levels.melody);
     count?.setLevel?.(levels.count);
-  }, [levels, accompaniment, voice, count, setTakeLevel]);
+    rhythm?.setLevel?.(levels.rhythm);
+  }, [levels, accompaniment, voice, count, rhythm, setTakeLevel]);
 
   const wantsTake = mix.take;
   const wantsChords = mix.chords;

@@ -1,3 +1,4 @@
+import { countIn, metronome } from '../bassContext';
 import {
   analyzeCorpus,
   avoidanceProfile,
@@ -259,5 +260,40 @@ describe('playback helpers', () => {
   it('realizes an interval shape from a root', () => {
     const targets = fragmentToTargets(60, [2, 2], 400);
     expect(targets.map((t) => t.midi)).toEqual([60, 62, 64]);
+  });
+});
+
+describe('INV-NOTES-119: the click keeps time, not just the count', () => {
+  const GRID = { bpm: 120, beatsPerBar: 4 };
+
+  it('counts you in, as it always did', () => {
+    const only = countIn(2000, GRID.bpm);
+    const through = metronome(2000, GRID.bpm, 10_000, GRID.beatsPerBar);
+    // Everything the count sounded, the metronome sounds too: it is the same
+    // clicks continued rather than a second voice.
+    expect(through.clicks.slice(0, only.clicks.length)).toEqual(only.clicks);
+    expect(through.leadInMs).toBe(only.leadInMs);
+  });
+
+  it('keeps going to the end of the take', () => {
+    const through = metronome(2000, GRID.bpm, 10_000, GRID.beatsPerBar);
+    expect(through.clicks.length).toBeGreaterThan(countIn(2000, GRID.bpm).clicks.length);
+    const last = through.clicks[through.clicks.length - 1];
+    expect(last.startMs).toBeGreaterThan(8000);
+    expect(last.startMs).toBeLessThanOrEqual(10_000 + through.leadInMs);
+  });
+
+  it('accents the downbeat, so the click says where you are', () => {
+    const through = metronome(0, GRID.bpm, 8000, GRID.beatsPerBar);
+    const pitches = new Set(through.clicks.map((c) => c.midi));
+    expect(pitches.size).toBeGreaterThan(1);
+  });
+
+  it('is just the count where there is no take to keep time through', () => {
+    expect(metronome(2000, GRID.bpm, 0, 4)).toEqual(countIn(2000, GRID.bpm));
+  });
+
+  it('says nothing at all without a tempo', () => {
+    expect(metronome(2000, 0, 10_000, 4).clicks).toEqual([]);
   });
 });

@@ -23,7 +23,12 @@ import { BlurMask, Canvas, Line, RoundedRect, vec } from '@shopify/react-native-
 import { chordRoleColour } from './chordRoles';
 import type { ChordToneRect } from './chordLayout';
 import type { NoteRect } from './melodyLayout';
-import type { BarHandlePoint, Chosen, Selection } from './graphSelection';
+import type {
+  BarHandlePoint,
+  Chosen,
+  HitPoint,
+  Selection
+} from './graphSelection';
 
 /** The spill, and the edge. */
 const OUTER = { blur: 9, stroke: 7, opacity: 0.32 };
@@ -38,6 +43,10 @@ export interface SelectionGlowProps {
   tones: readonly ChordToneRect[];
   bars: readonly BarHandlePoint[];
   notes: readonly NoteRect[];
+  /** The second take's notes, drawn behind the sung line (INV-NOTES-118). */
+  layerNotes?: readonly NoteRect[];
+  /** Where each struck sound's mark was drawn (INV-NOTES-118). */
+  hits?: readonly HitPoint[];
   width: number;
   height: number;
   /** What a sung note or a bar line glows in, the chords having their own. */
@@ -50,17 +59,19 @@ export function SelectionGlow({
   tones,
   bars,
   notes,
+  layerNotes = [],
+  hits = [],
   width,
   height,
   colour
 }: SelectionGlowProps): React.JSX.Element | null {
   const lit = selection
-    .map((one) => litShape(one, tones, bars, notes, colour))
+    .map((one) => litShape(one, tones, bars, notes, colour, layerNotes, hits))
     .filter((shape): shape is Lit => shape != null);
   // The flash rides on top of the rest, so a row pressed in the sheet is
   // findable among four things that are all already lit (INV-NOTES-094).
   const flashed = flashing
-    ? litShape(flashing, tones, bars, notes, colour)
+    ? litShape(flashing, tones, bars, notes, colour, layerNotes, hits)
     : null;
   if (lit.length === 0 && !flashed) {
     return null;
@@ -119,12 +130,17 @@ type Lit =
     };
 
 /** Where the light goes, and what colour it is. */
+/** How far the light spreads around a struck sound's mark. */
+const HIT_GLOW = 7;
+
 export function litShape(
   selection: Selection | null,
   tones: readonly ChordToneRect[],
   bars: readonly BarHandlePoint[],
   notes: readonly NoteRect[],
-  colour: string
+  colour: string,
+  layerNotes: readonly NoteRect[] = [],
+  hits: readonly HitPoint[] = []
 ): Lit | null {
   if (!selection) {
     return null;
@@ -137,6 +153,25 @@ export function litShape(
     const rect = notes[selection.index];
     return rect
       ? { kind: 'rect', ...rectOf(rect), colour }
+      : null;
+  }
+  if (selection.kind === 'layerNote') {
+    const rect = layerNotes[selection.index];
+    return rect ? { kind: 'rect', ...rectOf(rect), colour } : null;
+  }
+  if (selection.kind === 'hit') {
+    const point = hits[selection.index];
+    // A mark rather than a bar: a hit is a moment, so what is lit is where
+    // it landed (INV-NOTES-118).
+    return point
+      ? {
+          kind: 'rect',
+          x: point.x - HIT_GLOW,
+          y: point.y - HIT_GLOW,
+          width: HIT_GLOW * 2,
+          height: HIT_GLOW * 2,
+          colour
+        }
       : null;
   }
   const tone = tones.find(

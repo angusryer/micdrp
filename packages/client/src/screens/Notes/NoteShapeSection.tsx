@@ -157,19 +157,12 @@ export function NoteShapeSection({
               ) : null
             }
             onScaleChange={onScaleChange}
-            footerHeight={stripHeight + bandHeight}
+            // The rhythm band is part of the drawing rather than below it:
+            // one surface reads every touch on the graph, and a struck sound
+            // has to be selectable the same way a note is (INV-NOTES-118).
+            underHeight={bandHeight}
+            footerHeight={stripHeight}
             footer={({ contentWidth, timeAxis, zoomBy }) => (
-              <>
-                {/* Above the chords and below the drawing: the drums are a
-                    performance, and the chords are a reading of one
-                    (INV-NOTES-117). */}
-                <RhythmBand
-                  hits={detail.hits}
-                  timeAxis={timeAxis}
-                  contentWidth={contentWidth}
-                  height={bandHeight}
-                />
-                <View style={{ marginTop: bandHeight }}>
               <ChordTrack
                 slots={chords.slots}
                 timeAxis={timeAxis}
@@ -180,15 +173,32 @@ export function NoteShapeSection({
                 onAudition={detail.auditionChord}
                 onRevert={chords.revert}
               />
-                </View>
-              </>
             )}
           >
-            {({ contentWidth, timeAxis, pitchAxis, rects }) => (
+            {({
+              contentWidth,
+              timeAxis,
+              pitchAxis,
+              rects,
+              underRects,
+              underHeight
+            }) => (
               <>
+                {/* Drawn in the room below the melody, on the same axis and
+                    under the same touch surface (INV-NOTES-117). */}
+                <View style={{ marginTop: graphHeight }}>
+                  <RhythmBand
+                    hits={detail.hits}
+                    timeAxis={timeAxis}
+                    contentWidth={contentWidth}
+                    height={underHeight}
+                  />
+                </View>
                 <GraphLayers
                   detail={detail}
                   noteRects={rects}
+                  noteRectsUnder={underRects}
+                  underHeight={underHeight}
                   contentWidth={contentWidth}
                   height={graphHeight}
                   timeAxis={timeAxis}

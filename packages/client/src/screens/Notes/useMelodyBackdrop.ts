@@ -13,7 +13,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import type { TargetNote } from 'logic';
 
-import { createTonePlayer, SynthBus } from '../../audio/synthPlayer';
+import { createTonePlayer, SynthBus, type SynthBusValue } from '../../audio/synthPlayer';
 import { shiftTones } from './useChordBackdrop';
 
 /**
@@ -31,9 +31,15 @@ export interface MelodyBackdrop {
 }
 
 export function useMelodyBackdrop(
-  tones: readonly TargetNote[]
+  tones: readonly TargetNote[],
+  /**
+   * Which bus it sounds on. Its own, for anything that is not the melody:
+   * two voices on one bus share a level, so turning one down turns the other
+   * down with it (INV-NOTES-119).
+   */
+  bus: SynthBusValue = SynthBus.Melody
 ): MelodyBackdrop {
-  const player = useMemo(() => createTonePlayer(SynthBus.Melody), []);
+  const player = useMemo(() => createTonePlayer(bus), [bus]);
   const level = useRef(DEFAULT_MELODY_LEVEL);
 
   useEffect(() => {

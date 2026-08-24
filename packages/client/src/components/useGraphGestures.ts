@@ -22,6 +22,7 @@ import {
   touchesSelection,
   type BarHandlePoint,
   type Chosen,
+  type HitPoint,
   type Selection
 } from './graphSelection';
 
@@ -51,6 +52,10 @@ export interface GraphGestureOptions {
   tones: readonly ChordToneRect[];
   bars: readonly BarHandlePoint[];
   notes: readonly NoteRect[];
+  /** The layer's notes (INV-NOTES-118). */
+  layerNotes?: readonly NoteRect[];
+  /** Where each struck sound's mark sits (INV-NOTES-118). */
+  hits?: readonly HitPoint[];
   laneHeight: number;
   originX: number;
   stepWidth: number;
@@ -89,6 +94,8 @@ export function useGraphGestures({
   tones,
   bars,
   notes,
+  layerNotes = [],
+  hits = [],
   laneHeight,
   originX,
   stepWidth,
@@ -125,7 +132,7 @@ export function useGraphGestures({
 
   const choose = useCallback(
     (x: number, y: number) => {
-      const found = selectionAt(x, y, tones, bars, notes);
+      const found = selectionAt(x, y, tones, bars, notes, layerNotes, hits);
       if (found) {
         tapped();
       }
@@ -159,7 +166,7 @@ export function useGraphGestures({
       if (selection.length === 0) {
         return false;
       }
-      const found = selectionAt(x, y, tones, bars, notes);
+      const found = selectionAt(x, y, tones, bars, notes, layerNotes, hits);
       if (!found) {
         return false;
       }
@@ -194,7 +201,7 @@ export function useGraphGestures({
           const grabbed =
             touch &&
             selection.find((one) =>
-              touchesSelection(one, touch.x, touch.y, tones, bars, notes)
+              touchesSelection(one, touch.x, touch.y, tones, bars, notes, layerNotes, hits)
             );
           if (!grabbed) {
             state.fail();

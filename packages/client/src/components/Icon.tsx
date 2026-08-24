@@ -31,6 +31,8 @@ export type IconName =
   | 'grid'
   | 'eye'
   | 'headphones'
+  | 'metronome'
+  | 'metronomeOff'
   | 'info';
 
 /** Material-style filled glyphs, authored on a 24×24 viewbox. */
@@ -84,6 +86,14 @@ const ICON_PATHS: Record<IconName, string> = {
   // glyph, so it is recognised rather than read (INV-NOTES-075).
   details:
     'M3 5h18v2H3V5zm0 6h12v2H3v-2zm0 6h18v2H3v-2zm15-6h3v2h-3v-2z',
+  // A metronome: the wedge body with its pendulum leaning off centre, which
+  // is the shape the object is recognised by rather than read from.
+  metronome:
+    'M12 2h2l4.5 18h-13L10 2h2zm.9 4h-1.8l-2.7 11h7.2L12.9 6zM7 21h10v1H7v-1z',
+  // The same body with the beam struck through it, matching how the speaker
+  // says silent (INV-NOTES-082).
+  metronomeOff:
+    'M12 2h2l4.5 18h-13L10 2h2zm.9 4h-1.8l-2.7 11h7.2L12.9 6zM7 21h10v1H7v-1zM3 3l18 18-1.4 1.4L1.6 4.4 3 3z',
   options:
     'M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z',
   // Cog — Account & Settings.

@@ -162,6 +162,47 @@ export interface CountIn {
  * The last click lands on the first note itself, which is the one that says
  * "here" rather than "soon".
  */
+/**
+ * A click through the whole take, counting you in on the way.
+ *
+ * The count was only ever the beats before the first note, which is what you
+ * need to come in on time and nothing at all once you have. Keeping time
+ * through a take is the same job continued, so it is the same clicks continued
+ * — one voice, not two, and the count is simply its opening bars
+ * (INV-NOTES-119).
+ *
+ * Accented on the downbeat, from the arrangement's own bar length, so the
+ * click says where you are rather than only that time is passing.
+ */
+export function metronome(
+  firstNoteMs: number,
+  bpm: number,
+  durationMs: number,
+  beatsPerBar = 4,
+  maxBeats = 4
+): CountIn {
+  const counted = countIn(firstNoteMs, bpm, maxBeats);
+  if (!(bpm > 0) || !(durationMs > 0)) {
+    return counted;
+  }
+  const beatMs = 60000 / bpm;
+  const clicks = [...counted.clicks];
+  // On from the beat the count landed on, to the end of the recording. The
+  // count already sounded that one, so this starts after it.
+  const from = firstNoteMs + counted.leadInMs;
+  const end = durationMs + counted.leadInMs;
+  let beat = 1;
+  for (let at = from + beatMs; at < end; at += beatMs, beat += 1) {
+    const isDownbeat = beatsPerBar > 0 && beat % beatsPerBar === 0;
+    clicks.push({
+      midi: isDownbeat ? DOWNBEAT_MIDI : CLICK_MIDI,
+      startMs: at,
+      endMs: at + CLICK_MS
+    });
+  }
+  return { clicks, leadInMs: counted.leadInMs };
+}
+
 export function countIn(
   firstNoteMs: number,
   bpm: number,

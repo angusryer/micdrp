@@ -63,6 +63,10 @@ export interface ZoomableMelodyProps {
     pitchAxis: MelodyLayout['pitchAxis'];
     /** The sung notes as drawn, for anything that has to touch one. */
     rects: MelodyLayout['rects'];
+    /** The layer's notes, on the same axes, for anything that touches one. */
+    underRects: MelodyLayout['underRects'];
+    /** Room below the drawing, on the same axis and the same surface. */
+    underHeight: number;
   }) => React.ReactNode;
   /**
    * Told when the scale moves off the one the take opened at, and handed the
@@ -82,6 +86,16 @@ export interface ZoomableMelodyProps {
   }) => React.ReactNode;
   /** How much room the footer takes, which the scroll has to account for. */
   footerHeight?: number;
+  /**
+   * Room below the drawing that is still part of it: on the same time axis,
+   * inside the same scroll, and under the same touch surface.
+   *
+   * The rhythm band lives here (INV-NOTES-117). It is not a footer, because a
+   * footer is outside the drawing and cannot be touched by the surface that
+   * reads the graph — and a struck sound has to be selectable the same way a
+   * note is (INT-NOTES-015).
+   */
+  underHeight?: number;
 }
 
 export function ZoomableMelody({
@@ -100,7 +114,8 @@ export function ZoomableMelody({
   children,
   onScaleChange,
   footer,
-  footerHeight = 0
+  footerHeight = 0,
+  underHeight = 0
 }: ZoomableMelodyProps): React.JSX.Element {
   const scroller = useRef<ScrollView>(null);
   const scrollX = useRef(0);
@@ -113,6 +128,7 @@ export function ZoomableMelody({
     alsoShow,
     fromMs,
     toMs,
+    underlay,
     scroller,
     scrollX,
     onScaleChange
@@ -127,7 +143,10 @@ export function ZoomableMelody({
       <ScrollView
         ref={scroller}
         horizontal
-        style={{ width, height: height + headerHeight + footerHeight }}
+        style={{
+          width,
+          height: height + headerHeight + underHeight + footerHeight
+        }}
         showsHorizontalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
@@ -154,7 +173,7 @@ export function ZoomableMelody({
         <View
           style={{
             width: layout.contentWidth,
-            height,
+            height: height + underHeight,
             marginTop: headerHeight
           }}
         >
@@ -176,14 +195,16 @@ export function ZoomableMelody({
             beatWidth,
             timeAxis: layout.timeAxis,
             pitchAxis: layout.pitchAxis,
-            rects: layout.rects
+            rects: layout.rects,
+            underRects: layout.underRects,
+            underHeight
           })}
         </View>
         {footer != null && footerHeight > 0 ? (
           <View
             style={{
               position: 'absolute',
-              top: headerHeight + height,
+              top: headerHeight + height + underHeight,
               left: 0,
               width: layout.contentWidth,
               height: footerHeight
