@@ -8,7 +8,7 @@
  */
 import {
   collectNoteEdits,
-  joinOverlaps,
+  settleOverlaps,
   MIN_NOTE_MS,
   replayNoteEdits,
   resizeNotes
@@ -25,8 +25,12 @@ const note = (midi: number, startMs: number, endMs: number): NoteEvent =>
     clarity: 1
   }) as NoteEvent;
 
-// Three notes, half a second each, with a 100ms gap after the first.
+// Three notes, half a second each, with a 100ms gap after the first. The
+// second is a different pitch from the first; the third differs again.
 const PHRASE = [note(60, 0, 500), note(62, 600, 1100), note(64, 1100, 1600)];
+
+/** The same shape, but the first two notes are the one pitch. */
+const HELD = [note(60, 0, 500), note(60, 600, 1100), note(64, 1100, 1600)];
 
 const overlaps = (notes: readonly NoteEvent[]) =>
   notes.some((n, i) => i > 0 && n.startMs < notes[i - 1].endMs);
@@ -42,26 +46,44 @@ describe('changing how long a note lasts', () => {
     expect(longer[2].startMs).toBe(1100);
   });
 
-  it('joins a note lengthened into its neighbour', () => {
-    // Lengthening over a neighbour is how a singer says the two were one
-    // held note the detector split.
-    const joined = joinOverlaps(resizeNotes(PHRASE, [0], 200));
+  it('joins a note lengthened into one of the same pitch', () => {
+    // Two notes at one pitch run together is a singer saying the detector
+    // split a held note in two.
+    const joined = settleOverlaps(resizeNotes(HELD, [0], 200));
     expect(joined).toHaveLength(2);
     expect(joined[0].midi).toBe(60);
     // Nothing audible is lost: it runs to whichever ended later.
     expect(joined[0].endMs).toBe(1100);
   });
 
+  it('stops against a neighbour of a different pitch', () => {
+    // Swallowing it would delete a note nobody asked to delete, and there is
+    // no reading of "make this longer" that means "and remove that".
+    const settled = settleOverlaps(resizeNotes(PHRASE, [0], 200));
+    expect(settled).toHaveLength(3);
+    expect(settled[0].endMs).toBe(600);
+    expect(settled[1]).toEqual(PHRASE[1]);
+  });
+
+  it('stops however far it is dragged past a different pitch', () => {
+    const settled = settleOverlaps(resizeNotes(PHRASE, [0], 60_000));
+    expect(settled).toHaveLength(3);
+    expect(settled[0].endMs).toBe(600);
+  });
+
   it('never leaves two notes sounding at once, however far it is dragged', () => {
-    for (const delta of [-2000, -600, -100, 100, 900, 5000]) {
-      expect(overlaps(joinOverlaps(resizeNotes(PHRASE, [1], delta)))).toBe(
-        false
-      );
+    for (const phrase of [PHRASE, HELD]) {
+      for (const delta of [-2000, -600, -100, 100, 900, 5000]) {
+        expect(
+          overlaps(settleOverlaps(resizeNotes(phrase, [1], delta)))
+        ).toBe(false);
+      }
     }
   });
 
-  it('swallows every note a long drag reaches over', () => {
-    const joined = joinOverlaps(resizeNotes(PHRASE, [0], 5000));
+  it('runs through every note of the same pitch it reaches', () => {
+    const held = [note(60, 0, 500), note(60, 600, 1100), note(60, 1200, 1700)];
+    const joined = settleOverlaps(resizeNotes(held, [0], 5000));
     expect(joined).toHaveLength(1);
     expect(joined[0].endMs).toBe(5500);
   });

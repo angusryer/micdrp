@@ -35,17 +35,25 @@ invariants:
       correction is a claim like any other.
 
   - id: INV-NOTES-095
-    description: A note lengthened into its neighbour joins with it
+    description: A lengthened note joins its own pitch and stops against another
     severity: critical
     check: >
       Changing a note's length leaves every other note where it is. Where
-      the change makes one note reach into the next, the two become one,
-      keeping the covering note's pitch and running to whichever ended
-      later. No two notes ever sound at once. A note cannot be shortened
-      past being a note. Verified by asserting untouched notes do not move,
-      that no note starts before the previous one ends however far a length
-      is dragged, and that a long enough drag swallows every note it
-      reaches.
+      the change makes one note reach into the next: at the same pitch the
+      two become one, running to whichever ended later; at a different
+      pitch it stops where the neighbour begins and the neighbour is
+      untouched. No two notes ever sound at once, and a note cannot be
+      shortened past being a note. Verified by asserting untouched notes do
+      not move, that a same-pitch neighbour is absorbed however far the
+      drag goes, that a different-pitch neighbour survives it intact, and
+      that nothing overlaps in either case.
+
+      Joining only makes sense as "these were one held note", and that
+      claim needs the pitches to match. Swallowing a note of another pitch
+      would delete a note nobody asked to delete — there is no reading of
+      "make this longer" that also means "and remove that". Taking that
+      room means shortening the neighbour first, deliberately, which is one
+      more step and the right number of steps for destroying something.
 
       Pushing the rest of the phrase along was tried first and is worse to
       use: every small change to one note rearranged everything after it,

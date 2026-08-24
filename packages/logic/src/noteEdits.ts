@@ -41,10 +41,10 @@ export const MIN_NOTE_MS = 60;
  * the rest of the phrase, so a length you were happy with kept sliding away
  * from you while you worked on the one before it (INV-NOTES-095).
  *
- * Overlaps are allowed to happen here and resolved at replay, where a note
- * running into its neighbour joins with it. Doing it here would change how
- * many notes there are, and the edits are paired with what was heard by
- * position — so the count has to survive this step.
+ * Overlaps are allowed to happen here and settled at replay, where a note
+ * running into its neighbour either joins it or stops against it. Doing it
+ * here would change how many notes there are, and the edits are paired with
+ * what was heard by position — so the count has to survive this step.
  */
 export function resizeNotes(
   notes: readonly NoteEvent[],
@@ -65,33 +65,49 @@ export function resizeNotes(
 }
 
 /**
- * Notes that run into each other become one note.
+ * What happens when a note is lengthened into the one after it.
  *
- * Lengthening a note over its neighbour is how a singer says the two were one
- * held note that the detector split — so joining them is the answer, and the
- * note doing the covering keeps its pitch (INV-NOTES-095).
+ * Same pitch: they join. That is what the gesture means — two notes at one
+ * pitch, run together, is a singer saying the detector split a held note in
+ * two (INV-NOTES-095).
  *
- * The alternative to joining is overlap, and the pipeline assumes a moment
- * belongs to exactly one note: that is what lets an edit anchor to a moment
- * inside one, and what lets the harmony read a span.
+ * Different pitch: it stops at the neighbour. Swallowing a note of another
+ * pitch would delete a note nobody asked to delete, and there is no reading of
+ * "make this longer" that means "and remove that". To take the room, the
+ * neighbour has to be shortened first, deliberately, which is one more step
+ * and the right number of steps for destroying something.
+ *
+ * Either way no two notes overlap: a moment belongs to exactly one note, which
+ * is what lets an edit anchor to a moment inside one and lets the harmony read
+ * a span.
  */
-export function joinOverlaps(notes: readonly NoteEvent[]): NoteEvent[] {
-  const joined: NoteEvent[] = [];
+export function settleOverlaps(notes: readonly NoteEvent[]): NoteEvent[] {
+  const settled: NoteEvent[] = [];
   for (const note of [...notes].sort((a, b) => a.startMs - b.startMs)) {
-    const last = joined[joined.length - 1];
-    if (last && note.startMs < last.endMs) {
+    const last = settled[settled.length - 1];
+    if (!last || note.startMs >= last.endMs) {
+      settled.push(note);
+      continue;
+    }
+    if (Math.round(last.midi) === Math.round(note.midi)) {
       // Nothing audible is lost: the join runs to whichever ended later.
       const endMs = Math.max(last.endMs, note.endMs);
-      joined[joined.length - 1] = {
+      settled[settled.length - 1] = {
         ...last,
         endMs,
         durationMs: endMs - last.startMs
       };
       continue;
     }
-    joined.push(note);
+    // Held back to where its neighbour begins, and the neighbour untouched.
+    settled[settled.length - 1] = {
+      ...last,
+      endMs: note.startMs,
+      durationMs: note.startMs - last.startMs
+    };
+    settled.push(note);
   }
-  return joined;
+  return settled;
 }
 
 /** Whether a moment falls inside a note. End-exclusive, so notes cannot overlap. */
@@ -176,10 +192,11 @@ export function replayNoteEdits(
         : {})
     };
   }
-  // A note lengthened over its neighbour means the two were one held note
-  // (INV-NOTES-095). Resolved here, so nothing upstream has to think about
-  // overlap and the edits stay paired with what was heard.
-  return joinOverlaps(notes);
+  // A note lengthened over its neighbour joins it at the same pitch and stops
+  // against a different one (INV-NOTES-095). Resolved here, so nothing
+  // upstream has to think about overlap and the edits stay paired with what
+  // was heard.
+  return settleOverlaps(notes);
 }
 
 /** Move one note by whole semitones, leaving every other note alone. */
