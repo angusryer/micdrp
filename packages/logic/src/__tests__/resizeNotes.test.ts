@@ -8,6 +8,7 @@
  */
 import {
   collectNoteEdits,
+  joinOverlaps,
   MIN_NOTE_MS,
   replayNoteEdits,
   resizeNotes
@@ -31,34 +32,38 @@ const overlaps = (notes: readonly NoteEvent[]) =>
   notes.some((n, i) => i > 0 && n.startMs < notes[i - 1].endMs);
 
 describe('changing how long a note lasts', () => {
-  it('moves everything after it by the same amount', () => {
+  it('leaves every other note exactly where it was', () => {
+    // Pushing the rest of the phrase along was tried and is worse to use:
+    // a length you were happy with keeps sliding away while you work on the
+    // note before it.
     const longer = resizeNotes(PHRASE, [0], 200);
     expect(longer[0].endMs).toBe(700);
-    expect(longer[1].startMs).toBe(800);
-    expect(longer[2].startMs).toBe(1300);
+    expect(longer[1].startMs).toBe(600);
+    expect(longer[2].startMs).toBe(1100);
   });
 
-  it('keeps the gaps the singer left', () => {
-    // The space after a note is part of the phrase; swallowing it would
-    // rewrite rhythm nobody asked to change.
-    const longer = resizeNotes(PHRASE, [0], 200);
-    expect(longer[1].startMs - longer[0].endMs).toBe(100);
-    expect(longer[2].startMs - longer[1].endMs).toBe(0);
+  it('joins a note lengthened into its neighbour', () => {
+    // Lengthening over a neighbour is how a singer says the two were one
+    // held note the detector split.
+    const joined = joinOverlaps(resizeNotes(PHRASE, [0], 200));
+    expect(joined).toHaveLength(2);
+    expect(joined[0].midi).toBe(60);
+    // Nothing audible is lost: it runs to whichever ended later.
+    expect(joined[0].endMs).toBe(1100);
   });
 
-  it('never lets two notes sound at once, however far it is dragged', () => {
+  it('never leaves two notes sounding at once, however far it is dragged', () => {
     for (const delta of [-2000, -600, -100, 100, 900, 5000]) {
-      expect(overlaps(resizeNotes(PHRASE, [1], delta))).toBe(false);
+      expect(overlaps(joinOverlaps(resizeNotes(PHRASE, [1], delta)))).toBe(
+        false
+      );
     }
   });
 
-  it('accumulates when several notes are changed together', () => {
-    const longer = resizeNotes(PHRASE, [0, 1], 200);
-    expect(longer[0].endMs).toBe(700);
-    expect(longer[1].startMs).toBe(800);
-    expect(longer[1].endMs).toBe(1500);
-    // Two notes grew by 200 each, so the last one moves by 400.
-    expect(longer[2].startMs).toBe(1500);
+  it('swallows every note a long drag reaches over', () => {
+    const joined = joinOverlaps(resizeNotes(PHRASE, [0], 5000));
+    expect(joined).toHaveLength(1);
+    expect(joined[0].endMs).toBe(5500);
   });
 
   it('will not shorten a note past being a note', () => {
@@ -72,7 +77,7 @@ describe('changing how long a note lasts', () => {
   });
 
   it('keeps each note its own length when it was not chosen', () => {
-    const longer = resizeNotes(PHRASE, [0], 200);
+    const longer = resizeNotes(PHRASE, [0], 50);
     expect(longer[1].endMs - longer[1].startMs).toBe(500);
     expect(longer[2].endMs - longer[2].startMs).toBe(500);
   });
@@ -80,7 +85,7 @@ describe('changing how long a note lasts', () => {
 
 describe('INV-NOTES-096: a timing edit finds its note again', () => {
   it('anchors where the detector heard it, not where the edit puts it', () => {
-    const edited = resizeNotes(PHRASE, [0], 200);
+    const edited = resizeNotes(PHRASE, [0], 50);
     const edits = collectNoteEdits(PHRASE, edited);
     // Anchored to the original start, which is what replay searches.
     expect(edits[0].atMs).toBe(PHRASE[0].startMs);
@@ -88,25 +93,24 @@ describe('INV-NOTES-096: a timing edit finds its note again', () => {
   });
 
   it('leaves one edit per note however many things about it changed', () => {
-    const moved = resizeNotes(PHRASE, [0], 200).map((n, i) =>
+    const moved = resizeNotes(PHRASE, [0], 50).map((n, i) =>
       i === 0 ? { ...n, midi: 67 } : n
     );
     const edits = collectNoteEdits(PHRASE, moved);
-    // One for the note itself carrying both changes, and one each for the
-    // notes the ripple moved — they really are at different times now.
-    expect(edits).toHaveLength(3);
+    // Only the note that changed: nothing else moved, so nothing else needs
+    // remembering.
+    expect(edits).toHaveLength(1);
     expect(edits[0].midi).toBe(67);
-    expect(edits[0].endMs).toBe(700);
-    expect(edits[1].midi).toBeUndefined();
+    expect(edits[0].endMs).toBe(550);
   });
 
-  it('finds every note even when an edit lengthened the one before it', () => {
-    // The anchor search must run against what was heard: hunting the array
-    // being edited would find the lengthened note for the next anchor, and
-    // every later edit would land one note early.
-    const edited = resizeNotes(PHRASE, [0], 200);
+  it('lands every edit on its own note, not the one before it', () => {
+    // The anchor search runs against what was heard rather than against the
+    // array being edited: searching the edited copy let a lengthened note
+    // swallow the next anchor, and every later edit landed one note early.
+    const edited = resizeNotes(PHRASE, [0, 2], 50);
     const replayed = replayNoteEdits(PHRASE, collectNoteEdits(PHRASE, edited));
-    expect(replayed.map((n) => n.startMs)).toEqual([0, 800, 1300]);
+    expect(replayed.map((n) => n.endMs)).toEqual([550, 1100, 1650]);
   });
 
   it('replays a pitch-only edit without inventing a timing change', () => {

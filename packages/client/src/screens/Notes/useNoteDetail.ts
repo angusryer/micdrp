@@ -97,10 +97,52 @@ export function useNoteDetail(id: string) {
   );
 
   /** True where this note is not the pitch that was heard. */
+  /**
+   * True where this note is not what was heard — in pitch or in length.
+   *
+   * Both, because "put it back" undoes the whole edit: one edit carries
+   * everything about a note, so offering it only for a changed pitch would
+   * hide the way to undo a changed length (INV-NOTES-098).
+   */
   const isCorrected = useCallback(
-    (index: number) => heard[index]?.midi !== melody[index]?.midi,
+    (index: number) => {
+      const was = heard[index];
+      const now = melody[index];
+      if (!was || !now) {
+        return false;
+      }
+      return (
+        was.midi !== now.midi ||
+        was.startMs !== now.startMs ||
+        was.endMs !== now.endMs
+      );
+    },
     [heard, melody]
   );
+
+  /** Whether any note has been made longer or shorter than it was heard. */
+  const hasResized = useMemo(
+    () =>
+      interpretation.savedNoteEdits.some(
+        (edit) => edit.startMs != null || edit.endMs != null
+      ),
+    [interpretation.savedNoteEdits]
+  );
+
+  /**
+   * Put every length back, keeping every pitch correction.
+   *
+   * Two undos rather than one: correcting a wrong note and shaping its length
+   * are different pieces of work, and throwing away both because you wanted
+   * one back would cost more than it saved (INV-NOTES-098).
+   */
+  const resetLengths = useCallback(() => {
+    interpretation.updateNotes(
+      interpretation.savedNoteEdits
+        .filter((edit) => edit.midi != null)
+        .map((edit) => ({ atMs: edit.atMs, midi: edit.midi }))
+    );
+  }, [interpretation]);
 
   // Fit the metrical grid here rather than reading a stored one. The melody is
   // persisted, so this costs nothing and needs no migration — and it means
@@ -216,25 +258,31 @@ export function useNoteDetail(id: string) {
   }, []);
 
   /**
-   * Change how long the chosen notes last, by whole beats.
+   * Change how long the chosen notes last, a sixteenth at a time.
    *
-   * Everything after each one moves with it, so the gaps survive and no two
-   * notes ever sound at once (INV-NOTES-095).
+   * The finest thing worth nudging by: a whole beat is a bigger step than
+   * most corrections need, and anything smaller is below what a sung note
+   * distinguishes. Everything else stays where it is; a note lengthened into
+   * its neighbour joins with it (INV-NOTES-095).
    */
   const resizeChosen = useCallback(
-    (beats: number) => {
+    (steps: number) => {
       const chosen = selection.flatMap((one) =>
         one.kind === 'melodyNote' ? [one.index] : []
       );
       const beatMs = grid.bpm > 0 ? 60000 / grid.bpm : 0;
-      if (chosen.length === 0 || !(beatMs > 0) || beats === 0) {
+      const perBeat = grid.stepsPerBeat > 0 ? grid.stepsPerBeat : 4;
+      if (chosen.length === 0 || !(beatMs > 0) || steps === 0) {
         return;
       }
       interpretation.updateNotes(
-        collectNoteEdits(heard, resizeNotes(melody, chosen, beats * beatMs))
+        collectNoteEdits(
+          heard,
+          resizeNotes(melody, chosen, (steps * beatMs) / perBeat)
+        )
       );
     },
-    [selection, grid.bpm, melody, heard, interpretation]
+    [selection, grid.bpm, grid.stepsPerBeat, melody, heard, interpretation]
   );
 
   const playback = useNotePlayback(melody, quantized, chords);
@@ -263,6 +311,8 @@ export function useNoteDetail(id: string) {
     correctNote,
     resetNote,
     resizeChosen,
+    resetLengths,
+    hasResized,
     isCorrected,
     layers,
     bass,

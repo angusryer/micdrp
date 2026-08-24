@@ -35,27 +35,32 @@ invariants:
       correction is a claim like any other.
 
   - id: INV-NOTES-095
-    description: Changing a note's length moves what follows, and never overlaps
+    description: A note lengthened into its neighbour joins with it
     severity: critical
     check: >
-      Lengthening or shortening a note moves every later note by the same
-      amount, so the gaps after it are unchanged and no two notes ever
-      sound at once. Several notes changed together each move what follows
-      them, so the shift accumulates. A note cannot be shortened past
-      nothing. Verified by asserting no note starts before the previous
-      one ends, that the gaps between untouched notes survive, and that
-      the total shift is the sum of the changes.
+      Changing a note's length leaves every other note where it is. Where
+      the change makes one note reach into the next, the two become one,
+      keeping the covering note's pitch and running to whichever ended
+      later. No two notes ever sound at once. A note cannot be shortened
+      past being a note. Verified by asserting untouched notes do not move,
+      that no note starts before the previous one ends however far a length
+      is dragged, and that a long enough drag swallows every note it
+      reaches.
+
+      Pushing the rest of the phrase along was tried first and is worse to
+      use: every small change to one note rearranged everything after it,
+      so a length already settled kept sliding away while the note before
+      it was being worked on.
+
+      Joining is what a singer means by the gesture. Lengthening a note
+      over its neighbour says the two were one held note the detector
+      split, which is among the commonest things to want to correct.
 
       The pipeline assumes notes do not overlap: a moment belongs to one
       note, which is what lets an edit be anchored to a moment inside it
-      and what lets the harmony read a span. Allowing two notes to sound
-      at once would reach into segmentation, the chord reading and
-      playback all at once, for an idea a single voice cannot perform
-      anyway.
-
-      Rippling rather than closing the gap: the space after a note is part
-      of the phrase, and swallowing it would rewrite rhythm the singer did
-      not ask to change.
+      and what lets the harmony read a span. Allowing two at once would
+      reach into segmentation, the chord reading and playback together,
+      for something a single voice cannot perform anyway.
 
   - id: INV-NOTES-096
     description: A timing edit is anchored where the detector heard it
@@ -88,3 +93,19 @@ invariants:
       which cannot be aimed when the intent is exactly two beats. The
       spring-back already answers the range problem acceleration was there
       to solve — a short drag repeated is unbounded.
+
+  - id: INV-NOTES-098
+    description: A length can be put back on its own
+    severity: major
+    check: >
+      A note that differs from what was heard — in pitch or in length —
+      offers to be put back, and doing so undoes both. Separately, every
+      length can be put back at once while every pitch correction stays.
+      That is offered only where some length has been changed. Verified by
+      asserting a note whose length alone changed offers the undo, and
+      that putting lengths back leaves pitch edits standing.
+
+      Correcting a wrong note and shaping how long it lasts are different
+      pieces of work. Throwing away both because one was wanted back would
+      cost more than it saved — most often the pitches were right and the
+      lengths were the experiment.

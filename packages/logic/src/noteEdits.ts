@@ -34,14 +34,17 @@ export interface NoteEdit {
 export const MIN_NOTE_MS = 60;
 
 /**
- * Change the length of some notes, moving everything after them.
+ * Change the length of some notes, leaving every other note where it is.
  *
- * Each chosen note's end moves by `deltaMs`, and every later note moves by as
- * much as the notes before it grew — so the gaps the singer left are
- * unchanged and no two notes ever sound at once (INV-NOTES-095).
+ * Only the chosen notes move. Pushing the notes after them along — rippling —
+ * was tried and is worse to use: every small change to one note rearranged
+ * the rest of the phrase, so a length you were happy with kept sliding away
+ * from you while you worked on the one before it (INV-NOTES-095).
  *
- * Rippling rather than eating the gap: the space after a note is part of the
- * phrase, and swallowing it would rewrite rhythm nobody asked to change.
+ * Overlaps are allowed to happen here and resolved at replay, where a note
+ * running into its neighbour joins with it. Doing it here would change how
+ * many notes there are, and the edits are paired with what was heard by
+ * position — so the count has to survive this step.
  */
 export function resizeNotes(
   notes: readonly NoteEvent[],
@@ -49,22 +52,46 @@ export function resizeNotes(
   deltaMs: number
 ): NoteEvent[] {
   const wanted = new Set(chosen);
-  let shift = 0;
   return notes.map((note, i) => {
-    const startMs = note.startMs + shift;
     if (!wanted.has(i)) {
-      return { ...note, startMs, endMs: note.endMs + shift };
+      return note;
     }
     // Never shorter than a note can be: past that it is a click, and a
     // length of nothing is not an edit anybody meant.
-    const length = Math.max(
-      MIN_NOTE_MS,
-      note.endMs - note.startMs + deltaMs
-    );
-    const endMs = startMs + length;
-    shift += endMs - (note.endMs + shift);
-    return { ...note, startMs, endMs, durationMs: endMs - startMs };
+    const length = Math.max(MIN_NOTE_MS, note.endMs - note.startMs + deltaMs);
+    const endMs = note.startMs + length;
+    return { ...note, endMs, durationMs: length };
   });
+}
+
+/**
+ * Notes that run into each other become one note.
+ *
+ * Lengthening a note over its neighbour is how a singer says the two were one
+ * held note that the detector split — so joining them is the answer, and the
+ * note doing the covering keeps its pitch (INV-NOTES-095).
+ *
+ * The alternative to joining is overlap, and the pipeline assumes a moment
+ * belongs to exactly one note: that is what lets an edit anchor to a moment
+ * inside one, and what lets the harmony read a span.
+ */
+export function joinOverlaps(notes: readonly NoteEvent[]): NoteEvent[] {
+  const joined: NoteEvent[] = [];
+  for (const note of [...notes].sort((a, b) => a.startMs - b.startMs)) {
+    const last = joined[joined.length - 1];
+    if (last && note.startMs < last.endMs) {
+      // Nothing audible is lost: the join runs to whichever ended later.
+      const endMs = Math.max(last.endMs, note.endMs);
+      joined[joined.length - 1] = {
+        ...last,
+        endMs,
+        durationMs: endMs - last.startMs
+      };
+      continue;
+    }
+    joined.push(note);
+  }
+  return joined;
 }
 
 /** Whether a moment falls inside a note. End-exclusive, so notes cannot overlap. */
@@ -149,7 +176,10 @@ export function replayNoteEdits(
         : {})
     };
   }
-  return notes;
+  // A note lengthened over its neighbour means the two were one held note
+  // (INV-NOTES-095). Resolved here, so nothing upstream has to think about
+  // overlap and the edits stay paired with what was heard.
+  return joinOverlaps(notes);
 }
 
 /** Move one note by whole semitones, leaving every other note alone. */

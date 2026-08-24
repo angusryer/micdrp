@@ -77,6 +77,7 @@ export function SelectionSheet({
           <LengthBar
             onResize={detail.resizeChosen}
             canResize={detail.hasGrid}
+            onResetAll={detail.hasResized ? detail.resetLengths : undefined}
           />
         ) : null}
         {!shown && selection.length > 1 ? (

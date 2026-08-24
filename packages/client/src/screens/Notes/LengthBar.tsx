@@ -2,7 +2,7 @@
  * How long the chosen notes last, dragged from either end.
  *
  * A blue span with grey either side of it. Pull an edge outward and the notes
- * grow; push it inward and they shrink, a beat per notch. Letting go springs
+ * grow; push it inward and they shrink, a sixteenth per notch. Letting go springs
  * the edge back to where it started, so the same short drag can be repeated
  * as far as you like without the control running out of room
  * (INV-NOTES-097).
@@ -21,19 +21,22 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { useTheme } from '../../theme';
 
-/** How far the hand travels for one beat. */
+/** How far the hand travels for one sixteenth. */
 const NOTCH_PX = 26;
 
 export interface LengthBarProps {
-  /** Change the length by this many beats. Negative shortens. */
-  onResize: (beats: number) => void;
-  /** False when the take has no tempo, so a beat means nothing. */
+  /** Change the length by this many sixteenths. Negative shortens. */
+  onResize: (steps: number) => void;
+  /** False when the take has no tempo, so a sixteenth means nothing. */
   canResize: boolean;
+  /** Put every length back to what was heard. Absent when none were changed. */
+  onResetAll?: () => void;
 }
 
 export function LengthBar({
   onResize,
-  canResize
+  canResize,
+  onResetAll
 }: LengthBarProps): React.JSX.Element {
   const { colors } = useTheme();
   // What this drag has already committed, so each notch fires once as it is
@@ -58,7 +61,7 @@ export function LengthBar({
         })
         .onFinalize(() => {
           // Home again, ready to be dragged the same short distance for the
-          // next beat.
+          // next sixteenth.
           setApplied(0);
           setNudge(0);
         })
@@ -69,8 +72,8 @@ export function LengthBar({
   if (!canResize) {
     return (
       <Text style={[styles.none, { color: colors.gray300 }]}>
-        No steady beat was found in this take, so there is nothing to lengthen
-        notes by.
+        No steady beat was found in this take, so there is nothing to measure
+        a note's length against.
       </Text>
     );
   }
@@ -104,13 +107,25 @@ export function LengthBar({
           </GestureDetector>
         </View>
       </View>
-      <Text style={[styles.hint, { color: colors.gray300 }]}>
-        {applied === 0
-          ? 'Drag either end — one beat a notch'
-          : `${applied > 0 ? '+' : ''}${applied} beat${
-              Math.abs(applied) === 1 ? '' : 's'
-            }`}
-      </Text>
+      <View style={styles.footer}>
+        <Text style={[styles.hint, { color: colors.gray300 }]}>
+          {applied === 0
+            ? 'Drag either end — a sixteenth a notch'
+            : `${applied > 0 ? '+' : ''}${applied} sixteenth${
+                Math.abs(applied) === 1 ? '' : 's'
+              }`}
+        </Text>
+        {/* Offered only where there is something to undo (INV-NOTES-098). */}
+        {onResetAll ? (
+          <Text
+            accessibilityRole="button"
+            onPress={onResetAll}
+            style={[styles.reset, { color: colors.primary500 }]}
+          >
+            Put every length back
+          </Text>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -134,6 +149,14 @@ const styles = StyleSheet.create({
   },
   // Wide enough to catch without hunting, at both ends of the blue.
   grip: { width: 44, height: 26 },
-  hint: { fontSize: 11, marginTop: 6, textAlign: 'center' },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    gap: 12
+  },
+  hint: { fontSize: 11 },
+  reset: { fontSize: 11, fontWeight: '600' },
   none: { fontSize: 12, lineHeight: 17, marginBottom: 12 }
 });
