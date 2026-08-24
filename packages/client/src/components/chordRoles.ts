@@ -26,16 +26,22 @@ export type ChordRole = 'root' | 'third' | 'fifth' | 'seventh' | 'extension';
  * Colour only ever reinforces here — vertical position is still the pitch and
  * the card still carries the name — because red against green is the
  * commonest way for colour to fail a reader.
+ *
+ * Muted rather than saturated. The chords are what the take implied; the sung
+ * line and the hummed bass are what someone actually performed, and the
+ * brightest thing on the graph should be the performance rather than the
+ * reading of it (INV-NOTES-105). Held apart in hue, which is what the reading
+ * needs, and turned down in strength, which is what the ranking needs.
  */
 const ROLE_COLOURS: readonly string[] = [
-  '#FF5A4E', // root — red
-  '#3FBF5F', // third — green
-  '#3F8CFF', // fifth — blue
-  '#A45CFF' // seventh — purple
+  '#E0837B', // root — red
+  '#7EBE8D', // third — green
+  '#82A9DE', // fifth — blue
+  '#B394D8' // seventh — purple
 ];
 
 /** Anything past a seventh, which nothing builds yet but voicings may reach. */
-const EXTENSION_COLOUR = '#FF9F1C';
+const EXTENSION_COLOUR = '#DFB27E';
 
 const ROLE_NAMES: readonly ChordRole[] = ['root', 'third', 'fifth', 'seventh'];
 

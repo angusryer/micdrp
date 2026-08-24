@@ -16,6 +16,7 @@ import { snapToStep } from '../screens/Notes/barDragAxis';
 import { midiToLabel } from '../screens/Results/NoteList';
 import {
   isChosen,
+  isSame,
   selectionAt,
   toggleChosen,
   touchesSelection,
@@ -130,12 +131,15 @@ export function useGraphGestures({
         onSelect([]);
         return;
       }
-      // A tap always means "this one alone" — putting it down when it was
-      // the only thing chosen (INV-NOTES-092), and collapsing a set to it
-      // otherwise. Keeping one meaning for tap is what lets hold mean
-      // something else (INV-NOTES-093).
-      const only = selection.length === 1 && isChosen(selection, found);
-      onSelect(only ? [] : [found]);
+      // A tap toggles the thing under it (INV-NOTES-092): already chosen and
+      // it is put down, however many others are in hand; not chosen and it
+      // becomes the whole selection. Hold is what adds to a set, which is
+      // what keeps the two gestures distinct (INV-NOTES-093).
+      onSelect(
+        isChosen(selection, found)
+          ? selection.filter((one) => !isSame(one, found))
+          : [found]
+      );
     },
     [bars, notes, onSelect, tones, selection]
   );

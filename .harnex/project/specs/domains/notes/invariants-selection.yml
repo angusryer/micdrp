@@ -82,17 +82,25 @@ invariants:
       stutter would be a worse answer than a stop.
 
   - id: INV-NOTES-092
-    description: The tap that chose a thing puts it down again
+    description: A tap toggles whatever is under it
     severity: minor
     check: >
-      Tapping the object already chosen clears the selection; tapping a
-      different one takes its place. Verified by asserting a second tap on
-      the same object reports nothing chosen.
+      Tapping an object that is not chosen makes it the whole selection.
+      Tapping one that is chosen takes it out, however many others are in
+      hand and whatever kind it is. Verified by asserting a second tap on the
+      same object reports it gone, that tapping one of several leaves the
+      rest, and that tapping something new still replaces the set.
 
       Letting go otherwise meant finding empty space to tap, and a graph
       carrying bar lines, chord notes and sung notes has little of it —
       the likeliest outcome of hunting for a gap is choosing something
       else by mistake.
+
+      A tap on a chosen thing used to collapse the set onto it, so the one
+      gesture that reads as "not this one" did the opposite of that whenever
+      more than one thing was held. One meaning everywhere is what makes it
+      predictable enough to use without looking, and adding to a set is what
+      hold is for (INV-NOTES-093).
 
   - id: INV-NOTES-093
     description: Several things can be chosen, and they are all of one kind

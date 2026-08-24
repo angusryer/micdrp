@@ -93,7 +93,7 @@ describe('dragging what is chosen', () => {
   });
 });
 
-describe('INV-NOTES-092: tapping the chosen thing puts it down', () => {
+describe('INV-NOTES-092: a tap toggles the thing under it', () => {
   const NOTES = [
     { x: 10, y: 20, width: 30, height: 6, cy: 23, midi: 60 }
   ] as never;
@@ -144,12 +144,23 @@ describe('INV-NOTES-092: tapping the chosen thing puts it down', () => {
     ]);
   });
 
-  it('collapses a set to the one tapped, rather than clearing it', async () => {
-    // A tap means "this one alone" whatever else was held, which is what
-    // leaves hold free to mean something else (INV-NOTES-093).
+  it('takes it out of a set it was part of, leaving the rest', async () => {
+    // Tapping a thing that is chosen means the same everywhere: put this one
+    // down. It used to collapse the set onto whatever was tapped, so the one
+    // gesture that reads as "not this one" did the opposite.
     const chosen = await chooseAt([
       { kind: 'melodyNote', index: 0 },
       { kind: 'melodyNote', index: 1 }
+    ]);
+    expect(chosen).toEqual([[{ kind: 'melodyNote', index: 1 }]]);
+  });
+
+  it('collapses a set onto something that was not part of it', async () => {
+    // Adding to a set is what hold is for, so tapping something new still
+    // means "this one alone" (INV-NOTES-093).
+    const chosen = await chooseAt([
+      { kind: 'melodyNote', index: 3 },
+      { kind: 'melodyNote', index: 4 }
     ]);
     expect(chosen).toEqual([[{ kind: 'melodyNote', index: 0 }]]);
   });

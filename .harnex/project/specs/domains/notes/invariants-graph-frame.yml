@@ -113,3 +113,58 @@ invariants:
       marking it, said the same thing twice and read as a second kind of
       object that could not be selected. What is left is the one job the
       dotted rule cannot do, which is to show which line is in hand.
+
+  - id: INV-NOTES-105
+    description: The chords are drawn quieter than the performance
+    severity: minor
+    check: >
+      The colours that say which part of a chord a note plays are muted rather
+      than saturated, light enough to read on a dark ground, and still held
+      apart in hue. Verified by asserting each is below full strength, above
+      half lightness, and separated from its neighbours by hue.
+
+      Two different things are drawn on this graph. The sung line and the
+      hummed bass are performances — someone did that. The chord notes are a
+      reading of what those performances implied, produced by the app. At
+      equal strength the reading pulled the eye first, which inverts what the
+      screen is about.
+
+      Muted in strength and not in hue, because which part a note plays has to
+      stay readable at a glance and colour is the only thing carrying it
+      (INV-NOTES-052). Turning a colour down is a change of emphasis; changing
+      it is a change of identity.
+
+  - id: INV-NOTES-106
+    description: Upright, the graph takes half the screen
+    severity: minor
+    check: >
+      The graph card upright is half the height of the screen, with a floor
+      below which it does not shrink. Verified by asserting the height given
+      to it is derived from the window rather than fixed.
+
+      It is what the page is about, and everything else on the page is
+      support. A fixed number of points read well on the phone it was chosen
+      on, and was a third of the screen on a larger one and most of it on a
+      smaller one — so the same take looked like a different amount of work
+      depending on the device.
+
+  - id: INV-NOTES-107
+    description: The pickup is drawn as ground, not as empty graph
+    severity: minor
+    check: >
+      The stretch of recording before the first sung note carries a very faint
+      crosshatch, drawn under everything else, with no line escaping that
+      stretch. The pattern is placed on a fixed grid so it holds still while
+      the graph zooms. Verified by asserting every segment stays inside the
+      region, that lines run both ways, and that widening the region keeps the
+      lines already drawn.
+
+      A single line already marks where the singing starts (INV-NOTES-080),
+      which says where the boundary is and nothing about which side is which.
+      Empty graph before it reads as a passage with no notes detected — a
+      failure to hear something — when in fact nothing was sung there and
+      there is nothing to correct.
+
+      Under everything, and faint enough to be ground. A hatch that competed
+      with the rules or the notes would be a mark on the graph rather than the
+      surface it is drawn on, which is the opposite of what it is for.

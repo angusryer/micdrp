@@ -17,11 +17,14 @@ import {
   Canvas,
   DashPathEffect,
   Line,
+  Path,
   RoundedRect,
+  Skia,
   vec
 } from '@shopify/react-native-skia';
 
 import { metreLineStyle } from './metreLines';
+import { hatchSegments } from './pickupHatch';
 import { useTheme } from '../theme';
 import {
   layoutMelody,
@@ -107,11 +110,37 @@ export function MelodyView({
   // What was actually drawn — `width` when fitted, wider when it scrolls.
   const drawnWidth = layout.contentWidth;
 
+  // The recorded-but-not-sung stretch, drawn as ground rather than as empty
+  // graph (INV-NOTES-107). One path, since a long pickup at a close zoom is
+  // a hundred diagonals and each one drawn separately is a hundred nodes.
+  const pickup = useMemo(() => {
+    if (!(layout.timeAxis.t0 < layout.firstNoteMs)) {
+      return null;
+    }
+    const right = xForMs(layout.timeAxis, layout.firstNoteMs);
+    const path = Skia.Path.Make();
+    for (const line of hatchSegments(0, right, height)) {
+      path.moveTo(line.x1, line.y1);
+      path.lineTo(line.x2, line.y2);
+    }
+    return path;
+  }, [layout.timeAxis, layout.firstNoteMs, height]);
+
   const radius = Math.min(4, height / 16);
 
   return (
     <View style={[styles.wrap, { width: drawnWidth, height }]}>
       <Canvas style={{ width: drawnWidth, height }}>
+        {/* Under everything: it is ground, not a mark on the graph. */}
+        {pickup != null ? (
+          <Path
+            path={pickup}
+            style="stroke"
+            strokeWidth={StyleSheet.hairlineWidth}
+            color={colors.gray300}
+            opacity={0.14}
+          />
+        ) : null}
         {/* Rules first, so the melody always reads on top of its own grid.
             Dotted and very faint, because this is a metre the system applied
             rather than anything a person placed: solid rules read as content

@@ -38,12 +38,18 @@ import { useNoteDetail } from './useNoteDetail';
 
 /** Side padding of the detail scroll content (keep in sync with styles.content). */
 const CONTENT_PADDING = 20;
-/** Height of the piano-roll melody view when it is a card in the column. */
 /**
- * The whole graph card upright: the drawing plus the row of chord cards that
- * now rides in its scroll, so each card starts on its own downbeat.
+ * How much of the screen the graph takes upright: the drawing, the scrubber's
+ * band and the row of chord cards that rides in its scroll.
+ *
+ * Half the screen rather than a fixed number of points. It is the thing the
+ * page is about, and a constant that read well on one phone was a third of
+ * the screen on a large one and most of it on a small one (INV-NOTES-106).
  */
-const MELODY_VIEW_HEIGHT = 204;
+const GRAPH_SHARE_OF_SCREEN = 0.5;
+
+/** Below this it stops being a graph, whatever the screen is. */
+const MIN_GRAPH_CARD = 204;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NoteDetail'>;
 
@@ -115,7 +121,10 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
               <NoteShapeSection
                 detail={detail}
                 width={graphWidth}
-                height={MELODY_VIEW_HEIGHT}
+                height={Math.max(
+                  MIN_GRAPH_CARD,
+                  Math.round(height * GRAPH_SHARE_OF_SCREEN)
+                )}
                 transport={transport}
                 selection={detail.selection}
                 onSelect={detail.setSelection}
