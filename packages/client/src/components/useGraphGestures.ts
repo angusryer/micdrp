@@ -14,10 +14,12 @@ import type { ChordToneRect } from './chordLayout';
 import type { NoteRect } from './melodyLayout';
 import { snapToStep } from '../screens/Notes/barDragAxis';
 import {
-  isSame,
+  isChosen,
   selectionAt,
+  toggleChosen,
   touchesSelection,
   type BarHandlePoint,
+  type Chosen,
   type Selection
 } from './graphSelection';
 
@@ -50,8 +52,8 @@ export interface GraphGestureOptions {
   laneHeight: number;
   originX: number;
   stepWidth: number;
-  selection: Selection | null;
-  onSelect: (selection: Selection | null) => void;
+  selection: Chosen;
+  onSelect: (selection: Chosen) => void;
   onMoveBar: (lineIndex: number, step: number) => void;
   onMoveTone: (slot: number, tone: number, semitones: number) => void;
   onMoveNote: (index: number, semitones: number) => void;
@@ -81,16 +83,17 @@ export function useGraphGestures({
   /** How far the current drag has already been committed. */
   const applied = useRef(0);
   /**
-   * Where the thing being dragged was when the finger went down.
+   * Where each chosen thing was when the finger went down.
    *
    * A translation is cumulative from touch-down, so it can only be added to a
-   * position that has not itself moved since. Adding it to where the line is
+   * position that has not itself moved since. Adding it to where a line is
    * *now* — which the commit below has already moved — counts every pixel
    * twice, then three times, and the line outruns the thumb (INV-NOTES-056).
    */
-  const grabX = useRef(0);
   /** The pitch of the thing being dragged when the finger went down. */
   const grabbedMidi = useRef<number | null>(null);
+  /** Where each chosen bar line sat when the finger went down. */
+  const grabbedBars = useRef<{ lineIndex: number; x: number }[]>([]);
 
   const semitonePx = Math.max(MIN_SEMITONE_PX, laneHeight);
 
@@ -105,11 +108,30 @@ export function useGraphGestures({
       if (found) {
         tapped();
       }
-      // Tapping the chosen thing again puts it down. The same tap that picked
-      // it up is the obvious way to let go of it, and hunting for empty space
-      // to tap is a poor substitute on a graph with little of it
-      // (INV-NOTES-092).
-      onSelect(isSame(found, selection) ? null : found);
+      if (!found) {
+        onSelect([]);
+        return;
+      }
+      // A tap always means "this one alone" — putting it down when it was
+      // the only thing chosen (INV-NOTES-092), and collapsing a set to it
+      // otherwise. Keeping one meaning for tap is what lets hold mean
+      // something else (INV-NOTES-093).
+      const only = selection.length === 1 && isChosen(selection, found);
+      onSelect(only ? [] : [found]);
+    },
+    [bars, notes, onSelect, tones, selection]
+  );
+
+  /** Hold an object to add it to the set, or take it back out. */
+  const alsoChoose = useCallback(
+    (x: number, y: number) => {
+      const found = selectionAt(x, y, tones, bars, notes);
+      if (!found) {
+        return false;
+      }
+      tapped();
+      onSelect(toggleChosen(selection, found));
+      return true;
     },
     [bars, notes, onSelect, tones, selection]
   );
@@ -135,54 +157,79 @@ export function useGraphGestures({
         .onTouchesDown((e, state) => {
           const touch = e.changedTouches[0];
           applied.current = 0;
-          if (
+          const grabbed =
             touch &&
-            touchesSelection(selection, touch.x, touch.y, tones, bars, notes)
-          ) {
-            grabbedMidi.current = pitchOf(selection, tones, notes);
-            if (selection?.kind === 'barLine') {
-              const line = bars.find((b) => b.lineIndex === selection.lineIndex);
-              grabX.current = line?.x ?? 0;
-              // Where it already is, so a drag that goes nowhere commits
-              // nothing rather than re-issuing the position it is at.
-              applied.current = stepAt(grabX.current);
-            }
-            state.activate();
-          } else {
+            selection.find((one) =>
+              touchesSelection(one, touch.x, touch.y, tones, bars, notes)
+            );
+          if (!grabbed) {
             state.fail();
-          }
-        })
-        .onUpdate((e) => {
-          if (!selection) {
             return;
           }
-          if (selection.kind === 'chordTone' || selection.kind === 'melodyNote') {
+          // The pitch of the one actually under the finger, so the audition
+          // follows the thumb rather than whichever was chosen first.
+          grabbedMidi.current = pitchOf(grabbed, tones, notes);
+          if (grabbed.kind === 'barLine') {
+            // Every chosen line's starting place, so they all move by the
+            // same amount and keep their spacing (INV-NOTES-056).
+            grabbedBars.current = selection.flatMap((one) =>
+              one.kind === 'barLine'
+                ? [
+                    {
+                      lineIndex: one.lineIndex,
+                      x: bars.find((b) => b.lineIndex === one.lineIndex)?.x ?? 0
+                    }
+                  ]
+                : []
+            );
+            applied.current = 0;
+          }
+          state.activate();
+        })
+        .onUpdate((e) => {
+          if (selection.length === 0) {
+            return;
+          }
+          const kind = selection[0].kind;
+          if (kind === 'chordTone' || kind === 'melodyNote') {
             // Whole semitones only, each emitted once as it is crossed: a
-            // note between two pitches is not a note.
+            // note between two pitches is not a note. Everything chosen moves
+            // by the same amount, so the shape of a phrase survives being
+            // moved as one (INV-NOTES-093).
             const wanted = Math.round(-e.translationY / semitonePx);
             const step = wanted - applied.current;
             if (step !== 0) {
               applied.current = wanted;
-              if (selection.kind === 'chordTone') {
-                onMoveTone(selection.slot, selection.tone, step);
-              } else {
-                onMoveNote(selection.index, step);
+              for (const one of selection) {
+                if (one.kind === 'chordTone') {
+                  onMoveTone(one.slot, one.tone, step);
+                } else if (one.kind === 'melodyNote') {
+                  onMoveNote(one.index, step);
+                }
               }
-              // The pitch just reached, read from where the thing started
-              // rather than from where it is now — the same reason the bar
-              // drag anchors (INV-NOTES-056).
+              // Read from where the thing started rather than from where it
+              // is now — the same reason the bar drag anchors.
               if (grabbedMidi.current != null) {
                 onHear?.(grabbedMidi.current + wanted);
               }
             }
             return;
           }
-          const step = stepAt(
-            snapToStep(grabX.current + e.translationX, originX, stepWidth)
+          // Bars: every chosen line moves by the same number of steps, read
+          // from where each began.
+          const moved = stepAt(
+            snapToStep(
+              (grabbedBars.current[0]?.x ?? 0) + e.translationX,
+              originX,
+              stepWidth
+            )
           );
-          if (step !== applied.current) {
-            applied.current = step;
-            onMoveBar(selection.lineIndex, step);
+          const delta = moved - stepAt(grabbedBars.current[0]?.x ?? 0);
+          if (delta !== applied.current) {
+            applied.current = delta;
+            for (const line of grabbedBars.current) {
+              onMoveBar(line.lineIndex, stepAt(line.x) + delta);
+            }
           }
         })
         .runOnJS(true),
@@ -210,14 +257,17 @@ export function useGraphGestures({
         .withTestId('graph-add-bar')
         .minDuration(400)
         .onStart((e) => {
-          if (selectionAt(e.x, e.y, tones, bars, notes)) {
+          // On something: add it to the set. On nothing: put a downbeat
+          // there. One gesture, and what is under it decides — holding empty
+          // space could never have meant "also choose this".
+          if (alsoChoose(e.x, e.y)) {
             return;
           }
           tapped();
           onAddBar(stepAt(e.x));
         })
         .runOnJS(true),
-    [bars, notes, onAddBar, stepAt, tones]
+    [alsoChoose, onAddBar, stepAt]
   );
 
   return useMemo(

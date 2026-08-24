@@ -11,7 +11,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { octaveLabel } from 'logic';
 
 import { GraphLayers } from './GraphLayers';
-import type { Selection } from '../../components/graphSelection';
+import type { Chosen, Selection } from '../../components/graphSelection';
 import { MelodyView } from '../../components/MelodyView';
 import { ZoomableMelody } from '../../components/ZoomableMelody';
 import { useTheme } from '../../theme';
@@ -50,8 +50,9 @@ export interface NoteShapeSectionProps {
   /** Sideways the graph is the view, so the controls under it are left off. */
   showControls?: boolean;
   /** What is chosen on the graph, and how to choose something else. */
-  selection: Selection | null;
-  onSelect: (selection: Selection | null) => void;
+  selection: Chosen;
+  onSelect: (selection: Chosen) => void;
+  flashing?: Selection | null;
   /** Where the take is, and how to go elsewhere in it (INT-NOTES-022). */
   transport?: { positionMs: number; seek: (ms: number) => void } | null;
 }
@@ -63,6 +64,7 @@ export function NoteShapeSection({
   showControls = true,
   selection,
   onSelect,
+  flashing,
   transport
 }: NoteShapeSectionProps): React.JSX.Element {
   const { colors } = useTheme();
@@ -171,6 +173,7 @@ export function NoteShapeSection({
                 pitchAxis={pitchAxis}
                 selection={selection}
                 onSelect={onSelect}
+                flashing={flashing}
               />
               </>
             )}

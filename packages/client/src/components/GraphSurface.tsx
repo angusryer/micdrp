@@ -18,7 +18,7 @@ import { GestureDetector } from 'react-native-gesture-handler';
 
 import type { ChordToneRect } from './chordLayout';
 import type { NoteRect } from './melodyLayout';
-import type { BarHandlePoint, Selection } from './graphSelection';
+import type { BarHandlePoint, Chosen } from './graphSelection';
 import { useGraphGestures } from './useGraphGestures';
 
 export interface GraphSurfaceProps {
@@ -32,8 +32,8 @@ export interface GraphSurfaceProps {
   /** Step zero and step size, for turning a drag into a grid position. */
   originX: number;
   stepWidth: number;
-  selection: Selection | null;
-  onSelect: (selection: Selection | null) => void;
+  selection: Chosen;
+  onSelect: (selection: Chosen) => void;
   /** Move a bar line to a grid step. */
   onMoveBar: (lineIndex: number, step: number) => void;
   /** Move one note of one chord by whole semitones. */

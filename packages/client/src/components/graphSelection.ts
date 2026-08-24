@@ -36,6 +36,42 @@ export const TONE_REACH = 22;
 /** How far from a sung note a touch still means that note. */
 export const NOTE_REACH = 20;
 
+/**
+ * Everything chosen at once, which is always of one kind (INV-NOTES-093).
+ *
+ * An array rather than a set: order is the order things were chosen, which is
+ * the order the sheet lists them in, and a handful of objects is not worth a
+ * hash.
+ */
+export type Chosen = readonly Selection[];
+
+/** What kind of thing this is, for the rule that they must all match. */
+export const kindOf = (selection: Selection): Selection['kind'] =>
+  selection.kind;
+
+/** Whether this exact thing is already chosen. */
+export function isChosen(chosen: Chosen, selection: Selection): boolean {
+  return chosen.some((one) => isSame(one, selection));
+}
+
+/**
+ * Add a thing to what is chosen, or take it out if it was already there.
+ *
+ * Choosing something of a different kind replaces everything rather than
+ * joining it: a downbeat and a sung note take different verbs, and a set
+ * holding both could offer neither (INV-NOTES-093).
+ */
+export function toggleChosen(chosen: Chosen, selection: Selection): Chosen {
+  if (isChosen(chosen, selection)) {
+    return chosen.filter((one) => !isSame(one, selection));
+  }
+  const first = chosen[0];
+  if (first && kindOf(first) !== kindOf(selection)) {
+    return [selection];
+  }
+  return [...chosen, selection];
+}
+
 /** Whether two selections point at the same thing. */
 export function isSame(a: Selection | null, b: Selection | null): boolean {
   if (a == null || b == null) {

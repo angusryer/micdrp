@@ -79,6 +79,7 @@ export function NoteLandscape({
               showControls={false}
               selection={detail.selection}
               onSelect={detail.setSelection}
+              flashing={detail.flashing}
             />
           ) : null}
         </View>

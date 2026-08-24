@@ -15,15 +15,15 @@ import React, { useEffect, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { TrueSheet } from '@lodev09/react-native-true-sheet';
 
-import type { Selection } from '../../components/graphSelection';
+import type { Chosen } from '../../components/graphSelection';
 import { useTheme } from '../../theme';
 import { describeSelection } from './selectionFacts';
 import type { useNoteDetail } from './useNoteDetail';
 
 export interface SelectionSheetProps {
   detail: ReturnType<typeof useNoteDetail>;
-  selection: Selection | null;
-  onSelect: (selection: Selection | null) => void;
+  selection: Chosen;
+  onSelect: (selection: Chosen) => void;
 }
 
 export function SelectionSheet({
@@ -35,16 +35,23 @@ export function SelectionSheet({
   const sheet = useRef<TrueSheet>(null);
 
   useEffect(() => {
-    if (selection) {
+    if (selection.length > 0) {
       void sheet.current?.present();
     } else {
       void sheet.current?.dismiss();
     }
   }, [selection]);
 
-  const shown = selection
-    ? describeSelection(selection, detail, colors.primary500, onSelect)
+  // One thing: its facts and its verbs. Several: what they are, so a row can
+  // be pressed to find it on the graph (INV-NOTES-094).
+  const only = selection.length === 1 ? selection[0] : null;
+  const shown = only
+    ? describeSelection(only, detail, colors.primary500, () => onSelect([]))
     : null;
+  const listed = selection.map((one) => ({
+    one,
+    shown: describeSelection(one, detail, colors.primary500, () => onSelect([]))
+  }));
 
   return (
     <TrueSheet
@@ -60,9 +67,43 @@ export function SelectionSheet({
       dimmed={false}
       // Dragged away means put down, so the graph and the sheet never
       // disagree about whether anything is chosen.
-      onDidDismiss={() => onSelect(null)}
+      onDidDismiss={() => onSelect([])}
     >
       <ScrollView contentContainerStyle={styles.body}>
+        {!shown && selection.length > 1 ? (
+          <>
+            <Text style={[styles.title, { color: colors.typography }]}>
+              {`${selection.length} chosen`}
+            </Text>
+            {listed.map(({ one, shown: row }, i) => (
+              <Pressable
+                key={`${one.kind}-${i}`}
+                accessibilityRole="button"
+                accessibilityLabel={`Find ${row.title} on the graph`}
+                onPress={() => detail.flash(one)}
+                style={({ pressed }) => [
+                  styles.listRow,
+                  {
+                    borderColor: colors.neutral500,
+                    backgroundColor: pressed
+                      ? colors.neutral300
+                      : 'transparent'
+                  }
+                ]}
+              >
+                <View
+                  style={[styles.swatch, { backgroundColor: row.accent }]}
+                />
+                <Text style={[styles.rowTitle, { color: colors.typography }]}>
+                  {row.title}
+                </Text>
+                <Text style={[styles.rowFact, { color: colors.gray300 }]}>
+                  {row.facts[0]?.value ?? ''}
+                </Text>
+              </Pressable>
+            ))}
+          </>
+        ) : null}
         {shown ? (
           <>
             <View style={styles.head}>
@@ -140,6 +181,16 @@ const styles = StyleSheet.create({
   factLabel: { fontSize: 13 },
   factValue: { fontSize: 13, fontWeight: '600' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 10,
+    paddingHorizontal: 4
+  },
+  rowTitle: { fontSize: 14, fontWeight: '600', flex: 1 },
+  rowFact: { fontSize: 12 },
   pill: {
     borderWidth: 1,
     borderRadius: 999,

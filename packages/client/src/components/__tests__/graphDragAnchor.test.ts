@@ -15,7 +15,7 @@
 import { renderHook } from '@testing-library/react-native';
 
 import { useGraphGestures } from '../useGraphGestures';
-import type { BarHandlePoint, Selection } from '../graphSelection';
+import type { BarHandlePoint, Chosen } from '../graphSelection';
 
 const ORIGIN_X = 0;
 const STEP_WIDTH = 10;
@@ -40,7 +40,7 @@ function panOf(gesture: unknown): {
 
 describe('dragging what is chosen', () => {
   it('keeps a bar line under the thumb across a whole drag', async () => {
-    const selection: Selection = { kind: 'barLine', lineIndex: 1 };
+    const selection: Chosen = [{ kind: 'barLine', lineIndex: 1 }];
     // The line as the screen would redraw it: index 1 starts at step 10.
     let bars: BarHandlePoint[] = [
       { lineIndex: 0, x: 0 },
@@ -98,8 +98,8 @@ describe('INV-NOTES-092: tapping the chosen thing puts it down', () => {
     { x: 10, y: 20, width: 30, height: 6, cy: 23, midi: 60 }
   ] as never;
 
-  const chooseAt = async (selection: Selection | null) => {
-    const chosen: (Selection | null)[] = [];
+  const chooseAt = async (selection: Chosen) => {
+    const chosen: Chosen[] = [];
     const { result } = await renderHook(() =>
       useGraphGestures({
         tones: [],
@@ -129,18 +129,28 @@ describe('INV-NOTES-092: tapping the chosen thing puts it down', () => {
   };
 
   it('chooses it when nothing is chosen', async () => {
-    expect(await chooseAt(null)).toEqual([{ kind: 'melodyNote', index: 0 }]);
+    expect(await chooseAt([])).toEqual([[{ kind: 'melodyNote', index: 0 }]]);
   });
 
-  it('puts it down when it is the one already chosen', async () => {
+  it('puts it down when it is the only thing chosen', async () => {
     // Otherwise letting go means hunting for empty space on a graph that has
     // very little of it.
-    expect(await chooseAt({ kind: 'melodyNote', index: 0 })).toEqual([null]);
+    expect(await chooseAt([{ kind: 'melodyNote', index: 0 }])).toEqual([[]]);
   });
 
   it('takes the place of a different thing that was chosen', async () => {
-    expect(await chooseAt({ kind: 'barLine', lineIndex: 2 })).toEqual([
-      { kind: 'melodyNote', index: 0 }
+    expect(await chooseAt([{ kind: 'barLine', lineIndex: 2 }])).toEqual([
+      [{ kind: 'melodyNote', index: 0 }]
     ]);
+  });
+
+  it('collapses a set to the one tapped, rather than clearing it', async () => {
+    // A tap means "this one alone" whatever else was held, which is what
+    // leaves hold free to mean something else (INV-NOTES-093).
+    const chosen = await chooseAt([
+      { kind: 'melodyNote', index: 0 },
+      { kind: 'melodyNote', index: 1 }
+    ]);
+    expect(chosen).toEqual([[{ kind: 'melodyNote', index: 0 }]]);
   });
 });

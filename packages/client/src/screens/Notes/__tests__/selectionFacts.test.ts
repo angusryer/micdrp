@@ -119,6 +119,8 @@ describe('a chosen bar line', () => {
     const onSelect = jest.fn();
     const detail = fakeDetail();
     describeSelection(selection, detail, ACCENT, onSelect).actions[0].run();
-    expect(onSelect).toHaveBeenCalledWith(null);
+    // It takes no argument now: there is one way to put a selection down,
+    // and the sheet owns what that means.
+    expect(onSelect).toHaveBeenCalled();
   });
 });

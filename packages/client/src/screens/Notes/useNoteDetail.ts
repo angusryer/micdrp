@@ -32,10 +32,13 @@ import { useBarLayout } from './useBarLayout';
 import { useChordTrack } from './useChordTrack';
 import { useInterpretation } from './useInterpretation';
 import { useExportedMidi } from './useExportedMidi';
-import type { Selection } from '../../components/graphSelection';
+import type { Chosen, Selection } from '../../components/graphSelection';
 import { useNoteLayers } from './useNoteLayers';
 import { useNotationView } from './useNotationView';
 import { useNotePlayback } from './useNotePlayback';
+
+/** How long a thing flashes when its row is pressed, in ms. */
+const FLASH_MS = 700;
 
 /** Stable, so a note with no readings does not look like a new one each render. */
 const EMPTY_READINGS: InterpretationDto[] = [];
@@ -202,7 +205,14 @@ export function useNoteDetail(id: string) {
 
   // What is chosen on the graph. Held here so the upright page and the
   // sideways one are looking at the same thing (INT-NOTES-015).
-  const [selection, setSelection] = useState<Selection | null>(null);
+  const [selection, setSelection] = useState<Chosen>([]);
+  // Made to flash from its row in the sheet, so several things that read the
+  // same in a list can be told apart on the graph (INV-NOTES-094).
+  const [flashing, setFlashing] = useState<Selection | null>(null);
+  const flash = useCallback((one: Selection) => {
+    setFlashing(one);
+    setTimeout(() => setFlashing(null), FLASH_MS);
+  }, []);
 
   const playback = useNotePlayback(melody, quantized, chords);
 
@@ -236,6 +246,8 @@ export function useNoteDetail(id: string) {
     layerCapture,
     selection,
     setSelection,
+    flashing,
+    flash,
     ...playback
   };
 }

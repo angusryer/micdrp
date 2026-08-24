@@ -21,7 +21,7 @@ import { GraphSurface } from '../../components/GraphSurface';
 import { SelectionGlow } from '../../components/SelectionGlow';
 import { layoutChordTones } from '../../components/chordLayout';
 import type { MelodyLayout, NoteRect } from '../../components/melodyLayout';
-import type { Selection } from '../../components/graphSelection';
+import type { Chosen, Selection } from '../../components/graphSelection';
 import { useTheme } from '../../theme';
 import { BarRulerOverlay } from './BarRulerOverlay';
 import { barHandles } from './barRulerModel';
@@ -36,8 +36,10 @@ export interface GraphLayersProps {
   height: number;
   timeAxis: MelodyLayout['timeAxis'];
   pitchAxis: MelodyLayout['pitchAxis'];
-  selection: Selection | null;
-  onSelect: (selection: Selection | null) => void;
+  selection: Chosen;
+  onSelect: (selection: Chosen) => void;
+  /** Made to flash from its row in the sheet (INV-NOTES-094). */
+  flashing?: Selection | null;
 }
 
 export function GraphLayers({
@@ -49,7 +51,8 @@ export function GraphLayers({
   timeAxis,
   pitchAxis,
   selection,
-  onSelect
+  onSelect,
+  flashing
 }: GraphLayersProps): React.JSX.Element {
   const { colors } = useTheme();
   const { melody, gridForView, chords, floorMidi, bars } = detail;
@@ -79,10 +82,14 @@ export function GraphLayers({
     [bars.layout, geometry]
   );
 
+  // ChordBand draws one as "in hand"; with several chosen it is the first,
+  // which is the one the glow behind them all makes unambiguous anyway.
+  const firstTone = selection.find((one) => one.kind === 'chordTone');
   const chosenTone =
-    selection?.kind === 'chordTone'
-      ? { slot: selection.slot, tone: selection.tone }
+    firstTone?.kind === 'chordTone'
+      ? { slot: firstTone.slot, tone: firstTone.tone }
       : null;
+  const firstBar = selection.find((one) => one.kind === 'barLine');
 
   return (
     <>
@@ -90,6 +97,7 @@ export function GraphLayers({
           edges and is never covered by its own halo (INV-NOTES-057). */}
       <SelectionGlow
         selection={selection}
+        flashing={flashing}
         tones={tones}
         bars={handles}
         notes={noteRects}
@@ -119,7 +127,7 @@ export function GraphLayers({
           height={height}
           beatWidth={beatWidth}
           selectedLine={
-            selection?.kind === 'barLine' ? selection.lineIndex : null
+            firstBar?.kind === 'barLine' ? firstBar.lineIndex : null
           }
         />
       ) : null}

@@ -93,3 +93,39 @@ invariants:
       carrying bar lines, chord notes and sung notes has little of it —
       the likeliest outcome of hunting for a gap is choosing something
       else by mistake.
+
+  - id: INV-NOTES-093
+    description: Several things can be chosen, and they are all of one kind
+    severity: major
+    check: >
+      Holding an object adds it to what is chosen, or takes it out again if
+      it was already there. Tapping an object chooses that one alone.
+      Everything chosen at once is of one kind: choosing a sung note while
+      downbeats are held replaces them rather than joining them. Verified
+      by asserting a hold adds, a second hold on the same object removes,
+      a tap collapses to one, and a hold of a different kind replaces the
+      set.
+
+      A downbeat and a sung note take different verbs — one is removed,
+      the other is heard and put back — so a set holding both could offer
+      neither without grey controls, and the sheet would spend its room
+      explaining what does not apply.
+
+      Hold rather than tap because tap already means "choose this one",
+      and a gesture that changed meaning depending on how many things were
+      already chosen would make the first selection feel different from
+      the second.
+
+  - id: INV-NOTES-094
+    description: A chosen thing can be found from its own row
+    severity: minor
+    check: >
+      With more than one thing chosen, the sheet lists them, and pressing
+      a row makes that object flash on the graph without changing what is
+      chosen. Verified by asserting the flash names exactly the pressed
+      object and clears itself.
+
+      Several chord notes read the same in a list — same name, same part,
+      a bar apart — and the graph is the only place they are
+      distinguishable. Without this, choosing four things means losing
+      track of which row is which the moment they are chosen.

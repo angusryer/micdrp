@@ -115,6 +115,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
               transport={transport}
               selection={detail.selection}
               onSelect={detail.setSelection}
+              flashing={detail.flashing}
             />
             <SelectionSheet
               detail={detail}

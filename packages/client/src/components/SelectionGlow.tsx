@@ -23,14 +23,18 @@ import { BlurMask, Canvas, Line, RoundedRect, vec } from '@shopify/react-native-
 import { chordRoleColour } from './chordRoles';
 import type { ChordToneRect } from './chordLayout';
 import type { NoteRect } from './melodyLayout';
-import type { BarHandlePoint, Selection } from './graphSelection';
+import type { BarHandlePoint, Chosen, Selection } from './graphSelection';
 
 /** The spill, and the edge. */
 const OUTER = { blur: 9, stroke: 7, opacity: 0.32 };
 const INNER = { blur: 3, stroke: 2.5, opacity: 0.85 };
+/** A third pass, wide and bright, for the one being pointed at. */
+const FLASH = { blur: 14, stroke: 10, opacity: 0.55 };
 
 export interface SelectionGlowProps {
-  selection: Selection | null;
+  selection: Chosen;
+  /** Lit brighter for a moment, to answer "which one is that row?". */
+  flashing?: Selection | null;
   tones: readonly ChordToneRect[];
   bars: readonly BarHandlePoint[];
   notes: readonly NoteRect[];
@@ -42,6 +46,7 @@ export interface SelectionGlowProps {
 
 export function SelectionGlow({
   selection,
+  flashing,
   tones,
   bars,
   notes,
@@ -49,43 +54,52 @@ export function SelectionGlow({
   height,
   colour
 }: SelectionGlowProps): React.JSX.Element | null {
-  const lit = litShape(selection, tones, bars, notes, colour);
-  if (!lit) {
+  const lit = selection
+    .map((one) => litShape(one, tones, bars, notes, colour))
+    .filter((shape): shape is Lit => shape != null);
+  // The flash rides on top of the rest, so a row pressed in the sheet is
+  // findable among four things that are all already lit (INV-NOTES-094).
+  const flashed = flashing
+    ? litShape(flashing, tones, bars, notes, colour)
+    : null;
+  if (lit.length === 0 && !flashed) {
     return null;
   }
 
   return (
     <View style={[styles.fill, { width, height }]} pointerEvents="none">
       <Canvas style={{ width, height }}>
-        {[OUTER, INNER].map((pass, i) =>
-          lit.kind === 'line' ? (
+        {[...lit, ...(flashed ? [flashed] : [])].flatMap((shape, n) =>
+          [OUTER, INNER, ...(flashed === shape ? [FLASH] : [])].map((pass, i) =>
+          shape.kind === 'line' ? (
             <Line
-              key={i}
-              p1={vec(lit.x, 0)}
-              p2={vec(lit.x, height)}
+              key={`${n}-${i}`}
+              p1={vec(shape.x, 0)}
+              p2={vec(shape.x, height)}
               // A line has no inside to protect, so the passes widen instead
               // of stroking: the spill either side is the whole effect.
               strokeWidth={pass.stroke * 1.6}
-              color={lit.colour}
+              color={shape.colour}
               opacity={pass.opacity}
             >
               <BlurMask blur={pass.blur} style="normal" />
             </Line>
           ) : (
             <RoundedRect
-              key={i}
-              x={lit.x}
-              y={lit.y}
-              width={lit.width}
-              height={lit.height}
+              key={`${n}-${i}`}
+              x={shape.x}
+              y={shape.y}
+              width={shape.width}
+              height={shape.height}
               r={3}
               style="stroke"
               strokeWidth={pass.stroke}
-              color={lit.colour}
+              color={shape.colour}
               opacity={pass.opacity}
             >
               <BlurMask blur={pass.blur} style="normal" />
             </RoundedRect>
+          )
           )
         )}
       </Canvas>

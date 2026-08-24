@@ -56,7 +56,7 @@ export function describeSelection(
   selection: Selection,
   detail: ReturnType<typeof useNoteDetail>,
   accent: string,
-  onSelect: (selection: Selection | null) => void
+  onSelect: () => void
 ): SelectionDescription {
   if (selection.kind === 'chordTone') {
     return describeChordTone(selection, detail);
@@ -143,7 +143,7 @@ function describeBarLine(
   selection: Extract<Selection, { kind: 'barLine' }>,
   detail: ReturnType<typeof useNoteDetail>,
   accent: string,
-  onSelect: (selection: Selection | null) => void
+  onSelect: () => void
 ): SelectionDescription {
   const slot = detail.chords.slots[selection.lineIndex];
   return {
@@ -165,7 +165,7 @@ function describeBarLine(
         run: () => {
           detail.bars.merge(selection.lineIndex);
           // What it referred to has gone, so nothing is chosen any more.
-          onSelect(null);
+          onSelect();
         }
       }
     ]
