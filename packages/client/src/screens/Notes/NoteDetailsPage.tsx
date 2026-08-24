@@ -22,6 +22,7 @@ import { ExportSheet } from '../Results/ExportSheet';
 import { NoteList } from '../Results/NoteList';
 import { NoteStats } from './NoteStats';
 import { RereadCard } from './RereadCard';
+import { TempoRow } from './TempoRow';
 import type { useNoteDetail } from './useNoteDetail';
 
 export interface NoteDetailsPageProps {
@@ -76,6 +77,15 @@ export function NoteDetailsPage({
             {t('notes.notesTapToHear')}
           </Text>
           <NoteList notes={melody} onPressNote={detail.playNote} />
+
+          {/* Every other reading here can be corrected; the one everything
+              else is measured against could not (INV-NOTES-123). */}
+          <TempoRow
+            bpm={detail.bpm}
+            readBpm={detail.readBpm}
+            isByHand={detail.isBpmByHand}
+            onSet={detail.setBpm}
+          />
 
           {/* Last, because it replaces everything above it (INV-NOTES-116). */}
           <RereadCard isStale={detail.isStale} onReread={detail.reread} />

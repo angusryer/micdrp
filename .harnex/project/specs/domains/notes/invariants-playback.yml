@@ -296,3 +296,66 @@ invariants:
       pitch against time and a percussive one is lanes; those are different
       pictures, and two of a thing is not a pattern worth an abstraction. The
       role names which reading a track gets (INV-NOTES-115) and stops there.
+
+  - id: INV-NOTES-123
+    description: The tempo can be set by hand
+    severity: major
+    check: >
+      A take's tempo can be set by hand, standing in front of the one read
+      from it rather than replacing it, and the reading stays available to go
+      back to. It is kept with the interpretation, so it survives the take
+      being read again. Verified by asserting the set tempo is what the grid
+      uses, that the read one is still reported, and that going back restores
+      it.
+
+      Every other reading on the screen could be corrected — a pitch, a
+      downbeat, a chord, how long a note lasts — and the one everything else
+      is measured against could not. A wrong tempo does not merely say the
+      wrong number: the bar lines land wrong, the notation snaps to the wrong
+      grid, and every correction made on top of it inherits the error.
+
+      Kept with the edits rather than written over the reading, because it is
+      a decision about the take rather than a fact of it. A reading can be
+      thrown away and made afresh (INV-NOTES-116); a decision must not be, and
+      writing it into the reading would let a re-read silently undo it.
+
+  - id: INV-NOTES-124
+    description: A note plays from the list the way it plays in the note
+    severity: minor
+    check: >
+      The play control in the notes list sounds the take at the level that
+      note was left at, and does not offer to play a take that was silenced
+      there. Verified by asserting the level is applied and that a silenced
+      take is not offered.
+
+      The balance is kept per note (INV-NOTES-114), and a list that ignored it
+      would be playing a different thing from the one the note plays — the
+      same recording, at a volume nobody chose.
+
+      A silenced take is not offered rather than played anyway: a control that
+      produces nothing is worse than one that is plainly unavailable.
+
+  - id: INV-NOTES-125
+    description: The beat can be felt instead of heard
+    severity: minor
+    check: >
+      The metronome can be set, per note, to tap against the hand rather than
+      sound. It uses the same beats the sounded click does, accents the
+      downbeat more heavily, fires nothing while stopped or turned off, and
+      skips beats already gone by when playing starts partway in. Verified by
+      asserting one tap per beat, a heavier downbeat, silence when off, and
+      that a mid-take start does not fire the beats behind it at once.
+
+      A click over a take is a click in the take: you hear it while listening
+      to what you sang, and on a phone speaker it competes with the very thing
+      it is there to help you follow. Felt instead, it keeps time without
+      taking any of the room the music is in.
+
+      Booked ahead against the clock rather than fired when a position update
+      arrives. Updates land sixty times a second at best and unevenly, so a
+      tap driven by them would land wherever they did — which for a metronome
+      is the one thing that must not happen.
+
+      Beats already behind the playhead are skipped rather than fired late. A
+      tap after its beat reads as the next one, and three at once reads as a
+      single beat rather than three.

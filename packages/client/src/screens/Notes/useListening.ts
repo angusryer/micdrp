@@ -30,12 +30,20 @@ export interface Listening {
   mix: PlaybackMix;
   levels: TrackLevels;
   chordOctaves: number;
+  /**
+   * Feel the beat rather than hear it.
+   *
+   * A click over a take competes with the thing it is there to help you
+   * follow, and on a phone speaker it wins (INV-NOTES-125).
+   */
+  beatIsFelt: boolean;
 }
 
 const START: Listening = {
   mix: DEFAULT_MIX,
   levels: DEFAULT_LEVELS,
-  chordOctaves: DEFAULT_CHORD_OCTAVES
+  chordOctaves: DEFAULT_CHORD_OCTAVES,
+  beatIsFelt: false
 };
 
 const keyFor = (noteId: string) => `notes.${noteId}.listening`;
@@ -58,7 +66,8 @@ function read(noteId: string | null): Listening {
   return {
     mix: { ...START.mix, ...kept.mix },
     levels: { ...START.levels, ...kept.levels },
-    chordOctaves: kept.chordOctaves ?? START.chordOctaves
+    chordOctaves: kept.chordOctaves ?? START.chordOctaves,
+    beatIsFelt: kept.beatIsFelt ?? START.beatIsFelt
   };
 }
 
@@ -66,6 +75,7 @@ export interface UseListening extends Listening {
   setAudible: (track: TrackName, isAudible: boolean) => void;
   setLevel: (track: TrackName, level: number) => void;
   setChordOctaves: (octaves: number) => void;
+  setBeatIsFelt: (felt: boolean) => void;
 }
 
 export function useListening(noteId: string | null): UseListening {
@@ -102,6 +112,10 @@ export function useListening(noteId: string | null): UseListening {
     ),
     setChordOctaves: useCallback(
       (chordOctaves) => change((was) => ({ ...was, chordOctaves })),
+      [change]
+    ),
+    setBeatIsFelt: useCallback(
+      (beatIsFelt) => change((was) => ({ ...was, beatIsFelt })),
       [change]
     )
   };

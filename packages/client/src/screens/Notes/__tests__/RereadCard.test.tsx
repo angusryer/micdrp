@@ -6,9 +6,10 @@
  * improved is only useful to the takes already in the library if those
  * readings can be thrown away and made afresh.
  *
- * Offered only where it would change something — a control that does nothing
- * invites a person to try it and learn the app cannot tell the difference —
- * and it says what it costs before the press rather than after.
+ * Always offered, because the reading depends on settings a person can change
+ * as well as on the engine's own version. Hiding it on a take this engine had
+ * read left no way to apply a changed knob to a recording already made. It
+ * says what it costs before the press rather than after.
  */
 import React from 'react';
 import { act, render, screen, fireEvent } from '@testing-library/react-native';
@@ -27,14 +28,26 @@ const show = (isStale: boolean, onReread = jest.fn().mockResolvedValue(true)) =>
   );
 
 describe('reading a take again', () => {
-  it('is not offered on a take already read by this engine', async () => {
+  it('is offered on a take this engine already read', async () => {
+    // The settings that decide what a note is can be changed, and a take read
+    // with different ones is stale in the way that matters. The version
+    // number cannot know that (INV-ACCOUNT-014).
     await show(false);
-    expect(screen.queryByTestId('reread-card')).toBeNull();
+    expect(screen.queryByTestId('reread-card')).not.toBeNull();
   });
 
-  it('is offered on one read by an older engine', async () => {
+  it('is offered on one read by an older engine too', async () => {
     await show(true);
     expect(screen.queryByTestId('reread-card')).not.toBeNull();
+  });
+
+  it('says which of the two reasons applies', async () => {
+    const older = await show(true);
+    expect(older.queryByText(/older version of the listener/)).not.toBeNull();
+    await older.unmount();
+
+    const current = await show(false);
+    expect(current.queryByText(/settings as they are now/)).not.toBeNull();
   });
 
   it('says what it will replace, before the button rather than after', async () => {

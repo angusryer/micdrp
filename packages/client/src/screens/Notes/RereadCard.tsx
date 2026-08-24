@@ -1,10 +1,15 @@
 /**
  * Reading a take again with whatever the engine can do now.
  *
- * Offered only where it would change something. A take already read by the
- * current engine has nothing to gain, and a control that does nothing is worse
- * than no control — it invites a person to try it and learn that the app
- * cannot tell the difference (INV-NOTES-116).
+ * Always offered, and said differently where the app itself has moved on.
+ *
+ * It was offered only on takes an older engine had read, on the reasoning that
+ * a control which changes nothing is worse than no control. That reasoning was
+ * incomplete: the reading also depends on settings a person can change
+ * (INV-ACCOUNT-014), so a take read by this engine with different knobs is
+ * stale in the way that actually matters, and the version number cannot know
+ * it. Hiding the control there left no way to apply a knob to a take already
+ * recorded (INV-NOTES-116).
  *
  * The warning is stated before the button rather than in a dialog after it.
  * What it costs is real: the reading is replaced outright, and an edit whose
@@ -31,10 +36,6 @@ export function RereadCard({
   const [isReading, setIsReading] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  if (!isStale) {
-    return null;
-  }
-
   const run = () => {
     setFailed(false);
     setIsReading(true);
@@ -55,8 +56,9 @@ export function RereadCard({
         Read this take again
       </Text>
       <Text style={[styles.body, { color: colors.gray300 }]}>
-        This take was read by an older version of the listener. Reading it
-        again will find the notes and drums the way the app hears now.
+        {isStale
+          ? 'This take was read by an older version of the listener. Reading it again will find the notes and drums the way the app hears now.'
+          : 'Reads the recording again with the listener settings as they are now. Worth doing after changing what counts as a note.'}
       </Text>
       <Text style={[styles.warning, { color: colors.error }]}>
         The notes, chords and timing will all be replaced. Corrections you made

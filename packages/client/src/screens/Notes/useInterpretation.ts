@@ -32,12 +32,16 @@ export interface Interpretation {
   savedEdits: readonly ChordSlotEdit[];
   /** An arrangement of bars already kept, if a person has made one. */
   savedBarLines: readonly number[] | undefined;
+  /** The tempo a person set, or undefined to use the one read (INV-NOTES-123). */
+  savedBpm: number | undefined;
   /** Pitches corrected where the detector heard wrongly. */
   savedNoteEdits: readonly NoteEdit[];
   /** Record a new set of differences; written shortly afterwards. */
   update: (edits: ChordSlotEdit[]) => void;
   /** Record a new arrangement of bars; written shortly afterwards. */
   updateBarLines: (lines: number[]) => void;
+  /** Set the tempo by hand, or pass undefined to go back to the read one. */
+  updateBpm: (bpm: number | undefined) => void;
   /** Keep the corrections to what was heard. */
   updateNotes: (notes: NoteEdit[]) => void;
   /** True once a write has failed, so a screen can say so. */
@@ -58,6 +62,7 @@ export function useInterpretation(
   const [savedBarLines, setSavedBarLines] = useState<readonly number[] | undefined>(
     active.barLines
   );
+  const [savedBpm, setSavedBpm] = useState<number | undefined>(active.bpm);
   const [failed, setFailed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const frozen = useRef<InterpretationDto[]>([]);
@@ -80,6 +85,7 @@ export function useInterpretation(
     chords: ChordSlotEdit[];
     barLines?: number[];
     notes?: NoteEdit[];
+    bpm?: number;
   }>({
     chords: active.chords as ChordSlotEdit[],
     ...(active.barLines ? { barLines: [...active.barLines] } : {}),
@@ -140,12 +146,23 @@ export function useInterpretation(
     [schedule]
   );
 
+  const updateBpm = useCallback(
+    (bpm: number | undefined) => {
+      setSavedBpm(bpm);
+      latest.current = { ...latest.current, bpm };
+      schedule();
+    },
+    [schedule]
+  );
+
   return {
     savedEdits,
     savedBarLines,
+    savedBpm,
     savedNoteEdits,
     update,
     updateBarLines,
+    updateBpm,
     updateNotes,
     failed
   };

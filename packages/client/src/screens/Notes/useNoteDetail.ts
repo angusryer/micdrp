@@ -164,7 +164,17 @@ export function useNoteDetail(id: string) {
   // notes captured before the tempo estimator was fixed are re-read correctly
   // instead of keeping a bpm that was often double what was actually sung.
   const quantized = useMemo(() => quantize(melody), [melody]);
-  const grid = quantized.grid;
+  // A tempo set by hand stands in front of the one read from the take. The
+  // reading is left as it was — this is a decision about the take rather than
+  // a correction to what was heard, and it has to survive a re-read
+  // (INV-NOTES-123).
+  const grid = useMemo(
+    () =>
+      interpretation.savedBpm != null && interpretation.savedBpm > 0
+        ? { ...quantized.grid, bpm: interpretation.savedBpm }
+        : quantized.grid,
+    [quantized.grid, interpretation.savedBpm]
+  );
   const hasGrid = grid.bpm > 0 && melody.length > 1;
 
   // What was counted, and what was played. The count is a performance and
@@ -405,6 +415,11 @@ export function useNoteDetail(id: string) {
     /** The struck sounds in this take (INV-PITCH-025). */
     hits,
     /** True where this take would read differently if it were read again. */
+    /** The tempo in use, and how to set it by hand (INV-NOTES-123). */
+    bpm: grid.bpm,
+    isBpmByHand: interpretation.savedBpm != null,
+    setBpm: interpretation.updateBpm,
+    readBpm: quantized.grid.bpm,
     isStale: isStale(note?.analysisVersion),
     reread,
     resizeChosen,

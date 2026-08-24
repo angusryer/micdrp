@@ -39,6 +39,15 @@ export interface InterpretationDto {
   barLines?: number[];
   /** Pitches a person corrected, where the detector heard wrongly. */
   notes?: NoteEditDto[];
+  /**
+   * The tempo a person set, where the one read from the take was wrong.
+   *
+   * An override rather than a correction to the reading: the detector's
+   * estimate stays what it was, and this stands in front of it. Kept with the
+   * edits because it is a decision about the take rather than a fact of it,
+   * and it must survive the take being read again (INV-NOTES-123).
+   */
+  bpm?: number;
 }
 
 const QUALITIES = [

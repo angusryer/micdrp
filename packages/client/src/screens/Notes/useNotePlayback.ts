@@ -188,6 +188,8 @@ export function useNotePlayback(
 
   return {
     countMix,
+    /** The beats themselves, for anything that feels them (INV-NOTES-125). */
+    beats: counted.clicks,
     rhythmMix,
     playbackMode,
     setPlaybackMode,

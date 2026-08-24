@@ -13,7 +13,7 @@
  * carries the take's clock, counting the position while it runs
  * (INV-NOTES-016).
  */
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { useTheme } from '../../theme';
@@ -21,6 +21,7 @@ import { useTranslation } from '../../i18n';
 import { MelodyView } from '../../components/MelodyView';
 import type { NoteMeta } from '../../data/notesCache';
 import { usePlayback } from './usePlayback';
+import { useListening } from './useListening';
 import { NoteCardActions } from './NoteCardActions';
 import { NoteCardMeta } from './NoteCardMeta';
 import { formatPlaybackCounter } from './noteCardFormat';
@@ -48,9 +49,17 @@ export function NoteCard({ note, onOpen, onDelete }: NoteCardProps) {
     [note.id, note.audioPath]
   );
 
-  const { state, positionMs, play, stop } = usePlayback({
+  const { state, positionMs, play, stop, setLevel } = usePlayback({
     resolveAudioUri: resolveAudio
   });
+
+  // The balance this note was left at. A take set quiet in the note is quiet
+  // from the list too, or the list is playing a different thing from the one
+  // the note plays (INV-NOTES-124).
+  const listening = useListening(note.id);
+  const takeLevel = listening.levels.take;
+  const isTakeAudible = listening.mix.take;
+  useEffect(() => setLevel(takeLevel), [setLevel, takeLevel]);
 
   // Press play → the take starts and the button reads Stop. Press again → the
   // audio stops and it reads Play. There is no third thing to press.
@@ -66,7 +75,10 @@ export function NoteCard({ note, onOpen, onDelete }: NoteCardProps) {
     [onDelete, note.id]
   );
 
-  const canPlay = note.audioPath != null;
+  // A take silenced in the note is not offered here either. A play button
+  // that produces nothing is worse than one that is plainly unavailable
+  // (INV-NOTES-124).
+  const canPlay = note.audioPath != null && isTakeAudible;
 
   return (
     <View

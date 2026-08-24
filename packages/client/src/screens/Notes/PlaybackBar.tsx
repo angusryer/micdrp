@@ -20,10 +20,12 @@ import { Icon } from '../../components/Icon';
 import { PlaybackSheet } from './PlaybackSheet';
 import { useTheme } from '../../theme';
 import { useListening, type UseListening } from './useListening';
+import { useHapticBeat } from './useHapticBeat';
 import { PlaybackButton } from './PlaybackButton';
 import { GlyphGuideSheet } from './GlyphGuideSheet';
 import { TrackCard } from './TrackCard';
 import { PlaybackOptionsButton } from './PlaybackOptionsButton';
+import { IconToggle } from './IconToggle';
 import {
   TRACK_TITLES,
   isTrackLocked,
@@ -66,6 +68,8 @@ export interface PlaybackBarProps {
   count?: MixAccompaniment;
   /** The struck sounds read out of the take (INV-NOTES-120). */
   rhythm?: MixAccompaniment;
+  /** The beats, for feeling rather than hearing them (INV-NOTES-125). */
+  beats?: readonly { startMs: number; midi: number }[];
   /**
    * Anything else that decides what a press sounds — or how the take is read
    * while it does — shown in the same list as the tracks: which reading is
@@ -99,6 +103,7 @@ export function PlaybackBar({
   voice,
   count,
   rhythm,
+  beats = [],
   trackOptions,
   onDetails,
   onTransport,
@@ -111,7 +116,8 @@ export function PlaybackBar({
   // the screen (INV-NOTES-114). Falls back to its own state where no note
   // owns it — the dogfood player has no note to keep it with.
   const own = useListening(null);
-  const { mix, levels, setLevel, setAudible } = listening ?? own;
+  const { mix, levels, setLevel, setAudible, beatIsFelt, setBeatIsFelt } =
+    listening ?? own;
   // Only offer a track this note has. With neither chords nor a melody there
   // is nothing to turn, so the take is all there is and no toggles are shown.
   const offered = useMemo<TrackName[]>(() => {
@@ -156,6 +162,16 @@ export function PlaybackBar({
     voice,
     count,
     rhythm
+  });
+
+  // The click, felt instead of heard, when the note was left that way. It
+  // rides the same clicks the sounded metronome uses, so the two can never
+  // disagree about where a beat is (INV-NOTES-125).
+  useHapticBeat({
+    beats,
+    positionMs,
+    isPlaying: state === 'playing',
+    isOn: sounding.count && beatIsFelt
   });
 
   useEffect(
@@ -263,6 +279,21 @@ export function PlaybackBar({
             isLocked={isTrackLocked(track, sounding)}
             onExplain={() => setExplaining(track)}
           >
+            {/* The click is the one track worth feeling rather than hearing:
+                over a take it competes with the thing it is helping you
+                follow (INV-NOTES-125). */}
+            {track === 'count' ? (
+              <IconToggle
+                icon="metronome"
+                offIcon="speaker"
+                isOn={beatIsFelt}
+                onChange={setBeatIsFelt}
+                label={
+                  beatIsFelt ? 'Hear the beat instead' : 'Feel the beat instead'
+                }
+                testID="beat-is-felt"
+              />
+            ) : null}
             {trackOptions?.(track)}
           </TrackCard>
         ))}
