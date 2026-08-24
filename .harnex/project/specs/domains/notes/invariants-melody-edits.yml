@@ -33,3 +33,58 @@ invariants:
       be applied, because there would be nothing left to re-read. Every
       other claim on this screen is kept this way (INV-NOTES-022), and a
       correction is a claim like any other.
+
+  - id: INV-NOTES-095
+    description: Changing a note's length moves what follows, and never overlaps
+    severity: critical
+    check: >
+      Lengthening or shortening a note moves every later note by the same
+      amount, so the gaps after it are unchanged and no two notes ever
+      sound at once. Several notes changed together each move what follows
+      them, so the shift accumulates. A note cannot be shortened past
+      nothing. Verified by asserting no note starts before the previous
+      one ends, that the gaps between untouched notes survive, and that
+      the total shift is the sum of the changes.
+
+      The pipeline assumes notes do not overlap: a moment belongs to one
+      note, which is what lets an edit be anchored to a moment inside it
+      and what lets the harmony read a span. Allowing two notes to sound
+      at once would reach into segmentation, the chord reading and
+      playback all at once, for an idea a single voice cannot perform
+      anyway.
+
+      Rippling rather than closing the gap: the space after a note is part
+      of the phrase, and swallowing it would rewrite rhythm the singer did
+      not ask to change.
+
+  - id: INV-NOTES-096
+    description: A timing edit is anchored where the detector heard it
+    severity: critical
+    check: >
+      An edit that changes when a note happens is anchored to the moment
+      the detector originally placed it, not to where the edit puts it.
+      Verified by asserting an edit collected after a note is moved still
+      finds that note on replay, and that editing the same note twice
+      leaves one edit rather than two.
+
+      The stored reading is what edits replay over, so anchoring to it is
+      anchoring to something that does not move. Anchoring to the edited
+      time would make the anchor and the value the same quantity: move a
+      note and its own edit could no longer find it.
+
+  - id: INV-NOTES-097
+    description: Length is dragged in notches, and the handle comes home
+    severity: minor
+    check: >
+      The length control changes the chosen notes by one beat per notch of
+      travel, each notch committing once as it is crossed, and its handle
+      returns to where it started when the finger lifts. It says so when
+      the take has no steady beat, rather than offering a control that
+      cannot act. Verified by asserting one beat per notch, no repeat
+      while a notch is held, and a reset on release.
+
+      Notched rather than accelerating: acceleration makes the same
+      gesture mean different amounts depending how fast a hand moved,
+      which cannot be aimed when the intent is exactly two beats. The
+      spring-back already answers the range problem acceleration was there
+      to solve — a short drag repeated is unbounded.

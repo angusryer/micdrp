@@ -16,6 +16,7 @@ import {
   moveNote,
   proposeDownbeats,
   replayNoteEdits,
+  resizeNotes,
   quantize,
   readMetre,
   type NoteEvent
@@ -214,6 +215,28 @@ export function useNoteDetail(id: string) {
     setTimeout(() => setFlashing(null), FLASH_MS);
   }, []);
 
+  /**
+   * Change how long the chosen notes last, by whole beats.
+   *
+   * Everything after each one moves with it, so the gaps survive and no two
+   * notes ever sound at once (INV-NOTES-095).
+   */
+  const resizeChosen = useCallback(
+    (beats: number) => {
+      const chosen = selection.flatMap((one) =>
+        one.kind === 'melodyNote' ? [one.index] : []
+      );
+      const beatMs = grid.bpm > 0 ? 60000 / grid.bpm : 0;
+      if (chosen.length === 0 || !(beatMs > 0) || beats === 0) {
+        return;
+      }
+      interpretation.updateNotes(
+        collectNoteEdits(heard, resizeNotes(melody, chosen, beats * beatMs))
+      );
+    },
+    [selection, grid.bpm, melody, heard, interpretation]
+  );
+
   const playback = useNotePlayback(melody, quantized, chords);
 
   return {
@@ -239,6 +262,7 @@ export function useNoteDetail(id: string) {
     midiUri,
     correctNote,
     resetNote,
+    resizeChosen,
     isCorrected,
     layers,
     bass,

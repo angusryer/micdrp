@@ -16,8 +16,16 @@ export interface ChordSlotEditDto {
 
 /** A pitch someone corrected, anchored to a moment inside the note. */
 export interface NoteEditDto {
+  /**
+   * A time inside the note, as the detector originally heard it — which is
+   * what makes it findable after the note has been moved (INV-NOTES-096).
+   */
   atMs: number;
-  midi: number;
+  /** The pitch it should have been, when that is what changed. */
+  midi?: number;
+  /** When it should have begun and ended, when that is what changed. */
+  startMs?: number;
+  endMs?: number;
 }
 
 export interface InterpretationDto {

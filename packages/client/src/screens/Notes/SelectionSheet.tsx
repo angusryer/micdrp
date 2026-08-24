@@ -17,6 +17,7 @@ import { TrueSheet } from '@lodev09/react-native-true-sheet';
 
 import type { Chosen } from '../../components/graphSelection';
 import { useTheme } from '../../theme';
+import { LengthBar } from './LengthBar';
 import { describeSelection } from './selectionFacts';
 import type { useNoteDetail } from './useNoteDetail';
 
@@ -70,6 +71,14 @@ export function SelectionSheet({
       onDidDismiss={() => onSelect([])}
     >
       <ScrollView contentContainerStyle={styles.body}>
+        {/* At the top, because it acts on everything chosen and the list
+            below it is what "everything" means (INV-NOTES-097). */}
+        {selection.some((one) => one.kind === 'melodyNote') ? (
+          <LengthBar
+            onResize={detail.resizeChosen}
+            canResize={detail.hasGrid}
+          />
+        ) : null}
         {!shown && selection.length > 1 ? (
           <>
             <Text style={[styles.title, { color: colors.typography }]}>
