@@ -37,6 +37,11 @@ export interface BendOptions {
    */
   maxJoinGapMs?: number;
   /**
+   * The least pitch movement that counts as a bend at all (default 0.1
+   * semitones). Below it there is nothing being bent (INV-PITCH-024).
+   */
+  minMoveSemitones?: number;
+  /**
    * How far apart two notes must be to be different notes, in semitones
    * (default 1).
    *
@@ -114,6 +119,10 @@ export function mergeBends(
   // separated on purpose, and joining them across the gap is what turned "da
   // da da da" into one held note (INV-PITCH-023).
   const maxGap = options.maxJoinGapMs ?? 40;
+  // A bend is a change of pitch. Two segments at the very same pitch are not
+  // one note bending — the segmenter only splits there when it had a reason
+  // to, and that reason is articulation (INV-PITCH-024).
+  const minMove = options.minMoveSemitones ?? 0.1;
   if (notes.length < 2) {
     return [...notes];
   }
@@ -128,6 +137,9 @@ export function mergeBends(
         continue;
       }
       const gap = Math.abs(pitchOf(current[i + 1]) - pitchOf(current[i]));
+      if (gap < minMove) {
+        continue;
+      }
       // The closest pair first, so a fragment joins the note it actually
       // belongs to rather than whichever it happened to sit left of.
       if (gap < nearestGap) {

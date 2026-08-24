@@ -34,6 +34,7 @@ import { cachedNotes } from '../../data/notesSync';
 import { notesRepo } from '../../data/notesRepo';
 import { useBarLayout } from './useBarLayout';
 import { useChordTrack } from './useChordTrack';
+import { useListening } from './useListening';
 import { useInterpretation } from './useInterpretation';
 import { useExportedMidi } from './useExportedMidi';
 import type { Chosen, Selection } from '../../components/graphSelection';
@@ -237,7 +238,9 @@ export function useNoteDetail(id: string) {
   // Said as what it is. "Lift for the speaker" was a listening choice that
   // only ever moved the chords by an octave, and every other line already
   // says that in octaves (INV-NOTES-039).
-  const [chordOctaves, setChordOctaves] = useState(1);
+  // How this note is being listened to, kept with the note (INV-NOTES-114).
+  const listening = useListening(note?.id ?? null);
+  const { chordOctaves, setChordOctaves } = listening;
   const floorMidi = HEADPHONE_FLOOR_MIDI + 12 * chordOctaves;
   // The chords are the downbeats, seen a second way: each one opens a chord
   // that runs to the next (INV-NOTES-048). Handing the arrangement in is what
@@ -351,6 +354,7 @@ export function useNoteDetail(id: string) {
     chordPitchesShown,
     floorMidi,
     chordOctaves,
+    listening,
     setChordOctaves,
     resolveAudio,
     midiUri,

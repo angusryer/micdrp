@@ -72,6 +72,19 @@ export interface SegmentOptions {
    * splitting here safe (INV-PITCH-023).
    */
   articulationDropDb?: number;
+  /**
+   * How far the level must climb, within `onsetWindowMs`, for a new note to
+   * have been pushed on the breath (default 8dB).
+   *
+   * A breathy re-attack — "ha ha ha" — never goes silent and never changes
+   * pitch, so neither of the other two rules sees it. What marks it is the
+   * speed of the climb: a re-attack rises fast, a crescendo covers the same
+   * ground slowly, and the difference between them is entirely how long it
+   * took (INV-PITCH-024).
+   */
+  aspirationRiseDb?: number;
+  /** How recent the dip must be for the climb to count (default 70ms). */
+  onsetWindowMs?: number;
 }
 
 /**
@@ -81,6 +94,34 @@ export interface SegmentOptions {
  * taken over a whole oscillation rather than part of one.
  */
 const ANCHOR_MS = 200;
+
+/**
+ * When this frame is the top of a fast climb, the moment the climb began.
+ *
+ * Null when there is no dip behind it, when the climb is too small, or when
+ * nothing measured the level. The window is what separates a re-attack from a
+ * crescendo: both may cover fifteen dB, and only one does it in a breath.
+ */
+function risenFrom(
+  recent: readonly { atMs: number; db: number }[],
+  frame: PitchFrame,
+  windowMs: number,
+  riseDb: number
+): number | null {
+  if (frame.levelDb == null || recent.length < 2) {
+    return null;
+  }
+  let lowest = recent[0];
+  for (const seen of recent) {
+    if (seen.db < lowest.db) {
+      lowest = seen;
+    }
+  }
+  if (frame.timestampMs - lowest.atMs > windowMs) {
+    return null;
+  }
+  return frame.levelDb - lowest.db >= riseDb ? lowest.atMs : null;
+}
 
 const mean = (values: readonly number[]): number =>
   values.reduce((a, b) => a + b, 0) / values.length;
@@ -103,6 +144,8 @@ export function segmentNotes(
   const vibrato = options.vibratoSemitones ?? 0.6;
   const hold = options.pitchHoldMs ?? 90;
   const articulationDrop = options.articulationDropDb ?? 12;
+  const aspirationRise = options.aspirationRiseDb ?? 8;
+  const onsetWindow = options.onsetWindowMs ?? 70;
 
   const notes: NoteEvent[] = [];
 
@@ -113,6 +156,9 @@ export function segmentNotes(
   let centre: number | null = null;
   let startMs = 0;
   let lastVoicedMs = 0;
+
+  /** The last little while of levels, for spotting a climb out of a dip. */
+  let recent: { atMs: number; db: number }[] = [];
 
   /** A departure that has not yet lasted long enough to be a new note. */
   let awayFrom: number | null = null;
@@ -166,6 +212,7 @@ export function segmentNotes(
     pitches = [pitch];
     clarities = [frame.clarity];
     levels = frame.levelDb != null ? [frame.levelDb] : [];
+    recent = frame.levelDb != null ? [{ atMs, db: frame.levelDb }] : [];
     awayFrom = null;
     anchored = false;
   }
@@ -201,10 +248,23 @@ export function segmentNotes(
     const window = anchored ? vibrato : vibrato * 2;
     if (Math.abs(pitch - centre) <= window) {
       // Still this note, wobble and all.
+      // A climb out of a recent dip, at one pitch and with no silence
+      // between: the note was pushed again on the breath (INV-PITCH-024).
+      const trough = risenFrom(recent, f, onsetWindow, aspirationRise);
+      if (trough != null && trough - startMs >= minDuration) {
+        lastVoicedMs = trough;
+        close();
+        begin(f, pitch, trough);
+        lastVoicedMs = f.timestampMs;
+        continue;
+      }
+
       pitches.push(pitch);
       clarities.push(f.clarity);
       if (f.levelDb != null) {
         levels.push(f.levelDb);
+        recent.push({ atMs: f.timestampMs, db: f.levelDb });
+        recent = recent.filter((r) => f.timestampMs - r.atMs <= onsetWindow);
       }
       lastVoicedMs = f.timestampMs;
       // The centre follows while the note is still arriving — singers slide

@@ -26,7 +26,7 @@ import {
 import type { CreateNoteInput } from 'shared';
 
 import type { RecordingHandle } from '../audio/contract';
-import { segmentOptions } from './vibratoSetting';
+import { segmentOptions } from './segmentSettings';
 
 /** detectKey confidence below which the key is too weak to assert. */
 const MIN_KEY_CONFIDENCE = 0.04;

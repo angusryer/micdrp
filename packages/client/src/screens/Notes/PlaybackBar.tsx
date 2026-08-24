@@ -13,23 +13,21 @@
  * play button is its player, so a bar there would be a second control for the
  * same take (INV-NOTES-015).
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '../../components/Icon';
 import { PlaybackSheet } from './PlaybackSheet';
 import { useTheme } from '../../theme';
+import { useListening, type UseListening } from './useListening';
 import { PlaybackButton } from './PlaybackButton';
 import { GlyphGuideSheet } from './GlyphGuideSheet';
 import { TrackCard } from './TrackCard';
 import { PlaybackOptionsButton } from './PlaybackOptionsButton';
 import {
-  DEFAULT_LEVELS,
-  DEFAULT_MIX,
   isTrackLocked,
   withOnlyAvailable,
   type PlaybackMix,
-  type TrackLevels,
   type TrackName
 } from './playbackTracks';
 
@@ -51,6 +49,11 @@ export interface PlaybackBarProps {
    * embeds is fresh. Returning null means the audio could not be resolved.
    */
   resolveAudioUri: () => Promise<string | null>;
+  /**
+   * How this note is being listened to, and how to change it. Given, the
+   * balance is kept with the note; absent, it lasts as long as the bar does.
+   */
+  listening?: UseListening;
   /** Optional override duration label (e.g. "1:23"). */
   durationLabel?: string;
   /**
@@ -101,23 +104,17 @@ export function PlaybackBar({
   count,
   trackOptions,
   onDetails,
-  onTransport
+  onTransport,
+  listening
 }: PlaybackBarProps) {
   const { colors } = useTheme();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [explaining, setExplaining] = useState<TrackName | null>(null);
-  const [mix, setMix] = useState<PlaybackMix>(DEFAULT_MIX);
-  const [levels, setLevels] = useState<TrackLevels>(DEFAULT_LEVELS);
-  const setLevel = useCallback(
-    (track: TrackName, level: number) =>
-      setLevels((current) => ({ ...current, [track]: level })),
-    []
-  );
-  const setAudible = useCallback(
-    (track: TrackName, isAudible: boolean) =>
-      setMix((current) => ({ ...current, [track]: isAudible })),
-    []
-  );
+  // Held by the note rather than by this bar, so a balance survives leaving
+  // the screen (INV-NOTES-114). Falls back to its own state where no note
+  // owns it — the dogfood player has no note to keep it with.
+  const own = useListening(null);
+  const { mix, levels, setLevel, setAudible } = listening ?? own;
   // Only offer a track this note has. With neither chords nor a melody there
   // is nothing to turn, so the take is all there is and no toggles are shown.
   const offered = useMemo<TrackName[]>(() => {

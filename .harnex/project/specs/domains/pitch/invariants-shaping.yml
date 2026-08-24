@@ -220,3 +220,29 @@ invariants:
       times a second, but it has no trouble making a short sound and stopping.
 
       Takes with no measured level keep exactly the reading they had.
+
+  - id: INV-PITCH-024
+    description: A note pushed again on the breath is a new note
+    severity: major
+    check: >
+      Where the level climbs sharply out of a recent dip at one pitch, with no
+      silence between, a new note begins at the dip. The climb must happen
+      inside a short window: the same rise spread over a long one is a
+      crescendo and splits nothing. Two segments at the very same pitch are
+      never joined as a bend. Verified by asserting four breathed attacks read
+      as four notes at their own onsets, that a slow swell over the same range
+      stays one note, and that takes with no measured level are unchanged.
+
+      "ha ha ha" has no stop consonant. The level never collapses, so the rule
+      for tongued notes (INV-PITCH-023) does not see it, and the pitch never
+      moves, so the segmenter does not either. What marks each attack is how
+      fast the level climbs, and speed is the only thing separating it from a
+      singer swelling into a held note — both may cover fifteen dB, and only
+      one does it in a breath.
+
+      The bend merger had to learn the same distinction. It joined any two
+      notes within a semitone, and two pieces at the identical pitch are
+      within a semitone of each other trivially — so every breath-split note
+      was reassembled immediately. A bend is a change of pitch; where there is
+      no movement there is nothing being bent, and the only reason the
+      segmenter split there was articulation.

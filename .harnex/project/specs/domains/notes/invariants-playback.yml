@@ -186,3 +186,28 @@ invariants:
       from the top while the take resumes in the middle is not merely out
       of step, it is a different chord under every note — which reads as
       the harmony being wrong rather than the transport.
+
+  - id: INV-NOTES-114
+    description: A note remembers how it was being listened to
+    severity: major
+    check: >
+      Which tracks are audible, how loud each sits, and the register the
+      chords play in are kept with the note and read back on returning to it.
+      Each note keeps its own; a setting absent from what was kept falls back
+      to that setting's default rather than to nothing. A screen with no note
+      still works and simply forgets. Verified by asserting a balance survives
+      the screen unmounting, that a second note does not inherit the first
+      one's, and that a partial record is filled in from the defaults.
+
+      They were component state, so they lasted exactly as long as the screen
+      did. The balance is often the point — a bass layer sitting under a take
+      at the right level is something arrived at over several passes, not
+      something set once — and losing it on every visit made the controls feel
+      like a demonstration rather than a mixer.
+
+      Kept apart from the interpretation, which is what somebody made of a
+      take: the notes they corrected, the bars they arranged. That can be
+      frozen, named and kept beside other readings. How loud you like the
+      chords is not a reading of the music, and freezing it into one would be
+      a category error — so this is a local listening preference and stays
+      local, syncing nowhere.

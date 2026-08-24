@@ -100,6 +100,7 @@ export function NoteLandscape({
             resolveAudioUri={detail.resolveAudio}
             accompaniment={detail.backdrop}
             voice={detail.melodyVoiceMix}
+            listening={detail.listening}
           />
           </View>
         ) : null}

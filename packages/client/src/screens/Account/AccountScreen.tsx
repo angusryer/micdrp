@@ -39,11 +39,12 @@ import { useProfile } from './useProfile';
 import { useSettings } from './useSettings';
 import { useAnalysisSettings } from './useAnalysisSettings';
 import {
-  MAX_VIBRATO_SEMITONES,
-  MIN_VIBRATO_SEMITONES,
-  setVibratoSemitones,
-  vibratoSemitones
-} from '../../analysis/vibratoSetting';
+  SEGMENT_KNOBS,
+  resetSegmentValues,
+  segmentOptions,
+  setSegmentValue,
+  type SegmentKnob
+} from '../../analysis/segmentSettings';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Account'>;
 
@@ -185,9 +186,13 @@ function clamp(value: number, min: number, max: number): number {
 
 export default function AccountScreen(props: Props): React.JSX.Element {
   const { colors, palette, setPalette } = useTheme();
-  // How wide a wobble still counts as one note. Held here so the stepper
-  // redraws; the value itself lives with the analysis that uses it.
-  const [vibrato, setVibrato] = useState(vibratoSemitones);
+  // What decides a note out of the pitch reading. Held here so the steppers
+  // redraw; the values themselves live with the analysis that uses them.
+  const [segment, setSegment] = useState(segmentOptions);
+  const stepSegment = (knob: SegmentKnob, direction: 1 | -1) => () => {
+    setSegmentValue(knob, (segment[knob.key] ?? knob.fallback) + knob.step * direction);
+    setSegment(segmentOptions());
+  };
   const { t } = useTranslation();
 
   // What this install actually is. Read here rather than shown from
@@ -476,21 +481,35 @@ export default function AccountScreen(props: Props): React.JSX.Element {
               />
             );
           })}
-          {/* Not an engine setting: the engine reports pitch, and this is
-              how that reading is read. Voices differ more than any one
-              default covers (INV-PITCH-015). */}
-          <StepperRow
-            label={t('settings.engine.vibratoWidth')}
-            value={vibrato}
-            display={`±${Math.round(vibrato * 100)} cents`}
-            atMin={vibrato <= MIN_VIBRATO_SEMITONES}
-            atMax={vibrato >= MAX_VIBRATO_SEMITONES}
-            onDecrease={() => setVibrato(setVibratoSemitones(vibrato - 0.05))}
-            onIncrease={() => setVibrato(setVibratoSemitones(vibrato + 0.05))}
-          />
+          {/* Not engine settings: the engine reports pitch, and these decide
+              how that reading is read into notes. Rendered from the same
+              table the analysis reads, so a knob cannot exist in one and not
+              the other (INV-ACCOUNT-014). */}
+          {SEGMENT_KNOBS.map((knob) => {
+            const value = segment[knob.key] ?? knob.fallback;
+            return (
+              <StepperRow
+                key={knob.key}
+                label={t(`settings.segment.${knob.key}`)}
+                hint={t(`settings.segment.${knob.key}Hint`)}
+                value={value}
+                display={`${value.toFixed(knob.decimals ?? 0)}${
+                  knob.unit ? ` ${knob.unit}` : ''
+                }`}
+                atMin={value <= knob.min}
+                atMax={value >= knob.max}
+                onDecrease={stepSegment(knob, -1)}
+                onIncrease={stepSegment(knob, 1)}
+              />
+            );
+          })}
           <View style={styles.resetRow}>
             <TouchableOpacity
-              onPress={resetEngineConfig}
+              onPress={() => {
+                resetSegmentValues();
+                setSegment(segmentOptions());
+                resetEngineConfig();
+              }}
               accessibilityRole="button"
               accessibilityLabel={t('settings.engine.resetAccessibility')}
             >

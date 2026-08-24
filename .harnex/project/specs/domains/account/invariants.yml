@@ -120,3 +120,28 @@ invariants:
       sounds". A situation lets a person recognise their own case; a
       direction only tells them which way the number goes, which the
       stepper already shows.
+
+  - id: INV-ACCOUNT-014
+    description: Every knob is drawn from the table the analysis reads
+    severity: major
+    check: >
+      The settings that decide what counts as a note live in one table. The
+      analysis reads it to know what to use and the settings screen reads it
+      to know what to draw, so a knob cannot exist in one and not the other.
+      Every entry has a name and a description of the situation it is noticed
+      in, and a default with room to move in both directions. Verified by
+      asserting each entry in the table has both strings, that the description
+      names a situation rather than a direction, and — by adding an entry
+      without one — that the check fails.
+
+      Two lists would drift the moment one was edited, and the failure is
+      quiet in both directions: a knob the analysis reads but the screen never
+      shows is unreachable, and a knob the screen shows but nothing reads is
+      a control that does nothing. Deriving the screen from the analysis's own
+      list makes both impossible (Axiom 2).
+
+      The description is not decoration. These are detector internals with
+      names like "gap tolerance", and the knob that lets a quiet whistle be
+      heard sat on this screen unfound for months because nothing connected it
+      to the room the singing was happening in (INV-ACCOUNT-013). A knob that
+      cannot ship without one is the only version of that rule that holds.

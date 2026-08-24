@@ -22,7 +22,7 @@ import {
 import type { NoteLayerDto, LayerRole } from 'shared';
 
 import type { RecordingHandle } from '../audio/contract';
-import { segmentOptions } from './vibratoSetting';
+import { segmentOptions } from './segmentSettings';
 
 export interface LayerCapture {
   /** The layer, ready to store beside the take it was sung over. */

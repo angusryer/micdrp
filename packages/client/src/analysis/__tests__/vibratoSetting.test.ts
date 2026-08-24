@@ -12,6 +12,7 @@ import {
   setVibratoSemitones,
   vibratoSemitones
 } from '../vibratoSetting';
+import { SEGMENT_KNOBS } from '../segmentSettings';
 
 import { remove } from '../../data/store';
 
@@ -39,6 +40,15 @@ describe('vibratoSemitones', () => {
 
   it('hands every caller the same width, so they agree what a note is', () => {
     setVibratoSemitones(0.4);
-    expect(segmentOptions()).toEqual({ vibratoSemitones: 0.4 });
+    expect(segmentOptions().vibratoSemitones).toBe(0.4);
+  });
+
+  it('hands them every other knob too, for the same reason', () => {
+    // There are three places that segment notes. They have to agree about
+    // what a note is, and that is now more than one number.
+    const options = segmentOptions();
+    for (const knob of SEGMENT_KNOBS) {
+      expect(typeof options[knob.key]).toBe('number');
+    }
   });
 });

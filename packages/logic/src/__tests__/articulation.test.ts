@@ -130,3 +130,71 @@ describe('what must not be split', () => {
     expect(read(swelling)).toHaveLength(1);
   });
 });
+
+/**
+ * A breathy re-attack: "ha ha ha". There is no stop consonant, so the level
+ * never collapses to silence and the frames stay voiced throughout. What
+ * marks each new note is the rise — a dip and a fast climb back, inside one
+ * held pitch (INV-PITCH-024).
+ */
+function aspirated(options: {
+  midi: number;
+  slotMs: number;
+  count: number;
+  peakDb?: number;
+  troughDb?: number;
+}): PitchFrame[] {
+  const { midi, slotMs, count, peakDb = -10, troughDb = -24 } = options;
+  const frames: PitchFrame[] = [];
+  for (let i = 0; i < count; i++) {
+    for (let t = 0; t < slotMs; t += HOP) {
+      // Quiet at the very start of each breath, then up and held.
+      const inBreath = t < 40;
+      frames.push({
+        timestampMs: i * slotMs + t,
+        midi,
+        cents: 0,
+        clarity: 1,
+        levelDb: inBreath ? troughDb : peakDb
+      });
+    }
+  }
+  return frames;
+}
+
+describe('notes re-attacked on the breath', () => {
+  const HA_HA_HA = aspirated({ midi: 62, slotMs: 300, count: 4 });
+
+  it('reads four notes, not one held one', () => {
+    // Nothing goes silent and nothing changes pitch. The only evidence that
+    // these are separate notes is how sharply the level climbs.
+    expect(read(HA_HA_HA)).toHaveLength(4);
+  });
+
+  it('starts each one where the breath pushed', () => {
+    read(HA_HA_HA).forEach((note, i) => {
+      expect(note.startMs).toBeCloseTo(i * 300, -2);
+    });
+  });
+
+  it('does not split a note that merely swells into itself', () => {
+    // A crescendo covers the same distance over a much longer stretch. The
+    // difference between a re-attack and a swell is entirely how fast.
+    const swell: PitchFrame[] = [];
+    for (let t = 0; t < 1600; t += HOP) {
+      swell.push({
+        timestampMs: t,
+        midi: 62,
+        cents: 0,
+        clarity: 1,
+        levelDb: -30 + (20 * t) / 1600
+      });
+    }
+    expect(read(swell)).toHaveLength(1);
+  });
+
+  it('leaves takes with no measured level exactly as they were', () => {
+    const unmeasured = HA_HA_HA.map((f) => ({ ...f, levelDb: undefined }));
+    expect(read(unmeasured)).toHaveLength(1);
+  });
+});

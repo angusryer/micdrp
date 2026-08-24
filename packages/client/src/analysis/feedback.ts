@@ -40,7 +40,7 @@ import {
 import { type FeedbackDto, type NoteFeedback } from 'shared';
 
 import type { RecordingHandle } from '../audio/contract';
-import { segmentOptions } from './vibratoSetting';
+import { segmentOptions } from './segmentSettings';
 
 /** Score above which intonation is praised rather than flagged. */
 const STRONG_SCORE = 85;

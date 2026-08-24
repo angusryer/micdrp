@@ -227,7 +227,8 @@
     "sections": {
       "engine": "Engine",
       "appearance": "Appearance",
-      "about": "About"
+      "about": "About",
+      "segment": "What counts as a note"
     },
     "analysis": {
       "windowMs": "Window",
@@ -282,6 +283,22 @@
       "feedbackQueue": "Feedback",
       "feedbackError": "Last upload",
       "feedbackRecording": "Last recording"
+    },
+    "segment": {
+      "vibratoSemitones": "Wobble width",
+      "vibratoSemitonesHint": "Singing with a wide vibrato, where one held note comes back as several different ones.",
+      "pitchHoldMs": "Passing tones",
+      "pitchHoldMsHint": "Sliding between notes, where the pitches you pass through on the way turn up as notes of their own.",
+      "maxGapMs": "Gap tolerance",
+      "maxGapMsHint": "A long held note breaking into pieces, where the detector loses your pitch for a moment mid-note.",
+      "articulationDropDb": "Tongued notes",
+      "articulationDropDbHint": "Fast repeated notes on one pitch — \"da da da da\" — coming back as one long note instead of several short ones.",
+      "aspirationRiseDb": "Breathed notes",
+      "aspirationRiseDbHint": "Repeated notes pushed on the breath — \"ha ha ha\" — where nothing goes silent between them and they read as one note.",
+      "onsetWindowMs": "Attack speed",
+      "onsetWindowMsHint": "A note that swells as you sing it being split in two, or a soft re-attack not being noticed at all.",
+      "minDurationMs": "Shortest note",
+      "minDurationMsHint": "Very fast runs, where the quickest notes go missing — or clicks and breaths turning up as notes."
     }
   },
   "updates": {
