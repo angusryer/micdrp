@@ -10,7 +10,11 @@
  * rule. Drawn any other way the picture says the wrong thing about which
  * lines can be touched, which is exactly what it used to say.
  */
-import { DOWNBEAT_OPACITY, metreLineStyle } from '../metreLines';
+import {
+  BOUNDARY_OPACITY,
+  DOWNBEAT_OPACITY,
+  metreLineStyle
+} from '../metreLines';
 
 describe('the drawn metre', () => {
   it('reads a downbeat more plainly than the pulse under it', () => {
@@ -23,6 +27,16 @@ describe('the drawn metre', () => {
     for (const isBar of [true, false]) {
       expect(metreLineStyle(isBar).opacity).toBeLessThan(DOWNBEAT_OPACITY);
     }
+  });
+
+  it('stays under the line marking where the singing starts', () => {
+    // That one is content — a boundary in the recording rather than a beat in
+    // the music (INV-NOTES-080) — so it reads above the rulings. It used to
+    // sit at exactly a bar rule's strength.
+    for (const isBar of [true, false]) {
+      expect(metreLineStyle(isBar).opacity).toBeLessThan(BOUNDARY_OPACITY);
+    }
+    expect(BOUNDARY_OPACITY).toBeLessThan(DOWNBEAT_OPACITY);
   });
 
   it('is dotted rather than solid, so it reads as a ruling', () => {

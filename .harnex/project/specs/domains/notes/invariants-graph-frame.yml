@@ -44,13 +44,21 @@ invariants:
     description: Each kind of vertical line is drawn at its own weight
     severity: major
     check: >
-      Three things are drawn down the graph, in this order of strength: the
-      solid line marking the downbeat currently in hand, the dotted rule
-      marking every downbeat, and the fainter dotted rule marking the pulse
-      between them. The two rules are dotted, with more gap in the pulse than
-      in the downbeats. Verified by asserting a bar's rule reads more strongly
-      than a beat's, that both stay under the line in hand, that both are
-      dotted, and that the bar's rule is the more continuous of the two.
+      Four things are drawn down the graph, in this order of strength: the
+      solid line marking the downbeat currently in hand, the solid line where
+      the singing starts, the dotted rule marking every downbeat, and the
+      fainter dotted rule marking the pulse between them. Only the two rules
+      are dotted, with more gap in the pulse than in the downbeats. Verified
+      by asserting the order holds between all four, that both rules are
+      dotted, that the bar's rule is the more continuous of the two, and — on
+      the canvas itself — that every rule drawn carries a dash and the
+      boundary does not.
+
+      The two solid ones are content: one is a thing you are holding, the
+      other is a fact about the recording (INV-NOTES-080). The two dotted ones
+      are rulings the app laid down to measure by. The boundary line used to
+      sit at exactly a bar rule's strength, so a thing being reported looked
+      like a thing being measured with.
 
       The order is what says which lines can be touched. A downbeat can be
       picked up and moved (INV-NOTES-045); the pulse between them cannot.

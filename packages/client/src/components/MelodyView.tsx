@@ -23,8 +23,8 @@ import {
   vec
 } from '@shopify/react-native-skia';
 
-import { metreLineStyle } from './metreLines';
-import { hatchSegments } from './pickupHatch';
+import { BAR_RULE, BEAT_RULE, BOUNDARY_OPACITY } from './metreLines';
+import { writePickupHatch } from './pickupHatch';
 import { useTheme } from '../theme';
 import {
   layoutMelody,
@@ -118,12 +118,7 @@ export function MelodyView({
       return null;
     }
     const right = xForMs(layout.timeAxis, layout.firstNoteMs);
-    const path = Skia.Path.Make();
-    for (const line of hatchSegments(0, right, height)) {
-      path.moveTo(line.x1, line.y1);
-      path.lineTo(line.x2, line.y2);
-    }
-    return path;
+    return writePickupHatch(Skia.Path.Make(), 0, right, height);
   }, [layout.timeAxis, layout.firstNoteMs, height]);
 
   const radius = Math.min(4, height / 16);
@@ -153,21 +148,24 @@ export function MelodyView({
             p2={vec(g.x, height)}
             strokeWidth={g.isBar ? 1 : StyleSheet.hairlineWidth}
             color={g.isBar ? colors.neutral500 : colors.neutral100}
-            opacity={metreLineStyle(g.isBar).opacity}
+            opacity={(g.isBar ? BAR_RULE : BEAT_RULE).opacity}
           >
-            <DashPathEffect intervals={[...metreLineStyle(g.isBar).intervals]} />
+            <DashPathEffect
+              intervals={(g.isBar ? BAR_RULE : BEAT_RULE).intervals}
+            />
           </Line>
         ))}
-        {/* Where the singing starts, with the pickup before it. Fainter and
-            its own colour: it marks a boundary in the recording rather than
-            a beat in the music (INV-NOTES-080). */}
+        {/* Where the singing starts, with the pickup before it. Its own
+            colour and solid: it marks a boundary in the recording rather than
+            a beat in the music (INV-NOTES-080), so it is content and reads
+            above the rulings rather than among them (INV-NOTES-102). */}
         {layout.timeAxis.t0 < layout.firstNoteMs ? (
           <Line
             p1={vec(xForMs(layout.timeAxis, layout.firstNoteMs), 0)}
             p2={vec(xForMs(layout.timeAxis, layout.firstNoteMs), height)}
             strokeWidth={1}
             color={colors.gray300}
-            opacity={0.5}
+            opacity={BOUNDARY_OPACITY}
           />
         ) : null}
         {/* Behind the sung line: it is context for it, not a rival to it. */}

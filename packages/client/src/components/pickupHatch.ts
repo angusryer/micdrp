@@ -8,20 +8,15 @@
  * but nothing was sung, so there are no notes to be missing and nothing to
  * correct (INV-NOTES-107).
  *
- * Segments rather than a drawing, so the geometry can be checked without a
- * canvas — the thing that goes wrong with a hatch is a line escaping its
- * region, and that is arithmetic.
+ * Written straight into the path. A long pickup at a close zoom is a couple
+ * of hundred diagonals, and handing back an array of segments for something
+ * else to loop over would allocate that many objects on every layout change
+ * to draw the faintest thing on the screen.
  */
+import type { SkPath } from '@shopify/react-native-skia';
 
 /** How far apart the lines run. Wide enough that the region reads as texture. */
 export const HATCH_SPACING = 12;
-
-export interface HatchSegment {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-}
 
 /**
  * Diagonals at both slopes across a box, each clipped to it.
@@ -30,30 +25,32 @@ export interface HatchSegment {
  * the pattern stays still while the box changes size around it — a hatch that
  * slid as the graph zoomed would read as motion rather than as ground.
  */
-export function hatchSegments(
+export function writePickupHatch(
+  path: SkPath,
   left: number,
   right: number,
   height: number,
   spacing: number = HATCH_SPACING
-): HatchSegment[] {
+): SkPath {
   if (!(right > left) || !(height > 0) || !(spacing > 0)) {
-    return [];
+    return path;
   }
-  const segments: HatchSegment[] = [];
   const start = Math.floor((left - height) / spacing) * spacing;
   for (let c = start; c < right + height; c += spacing) {
     // Down to the right: y = x - c.
     const inA = Math.max(left, c);
     const outA = Math.min(right, c + height);
     if (outA > inA) {
-      segments.push({ x1: inA, y1: inA - c, x2: outA, y2: outA - c });
+      path.moveTo(inA, inA - c);
+      path.lineTo(outA, outA - c);
     }
     // Down to the left: y = c - x.
     const inB = Math.max(left, c - height);
     const outB = Math.min(right, c);
     if (outB > inB) {
-      segments.push({ x1: inB, y1: c - inB, x2: outB, y2: c - outB });
+      path.moveTo(inB, c - inB);
+      path.lineTo(outB, c - outB);
     }
   }
-  return segments;
+  return path;
 }

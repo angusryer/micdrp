@@ -106,32 +106,65 @@ jest.mock('@lodev09/react-native-true-sheet', () => {
   return { TrueSheet };
 }, { virtual: true });
 
-// @shopify/react-native-skia: render children, stub drawing primitives.
+// @shopify/react-native-skia: a recorder, not a stub.
+//
+// Canvas work is about to get heavier, and the wrong way to make it testable
+// is to have the runtime hand out intermediate arrays that only a test reads.
+// So the seam lives here instead: every drawing primitive renders as a host
+// node carrying its own props, and an SkPath records the commands written into
+// it. A test can then assert on what was actually drawn, and the runtime is
+// free to be written the fast way — straight into the path, no allocation.
+//
+// `skiaDrawn(tree, 'Line')` and `path.commands` in a test read this back.
 jest.mock('@shopify/react-native-skia', () => {
   const React = require('react');
-  const passthrough = ({ children }) => React.createElement(React.Fragment, null, children);
-  const noop = () => null;
+  const passthrough = ({ children }) =>
+    React.createElement(React.Fragment, null, children);
+  // A host element named for the primitive, carrying its props, so the drawing
+  // shows up in the rendered tree exactly as it was asked for.
+  const drawn = (name) => {
+    const Drawn = (props) =>
+      React.createElement('skia-' + name, props, props.children ?? null);
+    Drawn.displayName = 'Skia.' + name;
+    return Drawn;
+  };
+  /** An SkPath that remembers what was written into it. */
+  const makePath = () => {
+    const commands = [];
+    const path = {
+      commands,
+      moveTo(x, y) {
+        commands.push(['moveTo', x, y]);
+        return path;
+      },
+      lineTo(x, y) {
+        commands.push(['lineTo', x, y]);
+        return path;
+      },
+      close() {
+        commands.push(['close']);
+        return path;
+      },
+      reset() {
+        commands.length = 0;
+        return path;
+      }
+    };
+    return path;
+  };
   return {
     Canvas: passthrough,
     Group: passthrough,
-    Path: noop,
-    Line: noop,
-    Circle: noop,
-    Rect: noop,
-    RoundedRect: noop,
-    BlurMask: noop,
-    DashPathEffect: noop,
-    Text: noop,
+    Path: drawn('Path'),
+    Line: drawn('Line'),
+    Circle: drawn('Circle'),
+    Rect: drawn('Rect'),
+    RoundedRect: drawn('RoundedRect'),
+    BlurMask: drawn('BlurMask'),
+    DashPathEffect: drawn('DashPathEffect'),
+    Text: drawn('Text'),
     Skia: {
-      Path: {
-        Make: () => ({ moveTo() {}, lineTo() {}, reset() {}, close() {} }),
-        MakeFromSVGString: () => ({
-          moveTo() {},
-          lineTo() {},
-          reset() {},
-          close() {}
-        })
-      }
+      Path: { Make: makePath, MakeFromSVGString: makePath }
     },
     useFont: () => null,
     vec: (x, y) => ({ x, y })
