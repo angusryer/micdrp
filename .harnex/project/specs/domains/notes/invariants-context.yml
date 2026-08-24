@@ -168,3 +168,33 @@ invariants:
       Only during an overdub. Nothing else here plays and records at once,
       and a sensor that dimmed the screen and moved the audio during
       ordinary listening would be a phone call nobody made.
+
+  - id: INV-NOTES-115
+    description: A take is read according to what it was recorded as
+    severity: major
+    check: >
+      A recording carries a role. A mixed take is read for both notes and
+      hits; one recorded as a melody or a bass line is read for notes and no
+      hits are looked for; one recorded as drums is read for hits and no notes
+      are looked for. A declared drum track accepts quieter and longer hits
+      than a mixed take will. Every role that reads notes reads the same notes.
+      Verified by asserting each role returns only what its role has, that a
+      soft long hit is found in a declared drum track and refused in a mixed
+      one, and that the notes are identical across roles.
+
+      The first take of an idea is somebody switching between humming and
+      drumming without announcing it, so it has to be read both ways and
+      guessed at — and that guess will need tuning for as long as the app
+      exists. A track recorded deliberately is not a guess, and knowing which
+      is worth more than any amount of cleverness on ambiguous input: told
+      that a track is drums, the reader stops asking whether each sound might
+      have been a note, and every borderline case resolves the right way
+      rather than being argued about.
+
+      So the role is not a label on a recording. It is the instruction for how
+      to read it, and the mixed reading is best-effort precisely because it is
+      the only one nobody declared.
+
+      What a note is does not change with the role. Two roles disagreeing
+      about the same singing would be two segmenters wearing one name, which
+      is the failure INV-PITCH-021 exists to prevent.

@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "level.h"
+#include "timbre.h"
 #include "mpm.h"
 #include "ring_buffer.h"
 
@@ -38,6 +39,7 @@ struct PitchSample {
   double frequencyHz = 0.0;   // 0 when unvoiced
   double clarity = 0.0;       // 0..1 NSDF peak
   double levelDb = kSilenceDb;  // window RMS in dBFS, floored at kSilenceDb
+  double brightnessHz = kNoBrightness;  // zero-crossing rate as a frequency
   int midi = 0;               // nearest MIDI note (valid iff voiced)
   int cents = 0;              // -50..50 deviation (valid iff voiced)
   bool voiced = false;        // false -> midi/cents are null on the wire

@@ -16,6 +16,12 @@ export interface PitchFrame {
    * one — an older binary running a newer bundle.
    */
   levelDb?: number;
+  /**
+   * Where the frame's energy sat, as a frequency. For a note it lands near
+   * the fundamental; for noise it is what tells a thump from a hiss
+   * (INV-PITCH-025). Absent for the same reason as `levelDb`.
+   */
+  brightnessHz?: number;
 }
 
 export interface NoteEvent {

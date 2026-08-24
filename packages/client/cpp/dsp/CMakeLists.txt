@@ -20,6 +20,7 @@
 #   ./build/dsp_mailbox_test     # prints "MAILBOX OK", exit 0
 #   ./build/dsp_commands_test    # prints "COMMANDS OK", exit 0
 #   ./build/dsp_level_test       # prints "LEVEL OK", exit 0
+#   ./build/dsp_timbre_test      # prints "TIMBRE OK", exit 0
 
 cmake_minimum_required(VERSION 3.16)
 project(micdrp_dsp_core LANGUAGES CXX)
@@ -68,6 +69,11 @@ target_link_libraries(dsp_mailbox_test PRIVATE Threads::Threads)
 add_executable(dsp_level_test __tests__/level_test.cpp)
 target_link_libraries(dsp_level_test PRIVATE micdrp_dsp)
 
+# Host test for how bright a window is — the one reading that separates a
+# thumped sound from a hissed one, since neither has a pitch to report.
+add_executable(dsp_timbre_test __tests__/timbre_test.cpp)
+target_link_libraries(dsp_timbre_test PRIVATE micdrp_dsp)
+
 # Host test for the ms/bus translation the platform layer speaks.
 add_executable(dsp_commands_test __tests__/synth_commands_test.cpp)
 target_link_libraries(dsp_commands_test PRIVATE micdrp_dsp)
@@ -78,3 +84,4 @@ add_test(NAME dsp_synth COMMAND dsp_synth_test)
 add_test(NAME dsp_mailbox COMMAND dsp_mailbox_test)
 add_test(NAME dsp_commands COMMAND dsp_commands_test)
 add_test(NAME dsp_level COMMAND dsp_level_test)
+add_test(NAME dsp_timbre COMMAND dsp_timbre_test)

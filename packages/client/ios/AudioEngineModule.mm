@@ -332,6 +332,7 @@ static double NowMs() {
     @"frequencyHz": @(s.frequencyHz),
     @"clarity": @(s.clarity),
     @"levelDb": @(s.levelDb),
+    @"brightnessHz": @(s.brightnessHz),
     @"midi": (s.voiced ? @(s.midi) : (id)[NSNull null]),
     @"cents": (s.voiced ? @(s.cents) : (id)[NSNull null]),
   };
@@ -459,6 +460,8 @@ static double NowMs() {
         @"frequencyHz": @(s.frequencyHz),
         @"clarity": @(s.clarity),
         @"levelDb": @(s.levelDb),
+        @"brightnessHz": @(s.brightnessHz),
+    @"brightnessHz": @(s.brightnessHz),
         @"midi": (s.voiced ? @(s.midi) : (id)[NSNull null]),
         @"cents": (s.voiced ? @(s.cents) : (id)[NSNull null]),
       }];

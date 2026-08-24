@@ -33,6 +33,12 @@ export interface PitchSample {
    * silent one (INV-PITCH-020).
    */
   levelDb?: number;
+  /**
+   * The zero-crossing rate as a frequency. For a pitched note it lands near
+   * the fundamental; for noise it says where the energy is, which is what
+   * tells a "puh" from a "tss" (INV-PITCH-025).
+   */
+  brightnessHz?: number;
   /** Nearest MIDI note number; null when unvoiced. */
   midi: number | null;
   /** Deviation from the nearest note in cents (-50..50); null when unvoiced. */

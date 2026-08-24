@@ -91,6 +91,11 @@ std::optional<PitchSample> PitchEngine::tryAnalyze() {
   // Measured over the same window the pitch came from, so a note's loudness
   // is the loudness of the frames that made it that note.
   sample.levelDb = windowLevelDb(window_.data(), frameSize);
+  // Where the energy sits, for sounds that have no pitch to report. A "puh"
+  // and a "tss" are both unvoiced and differ almost entirely in this
+  // (INV-PITCH-025).
+  sample.brightnessHz =
+      windowBrightnessHz(window_.data(), frameSize, cfg.sampleRateHz);
 
   // Voiced is three questions, asked separately because they have different
   // answers: did MPM find a peak it believes is the fundamental, was that peak

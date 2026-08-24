@@ -246,3 +246,38 @@ invariants:
       was reassembled immediately. A bend is a change of pitch; where there is
       no movement there is nothing being bent, and the only reason the
       segmenter split there was articulation.
+
+  - id: INV-PITCH-025
+    description: A struck sound is a hit, not a badly sung note
+    severity: major
+    check: >
+      Every analysed frame carries how bright it was, as the zero-crossing
+      rate expressed as a frequency, with zero meaning no rate worth stating
+      rather than a very low one. A loud, unpitched, brief stretch is read as
+      a hit carrying when it landed, how hard, how bright, and what kind of
+      sound that brightness makes it. Silence, singing, and unpitched
+      stretches too long to have been struck are not hits, and a take with no
+      measured level yields none at all. Verified by asserting three bursts of
+      different brightness read as thump, tap and hiss; that a sung note, a
+      silence, and a long sigh read as nothing; and that a hit with no
+      brightness reports its kind as unknown rather than as a thump.
+
+      A mouth drum is a different kind of event from a note, not a poor
+      example of one: it has no pitch to report and nothing for the harmony to
+      read. Every one was being discarded twice over — the voicing floor threw
+      it out for having no periodicity, and the brevity filter threw out
+      whatever survived for being too short.
+
+      Brightness is measured because nothing else separates one hit from
+      another. A "puh" and a "tss" are both unvoiced, both brief, and both
+      loud; where their energy sits is the only difference the engine can see.
+      It is the zero-crossing rate rather than a spectral centroid because the
+      engine works in the time domain and has no transform: an FFT per hop
+      would be a new transform, a new buffer and a new allocation on a path
+      deliberately free of all three, to answer a question one pass over
+      samples already in cache answers well enough.
+
+      Zero means unmeasured, and is left out of any average rather than
+      counted as dark. Counted, it would drag every hit towards "thump" — and
+      silence, whose every sample sits exactly on zero, would otherwise read
+      as the brightest thing in the take.
