@@ -48,6 +48,27 @@ export interface WorkletPitchEngine {
 }
 
 /**
+ * RMS of a window in dBFS, floored — the same reading and the same floor the
+ * native engine reports (cpp/dsp/level.h). Written here rather than shared
+ * because this tier runs on the audio worklet runtime, which cannot reach
+ * across the native boundary; the two are held together by INV-PITCH-020
+ * rather than by a common file.
+ */
+export const SILENCE_DB = -80;
+
+export function windowLevelDb(frame: Float32Array): number {
+  if (frame.length === 0) {
+    return SILENCE_DB;
+  }
+  let sum = 0;
+  for (let i = 0; i < frame.length; i++) {
+    sum += frame[i] * frame[i];
+  }
+  const rms = Math.sqrt(sum / frame.length);
+  return rms > 0 ? Math.max(SILENCE_DB, 20 * Math.log10(rms)) : SILENCE_DB;
+}
+
+/**
  * Analyse one mono frame with the shared `logic` detector and shape the result
  * into a contract `PitchSample`. Exported for direct unit testing and reuse by
  * the worklet body (which runs the very same code on the audio runtime).
@@ -63,9 +84,27 @@ export function analyzeFrame(
     minFrequency: config.minFrequencyHz,
     maxFrequency: config.maxFrequencyHz
   });
+  const levelDb = windowLevelDb(frame);
 
-  if (frequency == null || clarity < config.clarityThreshold) {
-    return { timestampMs, frequencyHz: 0, clarity, midi: null, cents: null };
+  // Three questions, asked separately: did the detector find a fundamental,
+  // was the peak tall enough in absolute terms to be a pitch rather than noise
+  // shaped like one, and was there any signal at all. clarityThreshold answers
+  // only the first, and using it for the second is what made quiet singing
+  // read as silence (INV-PITCH-021).
+  const voiced =
+    frequency != null &&
+    clarity >= config.voicedClarityMin &&
+    levelDb > config.voicedLevelDb;
+
+  if (!voiced) {
+    return {
+      timestampMs,
+      frequencyHz: 0,
+      clarity,
+      levelDb,
+      midi: null,
+      cents: null
+    };
   }
 
   const note = frequencyToNote(frequency);
@@ -73,6 +112,7 @@ export function analyzeFrame(
     timestampMs,
     frequencyHz: frequency,
     clarity,
+    levelDb,
     midi: note.midi,
     cents: note.cents
   };

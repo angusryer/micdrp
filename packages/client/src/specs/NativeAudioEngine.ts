@@ -43,7 +43,16 @@ export type EngineConfigInput = {
   hopSize?: Double;
   minFrequencyHz?: Double;
   maxFrequencyHz?: Double;
+  /**
+   * MPM's peak-picking parameter: which NSDF peak counts as the fundamental,
+   * as a fraction of the tallest. Decides WHICH pitch, never whether there is
+   * one (INV-PITCH-021).
+   */
   clarityThreshold?: Double;
+  /** How tall the chosen peak must be, absolutely, to be a pitch at all. */
+  voicedClarityMin?: Double;
+  /** How loud the window must be, in dBFS, to be anything at all. */
+  voicedLevelDb?: Double;
   emitRateHz?: Double;
 };
 

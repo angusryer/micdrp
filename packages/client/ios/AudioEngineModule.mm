@@ -27,19 +27,23 @@
 #import <React/RCTLog.h>
 
 #include <atomic>
+#include <chrono>
 #include <memory>
 #include <mutex>
+#include <thread>
 #include <vector>
 
 // Shared C++ DSP core (WP-DSP-CORE): the mechanical port of packages/logic's
 // MPM detector + note conversion (golden-parity tested against the TS oracle).
-// This bridge owns only the *streaming* shell (hop buffering + throttling); the
-// math lives in cpp/dsp so there is a single source of truth.
-#include "StreamingPitch.h"
+// The streaming shell lives there too. This bridge used to carry a second one
+// of its own (ios/StreamingPitch.h), which is how a field added to the shared
+// PitchSample never reached the app: the struct the app marshalled was the
+// other one (INV-PITCH-021).
+#include "pitch_engine.h"
 
-using micdrp::bridge::EngineConfig;
-using micdrp::bridge::PitchEngine;
-using micdrp::bridge::PitchSample;
+using micdrp::dsp::EngineConfig;
+using micdrp::dsp::PitchEngine;
+using micdrp::dsp::PitchSample;
 
 
 @implementation AudioEngineModule {
@@ -48,8 +52,14 @@ using micdrp::bridge::PitchSample;
   NSURL *_captureURL;
 
   std::shared_ptr<PitchEngine> _pitch;
-  std::mutex _pitchMutex;          // guards _pitch + _samples
+  std::mutex _pitchMutex;          // guards _samples (NOT the ring: that is lock-free)
   std::vector<PitchSample> _samples;
+
+  // Drains the engine off the audio thread. The audio callback only enqueues
+  // PCM, which is lock-free and allocation-free; the analysis runs here, so a
+  // slow window can never stall capture and put a gap in the recording.
+  std::thread _drain;
+  std::atomic<bool> _draining;
 
   EngineConfig _config;
   std::atomic<bool> _running;
@@ -106,11 +116,13 @@ static double NowMs() {
     std::lock_guard<std::mutex> lock(_pitchMutex);
     // Every field is optional; an absent one leaves the current value alone.
     if (auto v = config.sampleRateHz()) _config.sampleRateHz = *v;
-    if (auto v = config.frameSize()) _config.frameSize = (int)*v;
-    if (auto v = config.hopSize()) _config.hopSize = (int)*v;
+    if (auto v = config.frameSize()) _config.frameSize = (std::size_t)*v;
+    if (auto v = config.hopSize()) _config.hopSize = (std::size_t)*v;
     if (auto v = config.minFrequencyHz()) _config.minFrequencyHz = *v;
     if (auto v = config.maxFrequencyHz()) _config.maxFrequencyHz = *v;
     if (auto v = config.clarityThreshold()) _config.clarityThreshold = *v;
+    if (auto v = config.voicedClarityMin()) _config.voicedClarityMin = *v;
+    if (auto v = config.voicedLevelDb()) _config.voicedLevelDb = *v;
     if (auto v = config.emitRateHz()) _config.emitRateHz = *v;
     resolve(nil);
   } @catch (NSException *e) {
@@ -182,11 +194,13 @@ static double NowMs() {
   AVAudioInputNode *input = _engine.inputNode;
   AVAudioFormat *hwFormat = [input outputFormatForBus:0];
 
-  // Build the (re)usable C++ engine under lock.
+  // Build the (re)usable C++ engine. configure() sizes the ring buffer and is
+  // called here, off the audio thread, exactly as the engine requires.
   {
     std::lock_guard<std::mutex> lock(_pitchMutex);
     _config.sampleRateHz = hwFormat.sampleRate > 0 ? hwFormat.sampleRate : _config.sampleRateHz;
-    _pitch = std::make_shared<PitchEngine>(_config);
+    _pitch = std::make_shared<PitchEngine>();
+    _pitch->configure(_config);
     _samples.clear();
   }
 
@@ -226,12 +240,60 @@ static double NowMs() {
   }
 
   _running = true;
+  [self startDraining];
   [self emitState:@"recording"];
   resolve(nil);
 }
 
-// Real-time audio thread. No Objective-C allocation on the hot path beyond the
-// throttled event payload; PCM is handed straight to the C++ engine.
+// Runs the analysis off the audio thread.
+//
+// The audio callback only enqueues PCM into a lock-free ring; everything
+// expensive happens here. That is the whole reason for the shared engine: MPM
+// over a 2048-sample window on the audio thread is work the callback has no
+// deadline slack for, and a callback that runs late is a gap in the recording.
+- (void)startDraining {
+  _draining = true;
+  std::shared_ptr<PitchEngine> engine = _pitch;
+  __weak AudioEngineModule *weakSelf = self;
+  _drain = std::thread([weakSelf, engine]() {
+    while (true) {
+      AudioEngineModule *strongSelf = weakSelf;
+      if (!strongSelf || !strongSelf->_draining.load()) {
+        return;
+      }
+      [strongSelf drainOnce];
+      // A hop at 44.1kHz is ~23ms; waking at half that keeps the ring shallow
+      // without spinning.
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+  });
+}
+
+/** Take whatever windows are ready, and emit the newest at the throttled rate. */
+- (void)drainOnce {
+  std::shared_ptr<PitchEngine> engine;
+  {
+    std::lock_guard<std::mutex> lock(_pitchMutex);
+    engine = _pitch;
+  }
+  if (!engine) {
+    return;
+  }
+  std::vector<PitchSample> emitted;
+  while (auto s = engine->tryAnalyze()) {
+    std::lock_guard<std::mutex> lock(_pitchMutex);
+    _samples.push_back(*s);
+    emitted.clear();
+    emitted.push_back(*s);
+  }
+  if (emitted.empty()) {
+    return;
+  }
+  [self emitThrottled:emitted];
+}
+
+// Real-time audio thread. Enqueue only: the ring is lock-free and never
+// allocates, so this cannot block or wait on the drain.
 - (void)processBuffer:(AVAudioPCMBuffer *)buffer {
   const AVAudioFrameCount frameCount = buffer.frameLength;
   float *const *channels = buffer.floatChannelData;
@@ -245,19 +307,13 @@ static double NowMs() {
     [_captureFile writeFromBuffer:buffer error:nil];
   }
 
-  std::vector<PitchSample> emitted;
-  {
-    std::lock_guard<std::mutex> lock(_pitchMutex);
-    if (!_pitch) return;
-    const double tMs = NowMs() - _startHostTime;
-    // PitchEngine buffers the hop, runs MPM when a full frame is available, and
-    // appends one PitchSample per analysed hop (full resolution).
-    _pitch->push(mono, (int)frameCount, tMs, _samples);
-    if (!_samples.empty()) {
-      emitted.push_back(_samples.back());
-    }
+  std::shared_ptr<PitchEngine> engine = std::atomic_load(&_pitch);
+  if (engine) {
+    engine->push(mono, (std::size_t)frameCount);
   }
+}
 
+- (void)emitThrottled:(const std::vector<PitchSample> &)emitted {
   if (emitted.empty()) {
     return;
   }
@@ -317,6 +373,13 @@ static double NowMs() {
  * is exactly what it was.
  */
 - (void)dealloc {
+  // The drain thread holds a weak reference to self and checks it every wake,
+  // but a thread still running while its object is torn down is a race worth
+  // closing here rather than reasoning about.
+  _draining = false;
+  if (_drain.joinable()) {
+    _drain.join();
+  }
   // Synchronously, and without dispatching: handing `self` to another queue
   // from dealloc hands it an object that is already going away.
   [[NSNotificationCenter defaultCenter]
@@ -372,6 +435,15 @@ static double NowMs() {
   [_engine stop];
   _engine = nil;
   _running = false;
+
+  // Stop the drain, then take whatever the ring still holds. Skipping this
+  // would lose the tail of the take — every window pushed since the last
+  // wake-up, which is exactly the end of the singing.
+  _draining = false;
+  if (_drain.joinable()) {
+    _drain.join();
+  }
+  [self drainOnce];
   // The sensor is only wanted while something is playing to be held up to.
   [self followTheEar:NO];
 

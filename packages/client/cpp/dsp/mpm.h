@@ -28,7 +28,17 @@ struct EngineConfig {
   std::size_t hopSize = 1024;
   double minFrequencyHz = 70.0;
   double maxFrequencyHz = 1200.0;
+  // MPM's peak-picking parameter: which NSDF peak counts as the fundamental,
+  // as a fraction of the tallest one. It decides WHICH pitch, never WHETHER
+  // there is one — lowering it makes octave errors more likely, not quiet
+  // notes more findable (INV-PITCH-021).
   double clarityThreshold = 0.9;
+  // Whether there is a pitch at all: the absolute height the chosen peak must
+  // reach, and the level the window must exceed. Two questions, two numbers.
+  // This one was previously answered with clarityThreshold, which meant one
+  // slider moved both and the two want opposite settings.
+  double voicedClarityMin = 0.5;
+  double voicedLevelDb = -55.0;
   double emitRateHz = 60.0;
 };
 

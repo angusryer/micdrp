@@ -46,7 +46,21 @@ export interface EngineConfig {
   hopSize: number; // default 1024
   minFrequencyHz: number; // default 70
   maxFrequencyHz: number; // default 1200
+  /**
+   * MPM's peak-picking parameter: which NSDF peak counts as the fundamental,
+   * as a fraction of the tallest one. It decides WHICH pitch was sung, never
+   * whether anything was — lowering it invites octave errors rather than
+   * finding quiet notes (INV-PITCH-021).
+   */
   clarityThreshold: number; // default 0.9
+  /**
+   * How tall the chosen peak must be in absolute terms to count as a pitch
+   * rather than noise shaped like one. This is the one to lower when quiet
+   * singing or whistling goes undetected.
+   */
+  voicedClarityMin: number; // default 0.5
+  /** How loud the window must be, in dBFS, to be worth calling anything. */
+  voicedLevelDb: number; // default -55
   emitRateHz: number; // throttle to JS, default 60
 }
 
@@ -57,6 +71,8 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   minFrequencyHz: 70,
   maxFrequencyHz: 1200,
   clarityThreshold: 0.9,
+  voicedClarityMin: 0.5,
+  voicedLevelDb: -55,
   emitRateHz: 60
 };
 

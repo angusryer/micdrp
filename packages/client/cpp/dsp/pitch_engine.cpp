@@ -92,7 +92,14 @@ std::optional<PitchSample> PitchEngine::tryAnalyze() {
   // is the loudness of the frames that made it that note.
   sample.levelDb = windowLevelDb(window_.data(), frameSize);
 
-  if (r.voiced && r.frequencyHz > 0.0) {
+  // Voiced is three questions, asked separately because they have different
+  // answers: did MPM find a peak it believes is the fundamental, was that peak
+  // tall enough in absolute terms to be a pitch rather than noise shaped like
+  // one, and was there enough signal in the window to be anything at all
+  // (INV-PITCH-021).
+  const bool loudEnough = sample.levelDb > cfg.voicedLevelDb;
+  const bool clearEnough = r.clarity >= cfg.voicedClarityMin;
+  if (r.voiced && r.frequencyHz > 0.0 && loudEnough && clearEnough) {
     const NoteReading note = frequencyToNote(r.frequencyHz);
     sample.frequencyHz = r.frequencyHz;
     sample.midi = note.midi;

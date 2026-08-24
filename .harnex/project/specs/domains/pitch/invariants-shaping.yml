@@ -104,10 +104,48 @@ invariants:
       keeps drops this one silently — leaving every note in the take
       unmeasured with nothing to say why.
 
-      There are two pitch engines, and the measurement is defined once for
-      both (cpp/dsp/level.h). The engine capture drives is the bridge's
-      (ios/StreamingPitch.h); the fuller real-time-safe one has never been
-      wired up. Both must report it, and both are covered: measuring it twice
-      would let two readings of the same audio disagree, and covering only the
-      unused engine is how a level that never reached the app passed every
-      check except the archive.
+      The measurement is defined once (cpp/dsp/level.h) and there is now one
+      streaming engine to use it (INV-PITCH-021). The Tier-2 worklet computes
+      the same reading with the same floor on its own runtime, which cannot
+      reach native code; the two are held together by this invariant rather
+      than by a shared file.
+
+  - id: INV-PITCH-021
+    description: One streaming engine, and voicing is three questions
+    severity: critical
+    check: >
+      Exactly one C++ streaming pitch engine exists, declaring PitchSample,
+      PitchEngine and EngineConfig once each, and the bridge under ios/ holds
+      none of its own. Whether a frame is voiced is decided by three separate
+      numbers: MPM's peak-picking parameter, an absolute floor on the chosen
+      peak's height, and a floor on the window's level. Verified by counting
+      the declarations across every C++ source, and by asserting the counting
+      fails when a second is introduced.
+
+      There were two engines. The fuller one was built around a lock-free ring
+      precisely so the audio thread neither allocates nor blocks; the second
+      re-implemented the same job on the audio thread, and it was the one
+      capture ran. The duplication was recorded in a comment at the top of the
+      file that lost, which is not a guard: a field added to the shared
+      PitchSample compiled, passed its unit tests, and never reached the app,
+      because the struct the bridge marshalled was the other one. The archive
+      was the first thing able to notice.
+
+      The parity pair is not this. `logic/mpm.ts` and `cpp/dsp/mpm.cpp` are two
+      implementations of one algorithm checked against each other every run —
+      that is a duplication with a proof attached. Two shells nobody compares
+      is the kind this forbids.
+
+      Splitting voicing into three numbers is the same fault in miniature.
+      `clarityThreshold` is MPM's peak-picking parameter: it decides which NSDF
+      peak is the fundamental, as a fraction of the tallest. It was also being
+      used as an absolute confidence gate, so one setting answered "which
+      pitch" and "is there a pitch" at once — and the two want opposite values.
+      At 0.9 the gate discarded quiet singing and whistling, which is exactly
+      what the setting's own description promised lowering it would fix, while
+      lowering it also loosened peak-picking and invited octave errors.
+
+      The level floor is the honest form of the question the gate was really
+      being asked. "Too quiet to be anything" is about loudness, and loudness
+      is now measured (INV-PITCH-020); clarity is a measure of shape, and a
+      quiet, perfectly periodic whistle has a clear shape and a low level.
