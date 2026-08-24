@@ -13,27 +13,10 @@
 #include "pitch_engine.h"
 
 #include <algorithm>
-#include <cmath>
 
 #include "notes.h"
 
 namespace micdrp::dsp {
-
-double windowLevelDb(const float* samples, std::size_t count) {
-  if (samples == nullptr || count == 0) {
-    return kSilenceDb;
-  }
-  double sum = 0.0;
-  for (std::size_t i = 0; i < count; ++i) {
-    const double v = static_cast<double>(samples[i]);
-    sum += v * v;
-  }
-  const double rms = std::sqrt(sum / static_cast<double>(count));
-  if (!(rms > 0.0)) {
-    return kSilenceDb;
-  }
-  return std::max(kSilenceDb, 20.0 * std::log10(rms));
-}
 
 void PitchEngine::configure(const EngineConfig& config) {
   EngineConfig cfg = config;

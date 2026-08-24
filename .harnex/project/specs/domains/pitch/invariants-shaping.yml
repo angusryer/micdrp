@@ -103,3 +103,11 @@ invariants:
       to decide which note was sung, and a rebuild that lists the fields it
       keeps drops this one silently — leaving every note in the take
       unmeasured with nothing to say why.
+
+      There are two pitch engines, and the measurement is defined once for
+      both (cpp/dsp/level.h). The engine capture drives is the bridge's
+      (ios/StreamingPitch.h); the fuller real-time-safe one has never been
+      wired up. Both must report it, and both are covered: measuring it twice
+      would let two readings of the same audio disagree, and covering only the
+      unused engine is how a level that never reached the app passed every
+      check except the archive.

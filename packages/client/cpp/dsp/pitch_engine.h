@@ -21,23 +21,14 @@
 #include <optional>
 #include <vector>
 
+#include "level.h"
 #include "mpm.h"
 #include "ring_buffer.h"
 
 namespace micdrp::dsp {
 
-// The floor a level is reported at. Digital silence is negative infinity,
-// which is not a number anything downstream can average or compare, so
-// everything quieter than this reads as this.
-constexpr double kSilenceDb = -80.0;
-
-// RMS of a window, in dBFS. Full-scale sine ~= -3 dB, full-scale square 0 dB.
-//
-// Level rides with the pitch rather than being measured separately because it
-// has to describe the same window the pitch came from — a note's loudness is
-// the loudness of the frames that made it that note. Measuring it anywhere
-// else would be a second reading of the same audio, free to disagree.
-double windowLevelDb(const float* samples, std::size_t count);
+// kSilenceDb and windowLevelDb come from level.h, which the bridge's own
+// detector includes too: one measurement, one definition (Axiom 2).
 
 // Mirrors src/audio/contract.ts PitchSample exactly. midi/cents use a `voiced`
 // flag instead of TS `null`; the bridge maps !voiced -> {midi: null, cents:

@@ -24,6 +24,7 @@
 
 #include <vector>
 
+#include "level.h"  // micdrp::dsp::windowLevelDb, kSilenceDb
 #include "mpm.h"    // micdrp::dsp::Mpm, EngineConfig, PitchResult
 #include "notes.h"  // micdrp::dsp::frequencyToNote, NoteReading
 
@@ -45,6 +46,10 @@ struct PitchSample {
   double timestampMs = 0;
   double frequencyHz = 0;
   double clarity = 0;
+  // How loud this window was, in dBFS. Defaults to silence rather than to
+  // zero, so a frame nothing measured cannot claim to be the loudest thing in
+  // the take (INV-PITCH-020).
+  double levelDb = micdrp::dsp::kSilenceDb;
   int midi = 0;
   int cents = 0;
   bool voiced = false;
@@ -89,6 +94,10 @@ class PitchEngine {
     PitchSample s;
     s.timestampMs = tMs;
     s.clarity = r.clarity;
+    // The same window the pitch was read from, through the same function the
+    // other engine uses (INV-PITCH-020).
+    s.levelDb = micdrp::dsp::windowLevelDb(
+        buffer_.data(), static_cast<std::size_t>(cfg_.frameSize));
     if (r.voiced && r.clarity >= cfg_.clarityThreshold) {
       micdrp::dsp::NoteReading note = micdrp::dsp::frequencyToNote(r.frequencyHz);
       s.frequencyHz = r.frequencyHz;
