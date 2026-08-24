@@ -14,6 +14,7 @@
 import { chordForSpan } from './chordMatch';
 import type { Melody } from './analysis';
 import { bassChangeTimes, bassSpans } from './bassContext';
+import { readSungCount } from './sungCount';
 import type { MusicalGrid } from './quantize';
 
 export interface DownbeatOptions {
@@ -151,8 +152,10 @@ export function proposeDownbeats(
 
   const ordered = inTimeOrder(notes);
 
-  // Stated beats inferred. Where a layer was sung, its changes are the
-  // answer and the melodic comparison below is not consulted at all.
+  // Stated beats inferred, and there are two kinds of statement. A sung bass
+  // says where the harmony changes, which is what a downbeat marks, so it
+  // wins outright. A count says where the bars are, which is the next best
+  // thing when nobody sang the roots (INV-NOTES-112).
   if (options.bass && options.bass.length > 0) {
     return toSteps(
       bassChangeTimes(bassSpans(options.bass)),
@@ -161,6 +164,10 @@ export function proposeDownbeats(
       minGapMs,
       options.evenTolerance ?? 0.25
     );
+  }
+
+  if (grid.meterIsCounted) {
+    return countedBars(ordered, grid, stepsPerBeat);
   }
 
   // Every note onset is a candidate — a chord starting in the middle of a
@@ -178,6 +185,53 @@ export function proposeDownbeats(
   }
 
   return toSteps(boundaries, grid, stepMs, minGapMs, options.evenTolerance ?? 0.25);
+}
+
+/**
+ * Bar lines at the metre somebody counted, from where the count stopped.
+ *
+ * An even division, which is exactly what a count states: this tempo, this
+ * many beats to a bar, starting here. The melodic reading below it is an
+ * inference about harmony that also has to guess the phase, and the phase is
+ * the part it gets wrong most — so where the phase has been stated outright,
+ * guessing it again is throwing away the clearest thing in the take
+ * (INV-NOTES-112).
+ *
+ * The counted beats themselves get no lines. They are real bars, but nothing
+ * is sung over them, and a chord card on a bar of counting describes nothing.
+ */
+function countedBars(
+  ordered: Melody,
+  grid: MusicalGrid,
+  stepsPerBeat: number
+): number[] {
+  const perBar = grid.beatsPerBar * stepsPerBeat;
+  if (!(perBar > 0)) {
+    return [];
+  }
+  const beatMs = 60000 / grid.bpm;
+  const stepMs = beatMs / stepsPerBeat;
+  const count = readSungCount(ordered);
+  // The first bar line at or after the counting stopped. A count of exactly
+  // one bar lands its last beat on the first bar line of the music, which is
+  // the one that means "here" rather than "soon".
+  const from = count != null ? count.endMs - beatMs / 2 : ordered[0].startMs;
+  const lastMs = ordered[ordered.length - 1].endMs;
+  const firstBar = Math.max(
+    0,
+    Math.ceil((from - grid.offsetMs) / (perBar * stepMs))
+  );
+  const steps: number[] = [];
+  for (let bar = firstBar; ; bar++) {
+    const step = bar * perBar;
+    if (grid.offsetMs + step * stepMs > lastMs) {
+      break;
+    }
+    steps.push(step);
+  }
+  // A take has to start somewhere: if the counting ran past everything sung,
+  // the first bar of the music is still a downbeat.
+  return steps.length > 0 ? steps : [firstBar * perBar];
 }
 
 /**

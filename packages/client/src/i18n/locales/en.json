@@ -108,7 +108,9 @@
       "notes": "Notes",
       "length": "Length",
       "meter": "Time",
-      "chords": "Chords"
+      "chords": "Chords",
+      "tempoCounted": "{{bpm}} BPM, counted",
+      "metre": "Metre"
     },
     "mix": {
       "label": "Tracks play sounds",

@@ -67,6 +67,15 @@ export interface MusicalGrid {
   /** 0..1 — how well the onsets support this tempo and phase. */
   confidence: number;
   /**
+   * True only when a count sung into the take stated the metre
+   * (INV-PITCH-022).
+   *
+   * Distinct from `meterIsStated`, which the fitter also sets when it is
+   * merely confident. Somebody counting and the fitter finding a pattern it
+   * likes are different kinds of claim, and only the first is a statement.
+   */
+  meterIsCounted: boolean;
+  /**
    * 0..1 — how well they support the TIME SIGNATURE specifically, which is a
    * much weaker inference than tempo.
    */
@@ -258,7 +267,8 @@ export function fitGrid(notes: readonly NoteEvent[]): MusicalGrid {
       timeSignature: '4/4',
       confidence: 0,
       meterConfidence: 0,
-      meterIsStated: false
+      meterIsStated: false,
+      meterIsCounted: false
     };
   }
 
@@ -302,7 +312,8 @@ export function fitGrid(notes: readonly NoteEvent[]): MusicalGrid {
     timeSignature: timeSignature,
     confidence: calibrateConfidence(pulse.strength, support),
     meterConfidence: meterConfidence,
-    meterIsStated: stated
+    meterIsStated: stated,
+    meterIsCounted: false
   };
 }
 
@@ -334,7 +345,8 @@ function gridFromCount(counted: SungCount, isCompound: boolean): MusicalGrid {
     confidence: counted.confidence,
     // Stated, in the strongest sense the word has here: somebody counted it.
     meterConfidence: counted.confidence,
-    meterIsStated: true
+    meterIsStated: true,
+    meterIsCounted: true
   };
 }
 

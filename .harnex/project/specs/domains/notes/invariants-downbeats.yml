@@ -82,3 +82,40 @@ invariants:
       half notes meant as a bar of four are six beats to any arithmetic,
       and only the person who sang them knows they were not six four.
       So the last step before anything is written out is a human's.
+
+  - id: INV-NOTES-112
+    description: A counted metre places the downbeats
+    severity: major
+    check: >
+      Where a count stated the metre (INV-PITCH-022), the downbeats proposed
+      are an even division at that metre and phase, from where the counting
+      stopped to the end of the singing, and the take may report its time
+      signature. A sung bass still outranks it, since that states where the
+      harmony changes rather than where the bars are. A take nobody counted is
+      left to the melodic reading untouched. Verified by asserting every
+      proposed line lands on a counted bar, that the counted beats themselves
+      get none, that a bass overrides them, and that an uncounted take is
+      unchanged.
+
+      A downbeat marks where a chord starts, and there are three ways to
+      arrive at one. A bass says outright where the harmony changes. A count
+      says where the bars are, which is not the same claim but is the next
+      best thing when nobody sang the roots. Everything else is inferred from
+      the melody — a reading of the harmony that also has to guess the phase,
+      and the phase is the part it gets wrong most often. Where the phase has
+      been stated out loud, guessing it again discards the clearest thing in
+      the take.
+
+      The counted beats get no lines of their own. They are real bars, but
+      nothing is sung over them and a chord card describing a bar of counting
+      describes nothing.
+
+      This is also the one case where the take may print a time signature.
+      Refusing to print one is right everywhere else: a hummed idea does not
+      state a metre, and "4/4" over a take nobody arranged is a guess wearing
+      the clothes of a reading (INV-NOTES-050). Somebody counting four and
+      stressing the first has said it out loud, so repeating it is reporting
+      rather than guessing — and the flag that carries this is set only by a
+      count, never by the fitter merely being confident.
+
+      A person moving a line still outranks all of it (INT-NOTES-012).
