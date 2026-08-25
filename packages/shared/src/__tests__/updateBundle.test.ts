@@ -34,38 +34,34 @@ const client = (over: Partial<UpdateClientDto> = {}): UpdateClientDto => ({
 });
 
 describe('a bundle older than the binary running it (INV-UPD-020)', () => {
-  it('is a rollback, even when nothing newer exists', () => {
-    // The whole failure this fixes: an install took a bundle at one build and
-    // ran it over every binary that followed, while the server answered
-    // "nothing for you" every time — because there genuinely was nothing
-    // newer it was allowed to offer.
+  it('is not answered with a rollback, however stale it is', () => {
+    // A rollback asks the install to reload, and a reload restarts the same
+    // resident bundle — which checks again and is told to roll back again,
+    // forever. The server cannot get an install off a bundle the server is
+    // not the one loading.
     const stale = bundle({ bundleId: 'b2', builtFromBuild: 29 });
     expect(
       decideUpdate([stale], client({ bundleId: 'b2', buildNumber: 33 }))
-    ).toMatchObject({ decision: 'rollback' });
-  });
-
-  it('leaves an install alone on a bundle built from its own build', () => {
-    const current = bundle({ bundleId: 'b2', builtFromBuild: 33 });
-    expect(
-      decideUpdate([current], client({ bundleId: 'b2', buildNumber: 33 }))
     ).toMatchObject({ decision: 'none' });
   });
 
-  it('rolls an install off a bundle whose age nobody recorded', () => {
-    // An unknown-age bundle cannot be shown to be newer, and the same reading
-    // that refuses to offer one refuses to keep running one.
-    const unstamped = bundle({ bundleId: 'b2', builtFromBuild: undefined });
+  it('still refuses to hand one out', () => {
+    // What the server CAN do is never make it worse: a bundle older than the
+    // binary is not offered to anyone (INV-UPD-010).
+    const stale = bundle({ bundleId: 'b9', builtFromBuild: 29 });
     expect(
-      decideUpdate([unstamped], client({ bundleId: 'b2', buildNumber: 33 }))
-    ).toMatchObject({ decision: 'rollback' });
+      decideUpdate([stale], client({ buildNumber: 33 }))
+    ).toMatchObject({ decision: 'none' });
   });
 
-  it('says nothing about an install running the binary\'s own JavaScript', () => {
-    // Nothing is resident, so there is nothing to come off.
+  it('still rolls an install off a bundle a maintainer withdrew', () => {
+    // Withdrawal is a different event and still works: the install is on
+    // something that has been taken away, and the native layer has a
+    // previous good bundle to fall back to.
+    const pulled = bundle({ bundleId: 'b2', isEnabled: false });
     expect(
-      decideUpdate([bundle({ builtFromBuild: 1 })], client({ buildNumber: 33 }))
-    ).toMatchObject({ decision: 'none' });
+      decideUpdate([pulled], client({ bundleId: 'b2' }))
+    ).toMatchObject({ decision: 'rollback' });
   });
 });
 

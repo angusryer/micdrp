@@ -142,15 +142,15 @@ invariants:
       and lost the fixes that build existed to deliver.
 
   - id: INV-UPD-020
-    description: A bundle older than the binary running it is a rollback
+    description: A stale resident bundle is a binary problem, not a server one
     severity: critical
     check: >
-      An install whose running bundle was built from an earlier build than the
-      binary now executing it is answered with a rollback, exactly as one
-      running a withdrawn bundle is. Verified by asserting a client on a
-      bundle built from an older build is told to roll back even when nothing
-      newer exists, and that a client on a bundle built from its own build or
-      later is not.
+      An install whose running bundle predates the binary executing it is NOT
+      answered with a rollback. The server offers it nothing and says nothing;
+      getting it off that bundle is the native layer's job, and where that
+      fails the only routes are a new binary and a fresh install. Verified by
+      asserting such a client is told nothing, that the bundle is still never
+      offered to anyone, and that a withdrawn bundle is still a rollback.
 
       INV-UPD-010 already says a bundle older than the binary must never be
       handed out. That rule governed what could be OFFERED and said nothing
@@ -166,12 +166,16 @@ invariants:
       only symptom was that shipping stopped working, silently, from both
       ends at once.
 
-      This is the same test as INV-UPD-010, asked of a different subject. The
-      binary's own JavaScript is the floor: an install may run something newer
-      than its binary and must never run something older, whether that
-      something arrives now or arrived four builds ago.
+      Answering it with a rollback was tried, and it put installs into a boot
+      loop: a rollback asks the install to reload, and the reload restarts the
+      same resident bundle, which checks again and is told to roll back again.
+      The server cannot get an install off a bundle the server is not the one
+      loading. That is the whole lesson — the layer that loads first is the
+      only layer that can decide not to.
 
-      Answered before anything newer is looked for, like a withdrawal, because
-      the reason is the same — the install is on something it must not be on,
-      and where it goes next is a separate question from that.
+      The real guard is `updateStrategy`. It was 'appVersion' while this
+      project pins the version at 1.0.0 and climbs only the build number, so
+      the native invalidation never fired. It is 'fingerprint' now, which
+      changes whenever the native side does. Neither setting can help an
+      install that already has a stale bundle: that one needs a reinstall.
 

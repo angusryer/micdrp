@@ -141,16 +141,12 @@ export function decideUpdate(
   if (running && !running.isEnabled) {
     return { ...NOTHING, decision: 'rollback' };
   }
-  // A bundle older than the binary executing it (INV-UPD-020). The same test
-  // INV-UPD-010 applies to what may be offered, asked of what is already
-  // resident — a bundle is applied natively at launch, before any of this is
-  // consulted, so without this nothing checks it at all. Left unchecked, an
-  // install that took a bundle at one build runs it over every binary that
-  // follows, and the server answers "nothing for you" every time because
-  // there is genuinely nothing newer it is allowed to offer.
-  if (running && !isNewerThanBinary(running, client)) {
-    return { ...NOTHING, decision: 'rollback' };
-  }
+  // A stale resident bundle is NOT answered here. It was, for one deploy, and
+  // it put installs into a boot loop: the reload a rollback asks for restarts
+  // the same resident bundle, which checks again and is told to roll back
+  // again, forever. The server cannot get an install off a bundle the server
+  // is not the one loading — that decision has to be made natively, before
+  // the bundle is applied, which means it ships in a binary (INV-UPD-020).
 
   const newest = bundles
     .filter((b) => isRunnableBy(b, client))

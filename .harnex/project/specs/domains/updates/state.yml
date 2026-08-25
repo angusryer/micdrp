@@ -1,8 +1,31 @@
 # Domain Development State — overwrite each meaningful change
-updated_at: "2026-08-20T03:40:30Z"
+updated_at: "2026-08-25T00:00:00Z"
 updated_by: harnex-new-feature
 phase: specifying
 phase_detail: >
-  Domain scaffolded. Awaiting clarify dialogue between
-  human and agent. See tmp/clarify-updates.md.
+  Over-the-air delivery is OFF for release builds: OTA_UPDATE_URL is empty in
+  .env.production, which the domain already treats as a first-class disabled
+  state. The binary is the only source of JavaScript.
+
+  Turned off after it stopped shipping working. updateStrategy was
+  'appVersion' while this project pins the version at 1.0.0 and climbs only
+  the build number, so hot-updater's native invalidation — which watches the
+  version — never fired. A bundle taken at build 29 went on being applied
+  over every binary after it. Builds 30 through 33 all installed and none of
+  them appeared, with nothing erroring at either end (INV-UPD-020).
+
+  Attempting to answer that from the server made it worse: a ROLLBACK asks
+  the install to reload, and the reload restarts the same resident bundle,
+  which checks again and is told to roll back again. The server cannot get an
+  install off a bundle the server is not the one loading. Reverted the same
+  hour; the rule now written down is that a stale resident bundle is NOT a
+  rollback.
+
+  The strategy is now 'fingerprint', which changes whenever the native side
+  does — so if OTA is turned back on, a bundle built against different native
+  code cannot be applied to it. Until then the setting is inert.
+
+  What OTA bought was avoiding native builds, which is not something this
+  project wants to avoid: native builds are fine and build time is not a
+  cost. Turning it back on is one line in .env.production.
 blockers: []
