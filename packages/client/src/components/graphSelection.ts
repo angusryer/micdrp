@@ -29,7 +29,9 @@ export type Selection =
   /** A note from a second take sung against this one (INV-NOTES-118). */
   | { kind: 'layerNote'; index: number }
   /** A struck sound, in the rhythm band below the drawing (INV-NOTES-118). */
-  | { kind: 'hit'; index: number };
+  | { kind: 'hit'; index: number }
+  /** A beat somebody tapped along with the take (INV-NOTES-130). */
+  | { kind: 'beat'; index: number };
 
 /** How far from a bar line a touch still means that line. */
 export const BAR_REACH = 22;
@@ -42,6 +44,9 @@ export const NOTE_REACH = 20;
 
 /** How far from a struck sound's mark a touch still means that sound. */
 export const HIT_REACH = 16;
+
+/** How far from a tapped beat a touch still means that beat. */
+export const BEAT_REACH = 14;
 
 /**
  * Everything chosen at once, which is always of one kind (INV-NOTES-093).
@@ -99,6 +104,9 @@ export function isSame(a: Selection | null, b: Selection | null): boolean {
   if (a.kind === 'hit' && b.kind === 'hit') {
     return a.index === b.index;
   }
+  if (a.kind === 'beat' && b.kind === 'beat') {
+    return a.index === b.index;
+  }
   return false;
 }
 
@@ -116,6 +124,12 @@ export interface HitPoint {
   y: number;
 }
 
+/** A tapped beat as the surface needs it: an index and where it is drawn. */
+export interface BeatLine {
+  index: number;
+  x: number;
+}
+
 export function selectionAt(
   x: number,
   y: number,
@@ -123,7 +137,8 @@ export function selectionAt(
   bars: readonly BarHandlePoint[],
   notes: readonly NoteRect[] = [],
   layerNotes: readonly NoteRect[] = [],
-  hits: readonly HitPoint[] = []
+  hits: readonly HitPoint[] = [],
+  beats: readonly BeatLine[] = []
 ): Selection | null {
   // The rhythm band first, and by distance in both directions. It sits below
   // the drawing in a region of its own, so a touch there is unambiguous —
@@ -190,6 +205,22 @@ export function selectionAt(
     return { kind: 'layerNote', index: bestLayer };
   }
 
+  // A tapped beat before a bar line: it is the narrower claim of the two —
+  // somebody put it exactly there — and a bar line spans the whole height and
+  // is reachable from anywhere (INV-NOTES-130).
+  let bestBeat = -1;
+  let bestBeatGap = BEAT_REACH;
+  for (const beat of beats) {
+    const gap = Math.abs(x - beat.x);
+    if (gap <= bestBeatGap) {
+      bestBeatGap = gap;
+      bestBeat = beat.index;
+    }
+  }
+  if (bestBeat >= 0) {
+    return { kind: 'beat', index: bestBeat };
+  }
+
   let bestBar: BarHandlePoint | null = null;
   let bestBarGap = BAR_REACH;
   for (const bar of bars) {
@@ -211,13 +242,14 @@ export function touchesSelection(
   bars: readonly BarHandlePoint[],
   notes: readonly NoteRect[] = [],
   layerNotes: readonly NoteRect[] = [],
-  hits: readonly HitPoint[] = []
+  hits: readonly HitPoint[] = [],
+  beats: readonly BeatLine[] = []
 ): boolean {
   if (!selection) {
     return false;
   }
   return isSame(
     selection,
-    selectionAt(x, y, tones, bars, notes, layerNotes, hits)
+    selectionAt(x, y, tones, bars, notes, layerNotes, hits, beats)
   );
 }

@@ -101,7 +101,7 @@ export function NoteLandscape({
             accompaniment={detail.backdrop}
             voice={detail.melodyVoiceMix}
             rhythm={detail.rhythmMix}
-            beats={detail.beats}
+            beats={detail.clickBeats}
             listening={detail.listening}
           />
           </View>

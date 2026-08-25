@@ -50,7 +50,8 @@ const detail = {
   bars: { layout: { lines: [0, 16, 32] }, move: jest.fn(), split: jest.fn() },
   correctNote: jest.fn(),
   hearDragged: jest.fn(),
-  hits: []
+  hits: [],
+  beats: []
 };
 
 const timeAxis = { t0: 0, span: 12_000, pad: 12, innerW: 900, pxPerMs: 0.2 };

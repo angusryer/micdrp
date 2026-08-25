@@ -21,6 +21,7 @@ import {
   toggleChosen,
   touchesSelection,
   type BarHandlePoint,
+  type BeatLine,
   type Chosen,
   type HitPoint,
   type Selection
@@ -56,12 +57,22 @@ export interface GraphGestureOptions {
   layerNotes?: readonly NoteRect[];
   /** Where each struck sound's mark sits (INV-NOTES-118). */
   hits?: readonly HitPoint[];
+  /** Where each tapped beat is drawn (INV-NOTES-130). */
+  beats?: readonly BeatLine[];
   laneHeight: number;
   originX: number;
   stepWidth: number;
   selection: Chosen;
   onSelect: (selection: Chosen) => void;
   onMoveBar: (lineIndex: number, step: number) => void;
+  /**
+   * Move a tapped beat to a pixel position (INV-NOTES-130).
+   *
+   * In pixels rather than steps: a tapped beat is not on the grid — it is
+   * what the grid is derived from — so snapping it to one would be the
+   * reading correcting the statement it came from.
+   */
+  onMoveBeat?: (index: number, x: number) => void;
   onMoveTone: (slot: number, tone: number, semitones: number) => void;
   onMoveNote: (index: number, semitones: number) => void;
   onAddBar: (step: number) => void;
@@ -96,12 +107,14 @@ export function useGraphGestures({
   notes,
   layerNotes = [],
   hits = [],
+  beats = [],
   laneHeight,
   originX,
   stepWidth,
   selection,
   onSelect,
   onMoveBar,
+  onMoveBeat,
   onMoveTone,
   onMoveNote,
   onAddBar,
@@ -132,7 +145,7 @@ export function useGraphGestures({
 
   const choose = useCallback(
     (x: number, y: number) => {
-      const found = selectionAt(x, y, tones, bars, notes, layerNotes, hits);
+      const found = selectionAt(x, y, tones, bars, notes, layerNotes, hits, beats);
       if (found) {
         tapped();
       }
@@ -166,7 +179,7 @@ export function useGraphGestures({
       if (selection.length === 0) {
         return false;
       }
-      const found = selectionAt(x, y, tones, bars, notes, layerNotes, hits);
+      const found = selectionAt(x, y, tones, bars, notes, layerNotes, hits, beats);
       if (!found) {
         return false;
       }
@@ -201,7 +214,17 @@ export function useGraphGestures({
           const grabbed =
             touch &&
             selection.find((one) =>
-              touchesSelection(one, touch.x, touch.y, tones, bars, notes, layerNotes, hits)
+              touchesSelection(
+                one,
+                touch.x,
+                touch.y,
+                tones,
+                bars,
+                notes,
+                layerNotes,
+                hits,
+                beats
+              )
             );
           if (!grabbed) {
             state.fail();
@@ -272,6 +295,16 @@ export function useGraphGestures({
             }
             return;
           }
+          if (kind === 'beat') {
+            // Straight to where the finger is. A tapped beat is what the grid
+            // is derived from, so there is no grid to snap it to.
+            for (const one of selection) {
+              if (one.kind === 'beat') {
+                onMoveBeat?.(one.index, e.x);
+              }
+            }
+            return;
+          }
           // Bars: every chosen line moves by the same number of steps, read
           // from where each began.
           const moved = stepAt(
@@ -297,6 +330,7 @@ export function useGraphGestures({
       onHear,
       onPreview,
       onMoveBar,
+      onMoveBeat,
       onMoveNote,
       onMoveTone,
       originX,

@@ -21,6 +21,8 @@ import { GraphSurface } from '../../components/GraphSurface';
 import { SelectionGlow } from '../../components/SelectionGlow';
 import { layoutChordTones } from '../../components/chordLayout';
 import { layoutHits } from '../../components/rhythmLanes';
+import { TappedBeats, beatLines } from '../../components/TappedBeats';
+import { msForX } from '../../components/melodyScale';
 import type { MelodyLayout, NoteRect } from '../../components/melodyLayout';
 import type { Chosen, Selection } from '../../components/graphSelection';
 import { useTheme } from '../../theme';
@@ -99,6 +101,13 @@ export function GraphLayers({
   // Where each struck sound's mark sits, in the band below the drawing. The
   // same layout the band paints from, offset into the surface's coordinates,
   // so a hit can be touched exactly where it is drawn (INV-NOTES-118).
+  // Where each tapped beat is drawn, from the same layout that paints them
+  // (INV-NOTES-104).
+  const beatMarks = useMemo(
+    () => beatLines(detail.beats, timeAxis),
+    [detail.beats, timeAxis]
+  );
+
   const hitPoints = useMemo(
     () =>
       layoutHits(detail.hits, timeAxis, underHeight).map((mark) => ({
@@ -121,6 +130,7 @@ export function GraphLayers({
         notes={noteRects}
         layerNotes={noteRectsUnder}
         hits={hitPoints}
+        beatLines={beatMarks}
         width={contentWidth}
         height={height + underHeight}
         colour={colors.primary500}
@@ -141,6 +151,14 @@ export function GraphLayers({
           again from the notes, which produced a second time axis that did not
           know about the pickup — so every line was drawn the length of the
           pickup earlier than the downbeat it marked (INV-NOTES-104). */}
+      {/* Over the rules and under the surface: stated rather than ruled, so
+          it reads above the metre it may replace (INV-NOTES-130). */}
+      <TappedBeats
+        beats={detail.beats}
+        timeAxis={timeAxis}
+        contentWidth={contentWidth}
+        height={height}
+      />
       <BarRuler
         handles={handles}
         width={contentWidth}
@@ -157,6 +175,7 @@ export function GraphLayers({
           notes={noteRects}
           layerNotes={noteRectsUnder}
           hits={hitPoints}
+          beats={beatMarks}
           laneHeight={pitchAxis.lane}
           originX={geometry.originX}
           stepWidth={geometry.stepWidth}
@@ -165,6 +184,9 @@ export function GraphLayers({
           onMoveBar={bars.move}
           onMoveTone={chords.moveTone}
           onMoveNote={detail.correctNote}
+          onMoveBeat={(index, xPx) =>
+            detail.moveBeatTo(index, msForX(timeAxis, xPx))
+          }
           onAddBar={bars.split}
           onHear={detail.hearDragged}
         />

@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { activeInterpretation, type InterpretationDto } from 'shared';
-import type { ChordSlotEdit, NoteEdit } from 'logic';
+import type { ChordSlotEdit, NoteEdit, TappedBeat } from 'logic';
 
 import { notesRepo } from '../../data/notesRepo';
 
@@ -34,6 +34,8 @@ export interface Interpretation {
   savedBarLines: readonly number[] | undefined;
   /** The tempo a person set, or undefined to use the one read (INV-NOTES-123). */
   savedBpm: number | undefined;
+  /** The beat, tapped in against the take (INV-NOTES-130). */
+  savedBeats: readonly TappedBeat[];
   /** Pitches corrected where the detector heard wrongly. */
   savedNoteEdits: readonly NoteEdit[];
   /** Record a new set of differences; written shortly afterwards. */
@@ -42,6 +44,8 @@ export interface Interpretation {
   updateBarLines: (lines: number[]) => void;
   /** Set the tempo by hand, or pass undefined to go back to the read one. */
   updateBpm: (bpm: number | undefined) => void;
+  /** Replace the tapped beats. */
+  updateBeats: (beats: readonly TappedBeat[]) => void;
   /** Keep the corrections to what was heard. */
   updateNotes: (notes: NoteEdit[]) => void;
   /** True once a write has failed, so a screen can say so. */
@@ -63,6 +67,9 @@ export function useInterpretation(
     active.barLines
   );
   const [savedBpm, setSavedBpm] = useState<number | undefined>(active.bpm);
+  const [savedBeats, setSavedBeats] = useState<readonly TappedBeat[]>(
+    () => active.beats ?? []
+  );
   const [failed, setFailed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const frozen = useRef<InterpretationDto[]>([]);
@@ -86,6 +93,7 @@ export function useInterpretation(
     barLines?: number[];
     notes?: NoteEdit[];
     bpm?: number;
+    beats?: TappedBeat[];
   }>({
     chords: active.chords as ChordSlotEdit[],
     ...(active.barLines ? { barLines: [...active.barLines] } : {}),
@@ -155,14 +163,25 @@ export function useInterpretation(
     [schedule]
   );
 
+  const updateBeats = useCallback(
+    (beats: readonly TappedBeat[]) => {
+      setSavedBeats(beats);
+      latest.current = { ...latest.current, beats: [...beats] };
+      schedule();
+    },
+    [schedule]
+  );
+
   return {
     savedEdits,
     savedBarLines,
     savedBpm,
+    savedBeats,
     savedNoteEdits,
     update,
     updateBarLines,
     updateBpm,
+    updateBeats,
     updateNotes,
     failed
   };

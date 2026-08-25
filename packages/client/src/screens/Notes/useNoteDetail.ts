@@ -21,6 +21,12 @@ import {
   quantize,
   splitOffCount,
   isStale,
+  addTap,
+  downbeatsFromBeats,
+  markDownbeat,
+  moveBeat,
+  resetBeat,
+  tempoFromBeats,
   readMetre,
   type NoteEdge,
   type NoteEvent
@@ -168,13 +174,36 @@ export function useNoteDetail(id: string) {
   // reading is left as it was — this is a decision about the take rather than
   // a correction to what was heard, and it has to survive a re-read
   // (INV-NOTES-123).
-  const grid = useMemo(
-    () =>
-      interpretation.savedBpm != null && interpretation.savedBpm > 0
-        ? { ...quantized.grid, bpm: interpretation.savedBpm }
-        : quantized.grid,
-    [quantized.grid, interpretation.savedBpm]
-  );
+  // The beat somebody tapped along with the take. It outranks every reading
+  // of the same thing, because there is nothing to detect in it
+  // (INV-NOTES-130).
+  const beats = interpretation.savedBeats;
+  const tapped = useMemo(() => tempoFromBeats(beats), [beats]);
+
+  /**
+   * The grid in use.
+   *
+   * In order of how directly each was stated: a tempo set by hand, then the
+   * beat tapped along with the take, then whatever was read from it. Each
+   * stands in front of the reading rather than replacing it, so the estimate
+   * is always there to go back to (INV-NOTES-123).
+   */
+  const grid = useMemo(() => {
+    if (interpretation.savedBpm != null && interpretation.savedBpm > 0) {
+      return { ...quantized.grid, bpm: interpretation.savedBpm };
+    }
+    if (tapped != null) {
+      return {
+        ...quantized.grid,
+        bpm: tapped.bpm,
+        offsetMs: tapped.offsetMs,
+        beatsPerBar: tapped.beatsPerBar ?? quantized.grid.beatsPerBar,
+        meterIsStated: tapped.beatsPerBar != null,
+        confidence: tapped.confidence
+      };
+    }
+    return quantized.grid;
+  }, [quantized.grid, interpretation.savedBpm, tapped]);
   const hasGrid = grid.bpm > 0 && melody.length > 1;
 
   // What was counted, and what was played. The count is a performance and
@@ -199,10 +228,19 @@ export function useNoteDetail(id: string) {
   // Where the harmony turns over, which is what a downbeat marks. The take
   // opens on these rather than on an even division counted out from the
   // tempo (INV-NOTES-049) — unless a layer states it outright.
-  const readDownbeats = useMemo(
-    () => proposeDownbeats(melody, grid, bass ? { bass } : {}),
-    [melody, grid, bass]
-  );
+  const readDownbeats = useMemo(() => {
+    // A bar somebody marked while tapping beats it outright: it is the only
+    // statement about where a bar begins that came from the person who sang
+    // it (INV-NOTES-130). Everything else here is a reading.
+    const marked = downbeatsFromBeats(beats);
+    if (marked.length > 0 && grid.bpm > 0) {
+      const stepMs = 60000 / grid.bpm / (grid.stepsPerBeat || 4);
+      return marked.map((atMs) =>
+        Math.max(0, Math.round((atMs - grid.offsetMs) / stepMs))
+      );
+    }
+    return proposeDownbeats(melody, grid, bass ? { bass } : {});
+  }, [melody, grid, bass, beats]);
 
   // Where the downbeats fall. Detection proposes; a person arranges
   // (INT-NOTES-012).
@@ -415,6 +453,31 @@ export function useNoteDetail(id: string) {
     /** The struck sounds in this take (INV-PITCH-025). */
     hits,
     /** True where this take would read differently if it were read again. */
+    /** The beat tapped along with the take (INV-NOTES-130). */
+    beats,
+    tappedBpm: tapped?.bpm ?? null,
+    tapBeat: useCallback(
+      (atMs: number) => interpretation.updateBeats(addTap(beats, atMs)),
+      [beats, interpretation]
+    ),
+    clearBeats: useCallback(
+      () => interpretation.updateBeats([]),
+      [interpretation]
+    ),
+    moveBeatTo: useCallback(
+      (index: number, toMs: number) =>
+        interpretation.updateBeats(moveBeat(beats, index, toMs)),
+      [beats, interpretation]
+    ),
+    setBeatIsDownbeat: useCallback(
+      (index: number, isDownbeat: boolean) =>
+        interpretation.updateBeats(markDownbeat(beats, index, isDownbeat)),
+      [beats, interpretation]
+    ),
+    resetBeatAt: useCallback(
+      (index: number) => interpretation.updateBeats(resetBeat(beats, index)),
+      [beats, interpretation]
+    ),
     /** The tempo in use, and how to set it by hand (INV-NOTES-123). */
     bpm: grid.bpm,
     isBpmByHand: interpretation.savedBpm != null,

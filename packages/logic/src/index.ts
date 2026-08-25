@@ -18,7 +18,7 @@ export * from './analysis';
 export * from './analysisVersion';
 export * from './percussion';
 export * from './readTake';
-export * from './tappedRhythm';
+export * from './tappedBeats';
 export * from './sungCount';
 export * from './quantize';
 export * from './bars';

@@ -64,6 +64,19 @@ export interface ScaleRequest {
  * leave the singer somewhere with no landmarks (INV-NOTES-033). One bar
  * filling the viewport is the limit.
  */
+/**
+ * The moment at a pixel — the inverse of {@link xForMs}.
+ *
+ * Beside it rather than worked out at the call site, so a thing dragged to a
+ * position and a thing drawn at one are using one mapping read both ways
+ * (INV-NOTES-104).
+ */
+export function msForX(axis: TimeAxis, x: number): number {
+  return axis.pxPerMs > 0
+    ? axis.t0 + (x - axis.pad) / axis.pxPerMs
+    : axis.t0;
+}
+
 export function clampBeatWidth(
   desired: number,
   viewportWidth: number,

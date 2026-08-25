@@ -28,6 +28,14 @@ export interface NoteEditDto {
   endMs?: number;
 }
 
+/** One tapped beat — mirrors `logic`'s `TappedBeat` field-for-field. */
+export interface TappedBeatDto {
+  atMs: number;
+  /** Where the finger actually landed, so a correction is reversible. */
+  tappedAtMs: number;
+  isDownbeat: boolean;
+}
+
 export interface InterpretationDto {
   id: string;
   name: string;
@@ -48,6 +56,15 @@ export interface InterpretationDto {
    * and it must survive the take being read again (INV-NOTES-123).
    */
   bpm?: number;
+  /**
+   * The beat, tapped in against the take.
+   *
+   * A statement about where the pulse is, from the person who sang it, so it
+   * outranks every reading of the same thing (INV-NOTES-130). Kept with the
+   * edits for the same reason the tempo is: it is a decision about the take
+   * rather than a fact of it, and it must survive a re-read.
+   */
+  beats?: TappedBeatDto[];
 }
 
 const QUALITIES = [

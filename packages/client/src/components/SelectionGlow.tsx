@@ -25,6 +25,7 @@ import type { ChordToneRect } from './chordLayout';
 import type { NoteRect } from './melodyLayout';
 import type {
   BarHandlePoint,
+  BeatLine,
   Chosen,
   HitPoint,
   Selection
@@ -47,6 +48,8 @@ export interface SelectionGlowProps {
   layerNotes?: readonly NoteRect[];
   /** Where each struck sound's mark was drawn (INV-NOTES-118). */
   hits?: readonly HitPoint[];
+  /** Where each tapped beat is drawn (INV-NOTES-130). */
+  beatLines?: readonly BeatLine[];
   width: number;
   height: number;
   /** What a sung note or a bar line glows in, the chords having their own. */
@@ -61,17 +64,20 @@ export function SelectionGlow({
   notes,
   layerNotes = [],
   hits = [],
+  beatLines = [],
   width,
   height,
   colour
 }: SelectionGlowProps): React.JSX.Element | null {
   const lit = selection
-    .map((one) => litShape(one, tones, bars, notes, colour, layerNotes, hits))
+    .map((one) =>
+      litShape(one, tones, bars, notes, colour, layerNotes, hits, beatLines)
+    )
     .filter((shape): shape is Lit => shape != null);
   // The flash rides on top of the rest, so a row pressed in the sheet is
   // findable among four things that are all already lit (INV-NOTES-094).
   const flashed = flashing
-    ? litShape(flashing, tones, bars, notes, colour, layerNotes, hits)
+    ? litShape(flashing, tones, bars, notes, colour, layerNotes, hits, beatLines)
     : null;
   if (lit.length === 0 && !flashed) {
     return null;
@@ -140,7 +146,8 @@ export function litShape(
   notes: readonly NoteRect[],
   colour: string,
   layerNotes: readonly NoteRect[] = [],
-  hits: readonly HitPoint[] = []
+  hits: readonly HitPoint[] = [],
+  beats: readonly BeatLine[] = []
 ): Lit | null {
   if (!selection) {
     return null;
@@ -173,6 +180,11 @@ export function litShape(
           colour
         }
       : null;
+  }
+  if (selection.kind === 'beat') {
+    const line = beats[selection.index];
+    // The whole height, like the bar line it may become (INV-NOTES-130).
+    return line ? { kind: 'line', x: line.x, colour } : null;
   }
   const tone = tones.find(
     (r) => r.slot === selection.slot && r.tone === selection.tone

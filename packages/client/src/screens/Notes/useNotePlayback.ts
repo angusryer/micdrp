@@ -188,8 +188,13 @@ export function useNotePlayback(
 
   return {
     countMix,
-    /** The beats themselves, for anything that feels them (INV-NOTES-125). */
-    beats: counted.clicks,
+    /**
+     * The metronome's own clicks, for anything that feels them
+     * (INV-NOTES-125). Not the tapped beats — those are a statement about
+     * where the pulse is, and these are the app ticking it out
+     * (INV-NOTES-130).
+     */
+    clickBeats: counted.clicks,
     rhythmMix,
     playbackMode,
     setPlaybackMode,

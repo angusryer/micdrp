@@ -449,38 +449,51 @@ invariants:
       playhead. A refusal is a fact about the session, not a fault in the
       take.
 
-  - id: INV-NOTES-129
-    description: A rhythm can be tapped in, and a tap is not a reading
+  - id: INV-NOTES-130
+    description: The beat is tapped in, and a tapped beat outranks every reading
     severity: major
     check: >
-      A rhythm can be tapped in while the take plays, one pad per sound, each
-      laid down as the finger lands rather than as it lifts and stamped
-      against where the take has reached. A tapped hit is certain, claims
-      nothing about its timbre, and is not snapped to the grid unless asked.
-      A bouncing finger is one press. Where a tapped hit and a read one
-      describe the same moment, the tapped one stands. Verified by asserting a
-      press lays a hit at the moment given, that confidence is certain and the
-      timbre unknown, that a bounce is one hit, and that a tap wins a
-      collision.
+      One button taps the beat while the take sounds, armed only while
+      something is actually running, each press landing as the finger does
+      rather than as it lifts and stamped against where the take has reached.
+      Three or more beats state a tempo; two state nothing. A beat can be
+      moved, remembers where the finger landed, and can be put back. A beat
+      can be marked as a bar start, and two marks state a bar length. The
+      tempo and bars they state stand in front of every reading of the same
+      thing, below only a tempo typed by hand. Verified by asserting the
+      tempo read back matches what was tapped, that a late tap does not drag
+      it, that a moved beat keeps its tapped position, that one mark states no
+      bar length, and that a tap against a stopped take lays nothing down.
 
-      Mouth drums have to be heard through a microphone and told apart from
-      singing, which is a reading and can be wrong (INV-PITCH-025). A tap is
-      not a reading at all: the moment is the moment the finger landed, there
-      is nothing to detect, and nothing it could be mistaken for. It is the
-      most certain input the app has, it works in a noisy room, and it works
-      for a part nobody can sing.
+      Everything else infers where the beat is. The fitter deduces it from
+      onsets, which is genuinely hard; a sung count states it, but only for
+      the bars somebody counted (INV-PITCH-022). Tapping along says it for the
+      whole take, continuously, by the one party who knows — and there is
+      nothing to detect in a tap, so there is nothing to get wrong. That is
+      what puts it at the top of the order.
 
-      So it sits beside the detector rather than replacing it. Singing a
-      rhythm is faster and leaves the hands free; tapping one is exact.
+      One button, because there is one thing being said: here is the beat.
+      Three pads were a drum machine, which is a different instrument
+      answering a different question, and a pulse is singular.
 
-      On press-in rather than on release, because the beat is where the finger
-      landed — waiting for it to lift would place every hit late by however
-      long it was held. Unsnapped by default, because a tap is already exact
-      and rounding it is a claim about what was meant rather than about when
-      it happened.
+      Armed only while the take sounds. A tap against a stopped transport has
+      no moment to be at, so it lands wherever the playhead was left — a beat
+      placed by accident, which is worse than no beat.
 
-      Certain by construction: a tap was made on purpose, so its confidence is
-      not a guess about whether it happened. Its timbre is unknown, because
-      nothing about a finger says what the sound should be — the kind is what
-      was chosen, and unknown and measured are different claims
-      (INV-PITCH-020).
+      On press-in rather than release, or every beat is late by however long
+      the button was held.
+
+      The median interval rather than the mean, because tapping along is
+      played: one late tap is ordinary and must not drag the reading with it.
+      Two taps are an interval and not a tempo — nothing in them says whether
+      it would have happened again.
+
+      A moved beat keeps where the finger landed. Tapping along is played
+      rather than typed, so a beat can be a little late without being wrong
+      about which beat it is — and correcting one must never destroy the
+      record of what was performed (INV-NOTES-022). Moving one does not snap
+      it to the grid: a tapped beat is what the grid is derived from, and
+      snapping would be the reading correcting the statement it came from.
+
+      One mark says where a bar begins and nothing about how long one is, so
+      a bar length needs two.

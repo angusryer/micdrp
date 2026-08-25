@@ -89,6 +89,11 @@ export interface PlaybackBarProps {
    */
   onTransport?: (transport: {
     positionMs: number;
+    /**
+     * Whether a sound is actually running. A beat tapped against a stopped
+     * take has no moment to be at (INV-NOTES-130).
+     */
+    isPlaying: boolean;
     seek: (ms: number) => void;
     /** Start the take, so a layer can be sung against it (INT-NOTES-025). */
     play: () => void;
@@ -178,12 +183,16 @@ export function PlaybackBar({
     () =>
       onTransport?.({
         positionMs,
+        // Whether a sound is actually running, not merely whether there is a
+        // transport. A beat tapped against a stopped take has no moment to be
+        // at (INV-NOTES-130).
+        isPlaying: state === 'playing',
         // Moving the head, not a transport command (INV-NOTES-091).
         seek: cueTo,
         play: () => void play(),
         stop: () => void stop()
       }),
-    [onTransport, positionMs, cueTo, play, stop]
+    [onTransport, positionMs, state, cueTo, play, stop]
   );
 
   return (

@@ -18,7 +18,12 @@ import { GestureDetector } from 'react-native-gesture-handler';
 
 import type { ChordToneRect } from './chordLayout';
 import type { NoteRect } from './melodyLayout';
-import type { BarHandlePoint, Chosen, HitPoint } from './graphSelection';
+import type {
+  BarHandlePoint,
+  BeatLine,
+  Chosen,
+  HitPoint
+} from './graphSelection';
 import { DragLoupe } from './DragLoupe';
 import { useGraphGestures, type DragPreview } from './useGraphGestures';
 
@@ -32,6 +37,8 @@ export interface GraphSurfaceProps {
   layerNotes?: readonly NoteRect[];
   /** Where each struck sound's mark sits, in the band below the drawing. */
   hits?: readonly HitPoint[];
+  /** Where each tapped beat is drawn (INV-NOTES-130). */
+  beats?: readonly BeatLine[];
   /** Height of one semitone lane, for turning a drag into pitch. */
   laneHeight: number;
   /** Step zero and step size, for turning a drag into a grid position. */
@@ -41,6 +48,8 @@ export interface GraphSurfaceProps {
   onSelect: (selection: Chosen) => void;
   /** Move a bar line to a grid step. */
   onMoveBar: (lineIndex: number, step: number) => void;
+  /** Move a tapped beat to a pixel position (INV-NOTES-130). */
+  onMoveBeat?: (index: number, x: number) => void;
   /** Move one note of one chord by whole semitones. */
   onMoveTone: (slot: number, tone: number, semitones: number) => void;
   /** Move one sung note by whole semitones, correcting what was heard. */
@@ -59,12 +68,14 @@ export function GraphSurface({
   notes,
   layerNotes = [],
   hits = [],
+  beats = [],
   laneHeight,
   originX,
   stepWidth,
   selection,
   onSelect,
   onMoveBar,
+  onMoveBeat,
   onMoveTone,
   onMoveNote,
   onAddBar,
@@ -81,12 +92,14 @@ export function GraphSurface({
     notes,
     layerNotes,
     hits,
+    beats,
     laneHeight,
     originX,
     stepWidth,
     selection,
     onSelect,
     onMoveBar,
+    onMoveBeat,
     onMoveTone,
     onMoveNote,
     onAddBar,

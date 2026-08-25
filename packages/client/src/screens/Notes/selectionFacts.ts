@@ -81,6 +81,9 @@ export function describeSelection(
   if (selection.kind === 'hit') {
     return describeHit(selection, detail, accent);
   }
+  if (selection.kind === 'beat') {
+    return describeBeat(selection, detail, accent);
+  }
   return describeBarLine(selection, detail, accent, onSelect);
 }
 
@@ -218,6 +221,52 @@ function describeHit(
         ]
       : [],
     actions: []
+  };
+}
+
+/**
+ * A beat somebody tapped along with the take.
+ *
+ * The only thing on the graph that was stated rather than read, which is why
+ * it can be moved, put back and made a bar start (INV-NOTES-130).
+ */
+function describeBeat(
+  selection: Extract<Selection, { kind: 'beat' }>,
+  detail: ReturnType<typeof useNoteDetail>,
+  accent: string
+): SelectionDescription {
+  const beat = detail.beats[selection.index];
+  if (beat == null) {
+    return { title: 'Beat', accent, facts: [], actions: [] };
+  }
+  const wasMoved = Math.round(beat.atMs) !== Math.round(beat.tappedAtMs);
+  const actions: SelectionAction[] = [
+    {
+      label: beat.isDownbeat ? 'Not a bar start' : 'Start a bar here',
+      run: () => detail.setBeatIsDownbeat(selection.index, !beat.isDownbeat)
+    }
+  ];
+  // Offered only where there is something to undo (INV-NOTES-044).
+  if (wasMoved) {
+    actions.push({
+      label: 'Put it back',
+      run: () => detail.resetBeatAt(selection.index)
+    });
+  }
+  return {
+    title: beat.isDownbeat ? 'Bar starts here' : 'Beat',
+    accent,
+    facts: [
+      { label: 'At', value: seconds(beat.atMs) },
+      {
+        label: 'Read as',
+        value: wasMoved ? 'moved by hand' : 'where you tapped'
+      },
+      ...(wasMoved
+        ? [{ label: 'Tapped at', value: seconds(beat.tappedAtMs) }]
+        : [])
+    ],
+    actions
   };
 }
 
