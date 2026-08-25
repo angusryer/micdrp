@@ -21,6 +21,8 @@ import {
   quantize,
   splitOffCount,
   isStale,
+  matchedLevels,
+  sungLoudnessDb,
   addTap,
   beatFromTap,
   beatsAcross,
@@ -50,6 +52,9 @@ import { useListening } from './useListening';
 import { useInterpretation } from './useInterpretation';
 import { useExportedMidi } from './useExportedMidi';
 import type { Chosen, Selection } from '../../components/graphSelection';
+import { DEFAULT_LEVELS } from './playbackTracks';
+import { offeredTracks } from './offeredTracks';
+import { trackSpec } from './trackRegistry';
 import { useLayerVoices } from './useLayerVoices';
 import { useNoteLayers } from './useNoteLayers';
 import { useNotationView } from './useNotationView';
@@ -336,7 +341,23 @@ export function useNoteDetail(id: string) {
   // only ever moved the chords by an octave, and every other line already
   // says that in octaves (INV-NOTES-039).
   // How this note is being listened to, kept with the note (INV-NOTES-114).
-  const listening = useListening(note?.id ?? null);
+  /**
+   * Where this note's tracks sit before anybody moves them.
+   *
+   * From how loud the take was actually sung rather than from numbers chosen
+   * by ear against one recording: against a quieter take those numbers bury
+   * it, and against a loud one they vanish under it (INV-NOTES-141).
+   */
+  const startLevels = useMemo(
+    () =>
+      matchedLevels(
+        DEFAULT_LEVELS,
+        sungLoudnessDb(heard),
+        (track) => trackSpec(track).role === 'recording'
+      ),
+    [heard]
+  );
+  const listening = useListening(note?.id ?? null, startLevels);
   const { chordOctaves, setChordOctaves } = listening;
   const floorMidi = HEADPHONE_FLOOR_MIDI + 12 * chordOctaves;
   // The chords are the downbeats, seen a second way: each one opens a chord
@@ -572,7 +593,19 @@ export function useNoteDetail(id: string) {
     setSelection,
     flashing,
     flash,
-    ...playback
+    ...playback,
+    /**
+     * Which tracks this note actually has, for the rail beside the graph and
+     * the options list alike — one answer to one question (INT-NOTES-026).
+     */
+    railTracks: offeredTracks({
+      chords: playback.backdrop?.durationMs,
+      bass: playback.bassMix?.durationMs,
+      melody: playback.melodyVoiceMix?.durationMs,
+      rhythm: playback.rhythmMix?.durationMs,
+      count: playback.countMix?.durationMs,
+      layers: layerVoices.durationMs
+    })
   };
 }
 

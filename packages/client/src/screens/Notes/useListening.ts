@@ -55,19 +55,20 @@ const keyFor = (noteId: string) => `notes.${noteId}.listening`;
  * track existed has no setting for it, and should get that track's default
  * rather than nothing at all.
  */
-function read(noteId: string | null): Listening {
+function read(noteId: string | null, startLevels: TrackLevels): Listening {
+  const start: Listening = { ...START, levels: startLevels };
   if (noteId == null) {
-    return START;
+    return start;
   }
   const kept = getJSON<Partial<Listening>>(keyFor(noteId));
   if (kept == null) {
-    return START;
+    return start;
   }
   return {
-    mix: { ...START.mix, ...kept.mix },
-    levels: { ...START.levels, ...kept.levels },
-    chordOctaves: kept.chordOctaves ?? START.chordOctaves,
-    beatIsFelt: kept.beatIsFelt ?? START.beatIsFelt
+    mix: { ...start.mix, ...kept.mix },
+    levels: { ...start.levels, ...kept.levels },
+    chordOctaves: kept.chordOctaves ?? start.chordOctaves,
+    beatIsFelt: kept.beatIsFelt ?? start.beatIsFelt
   };
 }
 
@@ -78,12 +79,25 @@ export interface UseListening extends Listening {
   setBeatIsFelt: (felt: boolean) => void;
 }
 
-export function useListening(noteId: string | null): UseListening {
-  const [listening, setListening] = useState<Listening>(() => read(noteId));
+/**
+ * @param startLevels Where this note's tracks sit before anybody moves them.
+ *   Derived from how loud the take was actually sung (INV-NOTES-141); a level
+ *   set by hand is kept and still wins.
+ */
+export function useListening(
+  noteId: string | null,
+  startLevels: TrackLevels = DEFAULT_LEVELS
+): UseListening {
+  const [listening, setListening] = useState<Listening>(() =>
+    read(noteId, startLevels)
+  );
 
   // A different note is a different balance. Read rather than carried over,
   // so opening a second note never inherits the first note's mix.
-  useEffect(() => setListening(read(noteId)), [noteId]);
+  useEffect(
+    () => setListening(read(noteId, startLevels)),
+    [noteId, startLevels]
+  );
 
   const change = useCallback(
     (next: (was: Listening) => Listening) => {

@@ -37,8 +37,11 @@ export interface UseNoteCaptureValue {
   isRecording: boolean;
   /** Begin capture (requests mic permission). Swallows a denied permission. */
   start(): void;
-  /** Stop, analyse, and save the capture as a note. */
-  stopAndSave(title?: string): Promise<void>;
+  /**
+   * Stop, analyse, and keep the capture as a note. Resolves with its id, or
+   * null where nothing could be kept.
+   */
+  stopAndSave(title?: string): Promise<string | null>;
   /**
    * Tap the beat while the take is being sung (INV-NOTES-137). Stamped
    * against the capture's own clock, and ignored when nothing is running.
@@ -89,11 +92,12 @@ export function useNoteCapture(onSaved?: () => void): UseNoteCaptureValue {
   }, [controller]);
 
   const stopAndSave = useCallback(
-    async (title?: string): Promise<void> => {
+    async (title?: string): Promise<string | null> => {
       if (savingRef.current) {
-        return;
+        return null;
       }
       savingRef.current = true;
+      let kept: string | null = null;
       try {
         const handle = await controller.stop();
         setSaveStatus('saving');
@@ -117,6 +121,7 @@ export function useNoteCapture(onSaved?: () => void): UseNoteCaptureValue {
         }
         setSaveStatus('saved');
         onSaved?.();
+        kept = note.id;
       } catch {
         setSaveStatus('error');
       } finally {
@@ -126,6 +131,7 @@ export function useNoteCapture(onSaved?: () => void): UseNoteCaptureValue {
       // rather than left to float — an upload that cannot happen is an
       // ordinary state of the world, not an unhandled rejection.
       void flushPending().catch(() => undefined);
+      return kept;
     },
     [controller, onSaved]
   );

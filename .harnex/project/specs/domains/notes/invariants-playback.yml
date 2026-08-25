@@ -770,3 +770,52 @@ invariants:
       touches, and a screen that never sleeps is a battery that does not last
       the day.
 
+  - id: INV-NOTES-141
+    description: The tracks start at the loudness the take was sung at
+    severity: major
+    check: >
+      A note's starting levels are derived from how loud its sung notes
+      actually were — the median of the per-note loudness, ignoring notes
+      nothing measured — and every synthesized track is scaled by one factor
+      so a quiet take gets a quiet accompaniment and a loud one gets a loud
+      accompaniment. The relative balance the tracks were given stays as it
+      was; only the whole is moved. A take with no measured loudness keeps the
+      flat defaults. A level set by hand still wins and still persists.
+      Verified by asserting a quiet take yields quieter tracks than a loud
+      one, that the ratios between tracks are unchanged, and that a note whose
+      loudness was never measured is left alone.
+
+      The tracks were balanced at fixed numbers chosen by ear against one
+      take. Against a take sung twice as quietly, the same numbers bury it;
+      against a loud one they vanish under it. The singer then does by hand,
+      on every note, what a measurement could have done once.
+
+      From the notes rather than from the file. The file's average includes
+      every silence between phrases and the room behind them, so a take with
+      long gaps reads as quiet when the singing was not — raising the floor
+      instead of matching the voice. What was sung is what has to be matched,
+      and the per-note loudness is exactly that (INV-PITCH-020).
+
+      The median rather than the mean, because one shouted note is not the
+      loudness of a performance.
+
+  - id: INV-NOTES-142
+    description: The graph's controls ride beside it rather than scrolling away
+    severity: minor
+    check: >
+      A strip down the left edge of the graph stays put while the graph
+      scrolls, carrying one mute for each track the note has. It sits flush
+      against the drawing with nothing between them, and the drawing begins
+      where the strip ends. Verified by asserting the strip does not move with
+      the graph's scroll and that a mute in it silences the same track the
+      options list does.
+
+      The mutes lived in a sheet reached from the top bar, which is the wrong
+      place for them: silencing a track is something done WHILE listening and
+      looking at the graph, and a control that has to be opened first is a
+      control that interrupts the thing it is for.
+
+      Flush against the drawing because the two are one instrument. A gap
+      would read as two panels, and the strip would stop being the graph's
+      edge and start being a sidebar.
+

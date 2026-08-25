@@ -25,12 +25,20 @@
  * that throws the take away, because a view that starts recording the moment
  * it opens must never be a view you are stuck in.
  *
+ * Stopping opens the note it just kept rather than returning to the list.
+ * Somebody who has sung an idea is far more likely to want to work on it —
+ * sing a bass line against it, put the beat right — than to want to look at
+ * a list, and the list is one press away from there anyway.
+ *
  * Composition only. What a capture is lives in useNoteCapture; every
  * per-frame value arrives as a shared value and never crosses React state.
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+import type { RootStackParamList } from '../../navigation/types';
 import { useWindowDimensions } from 'react-native';
 
 import { useTheme } from '../../theme';
@@ -50,7 +58,8 @@ export function RecordScreen(): React.JSX.Element {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
-  const navigation = useNavigation();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [saved, setSaved] = useState(false);
 
   const {
@@ -77,10 +86,16 @@ export function RecordScreen(): React.JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Back to the list once the note is written. The take is the thing; there
-  // is nothing to look at here afterwards.
+  // Into the note once it is kept. There is nothing to look at here
+  // afterwards, and the thing somebody usually wants next is the take they
+  // have just sung.
   const finish = useCallback(() => {
-    void stopAndSave().then(() => navigation.goBack());
+    void stopAndSave().then((id) => {
+      navigation.goBack();
+      if (id != null) {
+        navigation.navigate('NoteDetail', { id });
+      }
+    });
   }, [stopAndSave, navigation]);
 
   // Out, without keeping anything. Nothing is saved and nothing is asked:

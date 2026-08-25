@@ -25,6 +25,7 @@ import { useTranslation } from '../../i18n';
 import { ChordTrack } from './ChordTrack';
 import { NoteShapeControls } from './NoteShapeControls';
 import { Playhead } from './Playhead';
+import { TrackRail, TRACK_RAIL_WIDTH } from './TrackRail';
 import { Scrubber } from './Scrubber';
 import type { useNoteDetail } from './useNoteDetail';
 import type { Hit } from 'logic';
@@ -135,10 +136,27 @@ export function NoteShapeSection({
   // was sung. This is the only sign of it, and only while it is not zero
   // (INV-NOTES-058).
   const shifted = octaveLabel(octaves);
+  // The rail takes its room out of the drawing rather than out of the page:
+  // the graph still reaches both edges of the card, and the strip is part of
+  // the graph rather than something beside it (INV-NOTES-142).
+  const drawingWidth = Math.max(
+    0,
+    width - (detail.railTracks.length > 0 ? TRACK_RAIL_WIDTH : 0)
+  );
 
   return (
     <>
       <View style={[styles.card, { backgroundColor: colors.neutral50 }]}>
+        {/* Beside the drawing and outside its scroll, so it is the same
+            distance from every part of the take (INV-NOTES-142). */}
+        <View style={styles.withRail}>
+          <TrackRail
+            tracks={detail.railTracks}
+            mix={detail.listening.mix}
+            height={graphHeight + SCRUB_BAND_HEIGHT + stripHeight + bandHeight}
+            onToggle={detail.listening.setAudible}
+          />
+          <View style={styles.drawing}>
         {/* A beat is a fixed width here and the take scrolls past the screen,
             so a bar is the same size in every take and wide enough to put a
             finger on (INV-NOTES-032). Without a grid there is no beat to
@@ -147,7 +165,7 @@ export function NoteShapeSection({
           <ZoomableMelody
             notes={melody}
             grid={gridForView}
-            width={width}
+            width={drawingWidth}
             height={graphHeight}
             alsoShow={shownWith}
             underlay={bass}
@@ -236,8 +254,10 @@ export function NoteShapeSection({
             )}
           </ZoomableMelody>
         ) : (
-          <MelodyView notes={melody} width={width} height={graphHeight} />
+          <MelodyView notes={melody} width={drawingWidth} height={graphHeight} />
         )}
+          </View>
+        </View>
         {shifted != null ? (
           <View
             style={[styles.octaveBadge, { backgroundColor: colors.neutral100 }]}
@@ -277,6 +297,10 @@ export default NoteShapeSection;
 const styles = StyleSheet.create({
   // No border and no radius: the drawing runs to the edges of its slot
   // (INV-NOTES-101).
+  // The rail and the drawing sit side by side with nothing between them:
+  // they are one instrument, and a gap would read as two panels.
+  withRail: { flexDirection: 'row' },
+  drawing: { flex: 1 },
   card: { overflow: 'hidden' },
   octaveBadge: {
     position: 'absolute',

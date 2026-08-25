@@ -20,6 +20,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '../../components/Icon';
 import { PlaybackSheet } from './PlaybackSheet';
 import { useTheme } from '../../theme';
+import { offeredTracks } from './offeredTracks';
 import { useListening, type UseListening } from './useListening';
 import { useHapticBeat } from './useHapticBeat';
 import { PlaybackButton } from './PlaybackButton';
@@ -134,45 +135,25 @@ export function PlaybackBar({
     listening ?? own;
   // Only offer a track this note has. With neither chords nor a melody there
   // is nothing to turn, so the take is all there is and no toggles are shown.
-  const offered = useMemo<TrackName[]>(() => {
-    const extras: TrackName[] = [];
-    if ((accompaniment?.durationMs ?? 0) > 0) {
-      extras.push('chords');
-    }
-    if ((voice?.durationMs ?? 0) > 0) {
-      extras.push('melody');
-    }
-    // Wherever there is a tempo to count at. It is most needed on a take
-    // that begins immediately, which is most of them (INV-NOTES-088).
-    if ((count?.durationMs ?? 0) > 0) {
-      extras.push('count');
-    }
-    // Only where something was actually struck. A take of pure singing has
-    // no drums, and a control for a track that would make no sound is a
-    // control that lies (INV-NOTES-120).
-    if ((rhythm?.durationMs ?? 0) > 0) {
-      extras.push('rhythm');
-    }
-    // Only where a layer was actually sung and left audible. A layer is a
-    // performance, so this offers the recording rather than the reading of
-    // it (INV-NOTES-134).
-    if ((layers?.durationMs ?? 0) > 0) {
-      extras.push('layers');
-    }
-    // Only where a root movement was read. A take that implied no harmony has
-    // no bass to offer (INV-NOTES-135).
-    if ((bass?.durationMs ?? 0) > 0) {
-      extras.push('bass');
-    }
-    return extras.length > 0 ? ['take', ...extras] : [];
-  }, [
-    accompaniment?.durationMs,
-    voice?.durationMs,
-    count?.durationMs,
-    rhythm?.durationMs,
-    layers?.durationMs,
-    bass?.durationMs
-  ]);
+  const offered = useMemo<TrackName[]>(
+    () =>
+      offeredTracks({
+        chords: accompaniment?.durationMs,
+        bass: bass?.durationMs,
+        melody: voice?.durationMs,
+        rhythm: rhythm?.durationMs,
+        count: count?.durationMs,
+        layers: layers?.durationMs
+      }),
+    [
+      accompaniment?.durationMs,
+      bass?.durationMs,
+      voice?.durationMs,
+      rhythm?.durationMs,
+      count?.durationMs,
+      layers?.durationMs
+    ]
+  );
 
   // What the toggles both draw and hand back: a track the note lacks, or a
   // melody with no take left under it, is off in fact, so drawing it on would

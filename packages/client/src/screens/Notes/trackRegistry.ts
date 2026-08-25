@@ -109,7 +109,11 @@ export const TRACKS = [
   {
     name: 'count',
     role: 'timing',
-    title: 'Count-in',
+    // Named for what it is. The count-in is this click's opening bars rather
+    // than a separate voice — one job continued (INV-NOTES-119) — and calling
+    // it a count-in hid the fact that turning it on clicks through the whole
+    // take.
+    title: 'Metronome, counting you in',
     startsOn: false,
     // Faint. It is there to be followed, not listened to, and a loud click
     // over a quiet take is the take you stop hearing.
