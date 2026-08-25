@@ -96,6 +96,47 @@ function fitOf(
  * Null below three taps. Two are an interval, and an interval alone says
  * nothing about whether it would have happened again.
  */
+/**
+ * Every period worth trying, from the gaps between taps.
+ *
+ * Each gap divided by each small integer, because a gap is a whole number of
+ * beats and nothing says which number. The true period divides every gap into
+ * a near-integer; a wrong one does not, which is what the fit then finds out.
+ */
+function candidatePeriods(at: readonly number[]): number[] {
+  const found = new Set<number>();
+  for (let i = 1; i < at.length; i++) {
+    const gap = at[i] - at[i - 1];
+    for (let span = 1; span <= MAX_SPAN; span++) {
+      const period = gap / span;
+      if (period >= FASTEST_MS && period <= SLOWEST_MS) {
+        found.add(period);
+      }
+    }
+  }
+  return Array.from(found);
+}
+
+/**
+ * The longest period that explains the taps.
+ *
+ * Longest rather than best-fitting: a period half as long explains them just
+ * as well while inventing a beat between every pair, which nobody tapped and
+ * nothing else supports (INV-NOTES-131).
+ */
+function bestPeriod(at: readonly number[]): number | null {
+  let best: number | null = null;
+  for (const beatMs of candidatePeriods(at)) {
+    if (fitOf(at, beatMs).error > FIT_TOLERANCE) {
+      continue;
+    }
+    if (best == null || beatMs > best) {
+      best = beatMs;
+    }
+  }
+  return best;
+}
+
 export function tempoFromBeats(
   beats: readonly TappedBeat[],
   /** The tempo read from the music, where there is one, in bpm. */
@@ -105,41 +146,12 @@ export function tempoFromBeats(
   if (at.length < MIN_FOR_TEMPO) {
     return null;
   }
-
-  // Every gap, divided every plausible way, is a period worth trying. The
-  // true period divides every gap into a near-integer; a wrong one does not.
-  const candidates = new Set<number>();
-  for (let i = 1; i < at.length; i++) {
-    const gap = at[i] - at[i - 1];
-    for (let span = 1; span <= MAX_SPAN; span++) {
-      const period = gap / span;
-      if (period >= FASTEST_MS && period <= SLOWEST_MS) {
-        candidates.add(period);
-      }
-    }
-  }
-  if (candidates.size === 0) {
+  const found = bestPeriod(at);
+  if (found == null) {
     return null;
   }
 
-  let best: { beatMs: number; error: number; offsetMs: number } | null = null;
-  for (const beatMs of candidates) {
-    const fit = fitOf(at, beatMs);
-    if (fit.error > FIT_TOLERANCE) {
-      continue;
-    }
-    // Among the periods that explain the taps, the longest is the honest one:
-    // a period half as long explains them just as well while inventing a beat
-    // between every pair, which nobody tapped and nothing else supports.
-    if (best == null || beatMs > best.beatMs) {
-      best = { beatMs, error: fit.error, offsetMs: fit.offsetMs };
-    }
-  }
-  if (best == null) {
-    return null;
-  }
-
-  const beatMs = withHeard(best.beatMs, heardBpm);
+  const beatMs = withHeard(found, heardBpm);
   const fit = fitOf(at, beatMs);
   return {
     beatMs,
