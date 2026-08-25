@@ -155,6 +155,7 @@ export function GraphLayers({
           it reads above the metre it may replace (INV-NOTES-130). */}
       <TappedBeats
         beats={detail.beats}
+        inferred={detail.inferredBeats}
         timeAxis={timeAxis}
         contentWidth={contentWidth}
         height={height}
@@ -188,6 +189,8 @@ export function GraphLayers({
             detail.moveBeatTo(index, msForX(timeAxis, xPx))
           }
           onAddBar={bars.split}
+          onRemoveBar={bars.merge}
+          onRemoveBeat={detail.removeBeatAt}
           onHear={detail.hearDragged}
         />
       ) : null}

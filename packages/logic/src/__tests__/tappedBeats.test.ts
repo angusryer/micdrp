@@ -12,11 +12,11 @@
  */
 import {
   addTap,
-  downbeatsFromBeats,
   markDownbeat,
   moveBeat,
+  removeBeat,
+  replaceTaps,
   resetBeat,
-  tempoFromBeats,
   type TappedBeat
 } from '../tappedBeats';
 
@@ -32,34 +32,6 @@ describe('tapping the beat', () => {
   it('puts a beat exactly where the finger landed', () => {
     const beats = addTap(addTap([], 0), 507);
     expect(beats.map((b) => b.atMs)).toEqual([0, 507]);
-  });
-
-  it('reads the tempo that was tapped', () => {
-    expect(tempoFromBeats(tapped(8))?.bpm).toBeCloseTo(120, 6);
-  });
-
-  it('is not thrown by one late tap', () => {
-    // Tapping along is played, not typed. The median holds where a mean
-    // would be dragged.
-    const beats = tapped(8);
-    beats[4] = { ...beats[4], atMs: beats[4].atMs + 120 };
-    expect(tempoFromBeats(beats)?.bpm).toBeCloseTo(120, 0);
-  });
-
-  it('says nothing about tempo from fewer than three beats', () => {
-    // Two taps are an interval, not a tempo: nothing in them says whether it
-    // would have happened again.
-    expect(tempoFromBeats(tapped(2))).toBeNull();
-    expect(tempoFromBeats([])).toBeNull();
-  });
-
-  it('trusts an even tapping more than a ragged one', () => {
-    const ragged = tapped(8).map((beat, i) => ({
-      ...beat,
-      atMs: beat.atMs + (i % 2 === 0 ? 0 : 160)
-    }));
-    const steady = tempoFromBeats(tapped(8))?.confidence ?? 0;
-    expect(tempoFromBeats(ragged)?.confidence ?? 1).toBeLessThan(steady);
   });
 
   it('reads a bouncing finger as one beat', () => {
@@ -103,32 +75,35 @@ describe('marking where a bar begins', () => {
     expect(marked[2].isDownbeat).toBe(true);
     expect(markDownbeat(marked, 2, false)[2].isDownbeat).toBe(false);
   });
+});
 
-  it('reads the bar length from what was marked', () => {
-    expect(tempoFromBeats(tapped(9, 500, 3))?.beatsPerBar).toBe(3);
-    expect(tempoFromBeats(tapped(9, 500, 4))?.beatsPerBar).toBe(4);
+describe('tapping the take again', () => {
+  it('replaces what was tapped before rather than adding to it', () => {
+    // Tapping a second time is a correction. Merging the passes would give
+    // both readings at once, at a pulse nobody played.
+    const fresh = tapped(3, 600);
+    expect(replaceTaps(tapped(6, 300), fresh).map((b) => b.atMs)).toEqual([
+      0, 600, 1200
+    ]);
   });
 
-  it('says nothing about bar length from a single mark', () => {
-    // One mark says where a bar begins and nothing about how long one is.
-    const once = markDownbeat(tapped(8), 0, true);
-    expect(tempoFromBeats(once)?.beatsPerBar).toBeNull();
+  it('keeps a bar mark that a fresh tap landed on', () => {
+    // Which beats begin bars is a separate statement from where the beats
+    // are, and re-tapping the pulse does not retract it.
+    const before = markDownbeat(tapped(4, 500), 2, true);
+    expect(replaceTaps(before, tapped(4, 500))[2].isDownbeat).toBe(true);
   });
 
-  it('takes its phase from the first bar marked', () => {
-    const beats = markDownbeat(markDownbeat(tapped(9), 1, true), 5, true);
-    expect(tempoFromBeats(beats)?.offsetMs).toBe(500);
+  it('drops a bar mark that nothing was tapped near', () => {
+    const before = markDownbeat(tapped(4, 500), 1, true);
+    expect(
+      replaceTaps(before, tapped(3, 700)).filter((b) => b.isDownbeat)
+    ).toEqual([]);
   });
+});
 
-  it('falls back to the first beat where no bar was marked', () => {
-    expect(tempoFromBeats(tapped(8))?.offsetMs).toBe(0);
-  });
-
-  it('gives the moments a bar begins', () => {
-    expect(downbeatsFromBeats(tapped(9, 500, 4))).toEqual([0, 2000, 4000]);
-  });
-
-  it('gives none where nothing was marked', () => {
-    expect(downbeatsFromBeats(tapped(8))).toEqual([]);
+describe('throwing a beat away', () => {
+  it('removes the one flicked away and leaves the rest', () => {
+    expect(removeBeat(tapped(4), 1).map((b) => b.atMs)).toEqual([0, 1000, 1500]);
   });
 });

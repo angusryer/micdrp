@@ -12,7 +12,7 @@
  * Every press taps the fingertip back. The finger is not on the thing it is
  * placing, so the only confirmation available is the one in the hand.
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../theme';
@@ -23,6 +23,13 @@ export interface BeatTapProps {
   onTap: () => void;
   /** False whenever the take is not sounding. */
   isArmed: boolean;
+  /**
+   * Said when the take starts sounding, so what follows is a fresh pass.
+   *
+   * One run of the take is one pass. Tapping it through a second time is a
+   * correction of the first, not an addition to it (INV-NOTES-131).
+   */
+  onArm?: () => void;
   /** How many beats have been tapped, so there is something to see. */
   count: number;
   /** The tempo they state, when there are enough to state one. */
@@ -33,12 +40,19 @@ export interface BeatTapProps {
 
 export function BeatTap({
   onTap,
+  onArm,
   isArmed,
   count,
   bpm,
   onClear
 }: BeatTapProps): React.JSX.Element {
   const { colors } = useTheme();
+
+  useEffect(() => {
+    if (isArmed) {
+      onArm?.();
+    }
+  }, [isArmed, onArm]);
 
   return (
     <View style={styles.wrap}>

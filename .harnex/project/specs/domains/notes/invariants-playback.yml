@@ -483,10 +483,10 @@ invariants:
       On press-in rather than release, or every beat is late by however long
       the button was held.
 
-      The median interval rather than the mean, because tapping along is
-      played: one late tap is ordinary and must not drag the reading with it.
-      Two taps are an interval and not a tempo — nothing in them says whether
-      it would have happened again.
+      A grid fitted to the taps rather than read off them, because tapping
+      along is played and is never complete (INV-NOTES-131). Two taps are an
+      interval and not a tempo — nothing in them says whether it would have
+      happened again.
 
       A moved beat keeps where the finger landed. Tapping along is played
       rather than typed, so a beat can be a little late without being wrong
@@ -497,3 +497,80 @@ invariants:
 
       One mark says where a bar begins and nothing about how long one is, so
       a bar length needs two.
+
+  - id: INV-NOTES-131
+    description: Taps are sparse evidence, and the rest of the grid is inferred
+    severity: major
+    check: >
+      The gaps between taps are whole numbers of beats, not single beats. The
+      grid is the longest period, between 30 and 300 bpm, that puts every tap
+      within a fifth of a beat of a grid line; where the take was heard at a
+      tempo, the tapped period is resolved against it by whole multiples and
+      divisors only. Two bar marks state a bar length counted in beats of that
+      grid, not in taps between them. The beats and bars that follow run the
+      length of the take, are drawn faintly beside the tapped ones, and are
+      marked as inferred rather than stated. Each run of the take is one pass,
+      and the first tap of a pass replaces the pass before it, keeping any bar
+      mark a fresh tap landed on. Verified by asserting a missed tap does not
+      change the tempo, that taps a bar apart read as bars once a tempo is
+      heard, that two sparse marks state a bar of four, that the grid carries
+      past the last tap, and that a second pass replaces the first.
+
+      Nobody taps every beat of every take, and a feature that demanded it
+      would be a chore rather than a help. So the taps are evidence rather
+      than a transcript: a handful of them, even scattered, pins a grid that
+      the rest of the beats are inferred onto.
+
+      Which means a median of adjacent gaps is exactly the wrong reading.
+      Four taps a bar apart are four beats at a quarter of the tempo if you
+      read them naively, and reading them naively is what a median does.
+
+      The longest period that explains the taps, because a period half as long
+      explains them just as well while inventing a beat between every pair
+      that nobody tapped and nothing else supports.
+
+      The heard tempo settles the one thing taps alone cannot: whether the
+      tapped pulse is the beat or every second or fourth one. Taps are exact
+      about phase and ambiguous about rate; a reading from onsets is the other
+      way round, so each supplies what the other lacks. Whole multiples and
+      divisors only — anything between them is not musical, and a heard tempo
+      that is neither says nothing about the tapped one.
+
+      The grid's phase is named from the first bar marked where there is one.
+      Any beat describes the grid equally well, but bars are counted outward
+      from the offset, so a phase landing mid-bar would put every bar line in
+      the wrong place.
+
+      A second pass is a correction, not an addition. Keeping both would give
+      a grid twice as dense as either, fitted to a pulse nobody played. Bar
+      marks survive it, because which beats begin bars is a separate statement
+      from where the beats are.
+
+  - id: INV-NOTES-132
+    description: A vertical line is thrown away by flicking across it
+    severity: minor
+    check: >
+      A drag that finishes at least 40px across a chosen vertical line, still
+      travelling at 700px/s or more, and at least twice as far across as
+      along, removes it — bar lines and tapped beats alike, every one in the
+      selection, highest index first. Anything slower, shorter or more
+      sideways places the line as before. Verified by asserting a fast
+      vertical drag removes the chosen lines and a slow or sideways one does
+      not.
+
+      Everything vertical on the graph is a claim about time that somebody may
+      simply want gone, and there was no way to say so: a line could be moved
+      and chosen, and getting rid of one meant finding a control elsewhere for
+      a thing already under the finger.
+
+      A flick because these lines already move horizontally — dragging
+      sideways is how a line is placed, so the direction left free is across
+      it, and throwing something off the graph is the gesture people already
+      have for discarding.
+
+      Speed is what separates a decision from a wobble. A slow vertical drag
+      is somebody who has not decided, and losing a hand-placed bar line to a
+      stray finger is worse than having to flick twice.
+
+      Highest index first, because removing one shifts every index after it
+      and taking them in order would delete the wrong neighbours.

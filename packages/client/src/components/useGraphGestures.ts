@@ -10,6 +10,7 @@ import { useCallback, useMemo, useRef } from 'react';
 import { Gesture } from 'react-native-gesture-handler';
 
 import { tapped } from '../utilities/haptics';
+import { isFlickAway, throwAway } from './flickAway';
 import type { ChordToneRect } from './chordLayout';
 import type { NoteRect } from './melodyLayout';
 import { snapToStep } from '../screens/Notes/barDragAxis';
@@ -73,6 +74,12 @@ export interface GraphGestureOptions {
    * reading correcting the statement it came from.
    */
   onMoveBeat?: (index: number, x: number) => void;
+  /**
+   * Throw a vertical line away — flicked across rather than along
+   * (INV-NOTES-132). One call per line, so a set flicked together all goes.
+   */
+  onRemoveBar?: (lineIndex: number) => void;
+  onRemoveBeat?: (index: number) => void;
   onMoveTone: (slot: number, tone: number, semitones: number) => void;
   onMoveNote: (index: number, semitones: number) => void;
   onAddBar: (step: number) => void;
@@ -115,6 +122,8 @@ export function useGraphGestures({
   onSelect,
   onMoveBar,
   onMoveBeat,
+  onRemoveBar,
+  onRemoveBeat,
   onMoveTone,
   onMoveNote,
   onAddBar,
@@ -322,6 +331,20 @@ export function useGraphGestures({
             }
           }
         })
+        // A flick across a line throws it away (INV-NOTES-132). Read at the
+        // end rather than during: what makes it a flick is where it finished
+        // and how fast it was still going, neither of which is known while
+        // the finger is still down.
+        .onEnd((e) => {
+          if (!isFlickAway(e)) {
+            return;
+          }
+          if (throwAway(selection, onRemoveBar, onRemoveBeat) === 0) {
+            return;
+          }
+          tapped();
+          onSelect([]);
+        })
         .onFinalize(() => onPreview?.(null))
         .runOnJS(true),
     [
@@ -331,8 +354,11 @@ export function useGraphGestures({
       onPreview,
       onMoveBar,
       onMoveBeat,
+      onRemoveBar,
+      onRemoveBeat,
       onMoveNote,
       onMoveTone,
+      onSelect,
       originX,
       selection,
       semitonePx,

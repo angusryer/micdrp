@@ -50,6 +50,9 @@ export interface GraphSurfaceProps {
   onMoveBar: (lineIndex: number, step: number) => void;
   /** Move a tapped beat to a pixel position (INV-NOTES-130). */
   onMoveBeat?: (index: number, x: number) => void;
+  /** Throw a vertical line away, flicked across it (INV-NOTES-132). */
+  onRemoveBar?: (lineIndex: number) => void;
+  onRemoveBeat?: (index: number) => void;
   /** Move one note of one chord by whole semitones. */
   onMoveTone: (slot: number, tone: number, semitones: number) => void;
   /** Move one sung note by whole semitones, correcting what was heard. */
@@ -76,6 +79,8 @@ export function GraphSurface({
   onSelect,
   onMoveBar,
   onMoveBeat,
+  onRemoveBar,
+  onRemoveBeat,
   onMoveTone,
   onMoveNote,
   onAddBar,
@@ -100,6 +105,8 @@ export function GraphSurface({
     onSelect,
     onMoveBar,
     onMoveBeat,
+    onRemoveBar,
+    onRemoveBeat,
     onMoveTone,
     onMoveNote,
     onAddBar,

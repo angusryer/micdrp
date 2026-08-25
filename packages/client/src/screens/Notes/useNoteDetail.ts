@@ -9,7 +9,7 @@
  * Nothing here re-touches the audio: the symbolic melody is read from the
  * cache and everything else is derived from it (INV-NOTES-003).
  */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import {
   collectNoteEdits,
@@ -22,9 +22,13 @@ import {
   splitOffCount,
   isStale,
   addTap,
+  beatFromTap,
+  beatsAcross,
   downbeatsFromBeats,
   markDownbeat,
   moveBeat,
+  removeBeat,
+  replaceTaps,
   resetBeat,
   tempoFromBeats,
   readMetre,
@@ -177,8 +181,27 @@ export function useNoteDetail(id: string) {
   // The beat somebody tapped along with the take. It outranks every reading
   // of the same thing, because there is nothing to detect in it
   // (INV-NOTES-130).
+  // The tapping is sparse on purpose, so the grid is fitted to it rather than
+  // read off it — and the tempo heard in the take settles the one thing taps
+  // alone cannot: whether the tapped pulse is the beat or every second or
+  // fourth one (INV-NOTES-131).
   const beats = interpretation.savedBeats;
-  const tapped = useMemo(() => tempoFromBeats(beats), [beats]);
+  // Whether the next tap opens a pass. A ref rather than state: nothing is
+  // drawn from it, and re-rendering the graph on a press would cost the very
+  // timing the tapping exists to state.
+  const isFreshPass = useRef(false);
+  const tapped = useMemo(
+    () => tempoFromBeats(beats, quantized.grid.bpm),
+    [beats, quantized.grid.bpm]
+  );
+
+  // What the taps imply, across the whole take. Drawn faintly beside them, so
+  // the difference between a beat somebody stated and one the app worked out
+  // is visible rather than assumed (INV-NOTES-131).
+  const inferredBeats = useMemo(
+    () => (tapped == null ? [] : beatsAcross(beats, tapped, note?.durationMs ?? 0)),
+    [beats, tapped, note?.durationMs]
+  );
 
   /**
    * The grid in use.
@@ -231,8 +254,10 @@ export function useNoteDetail(id: string) {
   const readDownbeats = useMemo(() => {
     // A bar somebody marked while tapping beats it outright: it is the only
     // statement about where a bar begins that came from the person who sang
-    // it (INV-NOTES-130). Everything else here is a reading.
-    const marked = downbeatsFromBeats(beats);
+    // it (INV-NOTES-130). Everything else here is a reading. Marking two bars
+    // states a bar length, so the rest of the bars follow across the whole
+    // take rather than stopping where the tapping did (INV-NOTES-131).
+    const marked = downbeatsFromBeats(beats, tapped, note?.durationMs ?? 0);
     if (marked.length > 0 && grid.bpm > 0) {
       const stepMs = 60000 / grid.bpm / (grid.stepsPerBeat || 4);
       return marked.map((atMs) =>
@@ -240,7 +265,7 @@ export function useNoteDetail(id: string) {
       );
     }
     return proposeDownbeats(melody, grid, bass ? { bass } : {});
-  }, [melody, grid, bass, beats]);
+  }, [melody, grid, bass, beats, tapped, note?.durationMs]);
 
   // Where the downbeats fall. Detection proposes; a person arranges
   // (INT-NOTES-012).
@@ -455,9 +480,38 @@ export function useNoteDetail(id: string) {
     /** True where this take would read differently if it were read again. */
     /** The beat tapped along with the take (INV-NOTES-130). */
     beats,
+    /**
+     * Every beat of the take, tapped and inferred together — the grid the
+     * handful of taps implies, drawn the length of the recording rather than
+     * the length of the tapping (INV-NOTES-131).
+     */
+    inferredBeats,
     tappedBpm: tapped?.bpm ?? null,
+    /**
+     * Tap the beat. The first tap of a pass throws away the pass before it.
+     *
+     * Tapping the take through a second time is a correction, not an
+     * addition: keeping both readings would give a grid twice as dense as
+     * either, fitted to a pulse nobody played (INV-NOTES-131).
+     */
     tapBeat: useCallback(
-      (atMs: number) => interpretation.updateBeats(addTap(beats, atMs)),
+      (atMs: number) => {
+        const fresh = isFreshPass.current;
+        isFreshPass.current = false;
+        interpretation.updateBeats(
+          fresh
+            ? replaceTaps(beats, [beatFromTap(atMs)])
+            : addTap(beats, atMs)
+        );
+      },
+      [beats, interpretation]
+    ),
+    /** Said when the take starts sounding: what comes next is a new pass. */
+    beginTapPass: useCallback(() => {
+      isFreshPass.current = true;
+    }, []),
+    removeBeatAt: useCallback(
+      (index: number) => interpretation.updateBeats(removeBeat(beats, index)),
       [beats, interpretation]
     ),
     clearBeats: useCallback(

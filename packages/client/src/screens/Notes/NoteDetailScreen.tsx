@@ -159,11 +159,14 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
                 lands on the same timeline as everything else sounding
                 (INV-NOTES-126). Armed only while something is actually
                 running (INV-NOTES-130). */}
+            {/* Each run of the take is one pass, and a pass replaces the one
+                before it (INV-NOTES-131). */}
             <BeatTap
               isArmed={transport?.isPlaying === true}
               count={detail.beats.length}
               bpm={detail.tappedBpm}
               onTap={() => detail.tapBeat(transport?.positionMs ?? 0)}
+              onArm={detail.beginTapPass}
               onClear={detail.clearBeats}
             />
 

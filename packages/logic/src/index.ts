@@ -19,6 +19,7 @@ export * from './analysisVersion';
 export * from './percussion';
 export * from './readTake';
 export * from './tappedBeats';
+export * from './beatGrid';
 export * from './sungCount';
 export * from './quantize';
 export * from './bars';
