@@ -16,11 +16,21 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 
+import { AppErrorCode } from 'shared';
+
 import { notesRepo } from '../../data/notesRepo';
 import { cachedNotes, syncNotes } from '../../data/notesSync';
 import { flushPending, pendingCount } from '../../data/notesQueue';
 import { dropNote, isLocalId } from '../../data/notesLocal';
 import type { NoteMeta } from '../../data/notesCache';
+
+/**
+ * Why a sync did not complete.
+ *
+ * `signedOut` is a session the server will not accept — expired, or cleared.
+ * `offline` is everything else, which is genuinely about reaching it.
+ */
+export type SyncFailure = 'signedOut' | 'offline' | null;
 
 export interface UseNotesValue {
   /** All notes, newest first. Seeded from cache, then cloud-synced. */
@@ -28,12 +38,14 @@ export interface UseNotesValue {
   /** True while a cloud sync is in flight. */
   loading: boolean;
   /**
-   * True when the last sync could not reach the server.
+   * Why the last sync did not complete, or null when it did.
    *
-   * Separate from the list being empty. What is shown is still whatever the
-   * device holds — this only says that it may not be all of it.
+   * Separate from the list being empty, and separate from each other: a
+   * session that has run out is not a network that is down, and telling
+   * somebody the network is at fault points them away from the one action
+   * that would fix it (INV-NOTES-140).
    */
-  offline: boolean;
+  syncFailure: SyncFailure;
   /** How many notes are still waiting to be uploaded. */
   pending: number;
   /** Re-pull the authoritative list from the cloud (pull-to-refresh). */
@@ -52,7 +64,7 @@ export function useNotes(): UseNotesValue {
     }
   });
   const [loading, setLoading] = useState(true);
-  const [offline, setOffline] = useState(false);
+  const [syncFailure, setSyncFailure] = useState<SyncFailure>(null);
   const [pending, setPending] = useState(() => pendingCount());
 
   const load = useCallback(async (): Promise<void> => {
@@ -66,11 +78,16 @@ export function useNotes(): UseNotesValue {
     }
     try {
       setNotes(await syncNotes());
-      setOffline(false);
-    } catch {
-      // Could not ask. What the device holds is still shown, and the screen
-      // is told that this is not the whole story.
-      setOffline(true);
+      setSyncFailure(null);
+    } catch (error) {
+      // What the device holds is still shown, and the screen is told why it
+      // may not be all of it.
+      setSyncFailure(
+        (error as { code?: AppErrorCode } | null)?.code ===
+          AppErrorCode.Unauthorized
+          ? 'signedOut'
+          : 'offline'
+      );
       try {
         setNotes(cachedNotes());
       } catch {
@@ -103,7 +120,7 @@ export function useNotes(): UseNotesValue {
     [load]
   );
 
-  return { notes, loading, offline, pending, refresh, remove };
+  return { notes, loading, syncFailure, pending, refresh, remove };
 }
 
 export default useNotes;

@@ -149,6 +149,24 @@ class FakeCollection {
     return Promise.resolve(true);
   }
 
+  /**
+   * Renew the session the app restored (INV-NOTES-140).
+   *
+   * Succeeds while somebody is authed and refuses otherwise, which is what
+   * the real one does: a token the server will not accept cannot be renewed
+   * into one it will.
+   */
+  authRefresh<T>(): Promise<T> {
+    if (nextAuthError) {
+      const err = nextAuthError;
+      nextAuthError = null;
+      return Promise.reject(err);
+    }
+    return authed == null
+      ? Promise.reject(new Error('not authenticated'))
+      : Promise.resolve(authed as unknown as T);
+  }
+
   authWithPassword<T>(email: string, _password: string): Promise<T> {
     if (nextAuthError) {
       const err = nextAuthError;

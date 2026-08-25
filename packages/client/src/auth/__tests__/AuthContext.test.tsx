@@ -29,6 +29,7 @@ jest.mock('../../lib/backend', () => {
 
 import {
   fakeBackend,
+  failNextAuth,
   resetFakeBackend,
   signInFake
 } from '../../testing/fakeBackend';
@@ -126,6 +127,29 @@ describe('AuthProvider / useAuth', () => {
     await expect(
       result.current.signIn('ada@micdrp.test', 'wrong')
     ).rejects.toMatchObject({ code: AppErrorCode.Auth });
+  });
+
+  it('gives up a restored session the server will not renew', async () => {
+    // The session was read back as "a token and a record exist", which is a
+    // different question from "is this token still good". An expired one left
+    // the app looking signed in while every request was refused, and the
+    // failure surfaced as a network problem (INV-NOTES-140).
+    await signInFake('ada@micdrp.test');
+    failNextAuth('token expired');
+
+    const { result } = await renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => expect(result.current.session).toBeNull());
+    expect(result.current.user).toBeNull();
+  });
+
+  it('keeps a restored session the server does renew', async () => {
+    // A token that is still good must not cost anybody a sign-in.
+    const id = await signInFake('ada@micdrp.test');
+    const { result } = await renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.user?.id).toBe(id));
   });
 
   it('throws when useAuth is used outside an AuthProvider', async () => {

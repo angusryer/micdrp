@@ -50,7 +50,7 @@ export function NotesScreen(): React.JSX.Element {
   const { t } = useTranslation();
   const navigation = useNavigation<NotesNavigation>();
 
-  const { notes, loading, offline, pending, refresh, remove } = useNotes();
+  const { notes, loading, syncFailure, pending, refresh, remove } = useNotes();
 
   // Re-pulled whenever this page comes back into view. A note sung on the
   // recording view is written after this list was built, and a list that does
@@ -130,9 +130,9 @@ export function NotesScreen(): React.JSX.Element {
           />
         }
         ListHeaderComponent={
-          offline ? (
+          syncFailure != null ? (
             <Text style={[styles.offline, { color: colors.caution }]}>
-              {t('notes.offline')}
+              {t(`notes.${syncFailure}`)}
             </Text>
           ) : pending > 0 ? (
             <Text style={[styles.offline, { color: colors.gray300 }]}>
@@ -147,12 +147,18 @@ export function NotesScreen(): React.JSX.Element {
                 {/* Empty means empty. It used to mean this OR "could not
                     ask", and it said this while meaning that
                     (INV-NOTES-139). */}
-                {offline ? t('notes.unreachableTitle') : t('notes.emptyTitle')}
+                {syncFailure === 'signedOut'
+                  ? t('notes.signedOutTitle')
+                  : syncFailure === 'offline'
+                    ? t('notes.unreachableTitle')
+                    : t('notes.emptyTitle')}
               </Text>
               <Text style={[styles.emptySubtitle, { color: colors.gray300 }]}>
-                {offline
-                  ? t('notes.unreachableSubtitle')
-                  : t('notes.emptySubtitle')}
+                {syncFailure === 'signedOut'
+                  ? t('notes.signedOutSubtitle')
+                  : syncFailure === 'offline'
+                    ? t('notes.unreachableSubtitle')
+                    : t('notes.emptySubtitle')}
               </Text>
             </View>
           )

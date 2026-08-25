@@ -59,10 +59,19 @@ function toAppError(error: unknown, fallback: string): Error & {
   return appError(AppErrorCode.Auth, message, error);
 }
 
-/** Read the current session off the auth store, or null when signed out. */
+/**
+ * Read the current session off the auth store, or null when signed out.
+ *
+ * `isValid` as well as present. "A token and a record exist" is a different
+ * question from "is this token still good", and asking only the first left
+ * the app looking signed in while every request was refused — reported as a
+ * failure to reach a server that was up and answering (INV-NOTES-140).
+ */
 function currentSession(): Session | null {
-  const { token, record } = backend.authStore;
-  return token && record ? { token, user: record as unknown as UserRecord } : null;
+  const { token, record, isValid } = backend.authStore;
+  return isValid && token && record
+    ? { token, user: record as unknown as UserRecord }
+    : null;
 }
 
 export function AuthProvider({
@@ -82,6 +91,33 @@ export function AuthProvider({
     }, true);
 
     return unsubscribe;
+  }, []);
+
+  /**
+   * Renew a restored token, or give it up.
+   *
+   * Refreshed rather than merely checked: a token that is still good should
+   * not cost anybody a sign-in, and one near its end is best renewed while
+   * there is still a working token to renew with. A refusal clears the
+   * session, so what the app shows and what the server will accept are the
+   * same thing (INV-NOTES-140).
+   */
+  useEffect(() => {
+    if (!backend.authStore.token) {
+      return;
+    }
+    let live = true;
+    void backend
+      .collection(COLLECTIONS.users)
+      .authRefresh()
+      .catch(() => {
+        if (live) {
+          backend.authStore.clear();
+        }
+      });
+    return () => {
+      live = false;
+    };
   }, []);
 
   const signIn = useCallback(

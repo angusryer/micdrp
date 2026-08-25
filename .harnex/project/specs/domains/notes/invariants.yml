@@ -169,3 +169,31 @@ invariants:
       an empty list means empty, and a sync that failed is a separate thing
       that can be said separately.
 
+  - id: INV-NOTES-140
+    description: An expired session is signed out, not silently signed in
+    severity: critical
+    check: >
+      A session restored from storage is only a session while its token is
+      still valid. On launch the app refreshes a restored token; where the
+      refresh fails for any reason the session is cleared and the singer is
+      asked to sign in. A request refused for want of a session is reported as
+      that and never as a failure to reach the server. Verified by asserting
+      an expired token leaves no session, that a refresh which succeeds keeps
+      one, and that an unauthorized read says so rather than blaming the
+      network.
+
+      The session was read back as "a token and a record exist", which is not
+      the same question as "is this token still good". So an expired token
+      left the app looking signed in while every request failed the check that
+      does test validity — and the failure surfaced as "couldn't reach the
+      server", about a server that was up and answering.
+
+      That combination is the worst kind of wrong: it points away from the
+      cause. The singer sees their notes gone, the app says the network is at
+      fault, and the one action that would fix it — signing in again — is the
+      one the app has just told them is unnecessary.
+
+      Refreshed rather than merely checked, because a token that is still good
+      should not cost anybody a sign-in, and a token near its end should be
+      renewed while the app has a working one to renew with.
+
