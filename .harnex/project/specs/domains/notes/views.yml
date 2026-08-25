@@ -11,12 +11,15 @@ views:
     data_sources:
       - notes.list
     elements:
-      - A record control that starts and stops a capture — a compact
-        circle filled solid in the palette's red, reading as a disc and
-        not as a ring, showing a stop glyph while a capture is running
-      - A live pitch line while recording, drawn off the JS thread — a
-        slim band, kept short enough that the note list below it stays
-        the larger half of the screen
+      - The list of kept notes, and nothing above it. This is the first
+        thing the app opens on, so it is what the singer sees and it is
+        the whole page
+      - A record control floating over the list at the bottom — a circle
+        filled solid in the palette's red, reading as a disc and not as
+        a ring — which opens the recording view rather than starting a
+        capture where it stands
+      - Room below the last card for that control, so scrolling to the
+        end reaches the card rather than the button covering it
       - A list of note cards, newest first
       - A play control on each card that starts the capture playing on
         the press itself, shown only on a card whose audio is stored;
@@ -32,6 +35,33 @@ views:
       - A pull-to-refresh that re-syncs from the server
       - An empty state shown when the singer has kept nothing yet
       - A delete action on each card, confirmed before it runs
+
+  - id: VIEW-NOTES-010
+    name: Recording
+    route: Record
+    description: >
+      Singing, with nothing else on the screen. Full screen and dark, so
+      what little is drawn is what is happening: the pitch as it is
+      heard, the note it is nearest, and the two things a singer does
+      with their hands while singing — tapping the beat, and stopping.
+    requires_auth: true
+    min_role: singer
+    parent_view: VIEW-NOTES-001
+    data_sources:
+      - notes.capture
+    elements:
+      - A dark ground, so a lit phone held at arm's length in a room is
+        legible and is not the brightest thing in it
+      - The note being heard, named, in the top right — where a glance
+        lands without the eye leaving the line being drawn
+      - The pitch as it is heard, drawn near the top and off the JS
+        thread, so nothing about the drawing can delay the capture
+      - A large button along the bottom that taps the beat in while the
+        take is being sung, tapping the fingertip back on every press
+      - A record control that becomes a stop control once a capture is
+        running, and a pause beside it
+      - How long the take has run so far
+      - The screen kept awake for as long as the view is open
 
   - id: VIEW-NOTES-002
     name: Note detail

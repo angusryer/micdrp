@@ -7,6 +7,7 @@
     "export": "Export",
     "play": "Play",
     "stop": "Stop",
+    "saved": "Saved",
     "save": "Save",
     "back": "Back",
     "retry": "Retry",
@@ -42,6 +43,7 @@
     "stopRecording": "Stop recording",
     "record": "Record",
     "stop": "Stop",
+    "saved": "Saved",
     "requestingPermission": "Requesting permission…",
     "permissionDenied": "Microphone permission denied.",
     "analyzing": "Analyzing…",
@@ -193,6 +195,7 @@
       "analyzing": "Analyzing…",
       "start": "Start",
       "stop": "Stop",
+    "saved": "Saved",
       "back": "Back",
       "micDenied": "Microphone permission is needed to practise.",
       "failed": "Something went wrong with this take."

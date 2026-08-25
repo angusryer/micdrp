@@ -59,6 +59,16 @@ export interface RecordController {
   state: RecordingStateValue;
   /** True while actively capturing. */
   isRecording: boolean;
+  /**
+   * How far into the capture we are, in ms on the capture's own timeline.
+   *
+   * The timeline the melody is written on, not the wall clock and not the
+   * synth's — a beat tapped while singing has to land where the notes land
+   * (INV-NOTES-137). Taken from the last analysed frame and carried forward
+   * by the time since it arrived, because frames land every hop and a finger
+   * does not wait for one.
+   */
+  elapsedMs(): number;
 }
 
 /** Sentinel written to `sharedMidi` for an unvoiced frame. */
@@ -84,8 +94,12 @@ export function useRecordController(): RecordController {
   // can tear it down deterministically.
   const unsubRef = useRef<(() => void) | null>(null);
 
+  /** The last frame's place on the capture's timeline, and when it landed. */
+  const lastFrame = useRef({ atMs: 0, seenAt: 0 });
+
   const writeFrame = useCallback(
     (sample: PitchSample): void => {
+      lastFrame.current = { atMs: sample.timestampMs, seenAt: Date.now() };
       // Plain numeric assignments into shared values — no setState, no render.
       sharedPitch.value = sample.frequencyHz;
       sharedClarity.value = sample.clarity;
@@ -151,6 +165,8 @@ export function useRecordController(): RecordController {
   }, [stateValue]);
 
   const start = useCallback(async (): Promise<void> => {
+    // A previous capture's last frame is not this one's first.
+    lastFrame.current = { atMs: 0, seenAt: 0 };
     // Leave any terminal state first. After a capture the machine sits in
     // `result`, and after a failure in `error`; neither accepts
     // REQUEST_PERMISSION, so without this the record control does nothing for
@@ -192,7 +208,11 @@ export function useRecordController(): RecordController {
     sharedCents,
     sharedFrame,
     state: stateValue,
-    isRecording: stateValue === 'recording'
+    isRecording: stateValue === 'recording',
+    elapsedMs: useCallback(() => {
+      const { atMs, seenAt } = lastFrame.current;
+      return seenAt === 0 ? 0 : atMs + Math.max(0, Date.now() - seenAt);
+    }, [])
   };
 }
 

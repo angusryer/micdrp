@@ -1,12 +1,15 @@
 /**
- * NotesScreen — the Notes tab: capture a sung idea, then browse the corpus.
+ * NotesScreen — every sung idea kept, newest first (VIEW-NOTES-001).
  *
- * Collapses the old Record + Library surfaces into one. The top section is a
- * compact recorder (the same UI-thread shared-value pitch pipeline as Practice);
- * stopping analyses and saves the capture as a note with no score gate. Below is
- * the list of saved notes, newest first, each opening its detail/analysis.
+ * The whole page, because this is what the app opens on. A recorder used to
+ * sit above the list, which cost the list its top third and gave the recorder
+ * a strip: no room to draw what was being heard, and nowhere for the things a
+ * singer does with their hands. Recording is its own view now.
  *
- * The per-audio-frame path never crosses React state — see useRecordController.
+ * The record control floats over the list rather than sitting in it, so it is
+ * in the same place whatever has been scrolled to — and the list ends with
+ * room for it, so reaching the last card reaches the card and not the button
+ * covering it.
  */
 import React, { useCallback, useState } from 'react';
 import {
@@ -18,7 +21,7 @@ import {
   Text,
   View
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -30,10 +33,9 @@ import type {
   RootStackParamList
 } from '../../navigation/types';
 import type { NoteMeta } from '../../data/notesCache';
-import { CaptureSection } from './CaptureSection';
 import { NoteCard } from './NoteCard';
 import { NoteMixPlayer } from './NoteMixPlayer';
-import { useNoteCapture } from './useNoteCapture';
+import { RecordButton, RECORD_BUTTON_CLEARANCE } from './RecordButton';
 import { useNotes } from './useNotes';
 
 export type NotesScreenProps = CompositeScreenProps<
@@ -49,20 +51,15 @@ export function NotesScreen(): React.JSX.Element {
   const navigation = useNavigation<NotesNavigation>();
 
   const { notes, loading, refresh, remove } = useNotes();
-  const {
-    sharedMidi,
-    sharedCents,
-    sharedFrame,
-    state,
-    isRecording,
-    start,
-    stopAndSave,
-    saveStatus
-  } = useNoteCapture(refresh);
 
-  const handleStop = useCallback((): void => {
-    void stopAndSave();
-  }, [stopAndSave]);
+  // Re-pulled whenever this page comes back into view. A note sung on the
+  // recording view is written after this list was built, and a list that does
+  // not show the take just sung reads as one that lost it.
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh])
+  );
 
   const openNote = useCallback(
     (id: string): void => navigation.navigate('NoteDetail', { id }),
@@ -120,18 +117,6 @@ export function NotesScreen(): React.JSX.Element {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.neutral300 }]}>
-      <CaptureSection
-        sharedMidi={sharedMidi}
-        sharedCents={sharedCents}
-        sharedFrame={sharedFrame}
-        state={state}
-        isRecording={isRecording}
-        saveStatus={saveStatus}
-        onStart={start}
-        onStop={handleStop}
-      />
-
-      {/* Saved notes */}
       <FlatList
         data={notes}
         keyExtractor={(n) => n.id}
@@ -157,6 +142,11 @@ export function NotesScreen(): React.JSX.Element {
           )
         }
       />
+      {/* Over the list, so it is in the same place whatever has been
+          scrolled to. It opens the recording view rather than starting a
+          capture where it stands (VIEW-NOTES-010). */}
+      <RecordButton onPress={() => navigation.navigate('Record')} />
+
       {/* Draws nothing. Mounted for whichever note is sounding and no other,
           and unmounting it is how the sound stops (INV-NOTES-124). */}
       {playingId != null ? (
@@ -173,7 +163,9 @@ export function NotesScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  list: { padding: 16, gap: 12 },
+  // Room at the end for the control floating over it: scrolling to the last
+  // card should reach the card, not the button covering it.
+  list: { padding: 16, gap: 12, paddingBottom: RECORD_BUTTON_CLEARANCE },
   empty: { alignItems: 'center', paddingTop: 40, gap: 6 },
   emptyTitle: { fontSize: 16, fontWeight: '600' },
   emptySubtitle: { fontSize: 13, textAlign: 'center', paddingHorizontal: 24 }

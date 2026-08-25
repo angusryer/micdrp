@@ -23,6 +23,7 @@
 		51A2B3C4D5E6F7081920212E /* AudioSessionClaim.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F7081920212F /* AudioSessionClaim.mm */; };
 		51A2B3C4D5E6F70819202130 /* synth_commands.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202131 /* synth_commands.cpp */; };
 		51A2B3C4D5E6F70819202140 /* CaptureFile.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202141 /* CaptureFile.mm */; };
+		A1B2C3D400000000000000C0 /* ScreenWakeModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D400000000000000C1 /* ScreenWakeModule.mm */; };
 		51A2B3C4D5E6F70819202150 /* HapticsModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202151 /* HapticsModule.mm */; };
 		51A2B3C4D5E6F70819202160 /* AudioRouteModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202161 /* AudioRouteModule.mm */; };
 		64FE505DA0AB8147C0E9A420 /* AudioEngineModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = 8AA58FD71262417B94E79C03 /* AudioEngineModule.mm */; };
@@ -72,6 +73,8 @@
 		51A2B3C4D5E6F70819202133 /* synth_commands.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = synth_commands.h; path = ../cpp/dsp/synth_commands.h; sourceTree = "<group>"; };
 		51A2B3C4D5E6F70819202141 /* CaptureFile.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = CaptureFile.mm; sourceTree = "<group>"; };
 		51A2B3C4D5E6F70819202142 /* CaptureFile.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = CaptureFile.h; sourceTree = "<group>"; };
+		A1B2C3D400000000000000C1 /* ScreenWakeModule.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = ScreenWakeModule.mm; sourceTree = "<group>"; };
+		A1B2C3D400000000000000C2 /* ScreenWakeModule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = ScreenWakeModule.h; sourceTree = "<group>"; };
 		51A2B3C4D5E6F70819202151 /* HapticsModule.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = HapticsModule.mm; sourceTree = "<group>"; };
 		51A2B3C4D5E6F70819202152 /* HapticsModule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = HapticsModule.h; sourceTree = "<group>"; };
 		51A2B3C4D5E6F70819202161 /* AudioRouteModule.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = AudioRouteModule.mm; sourceTree = "<group>"; };
@@ -172,6 +175,8 @@
 				51A2B3C4D5E6F7081920212F /* AudioSessionClaim.mm */,
 				51A2B3C4D5E6F70819202142 /* CaptureFile.h */,
 				51A2B3C4D5E6F70819202141 /* CaptureFile.mm */,
+				A1B2C3D400000000000000C1 /* ScreenWakeModule.mm */,
+				A1B2C3D400000000000000C2 /* ScreenWakeModule.h */,
 				51A2B3C4D5E6F70819202152 /* HapticsModule.h */,
 				51A2B3C4D5E6F70819202151 /* HapticsModule.mm */,
 				51A2B3C4D5E6F70819202162 /* AudioRouteModule.h */,
@@ -521,6 +526,7 @@
 				51A2B3C4D5E6F7081920212B /* SynthEngine.mm in Sources */,
 				51A2B3C4D5E6F7081920212E /* AudioSessionClaim.mm in Sources */,
 				51A2B3C4D5E6F70819202140 /* CaptureFile.mm in Sources */,
+				A1B2C3D400000000000000C0 /* ScreenWakeModule.mm in Sources */,
 				51A2B3C4D5E6F70819202150 /* HapticsModule.mm in Sources */,
 				51A2B3C4D5E6F70819202160 /* AudioRouteModule.mm in Sources */,
 				51A2B3C4D5E6F70819202130 /* synth_commands.cpp in Sources */,

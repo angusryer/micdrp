@@ -14,8 +14,11 @@
 import { useCallback, useRef, useState } from 'react';
 import { type SharedValue } from 'react-native-reanimated';
 
+import { addTap, type TappedBeat } from 'logic';
+
 import { analyzeCapture } from '../../analysis/note';
 import { notesRepo } from '../../data/notesRepo';
+import { firstInterpretation } from './capturedBeats';
 import {
   useRecordController,
   type RecordController
@@ -35,6 +38,13 @@ export interface UseNoteCaptureValue {
   start(): void;
   /** Stop, analyse, and save the capture as a note. */
   stopAndSave(title?: string): Promise<void>;
+  /**
+   * Tap the beat while the take is being sung (INV-NOTES-137). Stamped
+   * against the capture's own clock, and ignored when nothing is running.
+   */
+  tapBeat(): void;
+  /** How many have been tapped this capture, so there is something to see. */
+  tappedCount: number;
   /** One-shot save status for the most recent capture. */
   saveStatus: SaveStatus;
 }
@@ -47,12 +57,34 @@ function defaultTitle(now: Date): string {
 export function useNoteCapture(onSaved?: () => void): UseNoteCaptureValue {
   const controller = useRecordController();
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  // Held in a ref and mirrored to a count: a press must not re-render the
+  // view drawing the pitch, and the only thing anyone needs to see is how
+  // many there are.
+  const beats = useRef<readonly TappedBeat[]>([]);
+  const [tappedCount, setTappedCount] = useState(0);
   // Guard against a double-tap stop saving the same capture twice.
   const savingRef = useRef(false);
 
   const start = useCallback((): void => {
     setSaveStatus('idle');
+    beats.current = [];
+    setTappedCount(0);
     controller.start().catch(() => undefined);
+  }, [controller]);
+
+  /**
+   * A tap, on the capture's own timeline.
+   *
+   * Only while something is running. A tap against a stopped capture has no
+   * moment to be at, so it would land wherever the last one did — a beat
+   * placed by accident (INV-NOTES-130).
+   */
+  const tapBeat = useCallback((): void => {
+    if (!controller.isRecording) {
+      return;
+    }
+    beats.current = addTap(beats.current, controller.elapsedMs());
+    setTappedCount(beats.current.length);
   }, [controller]);
 
   const stopAndSave = useCallback(
@@ -65,10 +97,18 @@ export function useNoteCapture(onSaved?: () => void): UseNoteCaptureValue {
         const handle = await controller.stop();
         setSaveStatus('saving');
         const { noteInput } = analyzeCapture(handle);
-        await notesRepo.create(
+        const note = await notesRepo.create(
           { title: title?.trim() || defaultTitle(new Date()), ...noteInput },
           { audioUri: handle.uri }
         );
+        // What was tapped while singing is the note's beats, so opening it
+        // shows them where they were put (INV-NOTES-137). Written after the
+        // note exists, because they belong to it.
+        if (beats.current.length > 0) {
+          await notesRepo.saveInterpretations(note.id, [
+            firstInterpretation(beats.current, Date.now())
+          ]);
+        }
         setSaveStatus('saved');
         onSaved?.();
       } catch {
@@ -88,6 +128,8 @@ export function useNoteCapture(onSaved?: () => void): UseNoteCaptureValue {
     isRecording: controller.isRecording,
     start,
     stopAndSave,
+    tapBeat,
+    tappedCount,
     saveStatus
   };
 }

@@ -26,6 +26,12 @@ export type RootStackParamList = {
   Results: { handle: RecordingHandle; practice?: PracticeParams };
   /** A single note's detail / analysis, addressed by id. */
   NoteDetail: { id: string };
+  /**
+   * Singing (VIEW-NOTES-010). A screen of its own rather than a strip above
+   * the list: a take needs the room to draw what is being heard and to put
+   * the beat button under a thumb (INV-NOTES-137).
+   */
+  Record: undefined;
   /** Consolidated Account & Settings, reached from a header button. */
   Account: undefined;
   /** What the agent loop is doing with the feedback already sent. */

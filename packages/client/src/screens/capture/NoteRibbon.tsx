@@ -7,24 +7,18 @@
  * a `useAnimatedProps` worklet — so the string updates without touching React
  * state. The cents meter is a Skia needle whose offset is a `useDerivedValue`.
  *
- * The MIDI → note-name mapping reuses `NOTE_NAMES` from `logic` (a pure,
- * worklet-safe constant); we never reimplement the conversion.
+ * The name itself is `NoteName`, shared with the recording view: two copies
+ * of the MIDI-to-name mapping would be two things to keep in step, and they
+ * would disagree at the edges.
  */
 
 import React, { useMemo } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Canvas, Line, vec } from '@shopify/react-native-skia';
-import Animated, {
-  useAnimatedProps,
-  useDerivedValue,
-  type SharedValue
-} from 'react-native-reanimated';
-import { NOTE_NAMES } from 'logic';
+import { useDerivedValue, type SharedValue } from 'react-native-reanimated';
 
 import { useTheme } from '../../theme';
-import { UNVOICED_MIDI } from './useRecordController';
-
-const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
+import { NoteName } from './NoteName';
 
 export interface NoteRibbonProps {
   sharedMidi: SharedValue<number>;
@@ -38,18 +32,6 @@ export interface NoteRibbonProps {
 const DEFAULT_METER_WIDTH = 240;
 const DEFAULT_METER_HEIGHT = 24;
 
-/** UI-thread MIDI → "C#4" label. Mirrors logic.frequencyToNote naming. */
-function midiToLabel(midi: number): string {
-  'worklet';
-  if (midi === UNVOICED_MIDI || midi < 0) {
-    return '—';
-  }
-  const rounded = Math.round(midi);
-  const index = ((rounded % 12) + 12) % 12;
-  const octave = Math.floor(rounded / 12) - 1;
-  return `${NOTE_NAMES[index]}${octave}`;
-}
-
 export function NoteRibbon({
   sharedMidi,
   sharedCents,
@@ -57,17 +39,6 @@ export function NoteRibbon({
   meterHeight = DEFAULT_METER_HEIGHT
 }: NoteRibbonProps): React.JSX.Element {
   const { colors, typography } = useTheme();
-
-  const noteText = useDerivedValue(
-    () => midiToLabel(sharedMidi.value),
-    []
-  );
-
-  const animatedProps = useAnimatedProps(() => {
-    // `text` is a defaultProp of TextInput; updating it here mutates the native
-    // view directly, bypassing React state (the classic Reanimated "ReText").
-    return { text: noteText.value, defaultValue: noteText.value };
-  });
 
   // Needle x-position: cents in [-50, 50] mapped across the meter width.
   const needleX = useDerivedValue(() => {
@@ -95,13 +66,7 @@ export function NoteRibbon({
 
   return (
     <View style={styles.container}>
-      <AnimatedTextInput
-        editable={false}
-        underlineColorAndroid="transparent"
-        defaultValue="—"
-        style={labelStyle}
-        animatedProps={animatedProps}
-      />
+      <NoteName sharedMidi={sharedMidi} style={labelStyle} />
       <Canvas style={meterStyle}>
         {/* zero / in-tune center reference */}
         <Line

@@ -731,3 +731,42 @@ invariants:
       time alone is a wall clock again, dressed differently; each sample of
       the engine pulls it back to the truth before it can accumulate.
 
+  - id: INV-NOTES-137
+    description: The beat is tapped in while the take is being sung
+    severity: major
+    check: >
+      The recording view carries the same beat button the detail view does,
+      armed for as long as a capture is running, each press stamped against
+      the capture's own clock and tapping the fingertip back. What was tapped
+      is saved with the note as its beats, so opening it shows them where they
+      were put. Nothing is stamped while a capture is paused or before one
+      starts. Verified by asserting a tap during a capture lands at the
+      capture's own elapsed time, that the saved note carries them, and that a
+      tap outside a running capture lays nothing down.
+
+      Tapping the beat existed only on the detail view, against a take being
+      played back (INV-NOTES-130). But the moment a person is surest where the
+      pulse is, is while they are singing to it — asking them to sing it, open
+      it, play it and tap along is asking them to perform it twice, and the
+      second performance is the one being measured.
+
+      Which makes this the primary way beats arrive, and the detail view the
+      place they are corrected. Both write the same thing (INV-NOTES-131), so
+      a take tapped while sung and then tapped again on the detail view is a
+      second pass replacing the first, exactly as two passes there would be.
+
+  - id: INV-NOTES-138
+    description: The recording view keeps the screen awake
+    severity: minor
+    check: >
+      The idle timer is disabled for as long as the recording view is open and
+      restored when it goes, whatever route it goes by. Verified by asserting
+      the flag is set on opening and cleared on leaving, including when the
+      view is left while a capture is running.
+
+      A phone that dims mid-take is a phone that stopped showing the thing it
+      was asked to show, at the one moment nobody has a free hand. Recording
+      is the only view that asks for this: every other one is read between
+      touches, and a screen that never sleeps is a battery that does not last
+      the day.
+

@@ -18,6 +18,7 @@ import DashboardScreen from '../screens/Dashboard/DashboardScreen';
 import LoginScreen from '../screens/Login/LoginScreen';
 import NoteDetailScreen from '../screens/Notes/NoteDetailScreen';
 import NotesScreen from '../screens/Notes/NotesScreen';
+import { RecordScreen } from '../screens/capture/RecordScreen';
 import PracticeScreen from '../screens/Practice/PracticeScreen';
 import PracticeSessionScreen from '../screens/Practice/PracticeSessionScreen';
 import ResultsScreen from '../screens/Results/ResultsScreen';
@@ -98,6 +99,9 @@ function MainTabs() {
   const { t } = useTranslation();
   return (
     <Tab.Navigator
+      // Notes first, because it is what the app is for: the list of ideas
+      // kept, with the record control on it (VIEW-NOTES-001).
+      initialRouteName="Notes"
       screenOptions={({ route }) => ({
         headerShown: true,
         headerStyle: { backgroundColor: colors.neutral300 },
@@ -169,6 +173,14 @@ export default function RootNavigator() {
               headerRight: () => <HeaderControls />,
               presentation: 'modal'
             }}
+          />
+          {/* Full screen and without a header: singing is the only thing on
+              it, and a bar across the top would be one more thing to read
+              while doing something else (VIEW-NOTES-010). */}
+          <Stack.Screen
+            name="Record"
+            component={RecordScreen}
+            options={{ presentation: 'fullScreenModal', animation: 'fade' }}
           />
           <Stack.Screen
             name="NoteDetail"

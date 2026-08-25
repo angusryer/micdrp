@@ -14,6 +14,16 @@ import {
 export const basicColors = {
   white: '#FFFFFF',
   black: '#000000',
+  /**
+   * The ground the recording view stands on (VIEW-NOTES-010).
+   *
+   * The same in every palette, and not quite black. A phone held at arm's
+   * length in a room should be legible without being the brightest thing in
+   * it, which is a fact about rooms rather than a preference about themes —
+   * so it does not follow the chosen palette. Off black rather than black
+   * because a true black panel makes the line drawn on it look detached.
+   */
+  stage: '#14161A',
   mypeople: '#6897FF',
   mywork: '#74DCFD',
   myhealth: '#FD8863',

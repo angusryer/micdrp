@@ -37,6 +37,8 @@ declare interface IPaletteColors {
   black: string;
   typography: string;
   gold: string;
+  /** The ground the recording view stands on (VIEW-NOTES-010). */
+  stage: string;
   error: string;
   caution: string; // A step short of error: running low, not yet wrong
   neutral50: string; // Navigation bar and button background
