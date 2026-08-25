@@ -50,7 +50,7 @@ export function NotesScreen(): React.JSX.Element {
   const { t } = useTranslation();
   const navigation = useNavigation<NotesNavigation>();
 
-  const { notes, loading, refresh, remove } = useNotes();
+  const { notes, loading, offline, pending, refresh, remove } = useNotes();
 
   // Re-pulled whenever this page comes back into view. A note sung on the
   // recording view is written after this list was built, and a list that does
@@ -129,14 +129,30 @@ export function NotesScreen(): React.JSX.Element {
             tintColor={colors.primary500}
           />
         }
+        ListHeaderComponent={
+          offline ? (
+            <Text style={[styles.offline, { color: colors.caution }]}>
+              {t('notes.offline')}
+            </Text>
+          ) : pending > 0 ? (
+            <Text style={[styles.offline, { color: colors.gray300 }]}>
+              {t('notes.pending', { count: pending })}
+            </Text>
+          ) : null
+        }
         ListEmptyComponent={
           loading ? null : (
             <View style={styles.empty}>
               <Text style={[styles.emptyTitle, { color: colors.typography }]}>
-                {t('notes.emptyTitle')}
+                {/* Empty means empty. It used to mean this OR "could not
+                    ask", and it said this while meaning that
+                    (INV-NOTES-139). */}
+                {offline ? t('notes.unreachableTitle') : t('notes.emptyTitle')}
               </Text>
               <Text style={[styles.emptySubtitle, { color: colors.gray300 }]}>
-                {t('notes.emptySubtitle')}
+                {offline
+                  ? t('notes.unreachableSubtitle')
+                  : t('notes.emptySubtitle')}
               </Text>
             </View>
           )
@@ -166,6 +182,7 @@ const styles = StyleSheet.create({
   // Room at the end for the control floating over it: scrolling to the last
   // card should reach the card, not the button covering it.
   list: { padding: 16, gap: 12, paddingBottom: RECORD_BUTTON_CLEARANCE },
+  offline: { fontSize: 13, textAlign: 'center', paddingBottom: 8 },
   empty: { alignItems: 'center', paddingTop: 40, gap: 6 },
   emptyTitle: { fontSize: 16, fontWeight: '600' },
   emptySubtitle: { fontSize: 13, textAlign: 'center', paddingHorizontal: 24 }

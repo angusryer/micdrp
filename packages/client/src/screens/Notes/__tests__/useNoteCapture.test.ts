@@ -29,13 +29,17 @@ jest.mock('../../capture/useRecordController', () => ({
   UNVOICED_MIDI: -1
 }));
 
-const mockCreate = jest.fn();
-const mockSaveInterpretations = jest.fn();
-jest.mock('../../../data/notesRepo', () => ({
-  notesRepo: {
-    create: (...args: unknown[]) => mockCreate(...args),
-    saveInterpretations: (...args: unknown[]) => mockSaveInterpretations(...args)
-  }
+const mockKeepLocally = jest.fn();
+const mockPutNote = jest.fn();
+jest.mock('../../../data/notesLocal', () => ({
+  keepLocally: (...args: unknown[]) => mockKeepLocally(...args),
+  putNote: (...args: unknown[]) => mockPutNote(...args),
+  localNoteId: () => 'local-1'
+}));
+
+const mockFlush = jest.fn();
+jest.mock('../../../data/notesQueue', () => ({
+  flushPending: () => mockFlush()
 }));
 
 jest.mock('../../../analysis/note', () => ({
@@ -50,8 +54,8 @@ beforeEach(() => {
   mockController.start.mockResolvedValue(undefined);
   mockController.stop.mockResolvedValue({ uri: 'file:///take.wav' });
   mockController.elapsedMs.mockReturnValue(0);
-  mockCreate.mockResolvedValue({ id: 'note-1' });
-  mockSaveInterpretations.mockResolvedValue(undefined);
+  mockKeepLocally.mockReturnValue({ id: 'local-1', interpretations: [] });
+  mockFlush.mockResolvedValue(0);
 });
 
 describe('tapping the beat while singing', () => {
@@ -106,7 +110,7 @@ describe('tapping the beat while singing', () => {
 });
 
 describe('keeping what was tapped', () => {
-  it('writes the beats with the note it belongs to', async () => {
+  it('writes the beats onto the note it belongs to', async () => {
     const { result } = await renderHook(() => useNoteCapture());
     mockController.elapsedMs.mockReturnValue(750);
     await act(async () => {
@@ -116,14 +120,11 @@ describe('keeping what was tapped', () => {
       await result.current.stopAndSave('A tune');
     });
 
-    await waitFor(() => expect(mockSaveInterpretations).toHaveBeenCalled());
-    const [noteId, readings] = mockSaveInterpretations.mock.calls[0] as [
-      string,
-      { beats?: { atMs: number }[] }[]
+    await waitFor(() => expect(mockPutNote).toHaveBeenCalled());
+    const [written] = mockPutNote.mock.calls[0] as [
+      { interpretations: { beats?: { atMs: number }[] }[] }
     ];
-    // After the note exists, because they belong to it.
-    expect(noteId).toBe('note-1');
-    expect(readings[0].beats?.[0].atMs).toBe(750);
+    expect(written.interpretations[0].beats?.[0].atMs).toBe(750);
   });
 
   it('writes no reading at all when nothing was tapped', async () => {
@@ -134,7 +135,35 @@ describe('keeping what was tapped', () => {
       await result.current.stopAndSave();
     });
 
-    expect(mockCreate).toHaveBeenCalled();
-    expect(mockSaveInterpretations).not.toHaveBeenCalled();
+    expect(mockKeepLocally).toHaveBeenCalled();
+    expect(mockPutNote).not.toHaveBeenCalled();
+  });
+});
+
+describe('keeping a take before sending it (INV-NOTES-139)', () => {
+  it('keeps it on the device, then tries to send it', async () => {
+    // What was sung is a fact the moment it was sung; where it ends up
+    // stored is a detail that can be retried.
+    const { result } = await renderHook(() => useNoteCapture());
+    await act(async () => {
+      await result.current.stopAndSave('A tune');
+    });
+
+    expect(mockKeepLocally).toHaveBeenCalled();
+    const [, audioUri] = mockKeepLocally.mock.calls[0] as [unknown, string];
+    expect(audioUri).toBe('file:///take.wav');
+    await waitFor(() => expect(mockFlush).toHaveBeenCalled());
+  });
+
+  it('reports the take as kept even when it cannot be sent', async () => {
+    // The upload is allowed to fail. The note is already on the device, and
+    // the device is where the singer will look for it.
+    mockFlush.mockRejectedValue(new Error('offline'));
+    const { result } = await renderHook(() => useNoteCapture());
+    await act(async () => {
+      await result.current.stopAndSave('A tune');
+    });
+
+    expect(result.current.saveStatus).toBe('saved');
   });
 });

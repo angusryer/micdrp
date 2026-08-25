@@ -17,7 +17,8 @@ import { type SharedValue } from 'react-native-reanimated';
 import { addTap, type TappedBeat } from 'logic';
 
 import { analyzeCapture } from '../../analysis/note';
-import { notesRepo } from '../../data/notesRepo';
+import { keepLocally, localNoteId, putNote } from '../../data/notesLocal';
+import { flushPending } from '../../data/notesQueue';
 import { firstInterpretation } from './capturedBeats';
 import {
   useRecordController,
@@ -97,17 +98,22 @@ export function useNoteCapture(onSaved?: () => void): UseNoteCaptureValue {
         const handle = await controller.stop();
         setSaveStatus('saving');
         const { noteInput } = analyzeCapture(handle);
-        const note = await notesRepo.create(
+        const at = Date.now();
+        // Kept here, now, before anything is sent. What was sung is a fact
+        // the moment it was sung; where it ends up stored is a detail that
+        // can be retried (INV-NOTES-139).
+        const note = keepLocally(
           { title: title?.trim() || defaultTitle(new Date()), ...noteInput },
-          { audioUri: handle.uri }
+          handle.uri,
+          localNoteId(at, String(handle.durationMs ?? 0))
         );
         // What was tapped while singing is the note's beats, so opening it
-        // shows them where they were put (INV-NOTES-137). Written after the
-        // note exists, because they belong to it.
+        // shows them where they were put (INV-NOTES-137).
         if (beats.current.length > 0) {
-          await notesRepo.saveInterpretations(note.id, [
-            firstInterpretation(beats.current, Date.now())
-          ]);
+          putNote({
+            ...note,
+            interpretations: [firstInterpretation(beats.current, at)]
+          });
         }
         setSaveStatus('saved');
         onSaved?.();
@@ -116,6 +122,10 @@ export function useNoteCapture(onSaved?: () => void): UseNoteCaptureValue {
       } finally {
         savingRef.current = false;
       }
+      // Afterwards, and allowed to fail: the note is already kept. Caught
+      // rather than left to float — an upload that cannot happen is an
+      // ordinary state of the world, not an unhandled rejection.
+      void flushPending().catch(() => undefined);
     },
     [controller, onSaved]
   );

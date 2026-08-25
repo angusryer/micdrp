@@ -8,8 +8,10 @@
  * private audio blobs, and rewrites the local cache to match (server wins on
  * every conflict — no dual store, no merge ambiguity).
  *
- * Writes still go cloud-first via `notesRepo`; the cache is only ever derived
- * from a successful cloud read.
+ * "Server wins" applies to notes the server has been told about. A note kept
+ * on this device and not yet uploaded is not a conflict — the server's
+ * silence about it means nothing, because nobody has mentioned it — so it
+ * survives a sync untouched (INV-NOTES-139).
  */
 import type { HitDto, NoteDto, NoteEventDto } from 'shared';
 
@@ -61,13 +63,24 @@ export async function syncNotes(): Promise<NoteMeta[]> {
   const metas = dtos.map(dtoToMeta);
 
   const index: Record<string, NoteMeta> = {};
-  for (const meta of metas) {
-    index[meta.id] = meta;
+  // Everything still waiting to go up, first — the server was never told
+  // about these, so it cannot be asked whether they should exist
+  // (INV-NOTES-139).
+  for (const meta of listNotes()) {
+    if (meta.pendingSync === true) {
+      index[meta.id] = meta;
+    }
   }
-  // Server-authoritative: replace the whole index in one write.
+  for (const meta of metas) {
+    // What the server holds, plus where the audio sits on this device if it
+    // was sung here: the local file outlives the upload and is the faster
+    // thing to play.
+    const held = index[meta.id];
+    index[meta.id] = { ...meta, localAudioUri: held?.localAudioUri };
+  }
   setJSON(NOTES_INDEX_KEY, index);
 
-  return metas.sort((a, b) => b.createdAtMs - a.createdAtMs);
+  return Object.values(index).sort((a, b) => b.createdAtMs - a.createdAtMs);
 }
 
 /**

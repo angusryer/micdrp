@@ -16,11 +16,20 @@
  * to it; asking them to sing it, open it, play it and tap along is asking for
  * the performance twice, and the second one is the one being measured.
  *
+ * It starts recording on arrival. The press that opened it was already the
+ * decision to sing — asking for a second press is asking twice for one
+ * intention, and the take that matters is the one somebody had in their head
+ * when they reached for the button.
+ *
+ * Which is why leaving has to be free. There is a way out at the top left
+ * that throws the take away, because a view that starts recording the moment
+ * it opens must never be a view you are stuck in.
+ *
  * Composition only. What a capture is lives in useNoteCapture; every
  * per-frame value arrives as a shared value and never crosses React state.
  */
-import React, { useCallback, useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useWindowDimensions } from 'react-native';
 
@@ -59,21 +68,52 @@ export function RecordScreen(): React.JSX.Element {
   // Held for as long as this view is open, whatever route it is left by.
   useScreenAwake();
 
+  // Straight into it. The press that opened this view was the decision to
+  // sing; asking for a second one asks twice for a single intention.
+  useEffect(() => {
+    start();
+    // Once, on arrival. Re-running it would restart a capture underneath
+    // itself.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Back to the list once the note is written. The take is the thing; there
   // is nothing to look at here afterwards.
   const finish = useCallback(() => {
     void stopAndSave().then(() => navigation.goBack());
   }, [stopAndSave, navigation]);
 
+  // Out, without keeping anything. Nothing is saved and nothing is asked:
+  // somebody who wants this take gone has already decided, and a dialog would
+  // be the app arguing with them.
+  const abandon = useCallback(() => navigation.goBack(), [navigation]);
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.stage }]}>
-      {/* Where a glance lands without the eye leaving the line being drawn. */}
-      <View style={styles.corner}>
-        <NoteName
-          testID="heard-note"
-          sharedMidi={sharedMidi}
-          style={[styles.noteName, { color: colors.neutral50 }]}
-        />
+      <View style={styles.top}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('record.discard')}
+          testID="discard-take"
+          onPress={abandon}
+          hitSlop={12}
+          style={({ pressed }) => [styles.leave, { opacity: pressed ? 0.6 : 1 }]}
+        >
+          <Text style={[styles.leaveText, { color: colors.neutral50 }]}>
+            {t('record.discard')}
+          </Text>
+        </Pressable>
+
+        {/* Where a glance lands without the eye leaving the line being
+            drawn. On its own disc in a light colour: dark text on a dark
+            ground is a readout nobody can read. */}
+        <View style={[styles.notePill, { backgroundColor: colors.neutral50 }]}>
+          <NoteName
+            testID="heard-note"
+            sharedMidi={sharedMidi}
+            style={[styles.noteName, { color: colors.typography }]}
+          />
+        </View>
       </View>
 
       <View style={styles.trace}>
@@ -117,8 +157,24 @@ export default RecordScreen;
 
 const styles = StyleSheet.create({
   safe: { flex: 1, paddingHorizontal: 16 },
-  corner: { alignItems: 'flex-end', paddingTop: 8 },
-  noteName: { fontSize: 40, fontWeight: '700', minWidth: 96 },
+  top: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 8
+  },
+  leave: { paddingVertical: 8, paddingRight: 12 },
+  leaveText: { fontSize: 16, fontWeight: '600' },
+  // A disc rather than bare text: the readout changes constantly, and a shape
+  // that stays put is what makes a changing thing readable at a glance.
+  notePill: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  noteName: { fontSize: 30, fontWeight: '700', minWidth: 76 },
   trace: { marginTop: 12, height: TRACE_HEIGHT, borderRadius: 16, overflow: 'hidden' },
   // Everything else is pushed to the bottom: the top half is what is being
   // heard, the bottom half is what can be done about it.

@@ -76,10 +76,18 @@ export function useNoteDetail(id: string) {
 
   // Mint the audio URL when Play is pressed rather than here: the token it
   // carries is good for about two minutes (INV-NOTES-014).
+  //
+  // The copy on this device wins where there is one. It is the faster thing
+  // to read, it needs no token, and for a take that has not been uploaded yet
+  // it is the only copy there is (INV-NOTES-139).
   const audioPath = note?.audioPath ?? null;
+  const localAudioUri = note?.localAudioUri ?? null;
   const resolveAudio = useCallback(
-    () => notesRepo.audioUrlFor(id, audioPath),
-    [id, audioPath]
+    () =>
+      localAudioUri != null
+        ? Promise.resolve(localAudioUri)
+        : notesRepo.audioUrlFor(id, audioPath),
+    [id, audioPath, localAudioUri]
   );
 
   // What this person has already made of the take, kept with the note so a

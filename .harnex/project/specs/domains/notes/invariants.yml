@@ -137,3 +137,35 @@ invariants:
       starts a new capture. A terminal state that only a reset can leave, with
       nothing issuing that reset, makes the record control inert for the rest
       of the session and is only recoverable by relaunching the app.
+
+  - id: INV-NOTES-139
+    description: A take is kept on the device before it is sent anywhere
+    severity: critical
+    check: >
+      Stopping a capture writes the note into the local store and shows it in
+      the list before any request is made. The upload runs afterwards, in the
+      background, and is retried; a note waiting to go is marked as such and
+      is playable from its local audio meanwhile. A sync from the server
+      replaces what the server knows about and never removes a note the server
+      has not been told about yet. Verified by asserting a capture with the
+      network refused still appears in the list and still plays, that a
+      later sync does not delete it, and that a successful upload leaves one
+      note rather than two.
+
+      A take used to exist only if the round trip succeeded. The audio was
+      written to the device, the create was posted, and a failure left the
+      recording somewhere the app would never show again — so singing
+      something with no signal lost it. For an app whose whole job is catching
+      an idea before it evaporates, that is the wrong way round: the network
+      is the least reliable part of the phone and it was load-bearing.
+
+      Local first, therefore, and the server second. What was sung is a fact
+      the moment it was sung; where it is stored is a detail that can be
+      retried.
+
+      Which also settles a confusion the list could not resolve. An empty list
+      meant either "nothing kept" or "could not ask", and it said the first
+      while meaning the second. With the local store as what the list reads,
+      an empty list means empty, and a sync that failed is a separate thing
+      that can be said separately.
+

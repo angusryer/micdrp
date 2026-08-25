@@ -43,6 +43,22 @@ export interface NoteMeta {
    */
   audioPath: string | null;
   /**
+   * Where the audio sits on this device, for a note that has not been
+   * uploaded yet — and afterwards, until the file is cleaned up.
+   *
+   * A note is kept locally the moment it is sung, before anything is sent
+   * (INV-NOTES-139), so for a while the only copy of a take is this one.
+   */
+  localAudioUri?: string;
+  /**
+   * True while this note is still waiting to reach the server.
+   *
+   * The list shows it either way. What it changes is that a sync must not
+   * remove it: the server has not been told about it, so the server's silence
+   * about it means nothing (INV-NOTES-139).
+   */
+  pendingSync?: boolean;
+  /**
    * The symbolic melody.
    *
    * A reading of the audio, not a source of truth: the recording and the

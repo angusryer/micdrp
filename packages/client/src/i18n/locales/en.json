@@ -8,6 +8,7 @@
     "play": "Play",
     "stop": "Stop",
     "saved": "Saved",
+    "discard": "Discard",
     "save": "Save",
     "back": "Back",
     "retry": "Retry",
@@ -44,6 +45,7 @@
     "record": "Record",
     "stop": "Stop",
     "saved": "Saved",
+    "discard": "Discard",
     "requestingPermission": "Requesting permission…",
     "permissionDenied": "Microphone permission denied.",
     "analyzing": "Analyzing…",
@@ -155,7 +157,11 @@
     "octaveUp": "Move the melody up an octave",
     "octaveDown": "Move the melody down an octave",
     "octaveHint": "Playback only — the take is unchanged",
-    "octaveShifted": "Melody heard {{label}} octaves from the take"
+    "octaveShifted": "Melody heard {{label}} octaves from the take",
+    "offline": "Couldn't reach the server — showing what's on this phone",
+    "pending": "{{count}} waiting to upload",
+    "unreachableTitle": "Couldn't reach the server",
+    "unreachableSubtitle": "Your notes are safe. Pull down to try again."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -195,7 +201,8 @@
       "analyzing": "Analyzing…",
       "start": "Start",
       "stop": "Stop",
-    "saved": "Saved",
+      "saved": "Saved",
+      "discard": "Discard",
       "back": "Back",
       "micDenied": "Microphone permission is needed to practise.",
       "failed": "Something went wrong with this take."
