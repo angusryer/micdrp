@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { usePlayback, type PlaybackState } from './usePlayback';
+import { useLatest } from './useLatest';
 import {
   sameMix,
   type PlaybackMix,
@@ -60,6 +61,12 @@ export interface UsePlaybackMixOptions {
   /** The struck sounds read out of the take (INV-NOTES-120). */
   rhythm?: MixAccompaniment;
   /**
+   * The layers, as they were sung rather than as they were read
+   * (INV-NOTES-134). One voice for all of them: they were sung against the
+   * same take, so there is one moment for them to start at.
+   */
+  layers?: MixAccompaniment;
+  /**
    * A voice that follows the take itself rather than the chord track.
    *
    * The detected melody belongs here. Hanging it off the accompaniment made it
@@ -96,6 +103,7 @@ export function usePlaybackMix({
   voice,
   count,
   rhythm,
+  layers,
   levels
 }: UsePlaybackMixOptions): MixedPlayback {
   const {
@@ -117,7 +125,8 @@ export function usePlaybackMix({
     voice?.setLevel?.(levels.melody);
     count?.setLevel?.(levels.count);
     rhythm?.setLevel?.(levels.rhythm);
-  }, [levels, accompaniment, voice, count, rhythm, setTakeLevel]);
+    layers?.setLevel?.(levels.layers);
+  }, [levels, accompaniment, voice, count, rhythm, layers, setTakeLevel]);
 
   const wantsTake = mix.take;
   const wantsChords = mix.chords;
@@ -145,37 +154,21 @@ export function usePlaybackMix({
       ? 'playing'
       : 'stopped';
 
-  // Read through a ref so the backdrop follows the transport and only the
+  // Read through refs so each voice follows the transport and only the
   // transport: re-voicing the chords mid-take (an edit, a re-render) must not
-  // restart it underneath a take that never stopped.
-  const latest = useRef(accompaniment);
-  useEffect(() => {
-    latest.current = accompaniment;
-  }, [accompaniment]);
-  // Read the same way, and for the same reason: a choice that drops the take
-  // must not re-schedule the backdrop on its way to stopping everything.
-  const takeWanted = useRef(wantsTake);
-  useEffect(() => {
-    takeWanted.current = wantsTake;
-  }, [wantsTake]);
-
-  const latestVoice = useRef(voice);
-  useEffect(() => {
-    latestVoice.current = voice;
-  }, [voice]);
-
-  const latestRhythm = useRef(rhythm);
-  useEffect(() => {
-    latestRhythm.current = rhythm;
-  }, [rhythm]);
-
-  const latestCount = useRef(count);
-  useEffect(() => {
-    latestCount.current = count;
-  }, [count]);
+  // restart them underneath a take that never stopped. Likewise the take's
+  // own switch — a choice that drops the take must not re-schedule the
+  // backdrop on its way to stopping everything.
+  const latest = useLatest(accompaniment);
+  const takeWanted = useLatest(wantsTake);
+  const latestVoice = useLatest(voice);
+  const latestRhythm = useLatest(rhythm);
+  const latestCount = useLatest(count);
+  const latestLayers = useLatest(layers);
 
   const wantsCount = mix.count;
   const wantsRhythm = mix.rhythm;
+  const wantsLayers = mix.layers;
 
   /**
    * Every voice, started against one reading of the clock.
@@ -196,7 +189,8 @@ export function usePlaybackMix({
       [latest.current, wantsChords],
       [latestVoice.current, wantsVoice],
       [latestRhythm.current, wantsRhythm],
-      [latestCount.current, wantsCount]
+      [latestCount.current, wantsCount],
+      [latestLayers.current, wantsLayers]
     ] as const;
     for (const [player, wanted] of voices) {
       if (running && wanted) {
@@ -205,7 +199,15 @@ export function usePlaybackMix({
         player?.stop();
       }
     }
-  }, [state, wantsChords, wantsVoice, wantsRhythm, wantsCount, takeElapsedMs]);
+  }, [
+    state,
+    wantsChords,
+    wantsVoice,
+    wantsRhythm,
+    wantsCount,
+    wantsLayers,
+    takeElapsedMs
+  ]);
 
   const stop = useCallback(async (): Promise<void> => {
     clearEndTimer();
@@ -235,7 +237,8 @@ export function usePlaybackMix({
     const durationMs = Math.max(
       wantsChords ? (latest.current?.durationMs ?? 0) : 0,
       wantsVoice ? (latestVoice.current?.durationMs ?? 0) : 0,
-      wantsCount ? (latestCount.current?.durationMs ?? 0) : 0
+      wantsCount ? (latestCount.current?.durationMs ?? 0) : 0,
+      wantsLayers ? (latestLayers.current?.durationMs ?? 0) : 0
     );
     if (durationMs <= 0) {
       return;

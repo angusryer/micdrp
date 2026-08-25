@@ -13,52 +13,15 @@ import { renderHook } from '@testing-library/react-native';
 
 import type { ChordPlayback } from 'logic';
 
-interface FakeOscillator {
-  freq: number;
-  start: jest.Mock;
-  stop: jest.Mock;
-}
-
-const oscillators: FakeOscillator[] = [];
-const gains: number[] = [];
-const mockClose = jest.fn().mockResolvedValue(undefined);
-
-jest.mock('react-native-audio-api', () => ({
-  AudioContext: jest.fn().mockImplementation(() => ({
-    currentTime: 0,
-    destination: {},
-    createOscillator: () => {
-      const osc: FakeOscillator = { freq: 0, start: jest.fn(), stop: jest.fn() };
-      oscillators.push(osc);
-      return {
-        ...osc,
-        type: 'sine',
-        frequency: {
-          value: 0,
-          setValueAtTime: (v: number) => {
-            osc.freq = v;
-          },
-          linearRampToValueAtTime: jest.fn()
-        },
-        connect: jest.fn()
-      };
-    },
-    createGain: () => ({
-      gain: {
-        value: 0,
-        setValueAtTime: jest.fn(),
-        linearRampToValueAtTime: (v: number) => {
-          if (v > 0) {
-            gains.push(v);
-          }
-        }
-      },
-      connect: jest.fn()
-    }),
-    close: mockClose
-  }))
+jest.mock('../../../specs/NativeSynth', () => ({
+  __esModule: true,
+  // Required in the factory, not closed over: a factory runs before this
+  // module's own bindings exist.
+  default: (require('../__fixtures__/synthDouble') as typeof import('../__fixtures__/synthDouble'))
+    .synthDouble
 }));
 
+import { resetSynthDouble, synthDouble as synth } from '../__fixtures__/synthDouble';
 import { backdropTones, useChordBackdrop } from '../useChordBackdrop';
 
 /** Two bars of C then G, voiced from the backdrop floor. */
@@ -95,27 +58,35 @@ describe('backdropTones', () => {
 });
 
 describe('useChordBackdrop', () => {
-  beforeEach(() => {
-    oscillators.length = 0;
-    gains.length = 0;
-    jest.clearAllMocks();
-  });
+  beforeEach(resetSynthDouble);
+
+  /** Every note the engine was asked for, however many calls it took. */
+  const scheduled = () =>
+    synth.schedule.mock.calls.flatMap(
+      ([notes]) => notes as { frequencyHz: number; bus: number }[]
+    );
+
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
   it('schedules nothing until the take starts', async () => {
     await renderHook(() => useChordBackdrop(PROGRESSION));
-    expect(oscillators).toHaveLength(0);
+    await settle();
+    expect(scheduled()).toHaveLength(0);
   });
 
   it('sounds one tone per chord note when the take starts', async () => {
     const { result } = await renderHook(() => useChordBackdrop(PROGRESSION));
     result.current.start();
+    await settle();
 
-    expect(oscillators).toHaveLength(6);
+    const notes = scheduled();
+    expect(notes).toHaveLength(6);
     // Voiced from the backdrop floor: 48 is C3 at 130.81 Hz (INV-NOTES-009).
-    expect(oscillators[0].freq).toBeCloseTo(130.81, 1);
-    // Quieter per tone than a tapped chord's 0.2, since several sound at once
-    // underneath a sung take.
-    expect(Math.max(...gains)).toBeLessThan(0.2);
+    expect(notes[0].frequencyHz).toBeCloseTo(130.81, 1);
+    // Quieter than a tapped chord, since several sound at once underneath a
+    // sung take — which is now the bus's level rather than each tone's gain.
+    const [, level] = synth.setBusLevel.mock.calls.at(-1) as [number, number];
+    expect(level).toBeLessThan(1);
   });
 
   it('reports how long the whole progression runs', async () => {
@@ -128,12 +99,12 @@ describe('useChordBackdrop', () => {
   it('silences the backdrop when the take stops', async () => {
     const { result } = await renderHook(() => useChordBackdrop(PROGRESSION));
     result.current.start();
+    await settle();
     result.current.stop();
 
-    for (const osc of oscillators) {
-      expect(osc.stop).toHaveBeenCalled();
-    }
-    expect(mockClose).toHaveBeenCalled();
+    // Its own bus, cleared: pending notes dropped and sounding voices
+    // released, which is what stopping without a click means.
+    expect(synth.clearBus).toHaveBeenCalled();
   });
 
   it('leaves nothing sounding when the screen goes away', async () => {
@@ -141,10 +112,9 @@ describe('useChordBackdrop', () => {
       useChordBackdrop(PROGRESSION)
     );
     result.current.start();
+    await settle();
     await unmount();
 
-    for (const osc of oscillators) {
-      expect(osc.stop).toHaveBeenCalled();
-    }
+    expect(synth.clearBus).toHaveBeenCalled();
   });
 });

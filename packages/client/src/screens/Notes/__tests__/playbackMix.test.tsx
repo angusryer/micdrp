@@ -15,25 +15,15 @@
  */
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-const mockDecode = jest.fn();
-const mockStart = jest.fn();
-
-jest.mock('react-native-audio-api', () => ({
-  AudioContext: jest.fn().mockImplementation(() => ({
-    destination: {},
-    decodeAudioData: mockDecode,
-    // The take runs through a level now, so the double has to offer one.
-    createGain: () => ({ gain: { value: 1 }, connect: jest.fn() }),
-    createBufferSource: () => ({
-      buffer: null,
-      connect: jest.fn(),
-      start: mockStart,
-      stop: jest.fn(),
-      onended: null
-    }),
-    close: jest.fn().mockResolvedValue(undefined)
-  }))
+jest.mock('../../../specs/NativeSynth', () => ({
+  __esModule: true,
+  // Required in the factory, not closed over: a factory runs before this
+  // module's own bindings exist.
+  default: (require('../__fixtures__/synthDouble') as typeof import('../__fixtures__/synthDouble'))
+    .synthDouble
 }));
+
+import { resetSynthDouble, synthDouble as synth } from '../__fixtures__/synthDouble';
 
 import { backdrop, renderPlaybackBar } from '../__fixtures__/renderPlaybackBar';
 
@@ -73,7 +63,7 @@ const isLocked = (name: string) =>
 describe('turning the tracks a press sounds', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockDecode.mockResolvedValue({ duration: 3 });
+    resetSynthDouble();
   });
 
   it('starts with the take and the chords on and the melody off', async () => {
@@ -93,7 +83,7 @@ describe('turning the tracks a press sounds', () => {
 
     await fireEvent.press(screen.getByLabelText('Play'));
 
-    await waitFor(() => expect(mockStart).toHaveBeenCalled());
+    await waitFor(() => expect(synth.scheduleSamples).toHaveBeenCalled());
     expect(chords.start).toHaveBeenCalledTimes(1);
     // The take is already running when the chords are handed over, so what the
     // backdrop is given is the take's position, not its top (INV-NOTES-020).
@@ -110,7 +100,9 @@ describe('turning the tracks a press sounds', () => {
     await fireEvent.press(track('Chords'));
     await fireEvent.press(screen.getByLabelText('Play'));
 
-    await waitFor(() => expect(mockDecode).toHaveBeenCalledWith(REMOTE));
+    await waitFor(() =>
+      expect(synth.loadSample).toHaveBeenCalledWith(0, REMOTE)
+    );
     expect(chords.start).not.toHaveBeenCalled();
   });
 
@@ -127,7 +119,7 @@ describe('turning the tracks a press sounds', () => {
     expect(chords.start).toHaveBeenCalledWith(0);
     // A press that plays no take asks the backend for nothing.
     expect(resolve).not.toHaveBeenCalled();
-    expect(mockDecode).not.toHaveBeenCalled();
+    expect(synth.loadSample).not.toHaveBeenCalled();
     // The chords are the transport now, so the control is the one that stops
     // them.
     expect(screen.getByLabelText('Pause')).toBeTruthy();

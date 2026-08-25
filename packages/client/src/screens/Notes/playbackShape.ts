@@ -1,11 +1,9 @@
 /**
- * What a take player is, whichever one is playing it.
+ * What a take player is.
  *
- * There are two: the take as a voice on the native engine (INV-NOTES-133),
- * and the AudioContext player that predates it and still runs on binaries
- * built before the engine could hold recorded audio (INV-NOTES-030). This is
- * the shape they share, kept apart from both so neither owns the contract and
- * a caller cannot tell which it has.
+ * Apart from the player itself so the transport depends on the contract
+ * rather than on the machinery: the take is a voice on the native engine
+ * (INV-NOTES-133), and nothing above here needs to know that.
  */
 
 export type PlaybackState = 'stopped' | 'loading' | 'playing' | 'error';

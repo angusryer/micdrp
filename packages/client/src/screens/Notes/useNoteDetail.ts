@@ -50,6 +50,7 @@ import { useListening } from './useListening';
 import { useInterpretation } from './useInterpretation';
 import { useExportedMidi } from './useExportedMidi';
 import type { Chosen, Selection } from '../../components/graphSelection';
+import { useLayerVoices } from './useLayerVoices';
 import { useNoteLayers } from './useNoteLayers';
 import { useNotationView } from './useNotationView';
 import { useNotePlayback } from './useNotePlayback';
@@ -442,6 +443,14 @@ export function useNoteDetail(id: string) {
     return true;
   }, [note, resolveAudio]);
 
+  // The layers as performances rather than as readings of them
+  // (INV-NOTES-134). Loaded when the note opens, so a press is a schedule.
+  const layerVoices = useLayerVoices(
+    note?.id ?? null,
+    layers,
+    note?.durationMs ?? 0
+  );
+
   const playback = useNotePlayback(
     melody,
     quantized,
@@ -549,6 +558,8 @@ export function useNoteDetail(id: string) {
     bass,
     setLayerMuted,
     layerCapture,
+    /** The layers as they were sung, for the transport (INV-NOTES-134). */
+    layerVoices,
     selection,
     setSelection,
     flashing,

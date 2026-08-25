@@ -1,8 +1,7 @@
 /**
  * The take, sounding through the one engine (INV-NOTES-133).
  *
- * Same shape as the AudioContext player it replaces, and a different thing
- * underneath: the recording is decoded once into a slot on the native engine
+ * The recording is decoded once into a slot on the native engine
  * and then scheduled by the same call, on the same clock, at the same bus
  * levels as every synthesized voice. There is no second graph to line up
  * with, so a backdrop and the voice it was read from are in time by
@@ -22,20 +21,8 @@ import NativeSynth from '../../specs/NativeSynth';
 import { SCHEDULE_LEAD_MS, audioNowMs } from '../../audio/audioClock';
 import { usePlaybackClock, useTakeAnchor } from './usePlaybackClock';
 import { trackBus } from './trackRegistry';
+import { TAKE_SLOT } from './sampleSlots';
 import type { Playback, PlaybackState, UsePlaybackOptions } from './playbackShape';
-
-/**
- * Which resident audio the take occupies.
- *
- * One take is played at a time, so one slot is enough; the rest are there for
- * the layers, which get theirs when they are given a voice.
- */
-const TAKE_SLOT = 0;
-
-/** Whether this binary's engine can hold recorded audio at all. */
-export function hasSampleEngine(): boolean {
-  return NativeSynth != null && typeof NativeSynth.loadSample === 'function';
-}
 
 export function useTakeVoice({
   resolveAudioUri

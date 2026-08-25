@@ -37,6 +37,15 @@ export interface TrackSpec {
   startsOn: boolean;
   /** Where it sits in the mix, 0..1. */
   level: number;
+  /**
+   * True where every note has one, so it is never offered conditionally.
+   *
+   * Only the take. This used to be read off the role — "a recording is always
+   * there" — which stopped being true the moment the layers became a
+   * recording track too (INV-NOTES-134). A note may have no layers; it always
+   * has a take.
+   */
+  always?: boolean;
 }
 
 /**
@@ -52,6 +61,7 @@ export const TRACKS = [
     role: 'recording',
     title: 'Your take',
     startsOn: true,
+    always: true,
     // The thing being judged, so it sits at full and everything read from it
     // sits under it (INV-NOTES-082).
     level: 1
@@ -76,6 +86,15 @@ export const TRACKS = [
     title: 'Drums read from your take',
     startsOn: false,
     level: 0.6
+  },
+  {
+    name: 'layers',
+    role: 'recording',
+    title: 'Layers you sang over it',
+    startsOn: true,
+    // Just under the take. A layer was sung against it and belongs beside
+    // it, but the take is the thing being judged (INV-NOTES-134).
+    level: 0.9
   },
   {
     name: 'count',
@@ -110,6 +129,16 @@ export function trackSpec(name: TrackName): TrackSpec {
 export function trackBus(name: TrackName): number {
   return TRACKS.findIndex((track) => track.name === name);
 }
+
+/**
+ * Whether every note has this track, so it is never offered conditionally.
+ *
+ * Only the take. Asked here rather than read off the role — "a recording is
+ * always there" stopped being true the moment the layers became a recording
+ * track too (INV-NOTES-134).
+ */
+export const isAlwaysPresent = (name: TrackName): boolean =>
+  trackSpec(name).always === true;
 
 /** Every track of a kind, for anything that treats them alike. */
 export const tracksWithRole = (role: TrackRole): TrackName[] =>

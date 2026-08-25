@@ -21,28 +21,12 @@ jest.mock('../../../specs/NativeSynth', () => ({
     .synthDouble
 }));
 
-import { hasSampleEngine, useTakeVoice } from '../useTakeVoice';
+import { useTakeVoice } from '../useTakeVoice';
 import { resetSynthDouble, synthDouble as synth } from '../__fixtures__/synthDouble';
 
 beforeEach(resetSynthDouble);
 
 const uri = () => Promise.resolve('file:///take.m4a');
-
-describe('choosing where a take is played', () => {
-  it('uses the engine when this binary can hold recorded audio', () => {
-    expect(hasSampleEngine()).toBe(true);
-  });
-
-  it('does not, on a binary built before the engine could', () => {
-    // A bundle ships over the air to builds older than the native code it
-    // assumes; playback there degrades rather than going silent
-    // (INV-NOTES-030).
-    const held = synth.loadSample;
-    delete (synth as Record<string, unknown>).loadSample;
-    expect(hasSampleEngine()).toBe(false);
-    synth.loadSample = held;
-  });
-});
 
 describe('playing a take through the engine', () => {
   it('decodes it once and schedules it on the engine clock', async () => {
@@ -57,9 +41,9 @@ describe('playing a take through the engine', () => {
       [{ bus: number; slot: number; fromMs: number; startMs: number; endMs: number }[]]
     ];
     // Booked ahead of the engine's own now, which is what everything else is
-    // booked against.
+    // booked against. The double's clock reads zero, so the lead is all of it.
     expect(booked[0].bus).toBe(TAKE_BUS);
-    expect(booked[0].startMs).toBeGreaterThan(10_000);
+    expect(booked[0].startMs).toBeGreaterThan(0);
     expect(booked[0].endMs - booked[0].startMs).toBe(60_000);
     await waitFor(() => expect(result.current.state).toBe('playing'));
   });

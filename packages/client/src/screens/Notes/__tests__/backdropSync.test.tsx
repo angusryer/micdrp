@@ -16,48 +16,15 @@ import { renderHook } from '@testing-library/react-native';
 
 import type { ChordPlayback } from 'logic';
 
-interface FakeOscillator {
-  startedAt: number | null;
-  stoppedAt: number | null;
-}
-
-const oscillators: FakeOscillator[] = [];
-
-jest.mock('react-native-audio-api', () => ({
-  AudioContext: jest.fn().mockImplementation(() => ({
-    currentTime: 0,
-    destination: {},
-    createOscillator: () => {
-      const osc: FakeOscillator = { startedAt: null, stoppedAt: null };
-      oscillators.push(osc);
-      return {
-        type: 'sine',
-        frequency: {
-          value: 0,
-          setValueAtTime: jest.fn(),
-          linearRampToValueAtTime: jest.fn()
-        },
-        connect: jest.fn(),
-        start: (t: number) => {
-          osc.startedAt = t;
-        },
-        stop: (t: number) => {
-          osc.stoppedAt = t;
-        }
-      };
-    },
-    createGain: () => ({
-      gain: {
-        value: 0,
-        setValueAtTime: jest.fn(),
-        linearRampToValueAtTime: jest.fn()
-      },
-      connect: jest.fn()
-    }),
-    close: jest.fn().mockResolvedValue(undefined)
-  }))
+jest.mock('../../../specs/NativeSynth', () => ({
+  __esModule: true,
+  // Required in the factory, not closed over: a factory runs before this
+  // module's own bindings exist.
+  default: (require('../__fixtures__/synthDouble') as typeof import('../__fixtures__/synthDouble'))
+    .synthDouble
 }));
 
+import { resetSynthDouble, synthDouble as synth } from '../__fixtures__/synthDouble';
 import { shiftTones, useChordBackdrop } from '../useChordBackdrop';
 
 /** Two bars of C then G, on the take's clock. */
@@ -92,39 +59,50 @@ describe('shiftTones', () => {
 });
 
 describe('the backdrop against a take already running', () => {
-  beforeEach(() => {
-    oscillators.length = 0;
-    jest.clearAllMocks();
-  });
+  beforeEach(resetSynthDouble);
+
+  /** Every note the engine was asked for, however many calls it took. */
+  const scheduled = () =>
+    synth.schedule.mock.calls.flatMap(
+      ([notes]) => notes as { startMs: number; endMs: number }[]
+    );
+
+  /** Where the engine was told to begin, relative to its own now plus lead. */
+  const LEAD = 50;
 
   it('starts from the top when the take has not moved yet', async () => {
     const { result } = await renderHook(() => useChordBackdrop(PROGRESSION));
     result.current.start();
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(oscillators).toHaveLength(6);
-    expect(oscillators[0].startedAt).toBe(0);
+    const notes = scheduled();
+    expect(notes).toHaveLength(6);
+    expect(notes[0].startMs).toBe(LEAD);
     // The second chord still waits its two seconds.
-    expect(oscillators[3].startedAt).toBe(2);
+    expect(notes[3].startMs).toBe(LEAD + 2000);
   });
 
   it('skips the chord the take has passed and shortens the one it is in', async () => {
     const { result } = await renderHook(() => useChordBackdrop(PROGRESSION));
     result.current.start(2500);
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     // Only the second chord's three notes are left to sound.
-    expect(oscillators).toHaveLength(3);
-    for (const osc of oscillators) {
+    const notes = scheduled();
+    expect(notes).toHaveLength(3);
+    for (const note of notes) {
       // It starts now, where the take is — not 2.5s late, and not 2s from now.
-      expect(osc.startedAt).toBe(0);
+      expect(note.startMs).toBe(LEAD);
       // And still ends where the chord ends: 1.5s of its 2s remain.
-      expect(osc.stoppedAt).toBe(1.5);
+      expect(note.endMs).toBe(LEAD + 1500);
     }
   });
 
   it('sounds nothing when the take is already past the progression', async () => {
     const { result } = await renderHook(() => useChordBackdrop(PROGRESSION));
     result.current.start(4000);
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(oscillators).toHaveLength(0);
+    expect(scheduled()).toHaveLength(0);
   });
 });

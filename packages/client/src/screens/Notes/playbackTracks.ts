@@ -9,7 +9,7 @@
  *
  * Its own file so `usePlaybackMix` stays the transport and nothing else.
  */
-import { TRACKS, type TrackName } from './trackRegistry';
+import { TRACKS, isAlwaysPresent, type TrackName } from './trackRegistry';
 
 /**
  * Which tracks a press sounds. Each is turned on and off on its own.
@@ -77,9 +77,11 @@ export function sameMix(a: PlaybackMix, b: PlaybackMix): boolean {
 /**
  * The mix as it actually sounds, with tracks the note does not have removed.
  *
- * The take is always available — it is the recording, not a reading of it.
- * Everything else sounds only where the note has something for it to sound,
- * so a control can never claim a sound nothing makes (INT-NOTES-026).
+ * The take is always available — every note has one. Everything else sounds
+ * only where the note has something for it to sound, so a control can never
+ * claim a sound nothing makes (INT-NOTES-026). Which track that is comes from
+ * the registry rather than from its role: the layers are a recording too, and
+ * a note may well have none (INV-NOTES-134).
  */
 export function withOnlyAvailable(
   mix: PlaybackMix,
@@ -88,6 +90,6 @@ export function withOnlyAvailable(
   return fromTracks(
     (track) =>
       mix[track.name] &&
-      (track.role === 'recording' || available.includes(track.name))
+      (isAlwaysPresent(track.name) || available.includes(track.name))
   );
 }

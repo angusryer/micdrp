@@ -575,6 +575,19 @@ invariants:
       Highest index first, because removing one shifts every index after it
       and taking them in order would delete the wrong neighbours.
 
+  - id: INV-NOTES-133-supersedes-note
+    description: Superseded — INV-NOTES-127 and INV-NOTES-128 no longer apply
+    severity: info
+    check: >
+      Both described how the take behaved when the AudioContext it was played
+      through arrived suspended under a live capture: started at once rather
+      than booked, and a refused resume reported as a fact about the session
+      rather than a failure of the take. There is no such context any more —
+      the take is a voice on the engine (INV-NOTES-133), and an engine that is
+      already running owns its output and asks the session for nothing. The
+      two invariants are kept for the history of why the code looked the way
+      it did; nothing implements them and nothing tests them.
+
   - id: INV-NOTES-133
     description: The recorded take sounds through the one engine, on the one clock
     severity: critical
@@ -623,4 +636,40 @@ invariants:
       so freeing a buffer the moment a slot is replaced would be a read of
       freed memory in the render callback, which is a crash rather than a
       glitch.
+
+  - id: INV-NOTES-134
+    description: A layer is heard as it was sung, not as it was read
+    severity: major
+    check: >
+      Every layer with audio and without a mute is decoded into a slot of its
+      own and scheduled against the take on the engine's clock, shifted by the
+      `alignedByMs` it recorded. They share one bus and one level, and a muted
+      layer is not scheduled at all. A note with more layers than there are
+      slots sounds the ones it has room for and says which it left out.
+      Verified by asserting a layer sounds at its aligned offset alongside the
+      take, that a muted one does not sound, that a layer with no audio is
+      skipped, and that each layer that sounds occupies a different slot from
+      the take and from the others.
+
+      A layer used to reach the ear only as a synthesized reading of what was
+      detected in it — the bass line arrived as an oscillator playing the
+      notes we thought we heard. That is the wrong object: a layer is a
+      performance (INV-NOTES-071), and a performance is worth more than a
+      transcription of it. The reading is still drawn and still carries the
+      harmony; what changed is that the recording itself now sounds.
+
+      On its own bus rather than the take's, because a layer is not the take
+      and balancing one against the other is the point of having both. One bus
+      for all of them rather than one each: a layer is silenced by not being
+      scheduled, which is exactly what a mute means, so per-layer levels would
+      be a control nobody has asked for.
+
+      Shifted by `alignedByMs`. An overdub is heard by the microphone after
+      the output and input latencies, so it lands late by a fixed amount, and
+      a layer scheduled at face value sits behind the take it was sung over.
+
+      Fewer slots than a note could have layers, so the limit is stated rather
+      than discovered: audio held for the whole take costs real memory, and
+      quietly dropping the seventh layer would be a note that sounds different
+      from the note that was made.
 

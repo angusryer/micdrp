@@ -3,23 +3,18 @@
  *
  * Every player made here schedules into the same native engine: one sample
  * clock, one voice pool, five busses (INV-NOTES-028/029). The player keeps
- * the ReferenceTonePlayer shape so call sites do not change; what changes is
+ * the TonePlayer shape so call sites do not change; what changes is
  * that "three things sounding at once" is three busses of one graph rather
  * than three AudioContexts that cannot agree on a moment.
  *
- * On a binary without the native module — bundles ship over the air to
- * binaries built before it existed — the factory returns the old per-context
- * player instead, so playback degrades to what it was rather than to silence
- * (INV-NOTES-030).
+ * There is one implementation. A per-context player used to stand in on
+ * binaries built before the engine existed; carrying it meant two clocks and
+ * two sets of behaviour for builds nobody runs (INV-NOTES-133).
  */
 import { midiToFrequency, type TargetNote } from 'logic';
 
 import NativeSynth from '../specs/NativeSynth';
-import {
-  createReferenceTonePlayer,
-  type ReferenceToneOptions,
-  type ReferenceTonePlayer
-} from './referenceTone';
+import type { TonePlayer, TonePlayerOptions } from './tonePlayer';
 
 /**
  * Which of the native engine's buses a player sounds on.
@@ -85,7 +80,7 @@ function createNativePlayer(
   synth: NonNullable<typeof NativeSynth>,
   bus: SynthBusValue,
   peakGain: number
-): ReferenceTonePlayer {
+): TonePlayer {
   let level = 1;
   let holding = false;
   /** Bumped by stop(): a play still awaiting start() must not schedule. */
@@ -149,17 +144,25 @@ function createNativePlayer(
 }
 
 /**
- * A ReferenceTonePlayer sounding on `bus` of the shared native synth, or the
- * old per-context player when the binary has no synth (INV-NOTES-030).
- * `options.peakGain` keeps its old meaning; the rest of the options only
- * apply to the fallback.
+ * A player sounding on `bus` of the one native engine.
+ *
+ * There is no second way any more. A binary with no engine cannot make a
+ * sound at all, so this says so plainly rather than quietly substituting a
+ * different graph on a different clock (INV-NOTES-133).
  */
 export function createTonePlayer(
   bus: SynthBusValue,
-  options: ReferenceToneOptions = {}
-): ReferenceTonePlayer {
+  options: TonePlayerOptions = {}
+): TonePlayer {
   if (!NativeSynth) {
-    return createReferenceTonePlayer(options);
+    console.warn(
+      '[synthPlayer] no audio engine in this binary; nothing will sound'
+    );
+    return {
+      play: () => undefined,
+      setLevel: () => undefined,
+      stop: () => undefined
+    };
   }
   return createNativePlayer(
     NativeSynth,

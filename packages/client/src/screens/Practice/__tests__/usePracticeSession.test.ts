@@ -44,8 +44,15 @@ jest.mock('../../capture/useRecordController', () => ({
 
 const mockPlay = jest.fn();
 const mockTonePlayerStop = jest.fn();
-jest.mock('../../../audio/referenceTone', () => ({
-  createReferenceTonePlayer: () => ({ play: mockPlay, stop: mockTonePlayerStop })
+jest.mock('../../../audio/synthPlayer', () => ({
+  // Every player is a bus of the one engine now (INV-NOTES-133); what this
+  // suite cares about is that the melody is played and stopped.
+  createTonePlayer: () => ({
+    play: mockPlay,
+    stop: mockTonePlayerStop,
+    setLevel: jest.fn()
+  }),
+  SynthBus: { Audition: 8, Bass: 9 }
 }));
 
 const mockDetectHeadphones = jest.fn();

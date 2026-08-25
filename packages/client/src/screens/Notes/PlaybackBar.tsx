@@ -68,6 +68,8 @@ export interface PlaybackBarProps {
   count?: MixAccompaniment;
   /** The struck sounds read out of the take (INV-NOTES-120). */
   rhythm?: MixAccompaniment;
+  /** The layers, as they were sung rather than as read (INV-NOTES-134). */
+  layers?: MixAccompaniment;
   /** The beats, for feeling rather than hearing them (INV-NOTES-125). */
   beats?: readonly { startMs: number; midi: number }[];
   /**
@@ -108,6 +110,7 @@ export function PlaybackBar({
   voice,
   count,
   rhythm,
+  layers,
   beats = [],
   trackOptions,
   onDetails,
@@ -144,12 +147,19 @@ export function PlaybackBar({
     if ((rhythm?.durationMs ?? 0) > 0) {
       extras.push('rhythm');
     }
+    // Only where a layer was actually sung and left audible. A layer is a
+    // performance, so this offers the recording rather than the reading of
+    // it (INV-NOTES-134).
+    if ((layers?.durationMs ?? 0) > 0) {
+      extras.push('layers');
+    }
     return extras.length > 0 ? ['take', ...extras] : [];
   }, [
     accompaniment?.durationMs,
     voice?.durationMs,
     count?.durationMs,
-    rhythm?.durationMs
+    rhythm?.durationMs,
+    layers?.durationMs
   ]);
 
   // What the toggles both draw and hand back: a track the note lacks, or a
@@ -166,7 +176,8 @@ export function PlaybackBar({
     accompaniment,
     voice,
     count,
-    rhythm
+    rhythm,
+    layers
   });
 
   // The click, felt instead of heard, when the note was left that way. It

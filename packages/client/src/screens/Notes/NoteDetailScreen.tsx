@@ -118,6 +118,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             listening={detail.listening}
             count={detail.countMix}
             rhythm={detail.rhythmMix}
+            layers={detail.layerVoices}
             beats={detail.clickBeats}
             onDetails={() => setShowDetails(true)}
             onTransport={setTransport}

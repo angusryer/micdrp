@@ -72,7 +72,9 @@ describe('the tracks, declared once', () => {
     // (INV-NOTES-115).
     expect(tracksWithRole('melodic').length).toBeGreaterThan(0);
     expect(tracksWithRole('percussive')).toContain('rhythm');
-    expect(tracksWithRole('recording')).toEqual(['take']);
+    // The take and the layers are both recordings: performances, read the
+    // same way and heard as they were sung (INV-NOTES-134).
+    expect(tracksWithRole('recording')).toEqual(['take', 'layers']);
     expect(trackSpec('count').role).toBe('timing');
   });
 

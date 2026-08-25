@@ -19,12 +19,16 @@ export const synthDouble: Record<string, jest.Mock> = {
   clearAll: jest.fn()
 };
 
-/** Back to a working engine that holds a one-minute take. */
+/**
+ * Back to a working engine whose clock reads zero and which holds a
+ * one-minute take. A clock at zero makes a scheduled moment readable as the
+ * lead alone.
+ */
 export function resetSynthDouble(): void {
   for (const fn of Object.values(synthDouble)) {
     fn.mockReset();
   }
   synthDouble.start.mockResolvedValue(undefined);
-  synthDouble.nowMs.mockReturnValue(10_000);
+  synthDouble.nowMs.mockReturnValue(0);
   synthDouble.loadSample.mockResolvedValue(60_000);
 }

@@ -1,9 +1,7 @@
 /**
- * synthPlayer — one native engine behind many players, and the fallback that
- * keeps old binaries sounding (INV-NOTES-030).
+ * synthPlayer — one native engine behind every player (INV-NOTES-028/133).
  */
 import type { Spec } from '../../specs/NativeSynth';
-import type { AudioContextLike } from '../referenceTone';
 
 /** Two buses by number: what they mean is the registry's business. */
 const MELODY_BUS = 1;
@@ -37,34 +35,16 @@ function load(native: Partial<Spec> | null): SynthPlayerModule {
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-describe('without the native module (INV-NOTES-030)', () => {
-  it('falls back to the per-context player instead of going silent', () => {
+describe('without an engine (INV-NOTES-133)', () => {
+  it('says so rather than substituting a different graph', () => {
+    // The per-context player that used to stand in here is gone: two clocks
+    // and two sets of behaviour, for builds nobody runs.
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
     const { createTonePlayer } = load(null);
-    const oscillators: unknown[] = [];
-    const ctx: AudioContextLike = {
-      currentTime: 0,
-      destination: {},
-      createOscillator: () => {
-        const osc = {
-          type: 'sine',
-          frequency: { value: 0, setValueAtTime: jest.fn(), linearRampToValueAtTime: jest.fn() },
-          connect: jest.fn(),
-          start: jest.fn(),
-          stop: jest.fn()
-        };
-        oscillators.push(osc);
-        return osc;
-      },
-      createGain: () => ({
-        gain: { value: 0, setValueAtTime: jest.fn(), linearRampToValueAtTime: jest.fn() },
-        connect: jest.fn()
-      }),
-      close: jest.fn()
-    };
-
-    const player = createTonePlayer(MELODY_BUS, { createContext: () => ctx });
-    player.play([{ midi: 69, startMs: 0, endMs: 500 }]);
-    expect(oscillators).toHaveLength(1);
+    const player = createTonePlayer(MELODY_BUS);
+    expect(() => player.play([{ midi: 69, startMs: 0, endMs: 500 }])).not.toThrow();
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
   });
 });
 

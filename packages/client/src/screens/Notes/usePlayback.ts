@@ -1,22 +1,14 @@
 /**
- * Playing a take — through the engine where the engine can, otherwise not.
+ * Playing a take: a voice on the one engine, and nothing else.
  *
- * The take is a voice on the one native engine, scheduled on the same clock
- * as everything sounding with it (INV-NOTES-133). A binary built before the
- * engine could hold recorded audio gets the AudioContext player instead:
- * bundles ship over the air to builds older than the native code they assume,
- * and playback there must degrade to what it was rather than to silence
- * (INV-NOTES-030).
+ * There was a second way — the take decoded into its own AudioContext, on its
+ * own clock — kept for binaries built before the engine could hold recorded
+ * audio (INV-NOTES-030). It is gone. Two ways to play the one thing meant two
+ * clocks to keep honest and two sets of behaviour to reason about, for the
+ * sake of builds nobody runs (INV-NOTES-133).
  *
- * Chosen once, when this module is first imported, rather than per render. A
- * hook picked per render is a hook order that changes, which React counts —
- * and the answer cannot change while the app is running anyway.
+ * This file is the name the app knows it by; `useTakeVoice` is the thing.
  */
-import { useContextTake } from './useContextTake';
-import { hasSampleEngine, useTakeVoice } from './useTakeVoice';
-
+export { useTakeVoice as usePlayback } from './useTakeVoice';
+export { useTakeVoice as default } from './useTakeVoice';
 export type { Playback, PlaybackState, UsePlaybackOptions } from './playbackShape';
-
-export const usePlayback = hasSampleEngine() ? useTakeVoice : useContextTake;
-
-export default usePlayback;
