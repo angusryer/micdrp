@@ -25,11 +25,13 @@ namespace micdrp {
 
 /// One instruction for the audio thread to apply to its Synth.
 struct SynthCommand {
-  enum class Kind : int { Schedule, SetBusLevel, ClearBus, ClearAll };
+  enum class Kind : int { Schedule, SetBusLevel, ClearBus, ClearAll, SetSample };
   Kind kind = Kind::ClearAll;
   Bus bus = Bus::Melody;      ///< SetBusLevel / ClearBus
   float level = 0.0f;         ///< SetBusLevel
   ScheduledNote note;         ///< Schedule
+  int sampleSlot = -1;        ///< SetSample
+  SampleData sample;          ///< SetSample
 };
 
 class SynthMailbox {

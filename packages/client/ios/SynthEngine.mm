@@ -5,6 +5,7 @@
 #import "SynthEngine.h"
 
 #import "AudioSessionClaim.h"
+#import "SampleStore.h"
 
 #import <AVFoundation/AVFoundation.h>
 #import <React/RCTLog.h>
@@ -38,11 +39,14 @@ constexpr double kRenderSampleRate = 48000.0;
   std::atomic<std::int64_t> _renderedSamples;
   std::atomic<bool> _running;
   AudioSessionClaim *_session;
+  SampleStore *_samples;
 }
 
 - (instancetype)init {
   if (self = [super init]) {
     _session = [[AudioSessionClaim alloc] init];
+    _samples = [[SampleStore alloc] initWithMailbox:&_mailbox
+                                         sampleRate:kRenderSampleRate];
   }
   return self;
 }
@@ -142,6 +146,9 @@ constexpr double kRenderSampleRate = 48000.0;
   }
   _source = nil;
   _engine = nil;
+  // Only now: the audio thread has stopped, so nothing can be reading a
+  // buffer any more (INV-NOTES-133).
+  [_samples releaseAll];
   [_session relinquish];
 }
 
@@ -175,6 +182,27 @@ constexpr double kRenderSampleRate = 48000.0;
   }
   [self warnIfRefused:micdrp::postSchedule(_mailbox, bus, frequencyHz, startMs,
                                            endMs, kRenderSampleRate)];
+}
+
+- (double)loadSample:(double)slot
+                path:(NSString *)path
+               error:(NSError **)error {
+  return [_samples loadSlot:slot path:path nowMs:[self nowMs] error:error];
+}
+
+- (void)unloadSample:(double)slot {
+  [_samples unloadSlot:slot nowMs:[self nowMs]];
+}
+
+- (void)scheduleSampleBus:(double)bus
+                     slot:(double)slot
+                   fromMs:(double)fromMs
+                  startMs:(double)startMs
+                    endMs:(double)endMs {
+  if (!_running.load()) {
+    return;  // nothing to sound into; the caller starts the engine first
+  }
+  [_samples scheduleSlot:slot bus:bus fromMs:fromMs startMs:startMs endMs:endMs];
 }
 
 - (void)clearBus:(double)bus {

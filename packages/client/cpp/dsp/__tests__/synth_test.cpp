@@ -17,6 +17,7 @@
 #include <vector>
 
 using micdrp::Bus;
+using micdrp::SampleData;
 using micdrp::ScheduledNote;
 using micdrp::Synth;
 
@@ -224,6 +225,180 @@ void scheduledOutOfOrder() {
   check(peak(first) > 0.05f, "the earlier note sounds even though it came second");
 }
 
+
+
+// ---------------------------------------------------------------------------
+// Recorded audio: a take is a voice like any other (INV-NOTES-133).
+
+/// A recognisable block of "recorded" audio: frame n holds the value n/10000,
+/// which stays inside full scale so the output clamp never hides a mismatch.
+std::vector<float> ramp(std::size_t frames) {
+  std::vector<float> data(frames);
+  for (std::size_t i = 0; i < frames; ++i) {
+    data[i] = static_cast<float>(i) / 10000.0f;
+  }
+  return data;
+}
+
+/// Where a note is a sample rather than a tone.
+ScheduledNote takeNote(int slot, std::int64_t start, std::int64_t end,
+                       std::int64_t from = 0) {
+  ScheduledNote note;
+  note.bus = Bus::Take;
+  note.sampleSlot = slot;
+  note.sourceFrame = from;
+  note.startSample = start;
+  note.endSample = end;
+  return note;
+}
+
+void soundsTheFramesItWasGiven() {
+  Synth synth;
+  synth.configure(48000.0);
+  const std::vector<float> audio = ramp(2000);
+  synth.setSample(0, SampleData{audio.data(), audio.size()});
+  synth.schedule(takeNote(0, 0, 1500));
+
+  std::vector<float> out(1024, 0.0f);
+  synth.render(out.data(), out.size());
+  // Past the ramp-in, the output is the recorded frame at unity — not a tone,
+  // and not attenuated the way a synthesized voice is.
+  check(std::fabs(out[1000] - audio[1000]) < 0.01f,
+        "a scheduled take sounds its own frames");
+}
+
+void beginsWhereItWasAskedTo() {
+  Synth synth;
+  synth.configure(48000.0);
+  const std::vector<float> audio = ramp(2000);
+  synth.setSample(0, SampleData{audio.data(), audio.size()});
+  // Resuming a take part-way through is how a scrubbed playhead sounds.
+  synth.schedule(takeNote(0, 0, 900, 1000));
+
+  std::vector<float> out(512, 0.0f);
+  synth.render(out.data(), out.size());
+  check(std::fabs(out[500] - audio[1500]) < 0.01f,
+        "a take begins at the frame it was asked for");
+}
+
+void stopsWhenItsSpanEnds() {
+  Synth synth;
+  synth.configure(48000.0);
+  const std::vector<float> audio(4000, 0.5f);
+  synth.setSample(0, SampleData{audio.data(), audio.size()});
+  synth.schedule(takeNote(0, 0, 256));
+
+  std::vector<float> out(256, 0.0f);
+  synth.render(out.data(), out.size());
+  // Past the release ramp, which is deliberately not instant: stopping must
+  // not click any more than starting does.
+  std::vector<float> after(1024, 0.0f);
+  synth.render(after.data(), after.size());
+  check(peak(std::vector<float>(after.begin() + 512, after.end())) < 0.001f,
+        "a take stops when its span ends");
+}
+
+void runsOutRatherThanLooping() {
+  Synth synth;
+  synth.configure(48000.0);
+  const std::vector<float> audio(100, 0.5f);
+  synth.setSample(0, SampleData{audio.data(), audio.size()});
+  // A span far longer than the audio: what is not there is silence, not the
+  // beginning again.
+  synth.schedule(takeNote(0, 0, 4000));
+
+  std::vector<float> out(200, 0.0f);
+  synth.render(out.data(), out.size());
+  check(peak(std::vector<float>(out.begin() + 120, out.end())) < 0.02f,
+        "a take that ran out is silent rather than looping");
+}
+
+void busLevelScalesTheTake() {
+  Synth synth;
+  synth.configure(48000.0);
+  const std::vector<float> audio(4000, 0.8f);
+  synth.setSample(0, SampleData{audio.data(), audio.size()});
+  synth.setBusLevel(Bus::Take, 0.25f);
+  synth.schedule(takeNote(0, 0, 2000));
+
+  std::vector<float> out(512, 0.0f);
+  synth.render(out.data(), out.size());
+  check(std::fabs(peak(out) - 0.2f) < 0.02f,
+        "the take's bus level is the take's level");
+}
+
+void replacingASlotLeavesASoundingVoiceAlone() {
+  Synth synth;
+  synth.configure(48000.0);
+  const std::vector<float> first(4000, 0.6f);
+  const std::vector<float> second(4000, 0.1f);
+  synth.setSample(0, SampleData{first.data(), first.size()});
+  synth.schedule(takeNote(0, 0, 4000));
+
+  std::vector<float> out(512, 0.0f);
+  synth.render(out.data(), out.size());
+  // Loading another take while one is sounding must not change what is being
+  // heard: the voice holds the audio it began with.
+  synth.setSample(0, SampleData{second.data(), second.size()});
+  std::vector<float> after(512, 0.0f);
+  synth.render(after.data(), after.size());
+  check(std::fabs(peak(after) - 0.6f) < 0.02f,
+        "a sounding take keeps the audio it started with");
+}
+
+void anEmptySlotSoundsNothing() {
+  Synth synth;
+  synth.configure(48000.0);
+  synth.schedule(takeNote(3, 0, 2000));
+  std::vector<float> out(512, 0.0f);
+  synth.render(out.data(), out.size());
+  check(peak(out) < 0.001f, "a slot with no audio in it sounds nothing");
+}
+
+void takeAndToneShareTheClock() {
+  Synth synth;
+  synth.configure(48000.0);
+  const std::vector<float> audio(48000, 0.4f);
+  synth.setSample(0, SampleData{audio.data(), audio.size()});
+  // Both booked for the same moment, which is the whole point of one engine.
+  synth.schedule(takeNote(0, 4800, 24000));
+  ScheduledNote tone;
+  tone.bus = Bus::Melody;
+  tone.frequencyHz = 440.0f;
+  tone.startSample = 4800;
+  tone.endSample = 24000;
+  synth.schedule(tone);
+
+  std::vector<float> before(4096, 0.0f);
+  synth.render(before.data(), before.size());
+  check(peak(before) < 0.001f, "neither sounds before its moment");
+  std::vector<float> at(4096, 0.0f);
+  synth.render(at.data(), at.size());
+  check(synth.activeVoices() == 2, "a take and a tone start on the same clock");
+}
+
+void reconfiguringForgetsLoadedAudio() {
+  Synth synth;
+  synth.configure(48000.0);
+  const std::vector<float> audio(4000, 0.5f);
+  synth.setSample(0, SampleData{audio.data(), audio.size()});
+  // Frames at one rate are a different duration at another, so they are not
+  // audio for the new rate.
+  synth.configure(44100.0);
+  check(synth.sample(0).frames == nullptr,
+        "a rate change forgets audio loaded for the old one");
+}
+
+void slotsOutOfRangeAreIgnored() {
+  Synth synth;
+  synth.configure(48000.0);
+  const std::vector<float> audio(4000, 0.5f);
+  synth.setSample(-1, SampleData{audio.data(), audio.size()});
+  synth.setSample(999, SampleData{audio.data(), audio.size()});
+  check(synth.sample(-1).frames == nullptr, "a slot below the range is ignored");
+  check(synth.sample(999).frames == nullptr, "a slot above the range is ignored");
+}
+
 }  // namespace
 
 int main() {
@@ -239,6 +414,16 @@ int main() {
   reconfiguringResets();
   nonsenseIsIgnored();
   scheduledOutOfOrder();
+  soundsTheFramesItWasGiven();
+  beginsWhereItWasAskedTo();
+  stopsWhenItsSpanEnds();
+  runsOutRatherThanLooping();
+  busLevelScalesTheTake();
+  replacingASlotLeavesASoundingVoiceAlone();
+  anEmptySlotSoundsNothing();
+  takeAndToneShareTheClock();
+  reconfiguringForgetsLoadedAudio();
+  slotsOutOfRangeAreIgnored();
 
   if (failures > 0) {
     std::printf("%d check(s) failed\n", failures);

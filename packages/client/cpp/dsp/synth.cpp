@@ -24,6 +24,13 @@ constexpr float kVoicePeak = 0.18f;
 
 constexpr float kTwoPi = 6.283185307179586f;
 
+/// Peak amplitude of a recorded voice.
+///
+/// Unity, unlike a tone: a take was recorded at whatever level it was sung at
+/// and the engine's job is to reproduce it, not to attenuate it. Balancing it
+/// against the tones is what its bus level is for (INV-NOTES-133).
+constexpr float kSamplePeak = 1.0f;
+
 int busIndex(Bus bus) {
   const int i = static_cast<int>(bus);
   return (i >= 0 && i < kMaxBuses) ? i : 0;
@@ -46,6 +53,12 @@ void Synth::configure(double sampleRateHz) {
     v.active = false;
     v.releasing = false;
     v.envelope = 0.0f;
+    v.source = nullptr;
+  }
+  // Frames at the old rate describe a different duration, so a slot loaded
+  // for one rate is not audio for another.
+  for (SampleData& data : samples_) {
+    data = SampleData{};
   }
 }
 
@@ -55,8 +68,28 @@ void Synth::setBusLevel(Bus bus, float level) {
 
 float Synth::busLevel(Bus bus) const { return busLevels_[busIndex(bus)]; }
 
+void Synth::setSample(int slot, SampleData data) {
+  if (slot < 0 || slot >= kMaxSamples) {
+    return;
+  }
+  // Frames without a count, or a count without frames, is a slot that would
+  // read past the end of nothing.
+  samples_[slot] = (data.frames != nullptr && data.frameCount > 0)
+                       ? data
+                       : SampleData{};
+}
+
+SampleData Synth::sample(int slot) const {
+  return (slot >= 0 && slot < kMaxSamples) ? samples_[slot] : SampleData{};
+}
+
 void Synth::schedule(const ScheduledNote& note) {
-  if (note.endSample <= note.startSample || note.frequencyHz <= 0.0f) {
+  const bool isSample = note.sampleSlot >= 0 && note.sampleSlot < kMaxSamples;
+  if (note.endSample <= note.startSample) {
+    return;
+  }
+  // A tone needs a pitch and a sample needs a slot; neither is a sound.
+  if (!isSample && note.frequencyHz <= 0.0f) {
     return;
   }
   // Kept sorted so admission is a walk from the front rather than a scan of
@@ -129,6 +162,13 @@ void Synth::admit(std::int64_t blockStart, std::int64_t blockEnd) {
     v->startSample = note.startSample;
     v->endSample = note.endSample;
     v->envelope = 0.0f;
+    // Bound once, here. A voice reads the audio its slot held when it began,
+    // whatever the slot holds later (INV-NOTES-133).
+    v->isSample = note.sampleSlot >= 0;
+    const SampleData resident = sample(note.sampleSlot);
+    v->source = resident.frames;
+    v->sourceCount = resident.frameCount;
+    v->sourcePos = note.sourceFrame > 0 ? note.sourceFrame : 0;
     ++nextPending_;
   }
 }
@@ -158,8 +198,18 @@ void Synth::render(float* out, std::size_t frames) {
         v.active = false;
         continue;
       }
-      mix += std::sin(kTwoPi * v.phase) * v.envelope * kVoicePeak *
-             busLevels_[busIndex(v.bus)];
+      const float level = v.envelope * busLevels_[busIndex(v.bus)];
+      if (v.isSample) {
+        // Past its own end is silence rather than a wrap: a take that ran out
+        // has nothing more to say, and looping it would say something else.
+        if (v.source != nullptr &&
+            v.sourcePos < static_cast<std::int64_t>(v.sourceCount)) {
+          mix += v.source[v.sourcePos] * level * kSamplePeak;
+        }
+        ++v.sourcePos;
+        continue;
+      }
+      mix += std::sin(kTwoPi * v.phase) * level * kVoicePeak;
       v.phase += v.phaseStep;
       if (v.phase >= 1.0f) {
         v.phase -= 1.0f;

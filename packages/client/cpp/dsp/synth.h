@@ -13,6 +13,11 @@
 // samples, and the platform layer does nothing but hand them to an output.
 // That is what makes it testable on a host with no audio device.
 //
+// It plays recorded audio too. A take is not a tone, but it is a thing that
+// starts at a moment and stops at one, and the only way it can be exactly in
+// time with the tones is to be on their clock — so it is a voice like any
+// other, reading frames instead of turning a phase (INV-NOTES-133).
+//
 // Usage:
 //   Synth synth;
 //   synth.configure(48000);
@@ -60,13 +65,52 @@ enum class Bus : int {
   Rhythm = 6    ///< the struck sounds read out of the take
 };
 
-/// One note to sound: a frequency on a bus, between two samples.
+/**
+ * How many blocks of recorded audio may be resident at once.
+ *
+ * A take and the layers sung over it. Like the buses, a capacity rather than
+ * a list: what a slot holds is decided by the caller (INV-NOTES-133).
+ */
+constexpr int kMaxSamples = 8;
+
+/**
+ * One block of recorded audio, resident and ready to sound.
+ *
+ * Mono, already at the engine's rate: converting while rendering would be a
+ * per-sample cost on the audio thread for a conversion that is identical
+ * every time it is done (INV-NOTES-133).
+ *
+ * The frames are NOT owned here. The audio thread holds this pointer for as
+ * long as a voice is reading it, which is what keeps rendering
+ * allocation-free — so whoever loaded the audio must keep it alive until no
+ * voice can still be inside it. Freeing on replacement is a read of freed
+ * memory in the render callback.
+ */
+struct SampleData {
+  const float* frames = nullptr;
+  std::size_t frameCount = 0;
+};
+
+/**
+ * One sound to make: a tone or a passage of recorded audio, on a bus,
+ * between two moments.
+ *
+ * Both at once rather than two schedules, because they are the same claim —
+ * this bus makes this sound from here to here — and splitting them would be
+ * two paths to keep in step (INV-NOTES-133).
+ */
 struct ScheduledNote {
   Bus bus = Bus::Melody;
+  /// A tone, when positive. Ignored when a sample slot is named.
   float frequencyHz = 440.0f;
   /// Both are absolute positions on the engine's own clock.
   std::int64_t startSample = 0;
   std::int64_t endSample = 0;
+  /// Which resident audio to play, or -1 for a tone. Last, with the frame
+  /// below it, so the four fields a tone needs keep the order they had.
+  int sampleSlot = -1;
+  /// How far into that audio to begin, in frames. Where a take resumes from.
+  std::int64_t sourceFrame = 0;
 };
 
 /// How many notes may sound at once before the oldest is stolen.
@@ -87,6 +131,17 @@ class Synth {
   /// re-schedule (INV-NOTES-027).
   void setBusLevel(Bus bus, float level);
   float busLevel(Bus bus) const;
+
+  /**
+   * Hand the engine a block of recorded audio to hold, or clear a slot with
+   * an empty one. Takes effect for notes admitted after it.
+   *
+   * The frames must outlive every voice reading them (see SampleData). A
+   * voice already sounding keeps the audio it started with, so replacing a
+   * slot never changes what is currently being heard (INV-NOTES-133).
+   */
+  void setSample(int slot, SampleData data);
+  SampleData sample(int slot) const;
 
   /// Add a note. Notes may be scheduled in any order and while rendering.
   void schedule(const ScheduledNote& note);
@@ -116,6 +171,16 @@ class Synth {
     std::int64_t endSample = 0;
     float envelope = 0.0f;   ///< current gain, ramped to avoid clicks
     bool releasing = false;
+    /// Whether this voice plays recorded audio rather than a tone. Asked of
+    /// the note, not of the audio: a slot that turned out to be empty is a
+    /// take with nothing in it, which is silence — never a 440Hz tone
+    /// (INV-NOTES-133).
+    bool isSample = false;
+    /// Bound at admission and held to the end, so replacing a slot cannot
+    /// change what a sounding voice is reading (INV-NOTES-133).
+    const float* source = nullptr;
+    std::size_t sourceCount = 0;
+    std::int64_t sourcePos = 0;
   };
 
   /// Start any scheduled note whose moment has come.
@@ -130,6 +195,8 @@ class Synth {
                                  1.0f};
   /// Fixed: a long take must cost no more to play than a short one.
   Voice voices_[kMaxVoices];
+  /// Borrowed, never owned. See SampleData.
+  SampleData samples_[kMaxSamples];
   /// Pending notes, kept sorted by start so admission is a walk from the front.
   std::vector<ScheduledNote> pending_;
   std::size_t nextPending_ = 0;

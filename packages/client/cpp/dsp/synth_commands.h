@@ -32,6 +32,19 @@ std::int64_t samplesFromMs(double ms, double sampleRateHz);
 bool postSchedule(SynthMailbox& mailbox, double busIndex, double frequencyHz,
                   double startMs, double endMs, double sampleRateHz);
 
+/// Post a passage of recorded audio to sound: which resident slot, how far
+/// into it to begin, and the span on the engine's clock (INV-NOTES-133).
+/// Milliseconds here too, because that is what the caller has.
+bool postScheduleSample(SynthMailbox& mailbox, double busIndex, double slot,
+                        double fromMs, double startMs, double endMs,
+                        double sampleRateHz);
+
+/// Hand the audio thread a block of audio to hold, or clear the slot with a
+/// null one. The frames must outlive every voice that may read them, which
+/// is the caller's promise to keep — see SampleData.
+bool postSetSample(SynthMailbox& mailbox, double slot, const float* frames,
+                   std::size_t frameCount);
+
 bool postBusLevel(SynthMailbox& mailbox, double busIndex, double level);
 bool postClearBus(SynthMailbox& mailbox, double busIndex);
 bool postClearAll(SynthMailbox& mailbox);

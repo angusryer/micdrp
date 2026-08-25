@@ -1,0 +1,155 @@
+/**
+ * INV-NOTES-133 — the take sounds through the one engine, on the one clock.
+ *
+ * Everything the app synthesizes already ran on one sample counter. The take
+ * did not, so every alignment between them was an estimate across two clocks
+ * that drift rather than differ by a constant. Here it is scheduled by the
+ * same call, on the same clock, at the same bus levels as a tone.
+ *
+ * `renderHook` is async in this setup — await it.
+ */
+import { act, renderHook, waitFor } from '@testing-library/react-native';
+
+/** The take's bus, as the registry numbers it. */
+const TAKE_BUS = 0;
+
+jest.mock('../../../specs/NativeSynth', () => ({
+  __esModule: true,
+  // Required in the factory, not closed over: a factory runs before this
+  // module's own bindings exist.
+  default: (require('../__fixtures__/synthDouble') as typeof import('../__fixtures__/synthDouble'))
+    .synthDouble
+}));
+
+import { hasSampleEngine, useTakeVoice } from '../useTakeVoice';
+import { resetSynthDouble, synthDouble as synth } from '../__fixtures__/synthDouble';
+
+beforeEach(resetSynthDouble);
+
+const uri = () => Promise.resolve('file:///take.m4a');
+
+describe('choosing where a take is played', () => {
+  it('uses the engine when this binary can hold recorded audio', () => {
+    expect(hasSampleEngine()).toBe(true);
+  });
+
+  it('does not, on a binary built before the engine could', () => {
+    // A bundle ships over the air to builds older than the native code it
+    // assumes; playback there degrades rather than going silent
+    // (INV-NOTES-030).
+    const held = synth.loadSample;
+    delete (synth as Record<string, unknown>).loadSample;
+    expect(hasSampleEngine()).toBe(false);
+    synth.loadSample = held;
+  });
+});
+
+describe('playing a take through the engine', () => {
+  it('decodes it once and schedules it on the engine clock', async () => {
+    const { result } = await renderHook(() => useTakeVoice({ resolveAudioUri: uri }));
+
+    await act(async () => {
+      await result.current.play();
+    });
+
+    expect(synth.loadSample).toHaveBeenCalledWith(0, 'file:///take.m4a');
+    const [[booked]] = synth.scheduleSamples.mock.calls as [
+      [{ bus: number; slot: number; fromMs: number; startMs: number; endMs: number }[]]
+    ];
+    // Booked ahead of the engine's own now, which is what everything else is
+    // booked against.
+    expect(booked[0].bus).toBe(TAKE_BUS);
+    expect(booked[0].startMs).toBeGreaterThan(10_000);
+    expect(booked[0].endMs - booked[0].startMs).toBe(60_000);
+    await waitFor(() => expect(result.current.state).toBe('playing'));
+  });
+
+  it('does not decode the same take twice', async () => {
+    // The decode is the one slow step, and it belongs to the take rather than
+    // to the press.
+    const { result } = await renderHook(() => useTakeVoice({ resolveAudioUri: uri }));
+
+    await act(async () => {
+      await result.current.play();
+    });
+    await act(async () => {
+      await result.current.stop();
+    });
+    await act(async () => {
+      await result.current.play();
+    });
+
+    expect(synth.loadSample).toHaveBeenCalledTimes(1);
+    expect(synth.scheduleSamples).toHaveBeenCalledTimes(2);
+  });
+
+  it('resumes from where it was asked to, in the take', async () => {
+    const { result } = await renderHook(() => useTakeVoice({ resolveAudioUri: uri }));
+
+    await act(async () => {
+      await result.current.play(12_000);
+    });
+
+    const [[booked]] = synth.scheduleSamples.mock.calls as [
+      [{ fromMs: number; startMs: number; endMs: number }[]]
+    ];
+    expect(booked[0].fromMs).toBe(12_000);
+    // And runs only for what is left of it.
+    expect(booked[0].endMs - booked[0].startMs).toBe(48_000);
+  });
+
+  it('sets its level on its bus, not on a second mixer', async () => {
+    // The take used to carry a gain node of its own, which made balancing a
+    // mix two mixers rather than one.
+    const { result } = await renderHook(() => useTakeVoice({ resolveAudioUri: uri }));
+
+    await act(async () => {
+      result.current.setLevel(0.4);
+    });
+    expect(synth.setBusLevel).toHaveBeenCalledWith(TAKE_BUS, 0.4);
+  });
+
+  it('stops by silencing its bus', async () => {
+    const { result } = await renderHook(() => useTakeVoice({ resolveAudioUri: uri }));
+
+    await act(async () => {
+      await result.current.play();
+    });
+    await act(async () => {
+      await result.current.stop();
+    });
+
+    expect(synth.clearBus).toHaveBeenCalledWith(TAKE_BUS);
+    expect(result.current.state).toBe('stopped');
+  });
+
+  it('reports a take it cannot resolve rather than booking silence', async () => {
+    const { result } = await renderHook(() =>
+      useTakeVoice({ resolveAudioUri: () => Promise.resolve(null) })
+    );
+
+    await act(async () => {
+      await result.current.play();
+    });
+
+    expect(synth.scheduleSamples).not.toHaveBeenCalled();
+    expect(result.current.state).toBe('error');
+  });
+
+  it('gives the slot back when the note is left', async () => {
+    const { result, unmount } = await renderHook(() =>
+      useTakeVoice({ resolveAudioUri: uri })
+    );
+
+    await act(async () => {
+      await result.current.play();
+    });
+    // Awaited: an unmount left in flight leaks into whatever runs next.
+    await act(async () => {
+      await unmount();
+    });
+
+    expect(synth.clearBus).toHaveBeenCalledWith(TAKE_BUS);
+    expect(synth.unloadSample).toHaveBeenCalledWith(0);
+  });
+});

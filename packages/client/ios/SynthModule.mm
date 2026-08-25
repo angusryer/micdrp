@@ -75,6 +75,39 @@ RCT_EXPORT_MODULE(NativeSynth)
   }
 }
 
+/// Off the main queue: decoding a take reads and converts a whole file, and
+/// doing that on the queue the UI runs on is a visible stall (INV-NOTES-133).
+- (void)loadSample:(double)slot
+              path:(NSString *)path
+           resolve:(RCTPromiseResolveBlock)resolve
+            reject:(RCTPromiseRejectBlock)reject {
+  SynthEngine *engine = _engine;
+  dispatch_async(
+      dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NSError *err = nil;
+        const double durationMs = [engine loadSample:slot path:path error:&err];
+        if (durationMs < 0) {
+          reject(@"load_failed", err.localizedDescription, err);
+          return;
+        }
+        resolve(@(durationMs));
+      });
+}
+
+- (void)unloadSample:(double)slot {
+  [_engine unloadSample:slot];
+}
+
+- (void)scheduleSamples:(NSArray *)notes {
+  for (NSDictionary *note in notes) {
+    [_engine scheduleSampleBus:[note[@"bus"] doubleValue]
+                          slot:[note[@"slot"] doubleValue]
+                        fromMs:[note[@"fromMs"] doubleValue]
+                       startMs:[note[@"startMs"] doubleValue]
+                         endMs:[note[@"endMs"] doubleValue]];
+  }
+}
+
 - (void)clearBus:(double)bus {
   [_engine clearBus:bus];
 }

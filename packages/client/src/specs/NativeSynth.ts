@@ -7,6 +7,11 @@
  * through cpp/dsp/synth_mailbox.h. This file is the contract: codegen derives
  * the ObjC protocol from it, so drift is a compile error.
  *
+ * It sounds recorded audio too. A take is decoded once into a slot and then
+ * scheduled like anything else — same call, same clock, same bus levels — so
+ * a backdrop and the voice it was read from are in time by construction
+ * rather than by correction (INV-NOTES-133).
+ *
  * Times are absolute milliseconds on the engine's own clock — the one
  * `nowMs()` reads. Callers wanting two schedules aligned anchor both to the
  * same reading; there is no "relative to now" here because "now" at two call
@@ -20,6 +25,18 @@ import type { Double } from 'react-native/Libraries/Types/CodegenTypes';
 export type SynthNoteInput = {
   bus: Double;
   frequencyHz: Double;
+  /** Absolute on the engine clock, as read by nowMs(). */
+  startMs: Double;
+  endMs: Double;
+};
+
+/** A passage of loaded audio to sound, on a bus, at a moment. */
+export type SynthSampleInput = {
+  bus: Double;
+  /** Which loaded take, as returned by the load that put it there. */
+  slot: Double;
+  /** How far into that take to begin. Where a scrubbed playhead resumes. */
+  fromMs: Double;
   /** Absolute on the engine clock, as read by nowMs(). */
   startMs: Double;
   endMs: Double;
@@ -45,6 +62,20 @@ export interface Spec extends TurboModule {
   setBusLevel(bus: Double, level: Double): void;
   /** Schedule notes; any order, any mix of busses, one clock. */
   schedule(notes: SynthNoteInput[]): void;
+  /**
+   * Decode a recorded take into a slot, ready to be scheduled. Resolves with
+   * its length in ms. Slots are 0..7; loading over one in use is allowed and
+   * leaves anything currently sounding alone.
+   *
+   * Once per take, not once per press: this reads and converts the whole
+   * file, which is the cost that used to be paid on every play.
+   */
+  loadSample(slot: Double, path: string): Promise<Double>;
+  /** Give a slot back. The audio is freed once nothing can still read it. */
+  unloadSample(slot: Double): void;
+  /** Sound loaded audio; same clock and same busses as `schedule`. */
+  scheduleSamples(notes: SynthSampleInput[]): void;
+
   /** Silence one bus: pending notes dropped, sounding voices released. */
   clearBus(bus: Double): void;
   clearAll(): void;

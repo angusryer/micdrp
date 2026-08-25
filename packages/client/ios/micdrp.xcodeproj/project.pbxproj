@@ -19,6 +19,8 @@
 		51A2B3C4D5E6F70819202122 /* SynthModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202123 /* SynthModule.mm */; };
 		51A2B3C4D5E6F70819202125 /* synth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202126 /* synth.cpp */; };
 		51A2B3C4D5E6F70819202128 /* synth_mailbox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202129 /* synth_mailbox.cpp */; };
+		A1B2C3D400000000000000A0 /* SampleStore.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D400000000000000A1 /* SampleStore.mm */; };
+		A1B2C3D400000000000000B0 /* SampleDecode.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D400000000000000B1 /* SampleDecode.mm */; };
 		51A2B3C4D5E6F7081920212B /* SynthEngine.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F7081920212C /* SynthEngine.mm */; };
 		51A2B3C4D5E6F7081920212E /* AudioSessionClaim.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F7081920212F /* AudioSessionClaim.mm */; };
 		51A2B3C4D5E6F70819202130 /* synth_commands.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202131 /* synth_commands.cpp */; };
@@ -62,6 +64,8 @@
 		51A2B3C4D5E6F70819202127 /* synth.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = synth.h; path = ../cpp/dsp/synth.h; sourceTree = "<group>"; };
 		51A2B3C4D5E6F70819202129 /* synth_mailbox.cpp */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.cpp; name = synth_mailbox.cpp; path = ../cpp/dsp/synth_mailbox.cpp; sourceTree = "<group>"; };
 		51A2B3C4D5E6F7081920212A /* synth_mailbox.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = synth_mailbox.h; path = ../cpp/dsp/synth_mailbox.h; sourceTree = "<group>"; };
+		A1B2C3D400000000000000A1 /* SampleStore.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = SampleStore.mm; sourceTree = "<group>"; };
+		A1B2C3D400000000000000B1 /* SampleDecode.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = SampleDecode.mm; sourceTree = "<group>"; };
 		51A2B3C4D5E6F7081920212C /* SynthEngine.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = SynthEngine.mm; sourceTree = "<group>"; };
 		51A2B3C4D5E6F7081920212D /* SynthEngine.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = SynthEngine.h; sourceTree = "<group>"; };
 		51A2B3C4D5E6F7081920212F /* AudioSessionClaim.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = AudioSessionClaim.mm; sourceTree = "<group>"; };
@@ -161,6 +165,8 @@
 				51A2B3C4D5E6F70819202124 /* SynthModule.h */,
 				51A2B3C4D5E6F70819202123 /* SynthModule.mm */,
 				51A2B3C4D5E6F7081920212D /* SynthEngine.h */,
+				A1B2C3D400000000000000A1 /* SampleStore.mm */,
+				A1B2C3D400000000000000B1 /* SampleDecode.mm */,
 				51A2B3C4D5E6F7081920212C /* SynthEngine.mm */,
 				51A2B3C4D5E6F70819202132 /* AudioSessionClaim.h */,
 				51A2B3C4D5E6F7081920212F /* AudioSessionClaim.mm */,
@@ -510,6 +516,8 @@
 				8EA8AA89BF7B9D7F006716EB /* pitch_engine.cpp in Sources */,
 				0730E62C3B640AEB23864E9A /* notes.cpp in Sources */,
 				51A2B3C4D5E6F70819202122 /* SynthModule.mm in Sources */,
+				A1B2C3D400000000000000A0 /* SampleStore.mm in Sources */,
+				A1B2C3D400000000000000B0 /* SampleDecode.mm in Sources */,
 				51A2B3C4D5E6F7081920212B /* SynthEngine.mm in Sources */,
 				51A2B3C4D5E6F7081920212E /* AudioSessionClaim.mm in Sources */,
 				51A2B3C4D5E6F70819202140 /* CaptureFile.mm in Sources */,

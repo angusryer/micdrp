@@ -27,6 +27,28 @@ bool postSchedule(SynthMailbox& mailbox, double busIndex, double frequencyHz,
   return mailbox.post(c);
 }
 
+bool postScheduleSample(SynthMailbox& mailbox, double busIndex, double slot,
+                        double fromMs, double startMs, double endMs,
+                        double sampleRateHz) {
+  SynthCommand c;
+  c.kind = SynthCommand::Kind::Schedule;
+  c.note.bus = busFromIndex(busIndex);
+  c.note.sampleSlot = static_cast<int>(slot);
+  c.note.sourceFrame = samplesFromMs(fromMs, sampleRateHz);
+  c.note.startSample = samplesFromMs(startMs, sampleRateHz);
+  c.note.endSample = samplesFromMs(endMs, sampleRateHz);
+  return mailbox.post(c);
+}
+
+bool postSetSample(SynthMailbox& mailbox, double slot, const float* frames,
+                   std::size_t frameCount) {
+  SynthCommand c;
+  c.kind = SynthCommand::Kind::SetSample;
+  c.sampleSlot = static_cast<int>(slot);
+  c.sample = SampleData{frames, frameCount};
+  return mailbox.post(c);
+}
+
 bool postBusLevel(SynthMailbox& mailbox, double busIndex, double level) {
   SynthCommand c;
   c.kind = SynthCommand::Kind::SetBusLevel;

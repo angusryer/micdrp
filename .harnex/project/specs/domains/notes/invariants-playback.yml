@@ -574,3 +574,53 @@ invariants:
 
       Highest index first, because removing one shifts every index after it
       and taking them in order would delete the wrong neighbours.
+
+  - id: INV-NOTES-133
+    description: The recorded take sounds through the one engine, on the one clock
+    severity: critical
+    check: >
+      A take is decoded once into the engine's own rate, held in a sample slot,
+      and scheduled on its bus by the same call and the same clock as every
+      synthesized voice. Its level is that bus's level. No AudioContext is
+      created to play a note, and nothing sounding is booked against
+      `ctx.currentTime`. A slot's audio is never freed while a voice may still
+      be reading it. Verified by asserting a scheduled sample sounds its own
+      frames at its own offset, that it stops when its span ends, that a bus
+      level scales it, and that replacing a slot leaves a sounding voice
+      reading what it started with.
+
+      Everything the app synthesizes already runs on one engine, one sample
+      counter, sixteen buses (INV-NOTES-028). The take did not, because the
+      synth is an oscillator bank with no notion of a sample — so recorded
+      audio stayed on the path that predates the engine, a fresh AudioContext
+      per press.
+
+      Which made every alignment an estimate. The synth books on a sample
+      counter; a context books on its own clock; the bridge between them adds
+      a fixed lead and hopes. Two clocks do not differ by a constant, they
+      drift, so a backdrop that started in time wanders out of it — and no
+      correction applied in JS can hold it, because the error is not constant.
+
+      It also put the take at the mercy of the session. A context created
+      while a capture holds PlayAndRecord arrives suspended and refuses to
+      resume, which is what silenced a take under a layer being sung
+      (INV-NOTES-127) and then reported it as a failure (INV-NOTES-128). Both
+      were treated at the symptom. An engine already running owns its output
+      and has nothing to ask for.
+
+      And it cost a decode per press — about a sixth of a second for two
+      minutes of audio, for a file already decoded — plus a second mixer,
+      since the take's level was a gain node while every other track's was a
+      bus.
+
+      Resampled at load rather than while rendering. Rate conversion in the
+      render loop is a per-sample cost on the audio thread for a conversion
+      that is the same every time; done once at load it is a memory cost and
+      nothing else.
+
+      A slot's audio outlives every voice reading it. The audio thread holds
+      raw pointers by design — that is what makes rendering allocation-free —
+      so freeing a buffer the moment a slot is replaced would be a read of
+      freed memory in the render callback, which is a crash rather than a
+      glitch.
+

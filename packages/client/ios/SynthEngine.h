@@ -46,6 +46,25 @@ NS_ASSUME_NONNULL_BEGIN
             startMs:(double)startMs
               endMs:(double)endMs;
 
+/// Decode a recorded take into slot `slot`, ready to be scheduled like any
+/// other sound (INV-NOTES-133). Returns its length in ms, or -1 with `error`
+/// set. Blocking: call it off the main thread.
+- (double)loadSample:(double)slot
+                path:(NSString *)path
+               error:(NSError **)error;
+
+/// Give a slot back. The audio is freed once nothing can still be reading it.
+- (void)unloadSample:(double)slot;
+
+/// Schedule recorded audio: which slot, how far into it to begin, and the
+/// span on this engine's clock — the same clock `scheduleBus:` uses, which is
+/// the whole reason the take lives here.
+- (void)scheduleSampleBus:(double)bus
+                     slot:(double)slot
+                   fromMs:(double)fromMs
+                  startMs:(double)startMs
+                    endMs:(double)endMs;
+
 /// Drop what is pending on a bus and release what it has sounding.
 - (void)clearBus:(double)bus;
 - (void)clearAll;
