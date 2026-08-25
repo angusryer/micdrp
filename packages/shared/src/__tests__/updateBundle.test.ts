@@ -33,6 +33,42 @@ const client = (over: Partial<UpdateClientDto> = {}): UpdateClientDto => ({
   ...over
 });
 
+describe('a bundle older than the binary running it (INV-UPD-020)', () => {
+  it('is a rollback, even when nothing newer exists', () => {
+    // The whole failure this fixes: an install took a bundle at one build and
+    // ran it over every binary that followed, while the server answered
+    // "nothing for you" every time — because there genuinely was nothing
+    // newer it was allowed to offer.
+    const stale = bundle({ bundleId: 'b2', builtFromBuild: 29 });
+    expect(
+      decideUpdate([stale], client({ bundleId: 'b2', buildNumber: 33 }))
+    ).toMatchObject({ decision: 'rollback' });
+  });
+
+  it('leaves an install alone on a bundle built from its own build', () => {
+    const current = bundle({ bundleId: 'b2', builtFromBuild: 33 });
+    expect(
+      decideUpdate([current], client({ bundleId: 'b2', buildNumber: 33 }))
+    ).toMatchObject({ decision: 'none' });
+  });
+
+  it('rolls an install off a bundle whose age nobody recorded', () => {
+    // An unknown-age bundle cannot be shown to be newer, and the same reading
+    // that refuses to offer one refuses to keep running one.
+    const unstamped = bundle({ bundleId: 'b2', builtFromBuild: undefined });
+    expect(
+      decideUpdate([unstamped], client({ bundleId: 'b2', buildNumber: 33 }))
+    ).toMatchObject({ decision: 'rollback' });
+  });
+
+  it('says nothing about an install running the binary\'s own JavaScript', () => {
+    // Nothing is resident, so there is nothing to come off.
+    expect(
+      decideUpdate([bundle({ builtFromBuild: 1 })], client({ buildNumber: 33 }))
+    ).toMatchObject({ decision: 'none' });
+  });
+});
+
 describe('decideUpdate', () => {
   it('offers a runnable bundle newer than what is running', () => {
     expect(decideUpdate([bundle()], client())).toMatchObject({

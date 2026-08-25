@@ -134,8 +134,21 @@ export function decideUpdate(
   bundles: readonly UpdateBundleDto[],
   client: UpdateClientDto
 ): UpdateDecisionDto {
+  // Two reasons to come off what is running, answered before anything newer
+  // is looked for: where the install goes next is a separate question from
+  // the fact that it must not be here.
   const running = bundles.find((b) => b.bundleId === client.bundleId);
   if (running && !running.isEnabled) {
+    return { ...NOTHING, decision: 'rollback' };
+  }
+  // A bundle older than the binary executing it (INV-UPD-020). The same test
+  // INV-UPD-010 applies to what may be offered, asked of what is already
+  // resident — a bundle is applied natively at launch, before any of this is
+  // consulted, so without this nothing checks it at all. Left unchecked, an
+  // install that took a bundle at one build runs it over every binary that
+  // follows, and the server answers "nothing for you" every time because
+  // there is genuinely nothing newer it is allowed to offer.
+  if (running && !isNewerThanBinary(running, client)) {
     return { ...NOTHING, decision: 'rollback' };
   }
 
