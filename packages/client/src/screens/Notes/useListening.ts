@@ -37,13 +37,23 @@ export interface Listening {
    * follow, and on a phone speaker it wins (INV-NOTES-125).
    */
   beatIsFelt: boolean;
+  /**
+   * Whether an edit lands on the grid (INV-NOTES-143).
+   *
+   * On to begin with: a grid exists to be landed on, and somebody who has a
+   * tempo and bar lines is usually trying to make the notes agree with them.
+   * The person who wants a note exactly where they sang it is the one who
+   * will go looking for the switch.
+   */
+  snapToGrid: boolean;
 }
 
 const START: Listening = {
   mix: DEFAULT_MIX,
   levels: DEFAULT_LEVELS,
   chordOctaves: DEFAULT_CHORD_OCTAVES,
-  beatIsFelt: false
+  beatIsFelt: false,
+  snapToGrid: true
 };
 
 const keyFor = (noteId: string) => `notes.${noteId}.listening`;
@@ -68,7 +78,8 @@ function read(noteId: string | null, startLevels: TrackLevels): Listening {
     mix: { ...start.mix, ...kept.mix },
     levels: { ...start.levels, ...kept.levels },
     chordOctaves: kept.chordOctaves ?? start.chordOctaves,
-    beatIsFelt: kept.beatIsFelt ?? start.beatIsFelt
+    beatIsFelt: kept.beatIsFelt ?? start.beatIsFelt,
+    snapToGrid: kept.snapToGrid ?? start.snapToGrid
   };
 }
 
@@ -77,6 +88,7 @@ export interface UseListening extends Listening {
   setLevel: (track: TrackName, level: number) => void;
   setChordOctaves: (octaves: number) => void;
   setBeatIsFelt: (felt: boolean) => void;
+  setSnapToGrid: (snap: boolean) => void;
 }
 
 /**
@@ -130,6 +142,10 @@ export function useListening(
     ),
     setBeatIsFelt: useCallback(
       (beatIsFelt) => change((was) => ({ ...was, beatIsFelt })),
+      [change]
+    ),
+    setSnapToGrid: useCallback(
+      (snapToGrid) => change((was) => ({ ...was, snapToGrid })),
       [change]
     )
   };

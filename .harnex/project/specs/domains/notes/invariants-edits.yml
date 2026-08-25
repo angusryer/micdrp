@@ -177,3 +177,32 @@ invariants:
       its neighbours instead of crossing them, and what the drop commits
       is the step the drag last drew — a line that snaps back on release
       is worse than one that never moved, because it lies twice.
+
+  - id: INV-NOTES-143
+    description: Snapping is a choice, and it applies to notes as well as bars
+    severity: minor
+    check: >
+      A toggle in the rail beside the graph decides whether an edit lands on
+      the grid. With it on, a note moved or resized ends on the nearest step
+      and a bar line lands on a step; with it off, both go exactly where the
+      finger left them. It is on to begin with, kept with the note, and never
+      changes what was heard — only where an edit settles. Verified by
+      asserting a note edited with snapping on sits on a step, that the same
+      edit with it off does not, and that a note nobody edited is untouched
+      either way.
+
+      Bars snapped and notes did not, which was never a decision — the bar
+      drag was written against a grid and the note edits were written against
+      milliseconds. So a take could not be tidied onto its own grid, and a bar
+      could not be placed anywhere but on it. One control now says which
+      behaviour is wanted, for both.
+
+      On to begin with, because a grid exists to be landed on: somebody who
+      has a tempo and bar lines is usually trying to make the notes agree with
+      them, and the person who wants a note exactly where they sang it is the
+      one who will go looking for the switch.
+
+      It moves edits, never readings. What was heard stays what was heard,
+      and turning snapping off afterwards leaves the edits already made where
+      they were put — an edit is a decision, not a preference re-applied.
+

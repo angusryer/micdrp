@@ -51,7 +51,10 @@ const detail = {
   correctNote: jest.fn(),
   hearDragged: jest.fn(),
   hits: [],
-  beats: []
+  beats: [],
+  // Where an edit lands (INV-NOTES-143). The graph asks the note, and a note
+  // always has an answer.
+  listening: { snapToGrid: true }
 };
 
 const timeAxis = { t0: 0, span: 12_000, pad: 12, innerW: 900, pxPerMs: 0.2 };

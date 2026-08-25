@@ -189,6 +189,7 @@ export function GraphLayers({
             detail.moveBeatTo(index, msForX(timeAxis, xPx))
           }
           onAddBar={bars.split}
+          isSnapping={detail.listening.snapToGrid}
           onRemoveBar={bars.merge}
           onRemoveBeat={detail.removeBeatAt}
           onHear={detail.hearDragged}

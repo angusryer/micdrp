@@ -22,6 +22,7 @@ import {
   splitOffCount,
   isStale,
   matchedLevels,
+  snapNotes,
   sungLoudnessDb,
   addTap,
   beatFromTap,
@@ -390,6 +391,23 @@ export function useNoteDetail(id: string) {
   }, []);
 
   /**
+   * Where an edit ends up: on the grid, or exactly where it was put.
+   *
+   * Applied to the edited notes and to no others — quantising the whole take
+   * because one note moved is an edit nobody asked for (INV-NOTES-143).
+   */
+  const settle = useCallback(
+    (notes: NoteEvent[], chosen: readonly number[]): NoteEvent[] => {
+      const beatMs = grid.bpm > 0 ? 60000 / grid.bpm : 0;
+      const perBeat = grid.stepsPerBeat > 0 ? grid.stepsPerBeat : 4;
+      return listening.snapToGrid && beatMs > 0
+        ? snapNotes(notes, chosen, beatMs / perBeat, grid.offsetMs)
+        : notes;
+    },
+    [listening.snapToGrid, grid.bpm, grid.stepsPerBeat, grid.offsetMs]
+  );
+
+  /**
    * Change how long the chosen notes last, a sixteenth at a time.
    *
    * The finest thing worth nudging by: a whole beat is a bigger step than
@@ -410,11 +428,22 @@ export function useNoteDetail(id: string) {
       interpretation.updateNotes(
         collectNoteEdits(
           heard,
-          resizeNotes(melody, chosen, (steps * beatMs) / perBeat, edge)
+          settle(
+            resizeNotes(melody, chosen, (steps * beatMs) / perBeat, edge),
+            chosen
+          )
         )
       );
     },
-    [selection, grid.bpm, grid.stepsPerBeat, melody, heard, interpretation]
+    [
+      selection,
+      grid.bpm,
+      grid.stepsPerBeat,
+      melody,
+      heard,
+      interpretation,
+      settle
+    ]
   );
 
   /** Move the chosen notes in time, a sixteenth a step (INV-NOTES-111). */
@@ -431,11 +460,19 @@ export function useNoteDetail(id: string) {
       interpretation.updateNotes(
         collectNoteEdits(
           heard,
-          shiftNotes(melody, chosen, (steps * beatMs) / perBeat)
+          settle(shiftNotes(melody, chosen, (steps * beatMs) / perBeat), chosen)
         )
       );
     },
-    [selection, grid.bpm, grid.stepsPerBeat, melody, heard, interpretation]
+    [
+      selection,
+      grid.bpm,
+      grid.stepsPerBeat,
+      melody,
+      heard,
+      interpretation,
+      settle
+    ]
   );
 
   /** Move the chosen notes by whole semitones, from the sheet. */

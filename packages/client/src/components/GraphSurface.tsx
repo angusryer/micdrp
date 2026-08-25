@@ -59,6 +59,8 @@ export interface GraphSurfaceProps {
   onMoveNote: (index: number, semitones: number) => void;
   /** Put a new downbeat at a grid step. */
   onAddBar: (step: number) => void;
+  /** Whether a dragged line lands on the grid (INV-NOTES-143). */
+  isSnapping?: boolean;
   /** The pitch a drag has just reached, once per semitone (INV-NOTES-070). */
   onHear?: (midi: number) => void;
 }
@@ -84,6 +86,7 @@ export function GraphSurface({
   onMoveTone,
   onMoveNote,
   onAddBar,
+  isSnapping,
   onHear
 }: GraphSurfaceProps): React.JSX.Element {
   // Held here rather than reported upward: the readout belongs over the
@@ -110,6 +113,7 @@ export function GraphSurface({
     onMoveTone,
     onMoveNote,
     onAddBar,
+    snapToGrid: isSnapping,
     onHear,
     onPreview: setPreview
   });

@@ -13,11 +13,17 @@
  *
  * One row per track the note actually has. A row for a track that would make
  * no sound is a control that lies (INT-NOTES-026).
+ *
+ * The snap toggle sits at the foot of it, below a rule. It is not a track and
+ * does not sound: it decides where an edit lands (INV-NOTES-143), and putting
+ * it in the same column keeps everything that governs the graph on the
+ * graph's own edge.
  */
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../theme';
+import { useTranslation } from '../../i18n';
 import { Icon } from '../../components/Icon';
 import { TRACK_TITLES, type PlaybackMix, type TrackName } from './playbackTracks';
 
@@ -30,6 +36,9 @@ export interface TrackRailProps {
   mix: PlaybackMix;
   height: number;
   onToggle: (track: TrackName, isAudible: boolean) => void;
+  /** Whether an edit lands on the grid (INV-NOTES-143). */
+  isSnapping: boolean;
+  onSnapping: (snap: boolean) => void;
 }
 
 /** The letter a track is known by here, where there is no room for a word. */
@@ -47,9 +56,12 @@ export function TrackRail({
   tracks,
   mix,
   height,
-  onToggle
+  onToggle,
+  isSnapping,
+  onSnapping
 }: TrackRailProps): React.JSX.Element | null {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   if (tracks.length === 0) {
     return null;
   }
@@ -90,6 +102,23 @@ export function TrackRail({
           </Pressable>
         );
       })}
+
+      <View style={[styles.rule, { backgroundColor: colors.neutral500 }]} />
+
+      <Pressable
+        accessibilityRole="switch"
+        accessibilityState={{ checked: isSnapping }}
+        accessibilityLabel={t('notes.snapToGrid')}
+        testID="rail-snap"
+        onPress={() => onSnapping(!isSnapping)}
+        style={styles.row}
+      >
+        <Icon
+          name="grid"
+          size={16}
+          color={isSnapping ? colors.primary500 : colors.gray300}
+        />
+      </Pressable>
     </View>
   );
 }
@@ -106,5 +135,7 @@ const styles = StyleSheet.create({
     gap: 2
   },
   row: { alignItems: 'center', paddingVertical: 6, width: '100%' },
+  // What sounds, and what governs the drawing, are different questions.
+  rule: { height: StyleSheet.hairlineWidth, width: '60%', marginVertical: 4 },
   initial: { fontSize: 15, fontWeight: '700' }
 });

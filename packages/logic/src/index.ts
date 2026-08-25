@@ -21,6 +21,7 @@ export * from './readTake';
 export * from './tappedBeats';
 export * from './beatGrid';
 export * from './levelMatch';
+export * from './snapToGrid';
 export * from './sungCount';
 export * from './quantize';
 export * from './bars';

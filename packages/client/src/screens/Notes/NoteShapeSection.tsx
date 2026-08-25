@@ -155,6 +155,8 @@ export function NoteShapeSection({
             mix={detail.listening.mix}
             height={graphHeight + SCRUB_BAND_HEIGHT + stripHeight + bandHeight}
             onToggle={detail.listening.setAudible}
+            isSnapping={detail.listening.snapToGrid}
+            onSnapping={detail.listening.setSnapToGrid}
           />
           <View style={styles.drawing}>
         {/* A beat is a fixed width here and the take scrolls past the screen,

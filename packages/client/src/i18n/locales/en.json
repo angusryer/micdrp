@@ -164,7 +164,8 @@
     "unreachableSubtitle": "Your notes are safe. Pull down to try again.",
     "signedOut": "Your session ran out — sign in again to see your notes",
     "signedOutTitle": "Sign in again",
-    "signedOutSubtitle": "Your notes are safe on the server. Your session just ran out."
+    "signedOutSubtitle": "Your notes are safe on the server. Your session just ran out.",
+    "snapToGrid": "Snap edits to the grid"
   },
   "dashboard": {
     "title": "Dashboard",

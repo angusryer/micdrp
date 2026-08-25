@@ -84,6 +84,13 @@ export interface GraphGestureOptions {
   onMoveNote: (index: number, semitones: number) => void;
   onAddBar: (step: number) => void;
   /**
+   * Whether a dragged line lands on the grid (INV-NOTES-143).
+   *
+   * Bars always snapped and notes never did, which was never a decision. One
+   * control now says which behaviour is wanted, for both.
+   */
+  snapToGrid?: boolean;
+  /**
    * The pitch the finger has just reached, once per semitone crossed. What
    * makes a drag its own audition (INV-NOTES-070).
    */
@@ -127,6 +134,7 @@ export function useGraphGestures({
   onMoveTone,
   onMoveNote,
   onAddBar,
+  snapToGrid = true,
   onHear,
   onPreview
 }: GraphGestureOptions) {
@@ -316,12 +324,9 @@ export function useGraphGestures({
           }
           // Bars: every chosen line moves by the same number of steps, read
           // from where each began.
+          const dragged = (grabbedBars.current[0]?.x ?? 0) + e.translationX;
           const moved = stepAt(
-            snapToStep(
-              (grabbedBars.current[0]?.x ?? 0) + e.translationX,
-              originX,
-              stepWidth
-            )
+            snapToGrid ? snapToStep(dragged, originX, stepWidth) : dragged
           );
           const delta = moved - stepAt(grabbedBars.current[0]?.x ?? 0);
           if (delta !== applied.current) {
@@ -362,6 +367,7 @@ export function useGraphGestures({
       originX,
       selection,
       semitonePx,
+      snapToGrid,
       stepAt,
       stepWidth,
       tones
