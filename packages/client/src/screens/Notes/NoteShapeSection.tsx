@@ -9,6 +9,7 @@
  * of the take, and framing the drawing spent them on a frame — so it runs to
  * the edges of whatever it is given (INV-NOTES-101).
  */
+import { type SharedValue } from 'react-native-reanimated';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -67,7 +68,12 @@ export interface NoteShapeSectionProps {
   onSelect: (selection: Chosen) => void;
   flashing?: Selection | null;
   /** Where the take is, and how to go elsewhere in it (INT-NOTES-022). */
-  transport?: { positionMs: number; seek: (ms: number) => void } | null;
+  transport?: {
+    positionMs: number;
+    /** The same moment, read every frame, for the drawn head (INV-NOTES-136). */
+    drawnPositionMs: SharedValue<number>;
+    seek: (ms: number) => void;
+  } | null;
 }
 
 export function NoteShapeSection({
@@ -220,7 +226,7 @@ export function NoteShapeSection({
                     rather than behind them (INV-NOTES-100). */}
                 {transport != null ? (
                   <Playhead
-                    positionMs={transport.positionMs}
+                    positionMs={transport.drawnPositionMs}
                     timeAxis={timeAxis}
                     contentWidth={contentWidth}
                     height={graphHeight}

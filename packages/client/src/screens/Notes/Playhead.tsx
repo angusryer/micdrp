@@ -8,18 +8,28 @@
  * them: a line hidden behind the bars it is passing is not a playhead
  * (INV-NOTES-100).
  *
+ * Moved on the UI thread, from a shared value the engine's clock corrects a
+ * few times a second (INV-NOTES-136). It used to take its position as a prop
+ * and so moved only when the graph re-rendered — twice a second, in visible
+ * steps, and every step redrew the whole picture to move one line.
+ *
  * Paint only. It is drawn after the surface that reads touches and takes
  * none, so nothing it crosses becomes harder to pick up.
  */
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  type SharedValue
+} from 'react-native-reanimated';
 
-import { xForMs, type TimeAxis } from '../../components/melodyScale';
+import { type TimeAxis } from '../../components/melodyScale';
+import { headPlacement } from './playheadPlacement';
 import { useTheme } from '../../theme';
 
 export interface PlayheadProps {
-  /** Where the take is now, in ms. */
-  positionMs: number;
+  /** Where the take is now, in ms, read every frame. */
+  positionMs: SharedValue<number>;
   timeAxis: TimeAxis;
   contentWidth: number;
   height: number;
@@ -32,28 +42,32 @@ export function Playhead({
   height
 }: PlayheadProps): React.JSX.Element | null {
   const { colors } = useTheme();
-  const last = timeAxis.t0 + timeAxis.span;
-  if (!(timeAxis.pxPerMs > 0) || positionMs < timeAxis.t0 || positionMs > last) {
+
+  // Placed on the UI thread, every frame, without a render.
+  const head = useAnimatedStyle(() => {
+    'worklet';
+    const { opacity, translateX } = headPlacement(timeAxis, positionMs.value);
+    return { opacity, transform: [{ translateX }] };
+  }, [timeAxis]);
+
+  if (!(timeAxis.pxPerMs > 0)) {
     return null;
   }
 
   return (
-    <View
+    <Animated.View
       testID="playhead"
       pointerEvents="none"
       style={[styles.layer, { width: contentWidth, height }]}
     >
-      <View
+      <Animated.View
         style={[
           styles.line,
-          {
-            left: xForMs(timeAxis, positionMs),
-            height,
-            backgroundColor: colors.primary500
-          }
+          { height, backgroundColor: colors.primary500 },
+          head
         ]}
       />
-    </View>
+    </Animated.View>
   );
 }
 
@@ -63,5 +77,7 @@ const styles = StyleSheet.create({
   layer: { position: 'absolute', top: 0, left: 0 },
   // Thin and not quite solid: it crosses every note in the take, and a heavy
   // line would read as one more thing drawn rather than as a position.
-  line: { position: 'absolute', top: 0, width: 1, opacity: 0.75 }
+  // Positioned by transform rather than by `left`, so moving it never asks
+  // the layout engine anything.
+  line: { position: 'absolute', top: 0, left: 0, width: 1 }
 });

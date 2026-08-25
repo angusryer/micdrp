@@ -13,6 +13,7 @@
  * play button is its player, so a bar there would be a second control for the
  * same take (INV-NOTES-015).
  */
+import { type SharedValue } from 'react-native-reanimated';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -93,6 +94,8 @@ export interface PlaybackBarProps {
    */
   onTransport?: (transport: {
     positionMs: number;
+    /** The same moment, read every frame, for the drawn head (INV-NOTES-136). */
+    drawnPositionMs: SharedValue<number>;
     /**
      * Whether a sound is actually running. A beat tapped against a stopped
      * take has no moment to be at (INV-NOTES-130).
@@ -178,17 +181,18 @@ export function PlaybackBar({
     () => withOnlyAvailable(mix, offered),
     [mix, offered]
   );
-  const { state, play, stop, rewind, positionMs, cueTo } = usePlaybackMix({
-    resolveAudioUri,
-    mix: sounding,
-    levels,
-    accompaniment,
-    voice,
-    count,
-    rhythm,
-    layers,
-    bass
-  });
+  const { state, play, stop, rewind, positionMs, drawnPositionMs, cueTo } =
+    usePlaybackMix({
+      resolveAudioUri,
+      mix: sounding,
+      levels,
+      accompaniment,
+      voice,
+      count,
+      rhythm,
+      layers,
+      bass
+    });
 
   // The click, felt instead of heard, when the note was left that way. It
   // rides the same clicks the sounded metronome uses, so the two can never
@@ -204,6 +208,7 @@ export function PlaybackBar({
     () =>
       onTransport?.({
         positionMs,
+        drawnPositionMs,
         // Whether a sound is actually running, not merely whether there is a
         // transport. A beat tapped against a stopped take has no moment to be
         // at (INV-NOTES-130).
@@ -213,7 +218,7 @@ export function PlaybackBar({
         play: () => void play(),
         stop: () => void stop()
       }),
-    [onTransport, positionMs, state, cueTo, play, stop]
+    [onTransport, positionMs, drawnPositionMs, state, cueTo, play, stop]
   );
 
   return (

@@ -695,3 +695,39 @@ invariants:
       reason (INV-NOTES-027): a voice that says what the app thinks it heard
       is worth offering and wrong to impose.
 
+  - id: INV-NOTES-136
+    description: The playhead reads the engine's clock, and moves every frame
+    severity: major
+    check: >
+      Where the take has reached is computed from the engine's own clock — the
+      moment the take was scheduled to begin, subtracted from what `nowMs()`
+      reads — and never from the wall clock. The drawn playhead advances on
+      the UI thread every frame between samples of that clock, so it moves
+      smoothly without a React render per step, and is corrected to the engine
+      several times a second so it cannot drift. The counter shown as text
+      stays low-frequency: it is read to the second. Verified by asserting the
+      position follows the engine clock rather than elapsed wall time, that it
+      counts from where a resumed take began, and that the drawn head does not
+      re-render the graph to move.
+
+      The playhead was a wall clock ticking twice a second. The reason written
+      beside it was that a BufferSourceNode reported no position, which
+      stopped being true when the take became a voice on the engine
+      (INV-NOTES-133) — so what was left was a third clock, approximating the
+      one the audio actually runs on, and drifting from it over a long take.
+
+      Twice a second is also visibly wrong. A line that jumps half a second at
+      a time is not showing where the take is; it is showing where the take
+      was, up to half a second ago, which is worse on the graph than in the
+      counter because the graph is what a beat is placed against.
+
+      Interpolated on the UI thread rather than sampled at frame rate. The
+      engine's clock is read from JavaScript, and reading it sixty times a
+      second to set React state would re-render the graph sixty times a
+      second — the drawing is the expensive part, and none of it changes when
+      only the head moves.
+
+      Corrected rather than free-running. Advancing a shared value by frame
+      time alone is a wall clock again, dressed differently; each sample of
+      the engine pulls it back to the truth before it can accumulate.
+

@@ -19,7 +19,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import NativeSynth from '../../specs/NativeSynth';
 import { SCHEDULE_LEAD_MS, audioNowMs } from '../../audio/audioClock';
-import { usePlaybackClock, useTakeAnchor } from './usePlaybackClock';
+import { useDrawnPosition, usePlaybackClock } from './usePlaybackClock';
+import { useTakeAnchor } from './useTakeAnchor';
 import { trackBus } from './trackRegistry';
 import { TAKE_SLOT } from './sampleSlots';
 import type { Playback, PlaybackState, UsePlaybackOptions } from './playbackShape';
@@ -31,6 +32,9 @@ export function useTakeVoice({
   const [fromMs, setFromMs] = useState(0);
   const [durationMs, setDurationMs] = useState(0);
   const positionMs = usePlaybackClock(state === 'playing', fromMs);
+  // The same moment for the drawing, which moves every frame rather than
+  // every render (INV-NOTES-136).
+  const drawnPositionMs = useDrawnPosition(state === 'playing', fromMs);
   const anchor = useTakeAnchor();
   const levelRef = useRef(1);
   /** What is loaded, so the same take is not decoded twice. */
@@ -140,6 +144,7 @@ export function useTakeVoice({
   return {
     state,
     positionMs,
+    drawnPositionMs,
     elapsedMs: anchor.elapsedMs,
     durationMs,
     play,

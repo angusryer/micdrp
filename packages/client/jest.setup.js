@@ -34,6 +34,10 @@ jest.mock('react-native-reanimated', () => {
     useAnimatedStyle: (fn) => (typeof fn === 'function' ? fn() : {}),
     useAnimatedProps: (fn) => (typeof fn === 'function' ? fn() : {}),
     useAnimatedReaction: () => {},
+    // No frames on the host. The playhead's motion between samples of the
+    // engine's clock is the UI thread's business (INV-NOTES-136); what a test
+    // can check is the placement, which is a pure function.
+    useFrameCallback: () => ({ setActive: () => {}, isActive: false }),
     // Pass the completion through: a throw that removes a bar line does it
     // from this callback, so dropping it would make the gesture untestable.
     withTiming: (v, _config, cb) => {

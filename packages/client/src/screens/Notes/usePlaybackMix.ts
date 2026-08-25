@@ -20,6 +20,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { type SharedValue } from 'react-native-reanimated';
+
 import { usePlayback, type PlaybackState } from './usePlayback';
 import { useLatest } from './useLatest';
 import {
@@ -81,6 +83,12 @@ export interface UsePlaybackMixOptions {
 
 export interface MixedPlayback {
   state: PlaybackState;
+  /**
+   * The same moment as `positionMs`, read every frame on the UI thread
+   * (INV-NOTES-136). For the drawn playhead, which has to move smoothly; the
+   * number above it is read to the second and costs a render.
+   */
+  drawnPositionMs: SharedValue<number>;
   /** Start at a moment in the take. Omitted, from the beginning. */
   play(fromMs?: number): Promise<void>;
   /** Stop, then resume this many ms earlier — never before the start. */
@@ -113,6 +121,7 @@ export function usePlaybackMix({
     state: takeState,
     elapsedMs: takeElapsedMs,
     positionMs,
+    drawnPositionMs,
     play: playTake,
     stop: stopTake,
     setLevel: setTakeLevel
@@ -311,6 +320,7 @@ export function usePlaybackMix({
     stop,
     rewind,
     positionMs: state === 'playing' ? positionMs : cueMs,
+    drawnPositionMs,
     cueTo
   };
 }

@@ -6,6 +6,8 @@
  * (INV-NOTES-133), and nothing above here needs to know that.
  */
 
+import type { SharedValue } from 'react-native-reanimated';
+
 export type PlaybackState = 'stopped' | 'loading' | 'playing' | 'error';
 
 export interface UsePlaybackOptions {
@@ -18,6 +20,12 @@ export interface UsePlaybackOptions {
 
 export interface Playback {
   state: PlaybackState;
+  /**
+   * The same moment as `positionMs`, read every frame on the UI thread
+   * (INV-NOTES-136). For the drawn playhead, which has to move smoothly; the
+   * number above it is read to the second and costs a render.
+   */
+  drawnPositionMs: SharedValue<number>;
   /**
    * How far into the take playback has run, in ms; 0 in every other state.
    * Unclamped — the view holds the take's length and bounds it against that

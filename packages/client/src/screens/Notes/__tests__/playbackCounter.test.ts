@@ -9,7 +9,8 @@ import { act, renderHook } from '@testing-library/react-native';
 
 import { formatPlaybackCounter } from '../noteCardFormat';
 import { SCHEDULE_LEAD_MS } from '../../../audio/audioClock';
-import { usePlaybackClock, useTakeAnchor } from '../usePlaybackClock';
+import { usePlaybackClock } from '../usePlaybackClock';
+import { useTakeAnchor } from '../useTakeAnchor';
 
 describe('formatPlaybackCounter', () => {
   it('is the take length alone when nothing is playing', () => {

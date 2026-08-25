@@ -12,6 +12,7 @@
  * page is its own piece, so the graph can be handed a whole screen sideways
  * without any of this moving.
  */
+import { type SharedValue } from 'react-native-reanimated';
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -70,6 +71,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
 
   const [transport, setTransport] = useState<{
     positionMs: number;
+    drawnPositionMs: SharedValue<number>;
     isPlaying: boolean;
     seek: (ms: number) => void;
     play: () => void;
