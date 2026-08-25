@@ -1,8 +1,33 @@
 # Domain Development State — overwrite each meaningful change
-updated_at: "2026-08-23T00:00:00Z"
+updated_at: "2026-08-24T00:00:00Z"
 updated_by: agent
 phase: building
 phase_detail: >
+  The take sounds through the one native engine (INV-NOTES-133). synth.h
+  gained a sample voice: one that advances through a PCM buffer instead
+  of turning a phase, on a bus like any other, at unity rather than a
+  tone's peak. ios/SampleDecode reads a file — fetching a remote one to
+  a scratch file first — and converts it whole to 48k mono;
+  ios/SampleStore holds the slots, posts them to the mailbox, and frees
+  a retired buffer only once the clock has passed everything that could
+  still be reading it. useTakeVoice replaces the AudioContext player,
+  which survives as useContextTake for binaries older than the engine
+  (INV-NOTES-030); usePlayback picks between them once, at import.
+  There is one clock and one mixer again, so the take's level is its bus
+  level and a backdrop lines up by construction.
+
+  Taps are sparse evidence, not a transcript (INV-NOTES-131).
+  logic/beatGrid fits a grid to them — every gap divided by each small
+  integer, scored across all taps, longest period that explains them —
+  and resolves it against the heard tempo by whole multiples only. Bars
+  are counted in beats of that grid, so two sparse marks state a bar of
+  four, and beatsAcross carries beats and bars the length of the take.
+  A fresh tapping pass replaces the one before it, keeping bar marks.
+
+  Any vertical line is thrown away by flicking across it
+  (INV-NOTES-132): components/flickAway decides what counts as a flick
+  and dispatches highest index first.
+
   19 capabilities, 73 invariants, 41 acceptance tests, 25 interactions.
 
   The detail view draws the take as sung or as written down

@@ -19,8 +19,6 @@
 		51A2B3C4D5E6F70819202122 /* SynthModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202123 /* SynthModule.mm */; };
 		51A2B3C4D5E6F70819202125 /* synth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202126 /* synth.cpp */; };
 		51A2B3C4D5E6F70819202128 /* synth_mailbox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202129 /* synth_mailbox.cpp */; };
-		A1B2C3D400000000000000A0 /* SampleStore.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D400000000000000A1 /* SampleStore.mm */; };
-		A1B2C3D400000000000000B0 /* SampleDecode.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D400000000000000B1 /* SampleDecode.mm */; };
 		51A2B3C4D5E6F7081920212B /* SynthEngine.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F7081920212C /* SynthEngine.mm */; };
 		51A2B3C4D5E6F7081920212E /* AudioSessionClaim.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F7081920212F /* AudioSessionClaim.mm */; };
 		51A2B3C4D5E6F70819202130 /* synth_commands.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 51A2B3C4D5E6F70819202131 /* synth_commands.cpp */; };
@@ -32,6 +30,8 @@
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		874E8F2729CCCE4200E04F31 /* env.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 874E8F2529CCCE4200E04F31 /* env.xcconfig */; };
 		8EA8AA89BF7B9D7F006716EB /* pitch_engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 879036582854690EBECA5046 /* pitch_engine.cpp */; };
+		A1B2C3D400000000000000A0 /* SampleStore.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D400000000000000A1 /* SampleStore.mm */; };
+		A1B2C3D400000000000000B0 /* SampleDecode.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D400000000000000B1 /* SampleDecode.mm */; };
 		AA11BB22CC33DD44EE55FF66 /* InstallInfoModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF77 /* InstallInfoModule.mm */; };
 /* End PBXBuildFile section */
 
@@ -64,8 +64,6 @@
 		51A2B3C4D5E6F70819202127 /* synth.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = synth.h; path = ../cpp/dsp/synth.h; sourceTree = "<group>"; };
 		51A2B3C4D5E6F70819202129 /* synth_mailbox.cpp */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.cpp; name = synth_mailbox.cpp; path = ../cpp/dsp/synth_mailbox.cpp; sourceTree = "<group>"; };
 		51A2B3C4D5E6F7081920212A /* synth_mailbox.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = synth_mailbox.h; path = ../cpp/dsp/synth_mailbox.h; sourceTree = "<group>"; };
-		A1B2C3D400000000000000A1 /* SampleStore.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = SampleStore.mm; sourceTree = "<group>"; };
-		A1B2C3D400000000000000B1 /* SampleDecode.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = SampleDecode.mm; sourceTree = "<group>"; };
 		51A2B3C4D5E6F7081920212C /* SynthEngine.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = SynthEngine.mm; sourceTree = "<group>"; };
 		51A2B3C4D5E6F7081920212D /* SynthEngine.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = SynthEngine.h; sourceTree = "<group>"; };
 		51A2B3C4D5E6F7081920212F /* AudioSessionClaim.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = AudioSessionClaim.mm; sourceTree = "<group>"; };
@@ -87,6 +85,8 @@
 		89C6BE57DB24E9ADA2F236DE /* Pods-micdrp-micdrpTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-micdrp-micdrpTests.release.xcconfig"; path = "Target Support Files/Pods-micdrp-micdrpTests/Pods-micdrp-micdrpTests.release.xcconfig"; sourceTree = "<group>"; };
 		8AA58FD71262417B94E79C03 /* AudioEngineModule.mm */ = {isa = PBXFileReference; includeInIndex = 1; path = AudioEngineModule.mm; sourceTree = "<group>"; };
 		9562B779ABDCD05E23FEB32B /* notes.cpp */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.cpp; name = notes.cpp; path = ../cpp/dsp/notes.cpp; sourceTree = "<group>"; };
+		A1B2C3D400000000000000A1 /* SampleStore.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = SampleStore.mm; sourceTree = "<group>"; };
+		A1B2C3D400000000000000B1 /* SampleDecode.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = SampleDecode.mm; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF77 /* InstallInfoModule.mm */ = {isa = PBXFileReference; includeInIndex = 1; path = InstallInfoModule.mm; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF88 /* InstallInfoModule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = InstallInfoModule.h; sourceTree = "<group>"; };
 		ACE2C527E1C9B83EBBBB7DA4 /* ring_buffer.cpp */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.cpp; name = ring_buffer.cpp; path = ../cpp/dsp/ring_buffer.cpp; sourceTree = "<group>"; };
