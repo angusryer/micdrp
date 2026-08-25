@@ -31,6 +31,8 @@ import { NoteHarmonySection } from './NoteHarmonySection';
 import { NoteLandscape } from './NoteLandscape';
 import { NoteShapeSection } from './NoteShapeSection';
 import { TrackOptions } from './TrackOptions';
+import { TapPad } from './TapPad';
+import { useTappedRhythm } from './useTappedRhythm';
 import { SelectionSheet } from './SelectionSheet';
 import { formatDuration } from './NoteStats';
 import { PlaybackBar } from './PlaybackBar';
@@ -66,6 +68,9 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   // of it. It sits over a live page rather than a dimmed one, and a page
   // whose bottom row cannot be reached is live in name only (INV-NOTES-109).
   const [sheetCover, setSheetCover] = useState(0);
+  // A rhythm tapped in with a finger, kept apart from what was read from the
+  // take until it is committed (INV-NOTES-129).
+  const tappedRhythm = useTappedRhythm();
   const [transport, setTransport] = useState<{
     positionMs: number;
     seek: (ms: number) => void;
@@ -132,6 +137,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             <View style={styles.fullBleed}>
               <NoteShapeSection
                 detail={detail}
+                hits={tappedRhythm.merged(detail.hits)}
                 width={graphWidth}
                 height={Math.max(
                   MIN_GRAPH_CARD,
@@ -152,6 +158,16 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
 
             {/* The take plays while the layer is sung over it — that is what
                 makes it a layer rather than a second recording. */}
+            {/* Tapped against where the take has reached, so a tapped hit
+                lands on the same timeline as everything else sounding
+                (INV-NOTES-129). */}
+            <TapPad
+              isArmed={transport != null}
+              count={tappedRhythm.count}
+              onTap={(kind) => tappedRhythm.tap(kind, transport?.positionMs ?? 0)}
+              onClear={tappedRhythm.clear}
+            />
+
             <NoteHarmonySection
               detail={detail}
               onPlayTake={() => transport?.play()}

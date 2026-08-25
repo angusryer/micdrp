@@ -79,9 +79,9 @@ describe('starting the take', () => {
   });
 
   it('plays at once where the context will not start at all', async () => {
-    // The failure itself: a live capture holds the session, the context stays
-    // suspended, and a booking against its stopped clock is a booking for a
-    // time that never comes. Silence.
+    // A live capture holds the session, the context stays suspended, and a
+    // booking against its stopped clock is a booking for a time that never
+    // comes. It starts at once instead.
     audioContext.state = 'suspended';
     audioContext.currentTime = 0;
     audioContext.willNotResume = true;
@@ -90,6 +90,21 @@ describe('starting the take', () => {
 
     await waitFor(() => expect(mockStart).toHaveBeenCalled());
     expect(mockStart.mock.calls[0][0]).toBe(0);
+  });
+
+  it('does not call a refused start a failure', async () => {
+    // The regression this replaced: a session held by a capture refuses to
+    // hand the context a clock, and letting that refusal escape turned
+    // silence into "Playback failed" — a worse answer to the same situation
+    // (INV-NOTES-128).
+    audioContext.state = 'suspended';
+    audioContext.currentTime = 0;
+    audioContext.willNotResume = true;
+
+    const result = await start();
+
+    expect(result.current.state).not.toBe('error');
+    await waitFor(() => expect(mockStart).toHaveBeenCalled());
   });
 
   it('plays at once where there is no clock to book against', async () => {

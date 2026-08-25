@@ -26,6 +26,7 @@ import { NoteShapeControls } from './NoteShapeControls';
 import { Playhead } from './Playhead';
 import { Scrubber } from './Scrubber';
 import type { useNoteDetail } from './useNoteDetail';
+import type { Hit } from 'logic';
 
 /**
  * Room for one row of chord cards under the drawing, inside the same card.
@@ -49,6 +50,12 @@ export const MIN_GRAPH_HEIGHT = 96;
 const SCRUB_BAND_HEIGHT = 34;
 
 export interface NoteShapeSectionProps {
+  /**
+   * What was struck, tapped and read together. Given, it replaces the note's
+   * own — the pad's hits are not stored until committed, and the band has to
+   * show them while they are being placed (INV-NOTES-129).
+   */
+  hits?: readonly Hit[];
   detail: ReturnType<typeof useNoteDetail>;
   width: number;
   /** The whole card, chord strip included — not just the drawing. */
@@ -67,6 +74,7 @@ export function NoteShapeSection({
   detail,
   width,
   height,
+  hits: hitsGiven,
   showControls = true,
   selection,
   onSelect,
@@ -75,6 +83,7 @@ export function NoteShapeSection({
 }: NoteShapeSectionProps): React.JSX.Element {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const hits = hitsGiven ?? detail.hits;
   // Offered only once the scale has been moved off the one the take opened
   // at, since a reset that does nothing is noise (INV-NOTES-044). Kept as a
   // boolean rather than the callback itself: React drops a set that does not
@@ -111,7 +120,7 @@ export function NoteShapeSection({
   // The drums take their room out of the same height everything else does, so
   // a take with rhythm in it does not grow taller than its slot — the drawing
   // gives way, as it does for the chord strip (INV-NOTES-060).
-  const bandHeight = rhythmBandHeight(detail.hits);
+  const bandHeight = rhythmBandHeight(hits);
   const graphHeight = Math.max(
     MIN_GRAPH_HEIGHT,
     height - stripHeight - bandHeight - SCRUB_BAND_HEIGHT
@@ -188,7 +197,7 @@ export function NoteShapeSection({
                     under the same touch surface (INV-NOTES-117). */}
                 <View style={{ marginTop: graphHeight }}>
                   <RhythmBand
-                    hits={detail.hits}
+                    hits={hits}
                     timeAxis={timeAxis}
                     contentWidth={contentWidth}
                     height={underHeight}

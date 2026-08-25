@@ -432,3 +432,55 @@ invariants:
       the "start now" path while the device took the other one, so the suite
       stayed green over silence. The double reports a clock and a state now,
       and both paths are exercised.
+
+  - id: INV-NOTES-128
+    description: A session that refuses is silence, not a failure
+    severity: major
+    check: >
+      Where the audio context cannot be started — a live capture holding the
+      session — the take is played at once rather than booked, and the
+      transport does not report an error. Verified by asserting a context that
+      refuses to start still starts the take and leaves the transport out of
+      its error state.
+
+      Asking a suspended context to start is worth doing (INV-NOTES-127), but
+      letting its refusal escape turned a quiet take into "Playback failed" —
+      a worse answer to the same situation, and one that also stops the
+      playhead. A refusal is a fact about the session, not a fault in the
+      take.
+
+  - id: INV-NOTES-129
+    description: A rhythm can be tapped in, and a tap is not a reading
+    severity: major
+    check: >
+      A rhythm can be tapped in while the take plays, one pad per sound, each
+      laid down as the finger lands rather than as it lifts and stamped
+      against where the take has reached. A tapped hit is certain, claims
+      nothing about its timbre, and is not snapped to the grid unless asked.
+      A bouncing finger is one press. Where a tapped hit and a read one
+      describe the same moment, the tapped one stands. Verified by asserting a
+      press lays a hit at the moment given, that confidence is certain and the
+      timbre unknown, that a bounce is one hit, and that a tap wins a
+      collision.
+
+      Mouth drums have to be heard through a microphone and told apart from
+      singing, which is a reading and can be wrong (INV-PITCH-025). A tap is
+      not a reading at all: the moment is the moment the finger landed, there
+      is nothing to detect, and nothing it could be mistaken for. It is the
+      most certain input the app has, it works in a noisy room, and it works
+      for a part nobody can sing.
+
+      So it sits beside the detector rather than replacing it. Singing a
+      rhythm is faster and leaves the hands free; tapping one is exact.
+
+      On press-in rather than on release, because the beat is where the finger
+      landed — waiting for it to lift would place every hit late by however
+      long it was held. Unsnapped by default, because a tap is already exact
+      and rounding it is a claim about what was meant rather than about when
+      it happened.
+
+      Certain by construction: a tap was made on purpose, so its confidence is
+      not a guess about whether it happened. Its timbre is unknown, because
+      nothing about a finger says what the sound should be — the kind is what
+      was chosen, and unknown and measured are different claims
+      (INV-PITCH-020).

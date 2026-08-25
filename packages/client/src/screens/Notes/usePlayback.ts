@@ -171,8 +171,17 @@ export function usePlayback({
       };
       // A context made while a recording session is live can arrive
       // suspended, and a suspended clock does not advance (INV-NOTES-127).
+      //
+      // Its refusal is not a failure to play. A session held by a capture
+      // will not hand the context a clock, and asking is worth doing — but
+      // letting the refusal escape turned silence into "Playback failed",
+      // which is a worse answer to the same situation (INV-NOTES-128).
       if (ctx.state != null && ctx.state !== 'running') {
-        await ctx.resume?.();
+        try {
+          await ctx.resume?.();
+        } catch {
+          // Fall through: the take starts at once instead of being booked.
+        }
       }
       // At a moment we choose rather than "as soon as possible", so what is
       // lined up against the take can be exact rather than estimated

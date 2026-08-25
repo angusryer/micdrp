@@ -32,9 +32,11 @@ export const audioContext = {
   willNotResume: false
 };
 export const mockResume = jest.fn().mockImplementation(() => {
-  if (!audioContext.willNotResume) {
-    audioContext.state = 'running';
+  if (audioContext.willNotResume) {
+    // What a session held by a live capture actually does: it refuses.
+    return Promise.reject(new Error('session is busy'));
   }
+  audioContext.state = 'running';
   return Promise.resolve();
 });
 
