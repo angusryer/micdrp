@@ -10,8 +10,12 @@
  */
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 
-/** The take's bus, as the registry numbers it. */
-const TAKE_BUS = 0;
+/**
+ * Asked of the registry rather than written down: a bus is a position in the
+ * track list, so inserting a track shifts every number after it
+ * (INV-NOTES-121).
+ */
+const TAKE_BUS = trackBus('take');
 
 jest.mock('../../../specs/NativeSynth', () => ({
   __esModule: true,
@@ -22,6 +26,7 @@ jest.mock('../../../specs/NativeSynth', () => ({
 }));
 
 import { useTakeVoice } from '../useTakeVoice';
+import { trackBus } from '../trackRegistry';
 import { resetSynthDouble, synthDouble as synth } from '../__fixtures__/synthDouble';
 
 beforeEach(resetSynthDouble);

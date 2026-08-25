@@ -17,7 +17,6 @@ import {
   type quantize
 } from 'logic';
 
-import { SynthBus } from '../../audio/synthPlayer';
 
 /** Quieter than the chords: a bass is felt more than it is listened to. */
 const BASS_PEAK_GAIN = 0.09;
@@ -141,33 +140,37 @@ export function useNotePlayback(
   // Its own player, so its level can be moved without touching the chords —
   // it is the voice a phone speaker struggles with most.
   const bassVoice = useChordBackdrop(chords.bass, {
-    bus: SynthBus.Bass,
+    bus: trackBus('bass'),
     peakGain: BASS_PEAK_GAIN
   });
 
   // The melody follows the take itself; the chords follow the mix choice.
   // Hanging one off the other made the melody a passenger on a decision about
   // harmony, and it fell silent whenever chords were off (INV-NOTES-027).
-  // One transport: the bass starts and stops with the chords it belongs to.
+  //
+  // The bass used to ride the chords for the same kind of reason — a root is
+  // part of the harmony it belongs to — and it is a track of its own now for
+  // the same kind of reason it stopped being true: a note can carry the bass
+  // line as it was actually sung, so this one is a second opinion and is
+  // offered rather than imposed (INV-NOTES-135).
   const accompaniment = useMemo(
     () => ({
-      start: (offsetMs = 0) => {
-        backdrop.start(offsetMs);
-        bassVoice.start(offsetMs);
-      },
-      stop: () => {
-        backdrop.stop();
-        bassVoice.stop();
-      },
-      durationMs: Math.max(backdrop.durationMs, bassVoice.durationMs),
-      // The root sits under the harmony above it by a fixed amount, so one
-      // control moves the pair and keeps their balance (INV-NOTES-040).
-      setLevel: (level: number) => {
-        backdrop.setLevel(level);
-        bassVoice.setLevel(level);
-      }
+      start: (offsetMs = 0) => backdrop.start(offsetMs),
+      stop: () => backdrop.stop(),
+      durationMs: backdrop.durationMs,
+      setLevel: (level: number) => backdrop.setLevel(level)
     }),
-    [backdrop, bassVoice]
+    [backdrop]
+  );
+
+  const bassMix = useMemo(
+    () => ({
+      start: (offsetMs = 0) => bassVoice.start(offsetMs),
+      stop: () => bassVoice.stop(),
+      durationMs: bassVoice.durationMs,
+      setLevel: (level: number) => bassVoice.setLevel(level)
+    }),
+    [bassVoice]
   );
 
   // Started whenever the transport says so. It used to be gated behind a
@@ -200,6 +203,8 @@ export function useNotePlayback(
     setPlaybackMode,
     ...octave,
     backdrop: accompaniment,
+    /** The root movement read from the take, on its own track (INV-NOTES-135). */
+    bassMix,
     melodyVoiceMix,
     ...preview
   };

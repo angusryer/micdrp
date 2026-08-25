@@ -74,6 +74,16 @@ export const TRACKS = [
     level: 0.7
   },
   {
+    name: 'bass',
+    role: 'melodic',
+    title: 'Bass read from your take',
+    // Off. A note can carry the bass line as it was actually sung
+    // (INV-NOTES-134), so this is a second opinion about a recording that is
+    // already playing — offered, never imposed (INV-NOTES-135).
+    startsOn: false,
+    level: 0.7
+  },
+  {
     name: 'melody',
     role: 'melodic',
     title: 'Transcription of your take',

@@ -70,6 +70,8 @@ export interface PlaybackBarProps {
   rhythm?: MixAccompaniment;
   /** The layers, as they were sung rather than as read (INV-NOTES-134). */
   layers?: MixAccompaniment;
+  /** The root movement read from the take (INV-NOTES-135). */
+  bass?: MixAccompaniment;
   /** The beats, for feeling rather than hearing them (INV-NOTES-125). */
   beats?: readonly { startMs: number; midi: number }[];
   /**
@@ -111,6 +113,7 @@ export function PlaybackBar({
   count,
   rhythm,
   layers,
+  bass,
   beats = [],
   trackOptions,
   onDetails,
@@ -153,13 +156,19 @@ export function PlaybackBar({
     if ((layers?.durationMs ?? 0) > 0) {
       extras.push('layers');
     }
+    // Only where a root movement was read. A take that implied no harmony has
+    // no bass to offer (INV-NOTES-135).
+    if ((bass?.durationMs ?? 0) > 0) {
+      extras.push('bass');
+    }
     return extras.length > 0 ? ['take', ...extras] : [];
   }, [
     accompaniment?.durationMs,
     voice?.durationMs,
     count?.durationMs,
     rhythm?.durationMs,
-    layers?.durationMs
+    layers?.durationMs,
+    bass?.durationMs
   ]);
 
   // What the toggles both draw and hand back: a track the note lacks, or a
@@ -177,7 +186,8 @@ export function PlaybackBar({
     voice,
     count,
     rhythm,
-    layers
+    layers,
+    bass
   });
 
   // The click, felt instead of heard, when the note was left that way. It

@@ -673,3 +673,25 @@ invariants:
       quietly dropping the seventh layer would be a note that sounds different
       from the note that was made.
 
+  - id: INV-NOTES-135
+    description: The bass read from a take is its own track, and starts off
+    severity: minor
+    check: >
+      The synthesized root movement is a track in the list with its own
+      toggle, its own bus and its own level, turned off until somebody turns
+      it on. Turning the chords off no longer silences it and turning it off
+      no longer silences them. Verified by asserting the bass sounds only
+      when its own track is on, that it is off in a fresh mix, and that the
+      chords and the bass start and stop independently.
+
+      It used to start and stop with the chords, on the grounds that a root is
+      part of the harmony it belongs to. That was true when the reading was
+      all there was to hear. Now a note can carry the bass line as it was
+      actually sung (INV-NOTES-134), so the synthesized one is a second
+      opinion about a recording that is already playing — useful for checking
+      what was read, and clutter the rest of the time.
+
+      So it starts off, like the transcription of the melody and for the same
+      reason (INV-NOTES-027): a voice that says what the app thinks it heard
+      is worth offering and wrong to impose.
+

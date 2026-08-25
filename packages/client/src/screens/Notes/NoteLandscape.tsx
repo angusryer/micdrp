@@ -102,6 +102,7 @@ export function NoteLandscape({
             voice={detail.melodyVoiceMix}
             rhythm={detail.rhythmMix}
             layers={detail.layerVoices}
+            bass={detail.bassMix}
             beats={detail.clickBeats}
             listening={detail.listening}
           />

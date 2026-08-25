@@ -23,17 +23,16 @@ import type { TonePlayer, TonePlayerOptions } from './tonePlayer';
  * index into a level array, so what one means is decided here and adding one
  * costs no build at all (INV-NOTES-121).
  *
- * These are the buses that are not tracks — a tapped note, and the chord root
- * under the rest of the harmony. The tracks take theirs from the registry,
- * counting up from zero, so the two ranges must not overlap: these start
- * where the registry stops.
+ * This is the bus that is not a track: a tapped note, heard on its own and
+ * belonging to no mix. The tracks take theirs from the registry, counting up
+ * from zero, so the two ranges must not overlap — this starts well past where
+ * the registry stops. The bass used to be here too, until it became a track
+ * of its own (INV-NOTES-135).
  */
 export const AUDITION_BUS = 8;
-export const BASS_BUS = 9;
 
 export const SynthBus = {
-  Audition: AUDITION_BUS,
-  Bass: BASS_BUS
+  Audition: AUDITION_BUS
 } as const;
 /**
  * A bus, as a number.

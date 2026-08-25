@@ -41,7 +41,8 @@ export const melodyVoice = backdrop;
 export const renderPlaybackBar = async (
   resolveAudioUri: () => Promise<string | null>,
   accompaniment?: ReturnType<typeof backdrop>,
-  voice?: ReturnType<typeof backdrop>
+  voice?: ReturnType<typeof backdrop>,
+  bass?: ReturnType<typeof backdrop>
 ) => {
   const rendered = await waitFor(() =>
     render(
@@ -52,6 +53,7 @@ export const renderPlaybackBar = async (
             resolveAudioUri={resolveAudioUri}
             accompaniment={accompaniment}
             voice={voice}
+            bass={bass}
           />
         </ThemeProvider>
         </I18nProvider>

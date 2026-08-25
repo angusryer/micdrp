@@ -33,9 +33,14 @@ import {
 } from '../useLayerVoices';
 import { resetSynthDouble, synthDouble as synth } from '../__fixtures__/synthDouble';
 import { MAX_LAYER_VOICES, TAKE_SLOT } from '../sampleSlots';
+import { trackBus } from '../trackRegistry';
 
-/** The layers' bus, as the registry numbers it. */
-const LAYERS_BUS = 4;
+/**
+ * Asked of the registry rather than written down: a bus is a position in the
+ * track list, so inserting a track shifts every number after it and a literal
+ * here would pin the wrong one (INV-NOTES-121).
+ */
+const LAYERS_BUS = trackBus('layers');
 
 const TAKE_MS = 60_000;
 

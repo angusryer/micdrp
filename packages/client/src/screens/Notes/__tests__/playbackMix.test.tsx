@@ -26,6 +26,7 @@ jest.mock('../../../specs/NativeSynth', () => ({
 import { resetSynthDouble, synthDouble as synth } from '../__fixtures__/synthDouble';
 
 import { backdrop, renderPlaybackBar } from '../__fixtures__/renderPlaybackBar';
+import { TAKE_SLOT } from '../sampleSlots';
 
 const REMOTE = 'https://micdrp-backend.fly.dev/api/files/notes/abc/a.wav?token=t';
 
@@ -39,7 +40,8 @@ const renderBar = (
 const CARD: Record<string, string> = {
   Take: 'Your take',
   Chords: 'Chords read from your take',
-  Melody: 'Transcription of your take'
+  Melody: 'Transcription of your take',
+  Bass: 'Bass read from your take'
 };
 
 /**
@@ -101,7 +103,7 @@ describe('turning the tracks a press sounds', () => {
     await fireEvent.press(screen.getByLabelText('Play'));
 
     await waitFor(() =>
-      expect(synth.loadSample).toHaveBeenCalledWith(0, REMOTE)
+      expect(synth.loadSample).toHaveBeenCalledWith(TAKE_SLOT, REMOTE)
     );
     expect(chords.start).not.toHaveBeenCalled();
   });
@@ -214,5 +216,36 @@ describe('turning the tracks a press sounds', () => {
     expect(screen.getByText(CARD.Melody)).toBeTruthy();
     // The take is the only thing that can sound, so it cannot be turned off.
     expect(isLocked('Take')).toBe(true);
+  });
+});
+
+describe('the bass read from a take (INV-NOTES-135)', () => {
+  beforeEach(resetSynthDouble);
+
+  it('is off until somebody turns it on', async () => {
+    // A note can carry the bass line as it was actually sung, so the
+    // synthesized one is a second opinion — offered, never imposed.
+    const bass = backdrop();
+    await renderPlaybackBar(jest.fn().mockResolvedValue(REMOTE), backdrop(), undefined, bass);
+
+    expect(isOn('Bass')).toBe(false);
+    await fireEvent.press(screen.getByLabelText('Play'));
+    await waitFor(() => expect(synth.loadSample).toHaveBeenCalled());
+    expect(bass.start).not.toHaveBeenCalled();
+  });
+
+  it('sounds once its own track is on, with the chords off', async () => {
+    // It used to start and stop with the chords, so turning them off silenced
+    // a root the singer had asked for.
+    const chords = backdrop();
+    const bass = backdrop();
+    await renderPlaybackBar(jest.fn().mockResolvedValue(REMOTE), chords, undefined, bass);
+
+    await fireEvent.press(track('Bass'));
+    await fireEvent.press(track('Chords'));
+    await fireEvent.press(screen.getByLabelText('Play'));
+
+    await waitFor(() => expect(bass.start).toHaveBeenCalled());
+    expect(chords.start).not.toHaveBeenCalled();
   });
 });

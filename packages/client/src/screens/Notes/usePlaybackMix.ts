@@ -66,6 +66,8 @@ export interface UsePlaybackMixOptions {
    * same take, so there is one moment for them to start at.
    */
   layers?: MixAccompaniment;
+  /** The root movement read from the take, on its own track (INV-NOTES-135). */
+  bass?: MixAccompaniment;
   /**
    * A voice that follows the take itself rather than the chord track.
    *
@@ -104,6 +106,7 @@ export function usePlaybackMix({
   count,
   rhythm,
   layers,
+  bass,
   levels
 }: UsePlaybackMixOptions): MixedPlayback {
   const {
@@ -126,7 +129,8 @@ export function usePlaybackMix({
     count?.setLevel?.(levels.count);
     rhythm?.setLevel?.(levels.rhythm);
     layers?.setLevel?.(levels.layers);
-  }, [levels, accompaniment, voice, count, rhythm, layers, setTakeLevel]);
+    bass?.setLevel?.(levels.bass);
+  }, [levels, accompaniment, voice, count, rhythm, layers, bass, setTakeLevel]);
 
   const wantsTake = mix.take;
   const wantsChords = mix.chords;
@@ -165,10 +169,12 @@ export function usePlaybackMix({
   const latestRhythm = useLatest(rhythm);
   const latestCount = useLatest(count);
   const latestLayers = useLatest(layers);
+  const latestBass = useLatest(bass);
 
   const wantsCount = mix.count;
   const wantsRhythm = mix.rhythm;
   const wantsLayers = mix.layers;
+  const wantsBass = mix.bass;
 
   /**
    * Every voice, started against one reading of the clock.
@@ -190,7 +196,8 @@ export function usePlaybackMix({
       [latestVoice.current, wantsVoice],
       [latestRhythm.current, wantsRhythm],
       [latestCount.current, wantsCount],
-      [latestLayers.current, wantsLayers]
+      [latestLayers.current, wantsLayers],
+      [latestBass.current, wantsBass]
     ] as const;
     for (const [player, wanted] of voices) {
       if (running && wanted) {
@@ -206,6 +213,7 @@ export function usePlaybackMix({
     wantsRhythm,
     wantsCount,
     wantsLayers,
+    wantsBass,
     takeElapsedMs
   ]);
 
@@ -238,7 +246,8 @@ export function usePlaybackMix({
       wantsChords ? (latest.current?.durationMs ?? 0) : 0,
       wantsVoice ? (latestVoice.current?.durationMs ?? 0) : 0,
       wantsCount ? (latestCount.current?.durationMs ?? 0) : 0,
-      wantsLayers ? (latestLayers.current?.durationMs ?? 0) : 0
+      wantsLayers ? (latestLayers.current?.durationMs ?? 0) : 0,
+      wantsBass ? (latestBass.current?.durationMs ?? 0) : 0
     );
     if (durationMs <= 0) {
       return;

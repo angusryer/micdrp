@@ -48,6 +48,7 @@ export function NoteMixPlayer({
     ...((detail.melodyVoiceMix?.durationMs ?? 0) > 0 ? ['melody' as const] : []),
     ...((detail.rhythmMix?.durationMs ?? 0) > 0 ? ['rhythm' as const] : []),
     ...(detail.layerVoices.durationMs > 0 ? ['layers' as const] : []),
+    ...((detail.bassMix?.durationMs ?? 0) > 0 ? ['bass' as const] : []),
     ...((detail.countMix?.durationMs ?? 0) > 0 ? ['count' as const] : [])
   ];
 
@@ -59,7 +60,8 @@ export function NoteMixPlayer({
     voice: detail.melodyVoiceMix,
     count: detail.countMix,
     rhythm: detail.rhythmMix,
-    layers: detail.layerVoices
+    layers: detail.layerVoices,
+    bass: detail.bassMix
   });
 
   // Plays for as long as it is mounted, and stops when it is not. Unmounting

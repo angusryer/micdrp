@@ -33,8 +33,7 @@ jest.mock('../../../specs/NativeSynth', () => ({
 
 import { resetSynthDouble, synthDouble as synth } from '../__fixtures__/synthDouble';
 
-/** The take's slot, which is the one a press decodes into. */
-const TAKE_SLOT = 0;
+import { TAKE_SLOT } from '../sampleSlots';
 
 import { backdrop, renderPlaybackBar } from '../__fixtures__/renderPlaybackBar';
 
