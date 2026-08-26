@@ -22,6 +22,7 @@
 #   ./build/dsp_level_test       # prints "LEVEL OK", exit 0
 #   ./build/dsp_fft_test         # prints "FFT OK", exit 0
 #   ./build/dsp_spectral_test    # prints "SPECTRAL OK", exit 0
+#   ./build/dsp_wave_test        # prints "WAVE OK", exit 0
 #   ./build/dsp_bench            # prints a timing table, then "BENCH OK"
 
 cmake_minimum_required(VERSION 3.16)
@@ -75,6 +76,12 @@ target_link_libraries(dsp_level_test PRIVATE micdrp_dsp)
 # through, and the spectrum that falls out of it on the way.
 add_executable(dsp_fft_test __tests__/fft_test.cpp)
 target_link_libraries(dsp_fft_test PRIVATE micdrp_dsp)
+
+# Host test for the shapes a voice speaks in (INV-NOTES-144). The band-limiting
+# is what this is for: a naive saw looks right in a waveform viewer and sounds
+# like a metallic buzz at 55Hz, and only the spectrum tells them apart.
+add_executable(dsp_wave_test __tests__/wave_test.cpp)
+target_link_libraries(dsp_wave_test PRIVATE micdrp_dsp)
 
 # Host test for the readings that fall out of that transform on the way —
 # the ones periodicity cannot make.

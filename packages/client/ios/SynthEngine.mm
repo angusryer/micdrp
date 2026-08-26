@@ -205,6 +205,10 @@ constexpr double kRenderSampleRate = 48000.0;
   [_samples scheduleSlot:slot bus:bus fromMs:fromMs startMs:startMs endMs:endMs];
 }
 
+- (void)setBusWave:(double)bus wave:(double)wave {
+  [self warnIfRefused:micdrp::postBusWave(_mailbox, bus, wave)];
+}
+
 - (void)clearBus:(double)bus {
   [self warnIfRefused:micdrp::postClearBus(_mailbox, bus)];
 }

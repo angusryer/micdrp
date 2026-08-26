@@ -819,3 +819,37 @@ invariants:
       would read as two panels, and the strip would stop being the graph's
       edge and start being a sidebar.
 
+  - id: INV-NOTES-144
+    description: Each track has a voice of its own, chosen and kept
+    severity: major
+    check: >
+      Every bus carries a timbre, set from JavaScript and applied to voices
+      admitted after it, and a note remembers the choice made for each of its
+      tracks. The waveforms with edges are band-limited, so a bass low enough
+      to be felt does not fold a ladder of false partials over the take. A
+      voice already sounding keeps the timbre it started with. Verified by
+      asserting two buses set to different waveforms produce different output
+      from the same pitch, that a saw at a low pitch has no significant energy
+      above the Nyquist image of its fundamental, and that changing a bus mid
+      note does not change that note.
+
+      Every synthesized voice was a sine — chords, bass, transcription, drums
+      and click alike. A sine is the one waveform with nothing but its
+      fundamental, so five parts playing at once were five things the ear had
+      only pitch and level to separate. Which is why the mix always sounded
+      crowded before it sounded loud.
+
+      Per bus rather than per note, because a bus is already what a track is
+      (INV-NOTES-121) — so a timbre needs no new routing, no change to
+      scheduling, and no build to add a track that sounds different from the
+      others.
+
+      Band-limited, because the alternative is worse than the plain sine it
+      replaces. A naive saw at 55Hz on a 48kHz engine folds hundreds of
+      partials back down the spectrum, and they land as a metallic buzz that
+      sits exactly where a voice does.
+
+      A sounding voice keeps its timbre. Changing an instrument under a note
+      that is already speaking is a click, and the singer changing it is
+      listening to the next thing rather than editing this one.
+

@@ -15,6 +15,8 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { TrackName } from './playbackTracks';
+import { trackSpec } from './trackRegistry';
+import { VoicePicker } from './VoicePicker';
 import { IconToggle } from './IconToggle';
 import { OctaveSlider } from './OctaveSlider';
 import type { useNoteDetail } from './useNoteDetail';
@@ -37,26 +39,41 @@ export function TrackOptions({
   detail,
   track
 }: TrackOptionsProps): React.JSX.Element | null {
+  // What this track sounds like, above whatever else it carries. Every track
+  // the engine synthesizes has one; a recording sounds like what was recorded
+  // (INV-NOTES-144).
+  const voice =
+    trackSpec(track).role === 'recording' ? null : (
+      <VoicePicker
+        voice={detail.listening.voices[track]}
+        onChange={(next) => detail.listening.setVoice(track, next)}
+      />
+    );
+
   if (track === 'chords') {
     // Lifting the chords for the phone speaker was only ever moving them by
     // an octave, said as a listening choice. Said as what it is, it is the
     // same control the other lines have (INV-NOTES-039).
     return (
-      <OctaveSlider
-        octaves={detail.chordOctaves}
-        range={CHORD_OCTAVE_RANGE}
-        onChange={detail.setChordOctaves}
-        label="Chord octave"
-      />
+      <>
+        {voice}
+        <OctaveSlider
+          octaves={detail.chordOctaves}
+          range={CHORD_OCTAVE_RANGE}
+          onChange={detail.setChordOctaves}
+          label="Chord octave"
+        />
+      </>
     );
   }
 
   if (track !== 'melody') {
-    return null;
+    return voice;
   }
 
   return (
     <>
+      {voice}
       <View style={styles.toggles}>
         {/* Heard on the beat grid rather than where it was sung. A wrong snap
             is inaudible in a short take and plain in the picture, which is

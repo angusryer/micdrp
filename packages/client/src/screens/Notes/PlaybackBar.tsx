@@ -172,7 +172,8 @@ export function PlaybackBar({
       count,
       rhythm,
       layers,
-      bass
+      bass,
+      voices: listening?.voices ?? own.voices
     });
 
   // The click, felt instead of heard, when the note was left that way. It

@@ -60,6 +60,15 @@ export interface Spec extends TurboModule {
 
   /** Level for one bus, 0..1, reaching already-sounding voices (INV-NOTES-027). */
   setBusLevel(bus: Double, level: Double): void;
+  /**
+   * What a bus sounds like: 0 sine, 1 triangle, 2 square, 3 saw, 4 noise
+   * (INV-NOTES-144).
+   *
+   * Applied to voices admitted after it. A voice already sounding keeps its
+   * timbre — changing an instrument under a note that is already speaking is
+   * a click, and the person changing it is listening to the next thing.
+   */
+  setBusWave(bus: Double, wave: Double): void;
   /** Schedule notes; any order, any mix of busses, one clock. */
   schedule(notes: SynthNoteInput[]): void;
   /**

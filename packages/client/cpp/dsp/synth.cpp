@@ -22,8 +22,6 @@ constexpr float kRampSeconds = 0.006f;
 /// more.
 constexpr float kVoicePeak = 0.18f;
 
-constexpr float kTwoPi = 6.283185307179586f;
-
 /// Peak amplitude of a recorded voice.
 ///
 /// Unity, unlike a tone: a take was recorded at whatever level it was sung at
@@ -61,6 +59,12 @@ void Synth::configure(double sampleRateHz) {
     data = SampleData{};
   }
 }
+
+void Synth::setBusWave(Bus bus, Wave wave) {
+  busWaves_[busIndex(bus)] = wave;
+}
+
+Wave Synth::busWave(Bus bus) const { return busWaves_[busIndex(bus)]; }
 
 void Synth::setBusLevel(Bus bus, float level) {
   busLevels_[busIndex(bus)] = std::min(1.0f, std::max(0.0f, level));
@@ -165,6 +169,7 @@ void Synth::admit(std::int64_t blockStart, std::int64_t blockEnd) {
     // Bound once, here. A voice reads the audio its slot held when it began,
     // whatever the slot holds later (INV-NOTES-133).
     v->isSample = note.sampleSlot >= 0;
+    v->wave = busWaves_[busIndex(note.bus)];
     const SampleData resident = sample(note.sampleSlot);
     v->source = resident.frames;
     v->sourceCount = resident.frameCount;
@@ -209,7 +214,8 @@ void Synth::render(float* out, std::size_t frames) {
         ++v.sourcePos;
         continue;
       }
-      mix += std::sin(kTwoPi * v.phase) * level * kVoicePeak;
+      mix += waveSample(v.wave, v.phase, v.phaseStep, noiseState_) * level *
+             kVoicePeak;
       v.phase += v.phaseStep;
       if (v.phase >= 1.0f) {
         v.phase -= 1.0f;

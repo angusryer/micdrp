@@ -57,6 +57,18 @@ bool postBusLevel(SynthMailbox& mailbox, double busIndex, double level) {
   return mailbox.post(c);
 }
 
+bool postBusWave(SynthMailbox& mailbox, double busIndex, double wave) {
+  const int i = static_cast<int>(wave);
+  SynthCommand c;
+  c.kind = SynthCommand::Kind::SetBusWave;
+  c.bus = busFromIndex(busIndex);
+  c.wave = (i >= static_cast<int>(Wave::Sine) &&
+            i <= static_cast<int>(Wave::Noise))
+               ? static_cast<Wave>(i)
+               : Wave::Sine;
+  return mailbox.post(c);
+}
+
 bool postClearBus(SynthMailbox& mailbox, double busIndex) {
   SynthCommand c;
   c.kind = SynthCommand::Kind::ClearBus;

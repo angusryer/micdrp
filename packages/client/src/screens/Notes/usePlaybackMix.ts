@@ -24,10 +24,15 @@ import { type SharedValue } from 'react-native-reanimated';
 
 import { usePlayback, type PlaybackState } from './usePlayback';
 import { useLatest } from './useLatest';
+import NativeSynth from '../../specs/NativeSynth';
+import { waveOf } from '../../audio/voices';
+import { trackBus } from './trackRegistry';
 import {
   sameMix,
+  TRACK_ORDER,
   type PlaybackMix,
-  type TrackLevels
+  type TrackLevels,
+  type TrackVoices
 } from './playbackTracks';
 
 /** How far back a press of rewind goes. About one phrase of a sung idea. */
@@ -70,6 +75,8 @@ export interface UsePlaybackMixOptions {
   layers?: MixAccompaniment;
   /** The root movement read from the take, on its own track (INV-NOTES-135). */
   bass?: MixAccompaniment;
+  /** Which voice each track speaks in (INV-NOTES-144). */
+  voices?: TrackVoices;
   /**
    * A voice that follows the take itself rather than the chord track.
    *
@@ -115,7 +122,8 @@ export function usePlaybackMix({
   rhythm,
   layers,
   bass,
-  levels
+  levels,
+  voices
 }: UsePlaybackMixOptions): MixedPlayback {
   const {
     state: takeState,
@@ -140,6 +148,18 @@ export function usePlaybackMix({
     layers?.setLevel?.(levels.layers);
     bass?.setLevel?.(levels.bass);
   }, [levels, accompaniment, voice, count, rhythm, layers, bass, setTakeLevel]);
+
+  // What each track sounds like, told to the engine directly rather than
+  // through the players: a timbre belongs to a bus, and a bus is what a track
+  // already is (INV-NOTES-144).
+  useEffect(() => {
+    if (voices == null) {
+      return;
+    }
+    for (const track of TRACK_ORDER) {
+      NativeSynth?.setBusWave?.(trackBus(track), waveOf(voices[track]));
+    }
+  }, [voices]);
 
   const wantsTake = mix.take;
   const wantsChords = mix.chords;

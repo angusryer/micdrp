@@ -15,12 +15,15 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { getJSON, setJSON } from '../../data/store';
+import type { VoiceName } from '../../audio/voices';
 import {
   DEFAULT_LEVELS,
   DEFAULT_MIX,
+  DEFAULT_VOICES,
   type PlaybackMix,
   type TrackLevels,
-  type TrackName
+  type TrackName,
+  type TrackVoices
 } from './playbackTracks';
 
 /** The register the chords sound in, as a count of octaves above the floor. */
@@ -46,6 +49,8 @@ export interface Listening {
    * will go looking for the switch.
    */
   snapToGrid: boolean;
+  /** Which voice each track speaks in (INV-NOTES-144). */
+  voices: TrackVoices;
 }
 
 const START: Listening = {
@@ -53,7 +58,8 @@ const START: Listening = {
   levels: DEFAULT_LEVELS,
   chordOctaves: DEFAULT_CHORD_OCTAVES,
   beatIsFelt: false,
-  snapToGrid: true
+  snapToGrid: true,
+  voices: DEFAULT_VOICES
 };
 
 const keyFor = (noteId: string) => `notes.${noteId}.listening`;
@@ -79,7 +85,10 @@ function read(noteId: string | null, startLevels: TrackLevels): Listening {
     levels: { ...start.levels, ...kept.levels },
     chordOctaves: kept.chordOctaves ?? start.chordOctaves,
     beatIsFelt: kept.beatIsFelt ?? start.beatIsFelt,
-    snapToGrid: kept.snapToGrid ?? start.snapToGrid
+    snapToGrid: kept.snapToGrid ?? start.snapToGrid,
+    // Field by field, so a note balanced before a track existed gets that
+    // track's voice rather than nothing at all.
+    voices: { ...start.voices, ...kept.voices }
   };
 }
 
@@ -89,6 +98,7 @@ export interface UseListening extends Listening {
   setChordOctaves: (octaves: number) => void;
   setBeatIsFelt: (felt: boolean) => void;
   setSnapToGrid: (snap: boolean) => void;
+  setVoice: (track: TrackName, voice: VoiceName) => void;
 }
 
 /**
@@ -146,6 +156,11 @@ export function useListening(
     ),
     setSnapToGrid: useCallback(
       (snapToGrid) => change((was) => ({ ...was, snapToGrid })),
+      [change]
+    ),
+    setVoice: useCallback(
+      (track, voice) =>
+        change((was) => ({ ...was, voices: { ...was.voices, [track]: voice } })),
       [change]
     )
   };

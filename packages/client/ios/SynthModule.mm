@@ -108,6 +108,10 @@ RCT_EXPORT_MODULE(NativeSynth)
   }
 }
 
+- (void)setBusWave:(double)bus wave:(double)wave {
+  [_engine setBusWave:bus wave:wave];
+}
+
 - (void)clearBus:(double)bus {
   [_engine clearBus:bus];
 }

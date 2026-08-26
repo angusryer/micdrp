@@ -46,6 +46,11 @@ bool postSetSample(SynthMailbox& mailbox, double slot, const float* frames,
                    std::size_t frameCount);
 
 bool postBusLevel(SynthMailbox& mailbox, double busIndex, double level);
+
+/// What a bus sounds like (INV-NOTES-144). An unrecognised shape reads as a
+/// sine — a wrong timbre beats a crash on the audio path, and a sine is what
+/// every bus sounded like before any of them could be told otherwise.
+bool postBusWave(SynthMailbox& mailbox, double busIndex, double wave);
 bool postClearBus(SynthMailbox& mailbox, double busIndex);
 bool postClearAll(SynthMailbox& mailbox);
 

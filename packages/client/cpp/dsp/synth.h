@@ -33,6 +33,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "wave.h"
+
 namespace micdrp {
 
 /// What a sound belongs to. Each has its own level, mixed into one output.
@@ -126,6 +128,18 @@ class Synth {
 
   double sampleRate() const { return sampleRate_; }
 
+  /**
+   * What one bus sounds like (INV-NOTES-144).
+   *
+   * Per bus rather than per note, because a bus is already what a track is —
+   * so a timbre needs no new routing and no change to scheduling. Applied to
+   * voices admitted after it: changing an instrument under a note that is
+   * already speaking is a click, and the person changing it is listening to
+   * the next thing rather than editing this one.
+   */
+  void setBusWave(Bus bus, Wave wave);
+  Wave busWave(Bus bus) const;
+
   /// Level for one bus, 0..1, taking effect on the next rendered block.
   /// Mixing is done by ear while listening, so this must not wait for a
   /// re-schedule (INV-NOTES-027).
@@ -175,6 +189,8 @@ class Synth {
     /// the note, not of the audio: a slot that turned out to be empty is a
     /// take with nothing in it, which is silence — never a 440Hz tone
     /// (INV-NOTES-133).
+    /// Bound at admission and held to the end (INV-NOTES-144).
+    Wave wave = Wave::Sine;
     bool isSample = false;
     /// Bound at admission and held to the end, so replacing a slot cannot
     /// change what a sounding voice is reading (INV-NOTES-133).
@@ -197,6 +213,12 @@ class Synth {
   Voice voices_[kMaxVoices];
   /// Borrowed, never owned. See SampleData.
   SampleData samples_[kMaxSamples];
+  /// Every bus speaks in a sine until told otherwise — the shape that was
+  /// there before any of them could be told (INV-NOTES-144).
+  Wave busWaves_[kMaxBuses] = {};
+  /// The noise voice's state. One generator for the engine: two voices of
+  /// noise correlated with each other would read as one louder voice.
+  std::uint32_t noiseState_ = 0x9E3779B9u;
   /// Pending notes, kept sorted by start so admission is a walk from the front.
   std::vector<ScheduledNote> pending_;
   std::size_t nextPending_ = 0;

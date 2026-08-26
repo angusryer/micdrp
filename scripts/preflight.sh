@@ -53,6 +53,28 @@ yarn lint
 step "test (all packages)"
 yarn test
 
+# The DSP core is where the sound is actually made, and it is testable on a
+# host with no audio device — so there is no reason for the gate not to run it
+# (axiom 6).
+#
+# Compiled directly rather than through CMake. The CMakeLists is the documented
+# way to build these by hand, but cmake is not on every machine and c++ is on
+# all of them; a gate that skips itself where a tool is missing is a gate that
+# reports a pass it did not earn.
+step "dsp core (C++ host tests)"
+DSP=packages/client/cpp/dsp
+DSP_OUT=$(mktemp -d)
+for t in synth wave synth_mailbox synth_commands fft level spectral; do
+  c++ -std=c++17 -O2 -I "$DSP" \
+    "$DSP"/synth.cpp "$DSP"/synth_mailbox.cpp "$DSP"/synth_commands.cpp \
+    "$DSP"/mpm.cpp "$DSP"/notes.cpp "$DSP"/ring_buffer.cpp \
+    "$DSP"/pitch_engine.cpp \
+    "$DSP/__tests__/${t}_test.cpp" -o "$DSP_OUT/${t}" 2>/dev/null \
+    || fail "the DSP ${t} test would not build"
+  "$DSP_OUT/${t}" >/dev/null || fail "the DSP ${t} test failed"
+done
+rm -rf "$DSP_OUT"
+
 if [ -n "$WITH_PODS" ]; then
   step "pods"
   (cd packages/client/ios && bundle exec pod install 2>/dev/null || pod install)

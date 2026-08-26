@@ -28,6 +28,8 @@ export type TrackRole =
   /** A scaffold the app produces rather than reads: the click. */
   | 'timing';
 
+import type { VoiceName } from '../../audio/voices';
+
 export interface TrackSpec {
   name: string;
   role: TrackRole;
@@ -37,6 +39,14 @@ export interface TrackSpec {
   startsOn: boolean;
   /** Where it sits in the mix, 0..1. */
   level: number;
+  /**
+   * The voice it speaks in before anybody changes it (INV-NOTES-144).
+   *
+   * Chosen so the parts are told apart by timbre as well as by pitch: the
+   * take is the thing being listened to, so what plays under it should be
+   * distinct from it and from each other.
+   */
+  voice: VoiceName;
   /**
    * True where every note has one, so it is never offered conditionally.
    *
@@ -64,14 +74,18 @@ export const TRACKS = [
     always: true,
     // The thing being judged, so it sits at full and everything read from it
     // sits under it (INV-NOTES-082).
-    level: 1
+    level: 1,
+    // Never sounded: the take is a recording, not a synth voice.
+    voice: 'sine'
   },
   {
     name: 'chords',
     role: 'melodic',
     title: 'Chords read from your take',
     startsOn: true,
-    level: 0.7
+    level: 0.7,
+    // Soft and behind the voice: harmony is context, not a part.
+    voice: 'triangle'
   },
   {
     name: 'bass',
@@ -81,21 +95,30 @@ export const TRACKS = [
     // (INV-NOTES-134), so this is a second opinion about a recording that is
     // already playing — offered, never imposed (INV-NOTES-135).
     startsOn: false,
-    level: 0.7
+    level: 0.7,
+    // Bright, because a low note with no partials disappears on a phone
+    // speaker — the one place this app is actually listened to.
+    voice: 'saw'
   },
   {
     name: 'melody',
     role: 'melodic',
     title: 'Transcription of your take',
     startsOn: false,
-    level: 0.6
+    level: 0.6,
+    // Reedy, so the transcription is obviously not the singing it is a
+    // reading of.
+    voice: 'square'
   },
   {
     name: 'rhythm',
     role: 'percussive',
     title: 'Drums read from your take',
     startsOn: false,
-    level: 0.6
+    level: 0.6,
+    // No pitch at all. A drum stand-in with a fundamental would clash with
+    // the harmony it plays under.
+    voice: 'noise'
   },
   {
     name: 'layers',
@@ -104,7 +127,9 @@ export const TRACKS = [
     startsOn: true,
     // Just under the take. A layer was sung against it and belongs beside
     // it, but the take is the thing being judged (INV-NOTES-134).
-    level: 0.9
+    level: 0.9,
+    // Never sounded: a layer is a recording too.
+    voice: 'sine'
   },
   {
     name: 'count',
@@ -117,7 +142,9 @@ export const TRACKS = [
     startsOn: false,
     // Faint. It is there to be followed, not listened to, and a loud click
     // over a quiet take is the take you stop hearing.
-    level: 0.35
+    level: 0.35,
+    // It has to be found through a take without being musical.
+    voice: 'square'
   }
 ] as const satisfies readonly TrackSpec[];
 

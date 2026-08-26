@@ -65,6 +65,11 @@ NS_ASSUME_NONNULL_BEGIN
                   startMs:(double)startMs
                     endMs:(double)endMs;
 
+/// What a bus sounds like (INV-NOTES-144): 0 sine, 1 triangle, 2 square,
+/// 3 saw, 4 noise. Anything else is treated as a sine rather than refused —
+/// there is no sensible way to fail a timbre change on the audio path.
+- (void)setBusWave:(double)bus wave:(double)wave;
+
 /// Drop what is pending on a bus and release what it has sounding.
 - (void)clearBus:(double)bus;
 - (void)clearAll;

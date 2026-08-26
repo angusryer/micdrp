@@ -32,6 +32,9 @@ std::size_t SynthMailbox::drain(Synth& synth) {
       case SynthCommand::Kind::ClearBus:
         synth.clearBus(c.bus);
         break;
+      case SynthCommand::Kind::SetBusWave:
+        synth.setBusWave(c.bus, c.wave);
+        break;
       case SynthCommand::Kind::SetSample:
         synth.setSample(c.sampleSlot, c.sample);
         break;

@@ -10,6 +10,7 @@
  * Its own file so `usePlaybackMix` stays the transport and nothing else.
  */
 import { TRACKS, isAlwaysPresent, type TrackName } from './trackRegistry';
+import type { VoiceName } from '../../audio/voices';
 
 /**
  * Which tracks a press sounds. Each is turned on and off on its own.
@@ -23,6 +24,9 @@ export type { TrackName };
 
 /** How loud each track sits, 0..1. Separate from whether it is on at all. */
 export type TrackLevels = Record<TrackName, number>;
+
+/** Which voice each track speaks in (INV-NOTES-144). */
+export type TrackVoices = Record<TrackName, VoiceName>;
 
 const fromTracks = <T>(pick: (track: (typeof TRACKS)[number]) => T) =>
   Object.fromEntries(TRACKS.map((track) => [track.name, pick(track)])) as Record<
@@ -38,6 +42,14 @@ const fromTracks = <T>(pick: (track: (typeof TRACKS)[number]) => T) =>
  * describing it (INV-NOTES-082).
  */
 export const DEFAULT_LEVELS: TrackLevels = fromTracks((t) => t.level);
+
+/**
+ * The voice each track speaks in before anybody changes it.
+ *
+ * Chosen so the parts are told apart by timbre as well as by pitch
+ * (INV-NOTES-144).
+ */
+export const DEFAULT_VOICES: TrackVoices = fromTracks((t) => t.voice);
 
 /** What a note offers before anything is turned. */
 export const DEFAULT_MIX: PlaybackMix = fromTracks((t) => t.startsOn);
