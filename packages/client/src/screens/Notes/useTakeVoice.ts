@@ -40,6 +40,15 @@ export function useTakeVoice({
   /** What is loaded, so the same take is not decoded twice. */
   const loadedFor = useRef<string | null>(null);
   const endsAt = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /**
+   * Whether a start is already under way.
+   *
+   * A ref rather than the rendered state: a caller that stops and immediately
+   * starts again — which is what rewinding does — runs both inside one render,
+   * so the second call reads a `state` that still says "playing" and refuses.
+   * The guard is a fact about the machine, not about what has been drawn.
+   */
+  const isStarting = useRef(false);
 
   const clearEndsAt = useCallback(() => {
     if (endsAt.current != null) {
@@ -65,9 +74,10 @@ export function useTakeVoice({
 
   const play = useCallback(
     async (startAtMs = 0): Promise<void> => {
-      if (state === 'loading' || state === 'playing') {
+      if (isStarting.current) {
         return;
       }
+      isStarting.current = true;
       setState('loading');
       let resolved: string | null = null;
       try {
@@ -116,13 +126,16 @@ export function useTakeVoice({
         console.warn('[useTakeVoice] playback failed for', resolved, err);
         setState('error');
         silence();
+      } finally {
+        isStarting.current = false;
       }
     },
-    [anchor, clearEndsAt, durationMs, resolveAudioUri, silence, state]
+    [anchor, clearEndsAt, durationMs, resolveAudioUri, silence]
   );
 
   const stop = useCallback((): Promise<void> => {
     silence();
+    isStarting.current = false;
     setState('stopped');
     // Nothing to wait for: silencing a bus is a posted command, not a
     // teardown. The promise is here because the caller's contract has one.

@@ -118,15 +118,21 @@ interactions:
     steps:
       - Press rewind while the take is playing, or after it has stopped
     outcome: >
-      Playback resumes a few seconds earlier, with every track that was
-      sounding still together — the take, the chords under it and the
-      melody over it all move back by the same amount, because they are
-      one performance and not three. Pressing it at the very start, or
-      before anything has played, starts the take from the beginning.
+      The playhead moves back a few seconds from wherever it is. What was
+      sounding goes on sounding from there, with every track still
+      together — the take, the chords under it and the melody over it all
+      move by the same amount, because they are one performance and not
+      three. What was silent stays silent, and the head simply moves.
 
       A wrong note is judged by hearing it again, and hearing it again
       meant playing the whole take from the top. That cost grows with the
       take, so the longer the idea the less it was checked.
+
+      Rewind used to start the take whatever state it was in, so the only
+      way to move the head backwards was to begin listening. Going back to
+      look at something is not the same act as going back to hear it, and
+      a transport that cannot tell them apart makes the quieter one
+      impossible.
     maps_to:
       capability: notes.play
 

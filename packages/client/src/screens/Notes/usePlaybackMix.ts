@@ -334,14 +334,35 @@ export function usePlaybackMix({
   // One performance heard three ways, so they move together: a backdrop that
   // restarted from the top while the take resumed in the middle would put a
   // different chord under every note (INV-NOTES-069).
+  /**
+   * Move the head back, and decide nothing about sound (INV-NOTES-160).
+   *
+   * It used to start the take whatever state it was in, so the only way to
+   * move the head backwards was to begin listening — and going back to look
+   * at something is not the same act as going back to hear it.
+   *
+   * From where the head actually is, too. The anchor says how long the audio
+   * has been running, which is nothing before the first play and stale after
+   * a stop, so a rewind from a stopped take went somewhere unrelated to the
+   * head the singer was looking at.
+   */
   const rewind = useCallback(
     async (byMs = REWIND_MS): Promise<void> => {
-      const to = Math.max(0, takeElapsedMs() - byMs);
+      const isPlaying = state === 'playing';
+      const from = isPlaying ? takeElapsedMs() : cueMs;
+      const to = Math.max(0, from - byMs);
+      if (!isPlaying) {
+        setCueMs(to);
+        return;
+      }
+      // Sounding, and it goes on sounding from the new moment: this transport
+      // starts at a moment rather than jumping to one, so moving means
+      // stopping and starting again.
       await stop();
       setCueMs(to);
       await play(to);
     },
-    [takeElapsedMs, stop, play]
+    [state, takeElapsedMs, cueMs, stop, play]
   );
 
   // Playing, it is where the take has reached; stopped, it is where a press

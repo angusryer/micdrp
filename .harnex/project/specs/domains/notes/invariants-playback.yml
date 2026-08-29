@@ -886,3 +886,26 @@ invariants:
       timer over the chord track with no clock to read, so its head never
       moved and a press there silences and starts from the top next time.
 
+  - id: INV-NOTES-160
+    description: Rewind moves the playhead and decides nothing about sound
+    severity: major
+    check: >
+      Rewind moves the head back from where the head actually is — where the
+      take has reached while it is sounding, and where a press would start it
+      when it is not. A take that was playing goes on playing from the new
+      moment; a take that was stopped stays stopped. Never before the
+      beginning. Verified by asserting a rewind while stopped moves the head
+      and sounds nothing, that a rewind while playing keeps playing, and that
+      a rewind from near the start lands at zero rather than below it.
+
+      It always started the take, so the only way to move the head backwards
+      was to begin listening. Going back to look at something is not the same
+      act as going back to hear it, and a transport that cannot tell them
+      apart makes the quieter one impossible.
+
+      And it measured from the wrong clock. The anchor says how long the audio
+      has been running, which is nothing before the first play and stale after
+      a stop — so a rewind from a stopped take went to a place unrelated to
+      the head the singer was looking at. The head has one position and both
+      the drawing and the transport must read the same one.
+

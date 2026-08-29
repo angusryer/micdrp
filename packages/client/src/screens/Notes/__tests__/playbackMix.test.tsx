@@ -249,3 +249,47 @@ describe('the bass read from a take (INV-NOTES-135)', () => {
     expect(chords.start).not.toHaveBeenCalled();
   });
 });
+
+describe('going back over a passage (INV-NOTES-160)', () => {
+  beforeEach(resetSynthDouble);
+
+  const rewind = () => screen.getByLabelText('Go back five seconds');
+
+  it('moves the head without starting anything', async () => {
+    // It used to start the take whatever state it was in, so the only way to
+    // move the head backwards was to begin listening.
+    await renderPlaybackBar(jest.fn().mockResolvedValue(REMOTE), backdrop());
+
+    await fireEvent.press(rewind());
+
+    expect(synth.loadSample).not.toHaveBeenCalled();
+    expect(synth.scheduleSamples).not.toHaveBeenCalled();
+  });
+
+  it('keeps a take that was playing playing', async () => {
+    await renderPlaybackBar(jest.fn().mockResolvedValue(REMOTE), backdrop());
+    await fireEvent.press(screen.getByLabelText('Play'));
+    await waitFor(() => expect(synth.scheduleSamples).toHaveBeenCalled());
+    synth.scheduleSamples.mockClear();
+
+    await fireEvent.press(rewind());
+
+    // This transport starts at a moment rather than jumping to one, so moving
+    // means scheduling again.
+    await waitFor(() => expect(synth.scheduleSamples).toHaveBeenCalled());
+  });
+
+  it('never goes back past the beginning', async () => {
+    await renderPlaybackBar(jest.fn().mockResolvedValue(REMOTE), backdrop());
+
+    await fireEvent.press(rewind());
+    await fireEvent.press(rewind());
+    await fireEvent.press(screen.getByLabelText('Play'));
+
+    await waitFor(() => expect(synth.scheduleSamples).toHaveBeenCalled());
+    const [[booked]] = synth.scheduleSamples.mock.calls as [
+      [{ fromMs: number }[]]
+    ];
+    expect(booked[0].fromMs).toBe(0);
+  });
+});
