@@ -9,6 +9,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useAuth } from '../auth';
 import { DogfoodControl, publishRoute } from '../dogfood';
+import { navigationTheme } from '../theme/navigationTheme';
 import { useTheme } from '../theme';
 import { useTranslation } from '../i18n';
 import { Icon, type IconName } from '../components/Icon';
@@ -104,12 +105,15 @@ function MainTabs() {
       initialRouteName="Notes"
       screenOptions={({ route }) => ({
         headerShown: true,
-        headerStyle: { backgroundColor: colors.neutral300 },
-        headerTitleStyle: { color: colors.typography },
+        // The header's ground and its title come from the container's theme,
+        // which every navigator shares. Repeating them here was the same fact
+        // written twice, and it was the copy the stacks did not have.
         headerShadowVisible: false,
         headerRight: () => <HeaderControls />,
         tabBarActiveTintColor: colors.primary500,
         tabBarInactiveTintColor: colors.gray300,
+        // A shade off the header on purpose: the bar is a different surface
+        // from the page above it, and the theme gives them one colour.
         tabBarStyle: { backgroundColor: colors.neutral100 },
         tabBarIcon: ({ color, size }) => (
           <Icon name={TAB_ICONS[route.name]} size={size} color={color} />
@@ -137,6 +141,7 @@ function MainTabs() {
 
 export default function RootNavigator() {
   const { session, loading } = useAuth();
+  const { colors, scheme } = useTheme();
   const { t } = useTranslation();
 
   if (loading) {
@@ -146,6 +151,10 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer
+      // Themed once, so every navigator under it inherits. The tabs styled
+      // their own header and the stacks did not, so every screen pushed over
+      // them came up with a light header over a dark app.
+      theme={navigationTheme(colors, scheme)}
       // The feedback control lives above this container so a recording
       // survives navigating, which means it cannot read the route itself.
       // Publishing it here is what lets a clip carry the trail of screens it
