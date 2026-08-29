@@ -7,15 +7,19 @@
  * away, so each turn cost more than the judgement it was serving — and a loop
  * that expensive does not get run enough times to converge.
  *
- * Grouped in the order somebody meets them: what happens before anything is
- * read, what makes one note, what joins two, what is too small to have been
- * meant, and what is a struck sound rather than a sung one.
+ * Ordered by how much moving one changes a whistled melody rather than by
+ * which part of the reading it belongs to. Somebody tuning wants the knob
+ * most likely to fix what they are looking at, not the one that happens to
+ * live in the same argument as the last one they tried.
+ *
+ * The actions sit above the list: they are what the list is for, and a person
+ * reads them, changes something, and comes back up to press one.
  */
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../theme';
-import { KNOB_GROUPS, READING_KNOBS } from '../../analysis/readingKnobs';
+import { READING_KNOBS } from '../../analysis/knobOrder';
 import {
   knobValue,
   resetKnobs,
@@ -41,27 +45,6 @@ export function TuningPanel({
 
   return (
     <View style={styles.wrap} key={turned}>
-      {KNOB_GROUPS.map(({ group, title }) => (
-        <View key={group} style={styles.group}>
-          <Text style={[styles.groupTitle, { color: colors.gray300 }]}>
-            {title}
-          </Text>
-          {READING_KNOBS.filter((knob) => knob.group === group).map((knob) => (
-            <KnobRow
-              key={`${group}.${knob.key}`}
-              knob={knob}
-              value={knobValue(knob)}
-              isOpen={open === knob.key}
-              onExplain={() => setOpen(open === knob.key ? null : knob.key)}
-              onStep={(by) => {
-                setKnobValue(knob, knobValue(knob) + knob.step * by);
-                setTurned((n) => n + 1);
-              }}
-            />
-          ))}
-        </View>
-      ))}
-
       <View style={styles.actions}>
         <Text
           accessibilityRole="button"
@@ -86,6 +69,23 @@ export function TuningPanel({
           Back to defaults
         </Text>
       </View>
+      {READING_KNOBS.map((knob) => (
+        <KnobRow
+          key={`${knob.group}.${knob.key}`}
+          knob={knob}
+          value={knobValue(knob)}
+          isOpen={open === knob.key}
+          onExplain={() => setOpen(open === knob.key ? null : knob.key)}
+          onStep={(by) => {
+            setKnobValue(knob, knobValue(knob) + knob.step * by);
+            setTurned((n) => n + 1);
+          }}
+          onReset={() => {
+            setKnobValue(knob, knob.fallback);
+            setTurned((n) => n + 1);
+          }}
+        />
+      ))}
     </View>
   );
 }

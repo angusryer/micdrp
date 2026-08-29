@@ -12,6 +12,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Icon } from '../../components/Icon';
 import { useTheme } from '../../theme';
 import type { ReadingKnob } from '../../analysis/readingKnobs';
 
@@ -27,6 +28,8 @@ export interface KnobRowProps {
   isOpen: boolean;
   onExplain: () => void;
   onStep: (by: 1 | -1) => void;
+  /** Put this one back where it started, without touching the others. */
+  onReset: () => void;
 }
 
 export function KnobRow({
@@ -34,7 +37,8 @@ export function KnobRow({
   value,
   isOpen,
   onExplain,
-  onStep
+  onStep,
+  onReset
 }: KnobRowProps): React.JSX.Element {
   const { colors } = useTheme();
 
@@ -73,6 +77,22 @@ export function KnobRow({
           style={styles.step}
         >
           <Text style={[styles.stepText, { color: colors.primary500 }]}>+</Text>
+        </Pressable>
+        {/* One knob back, rather than all of them. Tuning is a search, and a
+            search needs to undo the last step without losing the others. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Reset ${knob.title}`}
+          testID={`knob-${knob.key}-reset`}
+          onPress={onReset}
+          hitSlop={8}
+          style={styles.step}
+        >
+          <Icon
+            name="reset"
+            size={14}
+            color={value === knob.fallback ? colors.neutral500 : colors.gray300}
+          />
         </Pressable>
       </View>
       {/* On the one being considered. Eleven sentences at once is a wall

@@ -11,7 +11,7 @@ jest.mock('../../data/store', () => ({
   setJSON: (key: string, value: unknown) => mockStore.set(key, value)
 }));
 
-import { KNOB_GROUPS, READING_KNOBS } from '../readingKnobs';
+import { READING_KNOBS, knobRank } from '../knobOrder';
 import {
   knobValue,
   readingOptions,
@@ -24,8 +24,37 @@ beforeEach(() => mockStore.clear());
 describe('the knobs', () => {
   it('covers every part of the reading', () => {
     const covered = new Set(READING_KNOBS.map((k) => k.group));
-    for (const { group } of KNOB_GROUPS) {
-      expect(covered.has(group)).toBe(true);
+    for (const group of ['smooth', 'segment', 'bends', 'top', 'percussion']) {
+      expect(covered.has(group as never)).toBe(true);
+    }
+  });
+
+  it('puts the ones that move a whistled reading first', () => {
+    // Whistling scoops into pitch, so how much movement is still one note is
+    // what decides whether a scoop becomes three notes. A re-attack on the
+    // breath is something whistling never does.
+    const order = READING_KNOBS.map((k) => k.key);
+    expect(order.indexOf('pitchHoldMs')).toBeLessThan(
+      order.indexOf('aspirationRiseDb')
+    );
+    expect(order.indexOf('vibratoSemitones')).toBeLessThan(
+      order.indexOf('onsetWindowMs')
+    );
+    expect(order.indexOf('minMoveSemitones')).toBeLessThan(
+      order.indexOf('minLevelDb')
+    );
+  });
+
+  it('leaves the drums last, since they are not the melody', () => {
+    const last = READING_KNOBS[READING_KNOBS.length - 1];
+    expect(last.group).toBe('percussion');
+  });
+
+  it('ranks every knob it declares', () => {
+    // An unranked knob falls to the end silently, which is how one goes
+    // missing from the order without anybody noticing.
+    for (const knob of READING_KNOBS) {
+      expect(knobRank(knob)).toBeLessThan(READING_KNOBS.length);
     }
   });
 

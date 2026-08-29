@@ -9,7 +9,7 @@
 import { getJSON, setJSON } from '../data/store';
 
 import {
-  READING_KNOBS,
+  DECLARED_KNOBS as READING_KNOBS,
   type KnobGroup,
   type ReadingKnob
 } from './readingKnobs';

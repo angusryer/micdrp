@@ -13,6 +13,10 @@
  *
  * A group is which argument of `readTake` the knob belongs to, so the reading
  * is assembled from this table rather than from a second list somewhere else.
+ *
+ * Declared grouped by what they belong to. The order they are SHOWN in is a
+ * separate judgement about how the person tuning actually sings, and lives in
+ * `knobOrder`.
  */
 import type { SegmentKnob } from './segmentSettings';
 import { SEGMENT_KNOBS } from './segmentSettings';
@@ -28,24 +32,15 @@ export interface ReadingKnob extends SegmentKnob {
   hint: string;
 }
 
-/** What each group is called, in the order a person would meet them. */
-export const KNOB_GROUPS: readonly { group: KnobGroup; title: string }[] = [
-  { group: 'smooth', title: 'Before anything is read' },
-  { group: 'segment', title: 'What counts as one note' },
-  { group: 'bends', title: 'What joins two notes into one' },
-  { group: 'top', title: 'What is too small to have been meant' },
-  { group: 'percussion', title: 'What counts as a struck sound' }
-];
-
 /** Titles and hints for the segmentation knobs, which predate this table. */
 const SEGMENT_WORDS: Record<string, { title: string; hint: string }> = {
   vibratoSemitones: {
     title: 'Wobble width',
-    hint: 'How wide a wobble is still one note. Raise it if a vibrato is being split into several.'
+    hint: 'How wide a wobble is still one note. Raise it if a whistle scooping into a note is being split into several.'
   },
   pitchHoldMs: {
     title: 'Hold to be a new note',
-    hint: 'How long a new pitch must hold before it counts. Raise it if passing notes are being caught.'
+    hint: 'How long a new pitch must hold before it counts. The main one for whistling: raise it if a scoop into a note reads as extra notes.'
   },
   maxGapMs: {
     title: 'Gap it can survive',
@@ -53,23 +48,23 @@ const SEGMENT_WORDS: Record<string, { title: string; hint: string }> = {
   },
   articulationDropDb: {
     title: 'Drop that ends a note',
-    hint: 'How far the level must fall in that gap to be a real stop. Lower it if fast "da da da" reads as one note.'
+    hint: 'How far the level must fall in a gap to be a real stop. Rarely fires on a legato whistle; lower it if fast tongued notes read as one.'
   },
   aspirationRiseDb: {
     title: 'Push that starts one',
-    hint: 'How far the level must climb for a note pushed again on the breath. Lower it if "ha ha ha" reads as one note.'
+    hint: 'How far the level must climb for a note pushed again on the breath. A whistle does not do this, so it will seldom matter to a whistled take.'
   },
   onsetWindowMs: {
     title: 'How fast that push is',
-    hint: 'How quickly that climb must happen to be a re-attack rather than a swell.'
+    hint: 'How quickly that climb must happen to be a re-attack rather than a swell. Only bites where the push above does.'
   },
   minDurationMs: {
     title: 'Shortest note',
-    hint: 'The shortest thing that can have been sung on purpose. Raise it to drop specks.'
+    hint: 'The shortest thing that can have been sung on purpose. Raise it to drop the specks a scoop leaves behind.'
   }
 };
 
-export const READING_KNOBS: readonly ReadingKnob[] = [
+export const DECLARED_KNOBS: readonly ReadingKnob[] = [
   {
     group: 'smooth',
     key: 'windowSize',

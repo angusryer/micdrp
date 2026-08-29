@@ -33,7 +33,8 @@ export type IconName =
   | 'headphones'
   | 'metronome'
   | 'metronomeOff'
-  | 'info';
+  | 'info'
+  | 'reset';
 
 /** Material-style filled glyphs, authored on a 24×24 viewbox. */
 const ICON_PATHS: Record<IconName, string> = {
@@ -82,6 +83,10 @@ const ICON_PATHS: Record<IconName, string> = {
   // A lowercase i in a ring — where the words live now that the controls are
   // glyphs (INV-NOTES-086).
   info: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z',
+  // A circular arrow — the conventional "put it back" glyph, so it is
+  // recognised rather than read.
+  reset:
+    'M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z',
   // Lines of text beside a mark — the conventional "details" or "list"
   // glyph, so it is recognised rather than read (INV-NOTES-075).
   details:

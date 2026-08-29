@@ -69,6 +69,17 @@ export function NoteDetailsPage({
           <Text style={[styles.section, { color: colors.gray500 }]}>
             {t('notes.analysis')}
           </Text>
+          {/* First, because it is what this sheet is opened for while a
+              detector is being tuned. Everything below is read once; this is
+              read on every turn of the loop (INV-NOTES-172). */}
+          <TuningPanel
+            onReread={() => {
+              setIsTuning(true);
+              void detail.reread().finally(() => setIsTuning(false));
+            }}
+            isReading={isTuning}
+          />
+
           <NoteStats
             note={note}
             grid={detail.grid}
@@ -92,17 +103,6 @@ export function NoteDetailsPage({
 
           {/* Last, because it replaces everything above it (INV-NOTES-116). */}
           <RereadCard isStale={detail.isStale} onReread={detail.reread} />
-
-          {/* Every threshold the reading turns on, with the control that
-              runs it again — so one screen closes the loop between changing
-              a number and hearing the result (INV-NOTES-172). */}
-          <TuningPanel
-            onReread={() => {
-              setIsTuning(true);
-              void detail.reread().finally(() => setIsTuning(false));
-            }}
-            isReading={isTuning}
-          />
 
           <ExportSheet midiUri={detail.midiUri} title={note.title} />
         </ScrollView>
