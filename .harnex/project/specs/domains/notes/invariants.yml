@@ -197,3 +197,65 @@ invariants:
       should not cost anybody a sign-in, and a token near its end should be
       renewed while the app has a working one to renew with.
 
+  - id: INV-NOTES-170
+    description: What was performed is kept; what was derived is re-derivable
+    severity: critical
+    check: >
+      Everything a person did is stored and never overwritten by a reading of
+      it: the audio of every take and every layer, the beats they tapped,
+      which of those they called bar starts, the notes they corrected, the
+      bars they arranged, the tempo they typed. Everything the app worked out
+      — the analysed frames, the segmented notes, the key, the tempo estimate,
+      the metre, the chords — is a reading, carries the version of the
+      algorithm that produced it, and can be thrown away and produced again
+      from what was performed. Verified by asserting that discarding every
+      derived field and re-deriving reproduces the same note, and that no
+      derived field is ever the only record of something a person did.
+
+      The line is between what cannot be recovered and what can. A take sung
+      once cannot be sung again the same way, and neither can a beat tapped
+      by the person who sang it. A key, a metre, a chord are opinions about
+      those things, and an opinion that cannot be revised is a worse opinion
+      than one that can.
+
+      Which means the audio is the raw data, not the frames read out of it.
+      Storing the frames would preserve one algorithm's reading of the sound
+      at the moment it was made — the very thing a better algorithm is meant
+      to replace. Re-reading the audio is what improves; re-reading a stored
+      reading is not. The frames are a cache, and a cache is allowed to be
+      thrown away.
+
+      And it means every reading records which version made it, so a take
+      read by an older engine can be found and read again (INV-NOTES-116).
+
+  - id: INV-NOTES-171
+    description: Harmony is asked for, not assumed
+    severity: major
+    check: >
+      A freshly captured note shows what was sung and what was struck, and no
+      chords. Chords are produced when somebody asks for them, and what they
+      are built on is stated: the metre and tempo in force at the time. Once
+      asked for they stay, and they can be asked for again after the take has
+      been given more to go on — beats tapped, bars marked, a bass line sung
+      and corrected — producing a new reading rather than editing the old one.
+      Verified by asserting a new note carries no chord track, that asking
+      produces one, and that asking again after a bass line is added produces
+      a different one without destroying the first.
+
+      The chords appeared on their own, built on a tempo nobody had confirmed
+      and a metre nobody had stated. That is the app asserting the harmony of
+      somebody's idea before they have said what the beat was — and the more
+      confident the drawing, the harder it is to see it as a guess.
+
+      Asked for, the same reading means something else entirely: it is an
+      answer to a question, at a moment when the person asking knows what they
+      have given it to work with.
+
+      Which is the shape of the whole pipeline. A person sings; the app writes
+      down what it heard. The person taps the beat; the app can now say where
+      the bars are. The person says which beats begin bars; the app can now
+      say the metre and the tempo, and therefore which notes fall inside which
+      bar, and therefore what the harmony might be. The person sings a bass
+      line and corrects it; the app can say it again, better. Each step is a
+      human statement, and each derivation waits for one.
+

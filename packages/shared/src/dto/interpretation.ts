@@ -65,6 +65,18 @@ export interface InterpretationDto {
    * rather than a fact of it, and it must survive a re-read.
    */
   beats?: TappedBeatDto[];
+  /**
+   * That somebody asked for the harmony, and what read it (INV-NOTES-171).
+   *
+   * Absent means nobody has asked, and a note nobody has asked shows no
+   * chords. The chords used to appear on their own, built on a tempo nobody
+   * had confirmed and a metre nobody had stated — the app asserting the
+   * harmony of somebody's idea before they had said what the beat was.
+   *
+   * The version is kept so a reading made by an older engine can be found and
+   * offered again (INV-NOTES-116).
+   */
+  harmony?: { askedAtMs: number; analysisVersion: number };
 }
 
 const QUALITIES = [

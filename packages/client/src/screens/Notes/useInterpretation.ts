@@ -36,6 +36,8 @@ export interface Interpretation {
   savedBpm: number | undefined;
   /** The beat, tapped in against the take (INV-NOTES-130). */
   savedBeats: readonly TappedBeat[];
+  /** Whether somebody has asked for the harmony (INV-NOTES-171). */
+  hasHarmony: boolean;
   /** Pitches corrected where the detector heard wrongly. */
   savedNoteEdits: readonly NoteEdit[];
   /** Record a new set of differences; written shortly afterwards. */
@@ -46,6 +48,14 @@ export interface Interpretation {
   updateBpm: (bpm: number | undefined) => void;
   /** Replace the tapped beats. */
   updateBeats: (beats: readonly TappedBeat[]) => void;
+  /**
+   * Ask for the harmony, or ask again once the take has more to go on.
+   *
+   * Asking again re-reads rather than editing what is there: chord decisions
+   * already made replay onto the new reading, because they are decisions
+   * about the music rather than about the algorithm (INV-NOTES-171).
+   */
+  askForHarmony: (analysisVersion: number) => void;
   /** Keep the corrections to what was heard. */
   updateNotes: (notes: NoteEdit[]) => void;
   /** True once a write has failed, so a screen can say so. */
@@ -70,6 +80,7 @@ export function useInterpretation(
   const [savedBeats, setSavedBeats] = useState<readonly TappedBeat[]>(
     () => active.beats ?? []
   );
+  const [hasHarmony, setHasHarmony] = useState(active.harmony != null);
   const [failed, setFailed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const frozen = useRef<InterpretationDto[]>([]);
@@ -94,10 +105,12 @@ export function useInterpretation(
     notes?: NoteEdit[];
     bpm?: number;
     beats?: TappedBeat[];
+    harmony?: { askedAtMs: number; analysisVersion: number };
   }>({
     chords: active.chords as ChordSlotEdit[],
     ...(active.barLines ? { barLines: [...active.barLines] } : {}),
-    ...(active.notes ? { notes: [...active.notes] } : {})
+    ...(active.notes ? { notes: [...active.notes] } : {}),
+    ...(active.harmony ? { harmony: { ...active.harmony } } : {})
   });
 
   const schedule = useCallback(
@@ -125,6 +138,24 @@ export function useInterpretation(
       timer.current = setTimeout(write, SAVE_DELAY_MS);
     },
     [noteId]
+  );
+
+  /**
+   * Ask for the harmony, or ask again once the take has more to go on.
+   *
+   * Stamped with the moment and the engine, so a reading made by an older one
+   * can be found and offered again (INV-NOTES-116).
+   */
+  const askForHarmony = useCallback(
+    (analysisVersion: number) => {
+      setHasHarmony(true);
+      latest.current = {
+        ...latest.current,
+        harmony: { askedAtMs: Date.now(), analysisVersion }
+      };
+      schedule();
+    },
+    [schedule]
   );
 
   const update = useCallback(
@@ -177,8 +208,10 @@ export function useInterpretation(
     savedBarLines,
     savedBpm,
     savedBeats,
+    hasHarmony,
     savedNoteEdits,
     update,
+    askForHarmony,
     updateBarLines,
     updateBpm,
     updateBeats,

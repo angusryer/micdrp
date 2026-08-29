@@ -8,7 +8,7 @@
  * back to what was heard.
  */
 import React from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
@@ -30,6 +30,30 @@ export function NoteHarmonySection({
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { chords } = detail;
+
+  // Asked for, not assumed. The chords used to appear on their own, built on
+  // a tempo nobody had confirmed and a metre nobody had stated
+  // (INV-NOTES-171).
+  if (!detail.hasHarmony) {
+    return (
+      <View style={styles.ask}>
+        <Text style={[styles.caption, { color: colors.gray300 }]}>
+          {t('notes.harmonyAsk')}
+        </Text>
+        <Text
+          accessibilityRole="button"
+          testID="ask-for-harmony"
+          onPress={detail.askForHarmony}
+          style={[
+            styles.askAction,
+            { color: colors.primary500, backgroundColor: colors.neutral100 }
+          ]}
+        >
+          {t('notes.harmonyAskAction')}
+        </Text>
+      </View>
+    );
+  }
 
   if (chords.slots.length === 0) {
     return (
@@ -76,6 +100,15 @@ export function NoteHarmonySection({
 export default NoteHarmonySection;
 
 const styles = StyleSheet.create({
+  ask: { alignItems: 'flex-start', gap: 8, paddingVertical: 4 },
+  askAction: {
+    fontSize: 14,
+    fontWeight: '600',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 14,
+    overflow: 'hidden'
+  },
   caption: { fontSize: 12, marginTop: 8 },
   action: { fontSize: 14, fontWeight: '600', marginTop: 10 }
 });

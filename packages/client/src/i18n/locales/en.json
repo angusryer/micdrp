@@ -170,7 +170,9 @@
     "signedOutTitle": "Sign in again",
     "signedOutSubtitle": "Your notes are safe on the server. Your session just ran out.",
     "snapToGrid": "Snap edits to the grid",
-    "playbackOptions": "What to play, what to show"
+    "playbackOptions": "What to play, what to show",
+    "harmonyAsk": "Tap the beat and mark where the bars begin, then read the harmony from it.",
+    "harmonyAskAction": "Read the chords"
   },
   "dashboard": {
     "title": "Dashboard",

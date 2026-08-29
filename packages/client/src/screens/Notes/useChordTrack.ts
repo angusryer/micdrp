@@ -90,6 +90,13 @@ export interface ChordTrackOptions {
    * of each chord, which a melody alone can only imply (INV-NOTES-071).
    */
   bassLayer?: readonly NoteEvent[];
+  /**
+   * Whether anybody has asked for the harmony (INV-NOTES-171).
+   *
+   * False produces no slots at all. Defaulted true so a caller that has no
+   * opinion — the dogfood player, a test — behaves as before.
+   */
+  isWanted?: boolean;
 }
 
 export function useChordTrack(
@@ -102,12 +109,20 @@ export function useChordTrack(
     onEditsChanged,
     floorMidi = VOICING_BOTTOM_MIDI,
     downbeatSteps,
-    bassLayer
+    bassLayer,
+    isWanted = true
   } = options;
   const key = useMemo(() => detectKey(melody), [melody]);
+  // Nothing until somebody asks. The chords used to appear on their own,
+  // built on a tempo nobody had confirmed and a metre nobody had stated —
+  // the app asserting the harmony of an idea before its author had said
+  // what the beat was (INV-NOTES-171).
   const inferred = useMemo(
-    () => harmonizeToGrid(melody, grid, { key, downbeatSteps, bass: bassLayer }),
-    [melody, grid, key, downbeatSteps, bassLayer]
+    () =>
+      isWanted
+        ? harmonizeToGrid(melody, grid, { key, downbeatSteps, bass: bassLayer })
+        : [],
+    [isWanted, melody, grid, key, downbeatSteps, bassLayer]
   );
 
   // Inference first, then a person's decisions on top of it — which is what

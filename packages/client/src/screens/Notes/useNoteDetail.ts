@@ -20,6 +20,7 @@ import {
   shiftNotes,
   quantize,
   splitOffCount,
+  ANALYSIS_VERSION,
   isStale,
   matchedLevels,
   snapNotes,
@@ -336,7 +337,8 @@ export function useNoteDetail(id: string) {
     onEditsChanged: interpretation.update,
     floorMidi,
     downbeatSteps: bars.layout.lines,
-    bassLayer: bass
+    bassLayer: bass,
+    isWanted: interpretation.hasHarmony
   });
   // Every pitch the chords occupy, so the graph's vertical window takes them
   // in rather than letting them fall off the bottom of it.
@@ -521,6 +523,18 @@ export function useNoteDetail(id: string) {
     /** True where this take would read differently if it were read again. */
     /** The beat tapped along with the take (INV-NOTES-130). */
     beats,
+    /**
+     * Whether the harmony has been asked for, and how to ask (INV-NOTES-171).
+     *
+     * Asking again re-reads with whatever the take has been given since —
+     * beats tapped, bars marked, a bass line sung — and the chord decisions
+     * already made replay onto the new reading.
+     */
+    hasHarmony: interpretation.hasHarmony,
+    askForHarmony: useCallback(
+      () => interpretation.askForHarmony(ANALYSIS_VERSION),
+      [interpretation]
+    ),
 
     /**
      * Tap the beat. The first tap of a pass throws away the pass before it.
