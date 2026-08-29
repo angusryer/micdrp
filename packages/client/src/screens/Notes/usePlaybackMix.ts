@@ -100,6 +100,12 @@ export interface MixedPlayback {
   play(fromMs?: number): Promise<void>;
   /** Stop, then resume this many ms earlier — never before the start. */
   rewind(byMs?: number): Promise<void>;
+  /**
+   * Fall silent and leave the head where the take reached, so the moment
+   * stopped on stays there to be read and the next press carries on from it
+   * (INV-NOTES-152).
+   */
+  pause(): Promise<void>;
   /** Where the take is now, or where it will start from, in ms. */
   positionMs: number;
   /**
@@ -131,6 +137,7 @@ export function usePlaybackMix({
     positionMs,
     drawnPositionMs,
     play: playTake,
+    pause: pauseTake,
     stop: stopTake,
     setLevel: setTakeLevel
   } = usePlayback({ resolveAudioUri });
@@ -252,6 +259,25 @@ export function usePlaybackMix({
     await stopTake();
   }, [clearEndTimer, stopTake]);
 
+  /**
+   * The same silence, with the moment kept (INV-NOTES-152).
+   *
+   * Where the take reached becomes where a press would start, so pausing to
+   * look at what is under the head and then carrying on is one idea rather
+   * than a stop followed by finding the place again.
+   *
+   * With the take off there is nothing to keep: that transport is a timer
+   * over the other tracks and reads no clock, so its head never moved.
+   */
+  const pause = useCallback(async (): Promise<void> => {
+    clearEndTimer();
+    setChordsRunning(false);
+    const reachedMs = await pauseTake();
+    if (takeWanted.current) {
+      setCueMs(reachedMs);
+    }
+  }, [clearEndTimer, pauseTake, takeWanted]);
+
   const play = useCallback(async (fromMs = cueMs): Promise<void> => {
     // The count starts now; everything else waits for it to finish. Timed
     // rather than sample-accurate on purpose — a count is a scaffold to come
@@ -337,6 +363,7 @@ export function usePlaybackMix({
   return {
     state,
     play,
+    pause,
     stop,
     rewind,
     positionMs: state === 'playing' ? positionMs : cueMs,

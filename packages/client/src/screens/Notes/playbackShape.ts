@@ -43,5 +43,11 @@ export interface Playback {
   setLevel(level: number): void;
   /** How long the take runs, once it has been read at least once. */
   durationMs: number;
+  /**
+   * Fall silent and leave the head at the moment the take reached, so what
+   * is under it stays there to be read (INV-NOTES-152). Resolves with that
+   * moment, which is where the next press starts.
+   */
+  pause(): Promise<number>;
   stop(): Promise<void>;
 }

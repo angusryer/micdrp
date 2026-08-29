@@ -162,7 +162,7 @@ export function PlaybackBar({
     () => withOnlyAvailable(mix, offered),
     [mix, offered]
   );
-  const { state, play, stop, rewind, positionMs, drawnPositionMs, cueTo } =
+  const { state, play, pause, stop, rewind, positionMs, drawnPositionMs, cueTo } =
     usePlaybackMix({
       resolveAudioUri,
       mix: sounding,
@@ -218,10 +218,13 @@ export function PlaybackBar({
         >
           <Icon name="rewind" size={20} color={colors.gray300} />
         </Pressable>
+        {/* A press mid-take pauses it: the playhead stays on the moment
+            reached so it can be read, and the next press carries on from
+            there (INV-NOTES-152). */}
         <PlaybackButton
           state={state}
           onPlay={() => void play()}
-          onStop={() => void stop()}
+          onPause={() => void pause()}
         />
 
         {durationLabel != null ? (

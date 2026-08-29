@@ -196,3 +196,23 @@ interactions:
       always has something to do.
     maps_to:
       capability: notes.set_playback_mix
+
+  - id: INT-NOTES-028
+    name: Pause on a note to look at it
+    view: VIEW-NOTES-002
+    precondition: The note has stored audio and is playing.
+    steps:
+      - Press the transport while the take runs
+      - Read what is under the playhead
+      - Press it again
+    outcome: >
+      Everything falls silent and the playhead stays exactly where it was,
+      so the moment reached is still there to be read. The second press
+      carries on from that moment, every track together, rather than from
+      the beginning.
+    error_handling: >
+      With the take turned off the transport is a timer over the chord
+      track and has no moment to hold, so a press silences it and the next
+      one starts from the top.
+    maps_to:
+      capability: notes.play

@@ -7,6 +7,10 @@
  * word (INV-NOTES-030). Loading draws its spinner inside that same circle, so
  * the thing being aimed at never moves or changes size mid-take.
  *
+ * The bars mean what they draw: the press leaves the take where it reached
+ * rather than returning it to the top, so what is under the playhead can be
+ * looked at and then carried on from (INV-NOTES-152).
+ *
  * Split from PlaybackBar so that bar is the arrangement — control, length,
  * failure line, and the choice of what sounds — rather than all of them at
  * once. The one press it offers is the same press in every state: this
@@ -28,13 +32,18 @@ const GLYPH = 20;
 export interface PlaybackButtonProps {
   state: PlaybackState;
   onPlay: () => void;
-  onStop: () => void;
+  /**
+   * Pause, not stop: the take falls silent where it is and the moment
+   * reached stays on the screen to be read (INV-NOTES-152). The glyph and
+   * the label always said pause; this is the press behind them.
+   */
+  onPause: () => void;
 }
 
 export function PlaybackButton({
   state,
   onPlay,
-  onStop
+  onPause
 }: PlaybackButtonProps): React.JSX.Element {
   const { colors } = useTheme();
   const isPlaying = state === 'playing';
@@ -48,7 +57,7 @@ export function PlaybackButton({
       // A press while the take is still being fetched would only be swallowed
       // by usePlayback; saying so lets the platform dim it instead.
       disabled={isLoading}
-      onPress={isPlaying ? onStop : onPlay}
+      onPress={isPlaying ? onPause : onPlay}
       testID="playback-button"
       style={[
         styles.button,

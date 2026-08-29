@@ -103,6 +103,14 @@ views:
         take, marked when the chord has been chosen by hand
       - Bar lines and the time signature, presented as an assumption when
         the metre was not measured
+      - A guitar neck under that graph, drawn well enough to be followed
+        as a neck — six strings, a nut, twelve frets narrowing toward the
+        body, markers at the frets a player looks for, each of those
+        frets numbered under the board — carrying the same melody the
+        graph draws, one place lit at a time as the take runs through it
+        and left lit where the take was paused
+      - A control beside that neck which puts it away and brings it back,
+        remembered for that note, with the neck shown until it is used
       - The descriptive analysis — key, tempo, range, steadiness — with no
         headline score
       - A chord track directly under that lane, one slot per bar, scrolled

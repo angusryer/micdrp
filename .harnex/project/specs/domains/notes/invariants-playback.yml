@@ -853,3 +853,36 @@ invariants:
       that is already speaking is a click, and the singer changing it is
       listening to the next thing rather than editing this one.
 
+  - id: INV-NOTES-152
+    description: A pause leaves the take where it reached
+    severity: major
+    check: >
+      Pressing the transport while a take is playing silences every track and
+      leaves the playhead, the counter, and anything drawn from them at the
+      moment the take had got to. The next press carries on from there rather
+      than from the top or from wherever the last press began. Verified by
+      asserting the position after a pause is where the take had run to, and
+      that the following press schedules the take from that same offset.
+
+      The control has drawn a pause and called itself Pause since there was a
+      transport, and it stopped: the head jumped back to where the last press
+      started, taking with it the one thing worth stopping for. Stopping
+      mid-take is how you look at what is under the head — which note that
+      was, where in the bar it sat — and the answer was being cleared by the
+      question.
+
+      The moment is taken from the engine's own clock at the instant of the
+      press, without the scheduling lead — where the ear is, not where a
+      voice scheduled now would land (INV-NOTES-126). Not from the counter,
+      which is sampled a few times a second and read to the second
+      (INV-NOTES-136), because a pause landing half a second from the ear is
+      a rewind nobody asked for.
+
+      A pause is not a seek (INV-NOTES-091). Nothing moves, so nothing has to
+      be sounded to find the moment again, and resuming is the same
+      every-track-together start as any other (INV-NOTES-069).
+
+      With the take turned off there is nothing to hold. That transport is a
+      timer over the chord track with no clock to read, so its head never
+      moved and a press there silences and starts from the top next time.
+

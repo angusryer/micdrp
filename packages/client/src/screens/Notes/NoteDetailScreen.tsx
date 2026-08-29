@@ -30,7 +30,9 @@ import { useTranslation } from '../../i18n';
 import { NoteDetailsPage } from './NoteDetailsPage';
 import { NoteHarmonySection } from './NoteHarmonySection';
 import { NoteLandscape } from './NoteLandscape';
+import { NoteNeckSection } from './NoteNeckSection';
 import { NoteShapeSection } from './NoteShapeSection';
+import { useNeckShown } from './useNeckShown';
 import { TrackOptions } from './TrackOptions';
 import { BeatTap } from './BeatTap';
 import { SelectionSheet } from './SelectionSheet';
@@ -61,6 +63,8 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   const { width, height } = useWindowDimensions();
   const detail = useNoteDetail(route.params.id);
   const { note, melody } = detail;
+  // Kept with the note, so a neck put away stays away for it (INV-NOTES-151).
+  const { neckShown, setNeckShown } = useNeckShown(route.params.id);
   // Held here so the graph's scrubber and the transport under it are the same
   // clock rather than two readings of one take (INT-NOTES-022).
   const [showDetails, setShowDetails] = useState(false);
@@ -150,6 +154,17 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
                 flashing={detail.flashing}
               />
             </View>
+            {/* Directly under the graph, because it is the same phrase said
+                the other way: the graph is what was sung, this is where to
+                put your fingers to sing it back (INV-NOTES-150). */}
+            <NoteNeckSection
+              melody={detail.shownMelody}
+              width={graphWidth - CONTENT_PADDING * 2}
+              isShown={neckShown}
+              onShown={setNeckShown}
+              positionMs={transport?.drawnPositionMs}
+            />
+
             <SelectionSheet
               detail={detail}
               selection={detail.selection}

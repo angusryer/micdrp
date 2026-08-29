@@ -130,6 +130,28 @@ export function useTakeVoice({
   }, [silence]);
 
   /**
+   * Stop sounding without giving the moment back (INV-NOTES-152).
+   *
+   * Both clocks read from `fromMs` while nothing runs, so holding the head
+   * where the take got to is a matter of saying that is where this run now
+   * begins — which is also where the next press picks it up.
+   *
+   * From the anchor rather than the counter: the anchor is the engine's own
+   * clock asked at this instant, and the counter is read to the second
+   * (INV-NOTES-136). A pause half a second from the ear is a rewind.
+   */
+  const pause = useCallback((): Promise<number> => {
+    const reached =
+      state === 'playing'
+        ? Math.min(anchor.reachedMs(), Math.max(0, durationMs))
+        : fromMs;
+    silence();
+    setFromMs(reached);
+    setState('stopped');
+    return Promise.resolve(reached);
+  }, [anchor, durationMs, fromMs, silence, state]);
+
+  /**
    * How loud the take sits, set on its bus.
    *
    * Reaching what is already sounding, and on the same scale as every other
@@ -148,6 +170,7 @@ export function useTakeVoice({
     elapsedMs: anchor.elapsedMs,
     durationMs,
     play,
+    pause,
     stop,
     setLevel
   };

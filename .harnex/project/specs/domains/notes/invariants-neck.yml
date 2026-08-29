@@ -1,0 +1,150 @@
+# The guitar neck under the graph: what it promises about being readable as a
+# neck, and about where it puts the melody. Its own file — the graph and
+# melody invariants are already at the 150-line budget.
+invariants:
+  - id: INV-NOTES-145
+    description: The neck reads as a neck
+    severity: major
+    check: >
+      The drawing carries the things that make a fretboard recognisable
+      at a glance: six strings, a nut, twelve fret wires, and position
+      markers at the frets a player looks for — single at 3, 5, 7 and 9,
+      doubled at 12. The fret spaces narrow from the nut toward the body
+      rather than being divided evenly, and the strings thicken from the
+      top of the drawing to the bottom. Verified by asserting six string
+      lines, thirteen vertical wires counting the nut, that every fret
+      space is narrower than the one to its left, and markers at the
+      named frets with two at the twelfth.
+
+      Which technique draws it is not fixed here and does not matter — a
+      photograph, a vector, or plain lines are all acceptable, and this
+      is deliberately not a claim about any of them. What is fixed is
+      that it has to be followable as a neck. Evenly divided spaces and
+      six identical lines are a grid, and a grid is something a singer
+      has to be told how to read; a neck is something a player already
+      knows.
+
+  - id: INV-NOTES-146
+    description: The melody moves onto the neck as a whole, or not at all
+    severity: critical
+    check: >
+      One whole-octave shift is chosen for the entire melody — the one
+      that puts the most of its notes somewhere on the neck — and every
+      note is placed under that same shift. Notes still off the neck
+      after it light nothing. Verified by asserting that the interval
+      between any two notes on the neck equals the interval between the
+      same two notes in the melody, and that a melody spanning more than
+      the neck leaves its outliers unlit rather than moving them.
+
+      Shifting note by note would let a phrase that climbs past the top
+      of the neck reappear at the bottom, drawn as a fall. That is not
+      an approximation of the line, it is the opposite of it. A note
+      that cannot be shown is better left dark than shown in the wrong
+      place, on the same reasoning as INV-NOTES-059.
+
+  - id: INV-NOTES-147
+    description: A note takes the place nearest the last one
+    severity: major
+    check: >
+      Where a pitch is available in more than one place, the one chosen
+      is the one cheapest to reach from the note before it, with a fret
+      of travel costing twice a string of travel, ties going to the
+      lower fret. The first note of the melody takes its lowest
+      available fret. A note with no place on the neck does not move the
+      hand: the note after it is measured from the last note that was
+      placed. Verified by asserting that a phrase whose pitches are all
+      reachable in one position is placed in that one position, rather
+      than at the lowest fret for each pitch separately.
+
+      Taking the lowest fret every time scatters a line a hand would
+      play without moving, and the scattering is not information — it is
+      an artefact of picking each note alone. The doubled cost of fret
+      travel is what a position is: sideways along the neck is the
+      expensive direction.
+
+  - id: INV-NOTES-148
+    description: The neck is drawn the way tab is read
+    severity: major
+    check: >
+      The highest-sounding string is the top line of the drawing and the
+      lowest-sounding string the bottom one, and the nut is at the left
+      with the frets ascending to the right. An open string is marked
+      clear of the nut on the side away from the frets. Verified by
+      asserting the drawn y of the top string belongs to the highest
+      open pitch and that fret positions increase in x.
+
+      This is the one orientation a guitarist has already read a
+      thousand times. Drawing it the other way up is a defensible
+      reading of a neck held in front of you and an indefensible thing
+      to put in front of somebody who reads tab.
+
+  - id: INV-NOTES-149
+    description: A dot is lit exactly while its note is sounding
+    severity: critical
+    check: >
+      A place lights when the take reaches its note's start and goes out
+      at its end, read from the same shared value the playhead is drawn
+      from, on the same thread, without a render. Stopped or paused, the
+      lit place is the one the take stopped inside and it stays lit to
+      be read. Verified by asserting the lit place at a given position
+      is the place of the note covering that position, and nothing at
+      all between notes.
+
+      Two clocks would drift, and a neck a frame behind the playhead is
+      worse than no neck: it tells you the fingering for a note you have
+      already heard. Holding the dot when the take is paused is the
+      whole reason pausing exists rather than stopping (INV-NOTES-152) —
+      a fingering that vanishes the moment you look up cannot be read.
+
+  - id: INV-NOTES-150
+    description: The neck shows the reading the graph shows
+    severity: major
+    check: >
+      The notes placed on the neck are the notes drawn on the graph —
+      the chosen reading, as sung or as written, with any correction
+      already applied — and not the melody as it is stored. Verified by
+      asserting the count and the pitches of the lit places follow a
+      change of reading, and follow an edited note.
+
+      The neck is a second view of one picture, not a second opinion
+      about the take. Reading it off the stored melody would let the
+      graph say one thing and the neck another about the same note,
+      which is the drift INV-NOTES-026 exists to prevent.
+
+  - id: INV-NOTES-151
+    description: The neck can be put away, and stays put away for that note
+    severity: minor
+    check: >
+      A control beside the neck hides and shows it, the choice is kept
+      with that note, and it is remembered on the next visit. Shown
+      before anybody chooses. Hidden, the control stays where it was —
+      the neck goes, the way back does not. Verified by asserting the
+      choice survives leaving and reopening the note, and that a
+      different note is unaffected by it.
+
+      The neck takes real height under a graph already given half the
+      screen, and a singer with no guitar in the room has no use for it.
+      Kept per note like the rest of how a note is listened to
+      (INV-NOTES-114) rather than as a setting: it answers "is this idea
+      one I am working out on an instrument", which is about the idea.
+
+  - id: INV-NOTES-153
+    description: The marked frets say which fret they are
+    severity: minor
+    check: >
+      Every fret carrying a position marker under INV-NOTES-145 is
+      numbered in figures, clear of the board so no number sits on a
+      string or a wire, each centred on the space its marker is centred
+      on. The numbers are the marked frets and only those. Verified by
+      asserting a label reading "3", "5", "7", "9" and "12" is present
+      when the neck is shown, that each is centred within a pixel of its
+      marker, that no other fret is labelled, and that they go with the
+      board when the neck is put away.
+
+      A dot tells you a fret is one of the ones players count by; it
+      does not tell you which. Counting up from the nut is exactly the
+      work the markers exist to save, and on a phone-width neck the
+      spaces near the twelfth are a few pixels wide, so a miscount is
+      likely rather than possible. Twelve identical spaces with five
+      unexplained dots is a row; numbered, it is a neck someone can be
+      told a fret on out loud.

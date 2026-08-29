@@ -122,6 +122,11 @@
       "chords": "Chords",
       "melody": "Melody"
     },
+    "neckShow": "On the neck",
+    "neckOctave_one": "An octave {{direction}} from where it was sung, to reach the neck.",
+    "neckOctave_other": "{{count}} octaves {{direction}} from where it was sung, to reach the neck.",
+    "neckOctaveUp": "up",
+    "neckOctaveDown": "down",
     "gridAssumed": "Time signature assumed. This idea does not state its metre clearly enough to tell.",
     "gridNone": "Not enough rhythm here to find a beat.",
     "harmony": "Chords",

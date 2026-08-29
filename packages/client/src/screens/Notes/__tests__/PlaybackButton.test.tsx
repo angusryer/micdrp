@@ -20,7 +20,7 @@ const setup = async (state: PlaybackState) =>
   waitFor(() =>
     render(
       <ThemeProvider>
-        <PlaybackButton state={state} onPlay={jest.fn()} onStop={jest.fn()} />
+        <PlaybackButton state={state} onPlay={jest.fn()} onPause={jest.fn()} />
       </ThemeProvider>
     )
   );

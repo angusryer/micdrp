@@ -42,6 +42,14 @@ export interface TakeAnchor {
    * scheduled now sounds a lead later and the take will have moved on.
    */
   elapsedMs: () => number;
+  /**
+   * Where the take is sounding at this instant — the moment the ear is at.
+   *
+   * The same reading without the lead, which is the difference between
+   * placing a voice that has yet to sound and naming the moment being heard.
+   * What a pause keeps hold of (INV-NOTES-152).
+   */
+  reachedMs: () => number;
 }
 
 export function useTakeAnchor(): TakeAnchor {
@@ -54,7 +62,11 @@ export function useTakeAnchor(): TakeAnchor {
       elapsedMs: () =>
         startedAt.current === null
           ? 0
-          : Math.max(0, audioNowMs() + SCHEDULE_LEAD_MS - startedAt.current)
+          : Math.max(0, audioNowMs() + SCHEDULE_LEAD_MS - startedAt.current),
+      reachedMs: () =>
+        startedAt.current === null
+          ? 0
+          : Math.max(0, audioNowMs() - startedAt.current)
     }),
     []
   );

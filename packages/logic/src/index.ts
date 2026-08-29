@@ -6,6 +6,7 @@ export * from './bends';
 export * from './midi';
 export * from './playback';
 export * from './transpose';
+export * from './fretboard';
 export * from './bassContext';
 export * from './notation';
 export * from './scoring';
