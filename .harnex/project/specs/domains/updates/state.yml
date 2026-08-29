@@ -1,11 +1,21 @@
 # Domain Development State — overwrite each meaningful change
-updated_at: "2026-08-25T00:00:00Z"
+updated_at: "2026-08-29T00:00:00Z"
 updated_by: harnex-new-feature
 phase: specifying
 phase_detail: >
-  Over-the-air delivery is OFF for release builds: OTA_UPDATE_URL is empty in
-  .env.production, which the domain already treats as a first-class disabled
-  state. The binary is the only source of JavaScript.
+  Over-the-air delivery is ON again from build 47, with updateStrategy
+  'fingerprint'. Builds 34 to 46 carry no update URL and can never receive a
+  bundle; 47 is the bridge.
+
+  It was off from build 34 because the strategy was 'appVersion' while this
+  project pins the version at 1.0.0 and climbs only the build number, so
+  hot-updater's native invalidation never fired and a bundle taken at build 29
+  ran over every binary after it (INV-UPD-020). A fingerprint changes whenever
+  the native side does, which is the thing that actually matters, so the same
+  failure cannot recur.
+
+  The cost of leaving it off was real: several JavaScript-only changes went out
+  as full binaries because there was no other route.
 
   Turned off after it stopped shipping working. updateStrategy was
   'appVersion' while this project pins the version at 1.0.0 and climbs only

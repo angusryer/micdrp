@@ -35,32 +35,32 @@ export interface ReadingKnob extends SegmentKnob {
 /** Titles and hints for the segmentation knobs, which predate this table. */
 const SEGMENT_WORDS: Record<string, { title: string; hint: string }> = {
   vibratoSemitones: {
-    title: 'Wobble width',
-    hint: 'How wide a wobble is still one note. Raise it if a whistle scooping into a note is being split into several.'
+    title: 'Vibrato pitch variation allowed',
+    hint: 'How far the pitch may wander and still be one note. Raise it if a whistle scooping into a note is split into several.'
   },
   pitchHoldMs: {
-    title: 'Hold to be a new note',
-    hint: 'How long a new pitch must hold before it counts. The main one for whistling: raise it if a scoop into a note reads as extra notes.'
+    title: 'Considered a new note after',
+    hint: 'How long a new pitch must hold before it counts as its own note. The main one for whistling: raise it if a scoop reads as extra notes.'
   },
   maxGapMs: {
-    title: 'Gap it can survive',
-    hint: 'How long the detector may lose the pitch mid-note. Raise it if single notes are breaking in two.'
+    title: 'Note continues through a dropout of up to',
+    hint: 'How long the detector may lose the pitch without ending the note. Raise it if single notes break in two.'
   },
   articulationDropDb: {
-    title: 'Drop that ends a note',
-    hint: 'How far the level must fall in a gap to be a real stop. Rarely fires on a legato whistle; lower it if fast tongued notes read as one.'
+    title: 'Note ends when the level drops by',
+    hint: 'How far the level must fall during a dropout for it to be a real stop. Rarely fires on a legato whistle; lower it if tongued notes read as one.'
   },
   aspirationRiseDb: {
-    title: 'Push that starts one',
+    title: 'New note when the level rises by',
     hint: 'How far the level must climb for a note pushed again on the breath. A whistle does not do this, so it will seldom matter to a whistled take.'
   },
   onsetWindowMs: {
-    title: 'How fast that push is',
-    hint: 'How quickly that climb must happen to be a re-attack rather than a swell. Only bites where the push above does.'
+    title: 'That rise counted within',
+    hint: 'How quickly that climb must happen to be a re-attack rather than a swell. Only bites where the rise above does.'
   },
   minDurationMs: {
-    title: 'Shortest note',
-    hint: 'The shortest thing that can have been sung on purpose. Raise it to drop the specks a scoop leaves behind.'
+    title: 'Discarded when shorter than',
+    hint: 'The shortest run of pitch kept as a note at all. Raise it to drop the specks a scoop leaves behind.'
   }
 };
 
@@ -68,8 +68,8 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
   {
     group: 'smooth',
     key: 'windowSize',
-    title: 'Smoothing width',
-    hint: 'How many frames are median-filtered together. Raise it for a steadier trace, lower it to keep fast movement.',
+    title: 'Pitch smoothed across frames',
+    hint: 'How many frames are averaged together before anything is read. Raise it for a steadier trace, lower it to keep fast movement.',
     fallback: 5,
     min: 1,
     max: 15,
@@ -78,7 +78,7 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
   {
     group: 'smooth',
     key: 'minClarity',
-    title: 'Ignore below this clarity',
+    title: 'Ignored below this clarity',
     hint: 'Frames less periodic than this are treated as unvoiced before anything is read. Raise it in a noisy room.',
     fallback: 0,
     min: 0,
@@ -95,8 +95,8 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
   {
     group: 'bends',
     key: 'maxJoinGapMs',
-    title: 'Gap a bend may cross',
-    hint: 'The widest silence two notes may be separated by and still be one note bending.',
+    title: 'Joined across a silence of up to',
+    hint: 'The widest silence two notes may be separated by and still be read as one note bending between them.',
     fallback: 40,
     min: 0,
     max: 200,
@@ -106,8 +106,8 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
   {
     group: 'bends',
     key: 'minMoveSemitones',
-    title: 'Least movement to be a bend',
-    hint: 'Below this there is nothing being bent, and the two are simply the same note.',
+    title: 'Counted as a bend above',
+    hint: 'How far the pitch must actually move for the join to be a bend. Below this the two are simply the same note.',
     fallback: 0.1,
     min: 0.02,
     max: 1,
@@ -117,8 +117,8 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
   {
     group: 'top',
     key: 'minArticulationMs',
-    title: 'Too brief to have been sung',
-    hint: 'Anything shorter is dropped as a detector artefact rather than a note.',
+    title: 'Too brief to have been intended',
+    hint: 'Anything shorter is dropped as a detector artefact rather than something anybody meant to make.',
     fallback: 70,
     min: 10,
     max: 250,
@@ -128,8 +128,8 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
   {
     group: 'percussion',
     key: 'minLevelDb',
-    title: 'Loud enough to be a hit',
-    hint: 'How far above silence a sound must be. Raise it if breath noise is reading as drums.',
+    title: 'Hit must be louder than',
+    hint: 'How far above silence a struck sound must be. Raise it if breath noise reads as drums.',
     fallback: -45,
     min: -70,
     max: -20,
@@ -139,7 +139,7 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
   {
     group: 'percussion',
     key: 'maxDurationMs',
-    title: 'Longest a hit can be',
+    title: 'Hit must be shorter than',
     hint: 'Longer than this and it is a note being sung badly rather than something struck.',
     fallback: 140,
     min: 40,
@@ -150,8 +150,8 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
   {
     group: 'percussion',
     key: 'maxClarity',
-    title: 'Least pitched to be a hit',
-    hint: 'More periodic than this and it is a pitch. Lower it if hummed notes read as drums.',
+    title: 'Hit must be less pitched than',
+    hint: 'How periodic a sound may be and still be struck rather than sung. Lower it if hummed notes read as drums.',
     fallback: 0.5,
     min: 0.1,
     max: 0.95,
@@ -161,8 +161,8 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
   {
     group: 'percussion',
     key: 'minFlatness',
-    title: 'Least noisy to be a hit',
-    hint: 'Flatter spectrum means less tone in it, whatever the periodicity said.',
+    title: 'Hit must be noisier than',
+    hint: 'How flat the spectrum must be — how little tone is in it — whatever the periodicity said.',
     fallback: 0.25,
     min: 0.05,
     max: 0.9,
