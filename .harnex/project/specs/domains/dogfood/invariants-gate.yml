@@ -5,11 +5,25 @@ invariants:
     description: How a change is delivered follows from what it touches
     severity: critical
     check: >
-      A javascript request is delivered as an over-the-air bundle. A
-      native request is delivered as a TestFlight build and reported as
-      needing installation. An infrastructural or unknown request is
-      filed. Verified by gating a request of each kind and asserting the
-      delivery route each takes.
+      A javascript request is delivered as an over-the-air bundle WHERE
+      the app can receive one, and as a TestFlight build where it cannot.
+      A native request is always delivered as a TestFlight build. Either
+      build is reported as needing installation. An infrastructural or
+      unknown request is filed. Verified by gating a request of each kind
+      with bundles available and again with them unavailable, and
+      asserting the delivery route each takes.
+
+      The bundle route was unconditional, and then over-the-air delivery
+      was turned off in the app (INV-UPD-020). Nothing told the loop. It
+      went on publishing bundles no device would ever ask for and
+      reporting them delivered — the work was real, the commit was real,
+      and the phone never changed. A delivery route that cannot deliver
+      is worse than no route, because it reports success.
+
+      So the route asks whether a bundle can arrive rather than assuming
+      it can, and falls back to the slower way that works. The app's own
+      setting is what it asks: one place decides whether over-the-air
+      delivery exists, and everything that depends on it reads that.
 
       The first version filed everything but javascript, on the reasoning
       that only javascript can be taken back. That confused two things.

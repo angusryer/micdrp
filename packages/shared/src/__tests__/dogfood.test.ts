@@ -9,7 +9,7 @@ import {
   CONFIDENCE_FLOOR,
   gateRequest,
   isProtectedPath,
-  shouldPublishBundle,
+  deliveryRoute, shouldPublishBundle,
   type BlastRadius,
   type ChangeRequestDto
 } from '../dto/dogfood';
@@ -165,5 +165,31 @@ describe('shouldPublishBundle', () => {
 
   it('publishes nothing for documentation alone', () => {
     expect(shouldPublishBundle(['README.md', 'docs/DEPLOYMENT.md'])).toBe(false);
+  });
+});
+
+describe('which way a change goes out (INV-DOG-005)', () => {
+  const js = ['packages/client/src/screens/Notes/NoteCard.tsx'];
+
+  it('sends native code as a build, whatever is configured', () => {
+    // Native cannot travel over the air at all.
+    expect(deliveryRoute(true, js, true)).toBe('testflight');
+    expect(deliveryRoute(true, js, false)).toBe('testflight');
+  });
+
+  it('sends javascript as a bundle where one can arrive', () => {
+    expect(deliveryRoute(false, js, true)).toBe('bundle');
+  });
+
+  it('sends javascript as a build where a bundle cannot arrive', () => {
+    // A delivery route that cannot deliver is worse than no route, because it
+    // reports success. The loop published into a void for four days.
+    expect(deliveryRoute(false, js, false)).toBe('testflight');
+  });
+
+  it('sends nothing for a batch that only moved specs', () => {
+    const specs = ['.harnex/project/specs/domains/notes/invariants.yml'];
+    expect(deliveryRoute(false, specs, true)).toBeNull();
+    expect(deliveryRoute(false, specs, false)).toBeNull();
   });
 });

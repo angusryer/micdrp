@@ -173,3 +173,31 @@ export function shouldPublishBundle(paths: string[]): boolean {
   // worth publishing.
   return paths.some((path) => /^packages\/.+\.(ts|tsx|js|jsx|json)$/.test(path));
 }
+
+/**
+ * Which way a batch goes out.
+ *
+ * The bundle route was unconditional, and then over-the-air delivery was
+ * turned off in the app (INV-UPD-020). Nothing told the loop: it went on
+ * publishing bundles no device would ever ask for and reporting them
+ * delivered. The work was real, the commit was real, and the phone never
+ * changed — a delivery route that cannot deliver is worse than no route,
+ * because it reports success.
+ *
+ * So this asks whether a bundle can arrive rather than assuming it can, and
+ * falls back to the slower way that works (INV-DOG-005).
+ */
+export function deliveryRoute(
+  isNative: boolean,
+  paths: string[],
+  canSendBundles: boolean
+): DeliveryRoute | null {
+  // Native code cannot travel over the air at all, whatever is configured.
+  if (isNative) {
+    return 'testflight';
+  }
+  if (!shouldPublishBundle(paths)) {
+    return null;
+  }
+  return canSendBundles ? 'bundle' : 'testflight';
+}

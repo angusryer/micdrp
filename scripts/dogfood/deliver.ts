@@ -11,7 +11,8 @@ import { promisify } from 'node:util';
 // Imported by file rather than through the `shared` barrel: Node's ESM
 // loader needs explicit extensions, and the barrel's own imports are
 // extensionless for Metro's benefit. This is the only file the loop needs.
-import { shouldPublishBundle, type ChangeRequestDto } from '../../packages/shared/src/dto/dogfood.ts';
+import { deliveryRoute, type ChangeRequestDto } from '../../packages/shared/src/dto/dogfood.ts';
+import { canSendBundles } from './overTheAir.ts';
 
 import { preflight } from './execute.ts';
 import { rebaseOntoMain } from './rebase.ts';
@@ -96,19 +97,27 @@ export async function deliverBatch(
   // The worktree sits on its own branch; main is what the maintainer pulls.
   await run('git', ['push', 'origin', 'HEAD:main'], { cwd: WORKTREE });
 
-  // Native changes cannot reach a device over the air, so they go out as a
-  // build. TestFlight emails the maintainer; installing is their step
+  // Which way this goes out. Native code cannot travel over the air at all,
+  // and JavaScript only can where the app is set up to receive it — a route
+  // that cannot deliver is worse than no route, because it reports success
   // (INV-DOG-005).
-  if (batch.some((r) => r.blastRadius === 'native')) {
+  const route = deliveryRoute(
+    batch.some((r) => r.blastRadius === 'native'),
+    paths,
+    await canSendBundles()
+  );
+
+  if (route === null) {
+    return { delivered: true, pushed: true, published: false, route: null, reason: null };
+  }
+
+  // TestFlight emails the maintainer; installing is their step.
+  if (route === 'testflight') {
     await run('./scripts/release.sh', ['1.0.0'], {
       cwd: WORKTREE,
       timeout: 30 * 60 * 1000
     });
     return { delivered: true, pushed: true, published: false, route: 'testflight', reason: null };
-  }
-
-  if (!shouldPublishBundle(paths)) {
-    return { delivered: true, pushed: true, published: false, route: null, reason: null };
   }
 
   // Past this point the commit is public. A publish that fails is a step
