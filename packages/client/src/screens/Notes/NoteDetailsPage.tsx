@@ -13,7 +13,7 @@
  * made. Sharing the open note means there is one reading, and it is the one
  * on the graph behind this.
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { Modal, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../theme';
@@ -22,6 +22,7 @@ import { ExportSheet } from '../Results/ExportSheet';
 import { NoteList } from '../Results/NoteList';
 import { NoteStats } from './NoteStats';
 import { RereadCard } from './RereadCard';
+import { TuningPanel } from './TuningPanel';
 import { TempoRow } from './TempoRow';
 import type { useNoteDetail } from './useNoteDetail';
 
@@ -39,6 +40,8 @@ export function NoteDetailsPage({
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { note, melody } = detail;
+  // Held here so the button can say it is working while the take is re-read.
+  const [isTuning, setIsTuning] = useState(false);
 
   if (!note) {
     return null;
@@ -89,6 +92,17 @@ export function NoteDetailsPage({
 
           {/* Last, because it replaces everything above it (INV-NOTES-116). */}
           <RereadCard isStale={detail.isStale} onReread={detail.reread} />
+
+          {/* Every threshold the reading turns on, with the control that
+              runs it again — so one screen closes the loop between changing
+              a number and hearing the result (INV-NOTES-172). */}
+          <TuningPanel
+            onReread={() => {
+              setIsTuning(true);
+              void detail.reread().finally(() => setIsTuning(false));
+            }}
+            isReading={isTuning}
+          />
 
           <ExportSheet midiUri={detail.midiUri} title={note.title} />
         </ScrollView>

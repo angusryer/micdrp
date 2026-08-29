@@ -13,7 +13,7 @@
  * to read it, and the mixed reading is the one that has to be best-effort
  * because it is the only one nobody declared.
  */
-import { dropTooBriefToSing, mergeBends } from './bends';
+import { dropTooBriefToSing, mergeBends, type BendOptions } from './bends';
 import { readPercussion, type Hit, type PercussionOptions } from './percussion';
 import {
   segmentNotes,
@@ -21,7 +21,7 @@ import {
   type PitchFrame,
   type SegmentOptions
 } from './segmentation';
-import { smoothPitch } from './smoothing';
+import { smoothPitch, type SmoothOptions } from './smoothing';
 
 /**
  * What a recording was made as.
@@ -37,7 +37,13 @@ export interface Reading {
 }
 
 export interface ReadOptions {
+  /** How the pitch trace is cleaned before anything is segmented. */
+  smooth?: SmoothOptions;
   segment?: SegmentOptions;
+  /** What counts as one note bending rather than two notes. */
+  bends?: BendOptions;
+  /** The shortest a note may be and still have been sung, in ms. */
+  minArticulationMs?: number;
   percussion?: PercussionOptions;
 }
 
@@ -66,7 +72,11 @@ export function readTake(
 ): Reading {
   const notes = rolePlaysNotes(role)
     ? dropTooBriefToSing(
-        mergeBends(segmentNotes(smoothPitch([...frames]), options.segment))
+        mergeBends(
+          segmentNotes(smoothPitch([...frames], options.smooth), options.segment),
+          options.bends
+        ),
+        options.minArticulationMs
       )
     : [];
   const hits = rolePlaysHits(role)

@@ -16,7 +16,7 @@ import { ANALYSIS_VERSION, readTake, type TakeRole } from 'logic';
 import type { HitDto, NoteEventDto } from 'shared';
 
 import { audioEngine } from '../audio/AudioEngine';
-import { segmentOptions } from './segmentSettings';
+import { readingOptions } from './readingValues';
 
 export interface Reread {
   melody: NoteEventDto[];
@@ -43,9 +43,9 @@ export async function rereadTake(
   if (samples.length === 0) {
     return null;
   }
-  const { notes, hits } = readTake(samples, role, {
-    segment: segmentOptions()
-  });
+  // Every threshold the reading turns on, as it is currently set
+  // (INV-NOTES-172).
+  const { notes, hits } = readTake(samples, role, readingOptions());
   // The DTOs mirror the logic types field-for-field on purpose, so this is a
   // rename rather than a conversion (see shared/dto/note).
   return { melody: notes, hits, analysisVersion: ANALYSIS_VERSION };

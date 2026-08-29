@@ -259,3 +259,31 @@ invariants:
       line and corrects it; the app can say it again, better. Each step is a
       human statement, and each derivation waits for one.
 
+  - id: INV-NOTES-172
+    description: Every threshold the reading depends on is adjustable, beside the take
+    severity: major
+    check: >
+      Every number the melody reading turns on — the smoothing, the
+      segmentation, what counts as a bend, what counts as a struck sound — is
+      an adjustable with a name, a range, and a sentence saying what moving it
+      does. They sit on the note being listened to, next to the control that
+      reads it again, so one screen closes the loop between changing a number
+      and hearing the result. A reading made under one set is replaced by a
+      reading made under another; nothing a person did is touched. Verified by
+      asserting every option the reading accepts appears as an adjustable, and
+      that re-reading uses the current values.
+
+      Tuning a detector is a loop: change a number, listen, change it again.
+      The numbers lived on the account screen and the take lived three
+      navigations away, so each turn of the loop cost more than the judgement
+      it was serving — and a loop that expensive does not get run enough times
+      to converge.
+
+      Every number, because the one that matters is never the one you
+      expected. Half the surface exposed is a search with half the dimensions
+      missing, and the missing one is where the fault turns out to live.
+
+      It changes a reading and never a performance. What was sung stays what
+      was sung, and a reading is allowed to be wrong because it can be made
+      again (INV-NOTES-170).
+
