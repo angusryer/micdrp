@@ -155,7 +155,6 @@ export function GraphLayers({
           it reads above the metre it may replace (INV-NOTES-130). */}
       <TappedBeats
         beats={detail.beats}
-        inferred={detail.inferredBeats}
         timeAxis={timeAxis}
         contentWidth={contentWidth}
         height={height}

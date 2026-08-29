@@ -26,7 +26,6 @@ import { useHapticBeat } from './useHapticBeat';
 import { PlaybackButton } from './PlaybackButton';
 import { GlyphGuideSheet } from './GlyphGuideSheet';
 import { TrackCard } from './TrackCard';
-import { PlaybackOptionsButton } from './PlaybackOptionsButton';
 import { IconToggle } from './IconToggle';
 import {
   TRACK_TITLES,
@@ -77,6 +76,14 @@ export interface PlaybackBarProps {
   /** The beats, for feeling rather than hearing them (INV-NOTES-125). */
   beats?: readonly { startMs: number; midi: number }[];
   /**
+   * Whether the options sheet is open, where somebody else owns that.
+   *
+   * The control that opens it moved to the rail beside the graph, which this
+   * component cannot see (INV-NOTES-142).
+   */
+  isOptionsOpen?: boolean;
+  onOptionsOpen?: (open: boolean) => void;
+  /**
    * Anything else that decides what a press sounds — or how the take is read
    * while it does — shown in the same list as the tracks: which reading is
    * heard and which is drawn, the register the melody plays in, how loud it
@@ -84,9 +91,6 @@ export interface PlaybackBarProps {
    */
   /** The controls belonging to one track, drawn inside that track's card. */
   trackOptions?: (track: TrackName) => React.ReactNode;
-  /** Open the note's details. Sits beside the options, being its neighbour
-      in kind: both open a sheet and neither makes a sound. */
-  onDetails?: () => void;
   /**
    * Hands the transport to whatever else needs it — the scrubber above the
    * graph reads the position and sets it (INT-NOTES-022). Reported rather
@@ -118,14 +122,20 @@ export function PlaybackBar({
   rhythm,
   layers,
   bass,
+  isOptionsOpen,
+  onOptionsOpen,
   beats = [],
   trackOptions,
-  onDetails,
   onTransport,
   listening
 }: PlaybackBarProps) {
   const { colors } = useTheme();
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  // Held by the caller where there is one: the control that opens this sits
+  // on the graph's own edge now, which is a different component entirely
+  // (INV-NOTES-142).
+  const [isOwnSheetOpen, setIsOwnSheetOpen] = useState(false);
+  const isSheetOpen = isOptionsOpen ?? isOwnSheetOpen;
+  const setIsSheetOpen = onOptionsOpen ?? setIsOwnSheetOpen;
   const [explaining, setExplaining] = useState<TrackName | null>(null);
   // Held by the note rather than by this bar, so a balance survives leaving
   // the screen (INV-NOTES-114). Falls back to its own state where no note
@@ -239,45 +249,6 @@ export function PlaybackBar({
           </Text>
         ) : null}
 
-        {/* The click is the one track you reach for mid-take, so it is the
-            one with a switch out here. Its level stays in the options with
-            every other level, because that is set once and this is not
-            (INV-NOTES-119). */}
-        <View style={styles.sheetOpeners}>
-          {offered.includes('count') ? (
-            <Pressable
-              accessibilityRole="switch"
-              accessibilityState={{ checked: sounding.count }}
-              accessibilityLabel={
-                sounding.count ? 'Turn the click off' : 'Turn the click on'
-              }
-              onPress={() => setAudible('count', !sounding.count)}
-              hitSlop={8}
-              style={({ pressed }) => [
-                styles.details,
-                { opacity: pressed ? 0.5 : 1 }
-              ]}
-            >
-              <Icon
-                name={sounding.count ? 'metronome' : 'metronomeOff'}
-                size={20}
-                color={sounding.count ? colors.primary500 : colors.gray300}
-              />
-            </Pressable>
-          ) : null}
-          {onDetails ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Notes and analysis"
-              onPress={onDetails}
-              hitSlop={8}
-              style={({ pressed }) => [styles.details, { opacity: pressed ? 0.5 : 1 }]}
-            >
-              <Icon name="details" size={20} color={colors.gray300} />
-            </Pressable>
-          ) : null}
-          <PlaybackOptionsButton onPress={() => setIsSheetOpen(true)} />
-        </View>
       </View>
 
       <PlaybackSheet
@@ -333,7 +304,6 @@ export default PlaybackBar;
 
 const styles = StyleSheet.create({
   rewind: { padding: 4, marginRight: 4 },
-  sheetOpeners: { flexDirection: 'row', alignItems: 'center', marginLeft: 'auto' },
   details: { padding: 6 },
   stack: { gap: 8 },
   container: {

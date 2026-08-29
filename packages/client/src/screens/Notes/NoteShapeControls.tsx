@@ -27,18 +27,15 @@ export function NoteShapeControls({
 }: NoteShapeControlsProps): React.JSX.Element {
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const { hasGrid, meterIsStated } = detail;
+  const { hasGrid } = detail;
 
   return (
     <>
-      {/* Say when the bar lines are an assumption rather than a reading. A
-          short sung idea often does not state its metre, and drawing
-          confident bar lines over one would be inventing information. */}
-      {hasGrid && !meterIsStated ? (
-        <Text style={[styles.caption, { color: colors.gray300 }]}>
-          {t('notes.gridAssumed')}
-        </Text>
-      ) : null}
+      {/* Nothing is said when the metre is only assumed. It always is, on a
+          short sung idea, so the line appeared on almost every take and told
+          somebody looking at their own singing something they could neither
+          act on nor turn off. The bar lines are movable; that is the answer
+          to a wrong one. */}
       {!hasGrid ? (
         <Text style={[styles.caption, { color: colors.gray300 }]}>
           {t('notes.gridNone')}

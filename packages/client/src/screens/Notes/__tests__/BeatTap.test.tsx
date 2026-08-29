@@ -22,7 +22,7 @@ const show = (over: Partial<Props> = {}) =>
   render(
     <I18nProvider>
       <ThemeProvider>
-        <BeatTap onTap={jest.fn()} isArmed count={0} bpm={null} {...over} />
+        <BeatTap onTap={jest.fn()} isArmed count={0} {...over} />
       </ThemeProvider>
     </I18nProvider>
   );
@@ -59,14 +59,12 @@ describe('the beat tap', () => {
     expect(screen.queryByText(/Play the take/)).not.toBeNull();
   });
 
-  it('reports the tempo once the tapping states one', async () => {
-    await show({ count: 8, bpm: 119.6 });
-    expect(screen.queryByText('8 beats · 120 BPM')).not.toBeNull();
-  });
-
-  it('says it needs more before it can state one', async () => {
-    await show({ count: 2, bpm: null });
-    expect(screen.queryByText(/a few more says a tempo/)).not.toBeNull();
+  it('says how many marks there are, and claims nothing else', async () => {
+    // No tempo is read from these and no bars: a mark on a recording must not
+    // redraw the thing it was made on (INV-NOTES-161).
+    await show({ count: 8 });
+    expect(screen.queryByText('8 tapped')).not.toBeNull();
+    expect(screen.queryByText(/BPM/)).toBeNull();
   });
 
   it('offers to start over only once there is something to throw away', async () => {
@@ -74,7 +72,7 @@ describe('the beat tap', () => {
     expect(bare.queryByLabelText('Throw away the tapped beats')).toBeNull();
     await bare.unmount();
 
-    const some = await show({ count: 5, bpm: 120, onClear: jest.fn() });
+    const some = await show({ count: 5, onClear: jest.fn() });
     expect(
       some.queryByLabelText('Throw away the tapped beats')
     ).not.toBeNull();

@@ -155,7 +155,6 @@ export function RecordScreen(): React.JSX.Element {
           onTap={tapBeat}
           isArmed={isRecording}
           count={tappedCount}
-          bpm={null}
         />
         <RecordTransport
           state={state}

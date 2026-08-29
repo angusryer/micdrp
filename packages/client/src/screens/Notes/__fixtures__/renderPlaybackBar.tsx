@@ -9,7 +9,7 @@
  * transport, INV-NOTES-018) and playbackMix.test.tsx (what a press sounds,
  * INV-NOTES-019).
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { render, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -54,12 +54,16 @@ export const renderPlaybackBar = async (
             accompaniment={accompaniment}
             voice={voice}
             bass={bass}
+            // The control that opens this lives on the graph's edge now, so
+            // a test that wants the sheet says so rather than pressing a
+            // button this component no longer has (INV-NOTES-142).
+            isOptionsOpen
+            onOptionsOpen={() => undefined}
           />
         </ThemeProvider>
         </I18nProvider>
       </GestureHandlerRootView>
     )
   );
-  await fireEvent.press(screen.getByLabelText('Playback options'));
   return rendered;
 };

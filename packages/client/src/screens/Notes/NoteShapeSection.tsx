@@ -11,7 +11,7 @@
  */
 import { type SharedValue } from 'react-native-reanimated';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { octaveLabel } from 'logic';
 
@@ -20,6 +20,7 @@ import { RhythmBand, rhythmBandHeight } from '../../components/RhythmBand';
 import type { Chosen, Selection } from '../../components/graphSelection';
 import { MelodyView } from '../../components/MelodyView';
 import { ZoomableMelody } from '../../components/ZoomableMelody';
+import { Icon } from '../../components/Icon';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { ChordTrack } from './ChordTrack';
@@ -69,6 +70,10 @@ export interface NoteShapeSectionProps {
   onSelect: (selection: Chosen) => void;
   flashing?: Selection | null;
   /** Where the take is, and how to go elsewhere in it (INT-NOTES-022). */
+  /** Open what governs every track (INT-NOTES-021), from the rail's foot. */
+  onOptions?: () => void;
+  /** Open the note's readings and analysis, from above the drawing. */
+  onDetails?: () => void;
   transport?: {
     positionMs: number;
     /** The same moment, read every frame, for the drawn head (INV-NOTES-136). */
@@ -86,6 +91,8 @@ export function NoteShapeSection({
   selection,
   onSelect,
   flashing,
+  onOptions,
+  onDetails,
   transport
 }: NoteShapeSectionProps): React.JSX.Element {
   const { colors } = useTheme();
@@ -146,6 +153,23 @@ export function NoteShapeSection({
 
   return (
     <>
+      {onDetails != null ? (
+        <View style={styles.aboveGraph}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('notes.detailTitle')}
+            testID="open-analysis"
+            onPress={onDetails}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.analysis,
+              { opacity: pressed ? 0.5 : 1 }
+            ]}
+          >
+            <Icon name="details" size={20} color={colors.gray300} />
+          </Pressable>
+        </View>
+      ) : null}
       <View style={[styles.card, { backgroundColor: colors.neutral50 }]}>
         {/* Beside the drawing and outside its scroll, so it is the same
             distance from every part of the take (INV-NOTES-142). */}
@@ -157,6 +181,7 @@ export function NoteShapeSection({
             onToggle={detail.listening.setAudible}
             isSnapping={detail.listening.snapToGrid}
             onSnapping={detail.listening.setSnapToGrid}
+            onOptions={onOptions}
           />
           <View style={styles.drawing}>
         {/* A beat is a fixed width here and the take scrolls past the screen,
@@ -301,6 +326,10 @@ const styles = StyleSheet.create({
   // (INV-NOTES-101).
   // The rail and the drawing sit side by side with nothing between them:
   // they are one instrument, and a gap would read as two panels.
+  // Above the drawing and hard right: it opens a reading OF the graph, so it
+  // belongs to the graph without being in it.
+  aboveGraph: { alignItems: 'flex-end', paddingRight: 4 },
+  analysis: { padding: 6 },
   withRail: { flexDirection: 'row' },
   drawing: { flex: 1 },
   card: { overflow: 'hidden' },

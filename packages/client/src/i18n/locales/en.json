@@ -127,7 +127,6 @@
     "neckOctave_other": "{{count}} octaves {{direction}} from where it was sung, to reach the neck.",
     "neckOctaveUp": "up",
     "neckOctaveDown": "down",
-    "gridAssumed": "Time signature assumed. This idea does not state its metre clearly enough to tell.",
     "gridNone": "Not enough rhythm here to find a beat.",
     "harmony": "Chords",
     "harmonyHint": "Drag a chord up or down to move it through the key, double-tap to change its shape, tap to hear it. Hold to undo a change. Drag the row sideways for later bars.",
@@ -170,7 +169,8 @@
     "signedOut": "Your session ran out — sign in again to see your notes",
     "signedOutTitle": "Sign in again",
     "signedOutSubtitle": "Your notes are safe on the server. Your session just ran out.",
-    "snapToGrid": "Snap edits to the grid"
+    "snapToGrid": "Snap edits to the grid",
+    "playbackOptions": "What to play, what to show"
   },
   "dashboard": {
     "title": "Dashboard",

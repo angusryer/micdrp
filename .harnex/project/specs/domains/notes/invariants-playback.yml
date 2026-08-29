@@ -499,52 +499,23 @@ invariants:
       a bar length needs two.
 
   - id: INV-NOTES-131
-    description: Taps are sparse evidence, and the rest of the grid is inferred
-    severity: major
+    description: Superseded — tapped beats are marks, not evidence for a grid
+    severity: info
     check: >
-      The gaps between taps are whole numbers of beats, not single beats. The
-      grid is the longest period, between 30 and 300 bpm, that puts every tap
-      within a fifth of a beat of a grid line; where the take was heard at a
-      tempo, the tapped period is resolved against it by whole multiples and
-      divisors only. Two bar marks state a bar length counted in beats of that
-      grid, not in taps between them. The beats and bars that follow run the
-      length of the take, are drawn faintly beside the tapped ones, and are
-      marked as inferred rather than stated. Each run of the take is one pass,
-      and the first tap of a pass replaces the pass before it, keeping any bar
-      mark a fresh tap landed on. Verified by asserting a missed tap does not
-      change the tempo, that taps a bar apart read as bars once a tempo is
-      heard, that two sparse marks state a bar of four, that the grid carries
-      past the last tap, and that a second pass replaces the first.
+      Nothing infers a tempo, a bar length or a set of downbeats from what was
+      tapped. The taps are drawn where they were put, can be moved, can be put
+      on the grid, and can be marked as bar starts — and that is the whole of
+      what they do. Superseded by INV-NOTES-161.
 
-      Nobody taps every beat of every take, and a feature that demanded it
-      would be a chore rather than a help. So the taps are evidence rather
-      than a transcript: a handful of them, even scattered, pins a grid that
-      the rest of the beats are inferred onto.
+      Fitting a grid to them worked, and was wrong to do. A handful of taps
+      changed the tempo, which moved the bar lines, which re-cut the chord
+      slots — so tapping four times rearranged the harmony of a take somebody
+      was in the middle of reading. Every step was defensible and the whole
+      was a surprise, which is the shape of a feature that infers too much.
 
-      Which means a median of adjacent gaps is exactly the wrong reading.
-      Four taps a bar apart are four beats at a quarter of the tempo if you
-      read them naively, and reading them naively is what a median does.
-
-      The longest period that explains the taps, because a period half as long
-      explains them just as well while inventing a beat between every pair
-      that nobody tapped and nothing else supports.
-
-      The heard tempo settles the one thing taps alone cannot: whether the
-      tapped pulse is the beat or every second or fourth one. Taps are exact
-      about phase and ambiguous about rate; a reading from onsets is the other
-      way round, so each supplies what the other lacks. Whole multiples and
-      divisors only — anything between them is not musical, and a heard tempo
-      that is neither says nothing about the tapped one.
-
-      The grid's phase is named from the first bar marked where there is one.
-      Any beat describes the grid equally well, but bars are counted outward
-      from the offset, so a phase landing mid-bar would put every bar line in
-      the wrong place.
-
-      A second pass is a correction, not an addition. Keeping both would give
-      a grid twice as dense as either, fitted to a pulse nobody played. Bar
-      marks survive it, because which beats begin bars is a separate statement
-      from where the beats are.
+      What a person taps is a mark on their own recording. Letting a mark
+      redraw the thing it was made on is the app arguing with the person who
+      made it.
 
   - id: INV-NOTES-132
     description: A vertical line is thrown away by flicking across it
@@ -908,4 +879,40 @@ invariants:
       a stop — so a rewind from a stopped take went to a place unrelated to
       the head the singer was looking at. The head has one position and both
       the drawing and the transport must read the same one.
+
+  - id: INV-NOTES-161
+    description: A tapped beat is a mark, and changes nothing but itself
+    severity: major
+    check: >
+      Tapping lays a mark at the moment the finger landed and does nothing
+      else: no tempo is read from it, no bar length, no downbeats, and the
+      chord slots do not move. A mark can be moved, put on the grid, marked as
+      the start of a bar, and thrown away. Verified by asserting that adding
+      taps leaves the grid, the bar lines and the chord slots exactly as they
+      were, and that marking one as a bar start does the same.
+
+      The taps used to be fitted to a grid, and the grid drove everything
+      downstream — so four taps changed the tempo, which moved the bar lines,
+      which re-cut the harmony of a take somebody was in the middle of
+      reading. Every step defensible, the whole a surprise.
+
+      A person tapping along is saying "here, and here, and here". They are
+      not saying "and therefore the piece is at 96 with four to a bar". The
+      second is a conclusion the app drew, and drawing it made the first
+      impossible to do quietly.
+
+  - id: INV-NOTES-162
+    description: A tap lands where the take was when the finger touched it
+    severity: major
+    check: >
+      A beat tapped against a playing take is stamped against a reading of the
+      take's position accurate to a frame, never against the counter shown as
+      text. Verified by asserting a tap lands within a frame of where the take
+      actually was rather than within the counter's refresh interval.
+
+      It was stamped against the counter, which is refreshed a few times a
+      second because it is read to the second (INV-NOTES-136). So a tap could
+      be recorded up to half a second after the finger landed, and every mark
+      sat late by an unpredictable amount — on a feature whose entire value is
+      that the moment came from a person rather than from a detector.
 

@@ -68,6 +68,9 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   // Held here so the graph's scrubber and the transport under it are the same
   // clock rather than two readings of one take (INT-NOTES-022).
   const [showDetails, setShowDetails] = useState(false);
+  // Held here because the control that opens it lives on the graph's edge and
+  // the sheet itself lives in the transport (INV-NOTES-142).
+  const [showOptions, setShowOptions] = useState(false);
   // What the selection sheet is covering, so the page can be scrolled clear
   // of it. It sits over a live page rather than a dimmed one, and a page
   // whose bottom row cannot be reached is live in name only (INV-NOTES-109).
@@ -127,7 +130,8 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             layers={detail.layerVoices}
             bass={detail.bassMix}
             beats={detail.clickBeats}
-            onDetails={() => setShowDetails(true)}
+            isOptionsOpen={showOptions}
+            onOptionsOpen={setShowOptions}
             onTransport={setTransport}
             trackOptions={(track) => (
               <TrackOptions detail={detail} track={track} />
@@ -143,6 +147,8 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             <View style={styles.fullBleed}>
               <NoteShapeSection
                 detail={detail}
+                onOptions={() => setShowOptions(true)}
+                onDetails={() => setShowDetails(true)}
                 width={graphWidth}
                 height={Math.max(
                   MIN_GRAPH_CARD,
@@ -183,8 +189,13 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             <BeatTap
               isArmed={transport?.isPlaying === true}
               count={detail.beats.length}
-              bpm={detail.tappedBpm}
-              onTap={() => detail.tapBeat(transport?.positionMs ?? 0)}
+              // From the value the drawing reads, not the counter beside it.
+              // The counter is refreshed a few times a second because it is
+              // read to the second, so a tap could be recorded up to half a
+              // second after the finger landed (INV-NOTES-162).
+              onTap={() =>
+                detail.tapBeat(transport?.drawnPositionMs.value ?? 0)
+              }
               onArm={detail.beginTapPass}
               onClear={detail.clearBeats}
             />

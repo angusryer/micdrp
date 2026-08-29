@@ -14,10 +14,14 @@
  * One row per track the note actually has. A row for a track that would make
  * no sound is a control that lies (INT-NOTES-026).
  *
- * The snap toggle sits at the foot of it, below a rule. It is not a track and
- * does not sound: it decides where an edit lands (INV-NOTES-143), and putting
- * it in the same column keeps everything that governs the graph on the
- * graph's own edge.
+ * The snap toggle sits below a rule, and the options at the very foot. Those
+ * are not tracks and do not sound — one decides where an edit lands
+ * (INV-NOTES-143) and the other opens what governs every row above — but
+ * keeping them in the same column keeps everything that governs the graph on
+ * the graph's own edge (INV-NOTES-142).
+ *
+ * A muted row is drawn by its colour alone. A glyph as well was saying the
+ * same thing twice in a column 38 points wide.
  */
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -39,6 +43,8 @@ export interface TrackRailProps {
   /** Whether an edit lands on the grid (INV-NOTES-143). */
   isSnapping: boolean;
   onSnapping: (snap: boolean) => void;
+  /** Open everything that decides what a press sounds (INT-NOTES-021). */
+  onOptions?: () => void;
 }
 
 /** The letter a track is known by here, where there is no room for a word. */
@@ -58,7 +64,8 @@ export function TrackRail({
   height,
   onToggle,
   isSnapping,
-  onSnapping
+  onSnapping,
+  onOptions
 }: TrackRailProps): React.JSX.Element | null {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -94,11 +101,6 @@ export function TrackRail({
             >
               {INITIAL[track] ?? track[0].toUpperCase()}
             </Text>
-            {/* The silenced state is drawn rather than implied: a letter that
-                is merely dimmer reads as unimportant, not as off. */}
-            {isAudible ? null : (
-              <Icon name="speakerOff" size={11} color={colors.gray300} />
-            )}
           </Pressable>
         );
       })}
@@ -119,6 +121,21 @@ export function TrackRail({
           color={isSnapping ? colors.primary500 : colors.gray300}
         />
       </Pressable>
+
+      {/* At the foot, below everything it governs: the sheet holds a level
+          and a voice for each row above, so it reads as the end of the
+          column rather than another thing in it. */}
+      {onOptions != null ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('notes.playbackOptions')}
+          testID="rail-options"
+          onPress={onOptions}
+          style={[styles.row, styles.foot]}
+        >
+          <Icon name="options" size={17} color={colors.gray300} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -134,6 +151,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2
   },
+  // Pushed to the bottom of the column, whatever is above it.
+  foot: { marginTop: 'auto' },
   row: { alignItems: 'center', paddingVertical: 6, width: '100%' },
   // What sounds, and what governs the drawing, are different questions.
   rule: { height: StyleSheet.hairlineWidth, width: '60%', marginVertical: 4 },

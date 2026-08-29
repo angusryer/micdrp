@@ -11,6 +11,9 @@
  *
  * Every press taps the fingertip back. The finger is not on the thing it is
  * placing, so the only confirmation available is the one in the hand.
+ *
+ * A mark, and nothing more. No tempo is read from these and no bars: a mark
+ * on a recording must not redraw the thing it was made on (INV-NOTES-161).
  */
 import React, { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -32,8 +35,7 @@ export interface BeatTapProps {
   onArm?: () => void;
   /** How many beats have been tapped, so there is something to see. */
   count: number;
-  /** The tempo they state, when there are enough to state one. */
-  bpm: number | null;
+
   /** Throw them away. Absent until there is something to throw away. */
   onClear?: () => void;
 }
@@ -43,7 +45,6 @@ export function BeatTap({
   onArm,
   isArmed,
   count,
-  bpm,
   onClear
 }: BeatTapProps): React.JSX.Element {
   const { colors } = useTheme();
@@ -90,11 +91,9 @@ export function BeatTap({
         <Text style={[styles.hint, { color: colors.gray300 }]}>
           {!isArmed
             ? 'Play the take, then tap along with it'
-            : bpm != null
-              ? `${count} beats · ${Math.round(bpm)} BPM`
-              : count > 0
-                ? `${count} tapped — a few more says a tempo`
-                : 'Tap along with what you sang'}
+            : count > 0
+              ? `${count} tapped`
+              : 'Tap along with what you sang'}
         </Text>
         {onClear != null && count > 0 ? (
           <Text
