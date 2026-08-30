@@ -96,28 +96,31 @@ describe('UpdateGate', () => {
     expect(screen.queryByText('An update is ready.')).toBeNull();
   });
 
-  it('ACC-UPD-014: a capture in progress holds the prompt back', async () => {
+  it('ACC-UPD-014: a capture still gets told, but not offered the restart', async () => {
+    // The notice takes no input and covers nothing, so it costs no take. The
+    // restart is the part that would (INV-UPD-004).
     markBusy('capture');
     await renderGate();
-    await waitFor(() => expect(downloadMock).toHaveBeenCalled());
-    expect(screen.queryByText('An update is ready.')).toBeNull();
+    expect(await screen.findByText('An update is ready.')).toBeTruthy();
+    expect(screen.queryByText('Restart now')).toBeNull();
+    expect(screen.getByText('Later')).toBeTruthy();
   });
 
-  it('ACC-UPD-015: a practice session holds the prompt back', async () => {
+  it('ACC-UPD-015: a practice session is the same', async () => {
     markBusy('practice session');
     await renderGate();
-    await waitFor(() => expect(downloadMock).toHaveBeenCalled());
-    expect(screen.queryByText('An update is ready.')).toBeNull();
+    expect(await screen.findByText('An update is ready.')).toBeTruthy();
+    expect(screen.queryByText('Restart now')).toBeNull();
   });
 
-  it('ACC-UPD-016: the prompt appears once the take ends, not lost', async () => {
+  it('ACC-UPD-016: the restart is offered once the take ends', async () => {
     const done = markBusy('capture');
     await renderGate();
-    await waitFor(() => expect(downloadMock).toHaveBeenCalled());
-    expect(screen.queryByText('An update is ready.')).toBeNull();
+    expect(await screen.findByText('An update is ready.')).toBeTruthy();
+    expect(screen.queryByText('Restart now')).toBeNull();
 
     done();
-    expect(await screen.findByText('An update is ready.')).toBeTruthy();
+    expect(await screen.findByText('Restart now')).toBeTruthy();
   });
 
   it('ACC-UPD-018: a bundle already deferred does not ask again', async () => {
@@ -169,5 +172,32 @@ describe('a bundle already waiting', () => {
       expect(checkMock).toHaveBeenCalled();
     });
     expect(screen.queryByText('An update is ready.')).toBeNull();
+  });
+});
+
+
+/**
+ * INV-UPD-025 — the notice is drawn, not presented.
+ *
+ * A modal is a presented view controller on iOS, and a second presentation
+ * while a sheet is up is dropped without an error. The note screen keeps
+ * sheets up, which is where a person waiting on a fix actually is.
+ */
+describe('how the notice is shown', () => {
+  it('renders no Modal at all', async () => {
+    await renderGate();
+    await screen.findByText('An update is ready.');
+    // Read off the rendered tree rather than the source: what matters is that
+    // nothing in it presents a screen of its own.
+    expect(JSON.stringify(screen.toJSON())).not.toContain('Modal');
+  });
+
+  it('leaves what is behind it touchable', async () => {
+    await renderGate();
+    await screen.findByText('An update is ready.');
+    // box-none on the layer: it draws, and passes every touch that is not on
+    // the card itself through to the app underneath.
+    const layer = screen.getByText('An update is ready.').parent?.parent;
+    expect(layer?.props.pointerEvents).toBe('box-none');
   });
 });

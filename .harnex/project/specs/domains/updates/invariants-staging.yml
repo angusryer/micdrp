@@ -47,3 +47,23 @@ invariants:
       leaving the screen mid-take left the app busy for the rest of the
       session — and a suppressed prompt is indistinguishable from no update
       (INV-UPD-004).
+
+  - id: INV-UPD-025
+    description: Saying an update arrived never depends on presenting over anything
+    severity: critical
+    check: >
+      The notice that a bundle is ready is drawn in the app's own view tree. It
+      does not present a screen of its own, does not dim or block what is
+      behind it, and appears whatever else is on screen. Verified by asserting
+      it is shown while a sheet is up, and that what is behind it can still be
+      touched.
+
+      It was a modal. On iOS a modal is a presented view controller, and a
+      second presentation from the same controller while a sheet is already up
+      is dropped without an error. The note screen keeps sheets up, which is
+      exactly where a person is when they are waiting on a fix — so the one
+      place the notice was most wanted was the one place it could not appear.
+
+      Nothing about the diagnosis needed to be certain for this to be right.
+      A notice that has to win a presentation contest to be seen is a notice
+      that can be lost; one drawn in the tree cannot be.

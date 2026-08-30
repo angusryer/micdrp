@@ -47,11 +47,18 @@ invariants:
     description: An update never interrupts singing
     severity: critical
     check: >
-      updates.prompt_for_restart does not present while a capture is in
-      progress or a practice session is running, and no reload occurs
-      without the singer choosing it. Verified by holding a bundle in
-      state pending, starting a capture, and asserting no prompt is
-      presented until the capture ends.
+      No reload occurs without the singer choosing it, and the control that
+      would cause one is not offered while a capture is in progress or a
+      practice session is running. Saying a bundle has arrived is allowed at
+      any time: it takes no input and costs no take. Verified by holding a
+      bundle ready, starting a capture, and asserting the arrival is still
+      shown while the way to act on it is not.
+
+      This used to hold back the whole prompt, because the prompt was a modal
+      and a modal over a live take costs the take. The prompt is no longer a
+      modal (INV-UPD-025), so the thing being guarded against is now only the
+      reload — and suppressing the notice as well meant a take, an overdub, or
+      an activity left marked busy hid an update entirely (INV-UPD-024).
 
   - id: INV-UPD-005
     description: An update changes JavaScript and nothing else
