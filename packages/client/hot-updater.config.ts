@@ -53,6 +53,38 @@ export default defineConfig({
    */
   updateStrategy: 'fingerprint',
 
+  /**
+   * One directory is left out of the fingerprint, and it has to be.
+   *
+   * `react-native-config` writes the whole of the active `.env` into
+   * `GeneratedDotEnv.m` in there at build time — BUILD_NUMBER included. That
+   * number climbs on every upload, so the fingerprint moved on every build and
+   * could never match again afterwards: the first attempt to publish a
+   * JavaScript-only bundle after build 48 was refused for a native change that
+   * was only the build number written back into itself.
+   *
+   * A fingerprint that changes when nothing native changed is not a
+   * fingerprint. Leaving this out makes it stable across a build, which is the
+   * whole point of matching on one.
+   *
+   * The directory rather than the one generated file, because a path naming a
+   * single file is silently ignored — these are matched against whole sources,
+   * and a package inside node_modules is one source. Measured, not assumed:
+   * every file-level spelling left the hash moving.
+   *
+   * Relative to this package, not to the repo, and it has to be spelled with
+   * `../../` — node_modules is hoisted to the root and a leading `**\/` does
+   * not climb out of the project.
+   *
+   * The cost: an upgrade of react-native-config, or a real change to an env
+   * value like BACKEND_URL, no longer moves the fingerprint by itself. Both
+   * are covered by raising `--min-build` on the publish, which is the
+   * deliberate half of the same guard (INV-UPD-002).
+   */
+  fingerprint: {
+    ignorePaths: ['../../node_modules/react-native-config/ios/ReactNativeConfig/**']
+  },
+
   build: bare({ enableHermes: true }),
 
   storage: r2Storage({
