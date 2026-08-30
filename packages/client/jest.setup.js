@@ -300,6 +300,8 @@ jest.mock(
       updateBundle: jest.fn(() => Promise.resolve(true)),
       getCrashHistory: jest.fn(() => []),
       getBundleId: jest.fn(() => '00000000-0000-0000-0000-000000000000'),
+      getMinBundleId: jest.fn(() => '00000000-0000-0000-0000-000000000000'),
+      isUpdateDownloaded: jest.fn(() => false),
       getAppVersion: jest.fn(() => '1.0.0'),
       getChannel: jest.fn(() => 'beta')
     }

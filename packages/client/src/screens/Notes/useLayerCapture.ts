@@ -11,7 +11,7 @@
  * describes the recording is the one that was true when it started
  * (INV-NOTES-074).
  */
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import type { LayerRole, NoteLayerDto } from 'shared';
 
@@ -83,6 +83,17 @@ export function useLayerCapture(
       release();
     }
   }, [pending, existing, onLayers, noteId]);
+
+  // Release the hold on the update prompt if this screen goes away mid-take.
+  // It was released on stop and nowhere else, so leaving during an overdub
+  // left the app busy for the rest of the session — and a prompt suppressed
+  // that way is indistinguishable from no update at all (INV-UPD-024).
+  useEffect(
+    () => () => {
+      pending?.release();
+    },
+    [pending]
+  );
 
   return { isRecording, alignedByMs, start, stop };
 }

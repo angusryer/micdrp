@@ -300,6 +300,7 @@
       "buildNumber": "Build",
       "bundle": "JS bundle",
       "bundleEmbedded": "Built in",
+      "bundleWaiting": "waiting — restart to load",
       "updates": "Updates",
       "feedbackQueue": "Feedback",
       "feedbackError": "Last upload",

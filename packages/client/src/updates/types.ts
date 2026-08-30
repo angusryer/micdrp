@@ -38,6 +38,13 @@ export type InstallDescription = {
   buildNumber: number;
   /** The over-the-air bundle in use, or null for the binary's own. */
   bundleId: string | null;
+  /**
+   * A bundle downloaded and waiting for a reload, or null when none is.
+   *
+   * Not the one running, however recently it arrived: it becomes that at the
+   * next reload and not before (INV-UPD-022).
+   */
+  waitingBundleId: string | null;
   eligibility: Eligibility;
   /** Feedback clips recorded but not yet accepted by the server. */
   queuedClips: number;

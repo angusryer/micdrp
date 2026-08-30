@@ -1,0 +1,49 @@
+# What must hold of a bundle that has arrived but is not yet what runs.
+# Split from invariants.yml by concern.
+invariants:
+  - id: INV-UPD-022
+    description: A bundle that has arrived is not reported as the one running
+    severity: critical
+    check: >
+      An install reports the bundle whose JavaScript is executing. A bundle
+      that has been downloaded and is waiting for a reload is reported
+      separately, as waiting. Verified by asserting an install with a
+      downloaded bundle reports the bundle it is still running, and names the
+      waiting one as waiting.
+
+      `getBundleId()` returns the downloaded bundle as soon as it is staged,
+      before any reload. Reporting that as the running bundle told a tester
+      they had a fix while the app went on executing the JavaScript from
+      before it — the same trap INV-UPD-009 was written for, one step further
+      along: it is no longer "is a bundle running" but "is this one".
+
+  - id: INV-UPD-023
+    description: A waiting bundle keeps asking until it is taken
+    severity: critical
+    check: >
+      Where a bundle is downloaded and waiting, the prompt is offered on
+      launch, not only in the session that downloaded it. Verified by
+      asserting an install that starts with a bundle already staged offers to
+      restart, and that one with nothing staged offers nothing.
+
+      The prompt was only ever raised by a download completing, so a bundle
+      staged and left unanswered was never mentioned again. Nothing else could
+      raise it either: the check reports the staged bundle as the one running,
+      so the server correctly answers that there is nothing newer, and the
+      offer is gone until a cold start happens to apply it. A tester who
+      leaves the app open sees no alert, is told they are on the new bundle,
+      and is running the old one.
+
+  - id: INV-UPD-024
+    description: Nothing holds the prompt back after it has ended
+    severity: major
+    check: >
+      Every activity that holds the prompt back releases it, including one
+      abandoned by leaving the screen. Verified by starting an activity,
+      discarding its owner without stopping it, and asserting the prompt is
+      offered again.
+
+      An overdub declared itself busy when it started and released on stop, so
+      leaving the screen mid-take left the app busy for the rest of the
+      session — and a suppressed prompt is indistinguishable from no update
+      (INV-UPD-004).

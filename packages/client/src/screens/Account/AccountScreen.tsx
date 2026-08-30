@@ -573,9 +573,13 @@ export default function AccountScreen(props: Props): React.JSX.Element {
               {t('settings.about.bundle')}
             </Text>
             <Text style={[styles.rowValue, { color: colors.gray300 }]}>
-              {install?.bundleId
-                ? install.bundleId.slice(0, 8)
-                : t('settings.about.bundleEmbedded')}
+              {install?.waitingBundleId
+                ? `${install.waitingBundleId.slice(0, 8)} ${t(
+                    'settings.about.bundleWaiting'
+                  )}`
+                : install?.bundleId
+                  ? install.bundleId.slice(0, 8)
+                  : t('settings.about.bundleEmbedded')}
             </Text>
           </View>
           <View style={[styles.row, { borderBottomColor: 'transparent' }]}>

@@ -15,13 +15,16 @@ import { resetDeferralsForTests } from '../apply';
 import { markBusy, resetBusyForTests } from '../../app/activity';
 import { checkForUpdate } from '../check';
 import { downloadBundle } from '../download';
+import { stagedBundle } from '../bundle';
 
 jest.mock('../check', () => ({ checkForUpdate: jest.fn() }));
+jest.mock('../bundle', () => ({ stagedBundle: jest.fn(() => null) }));
 jest.mock('../download', () => ({ downloadBundle: jest.fn() }));
 jest.mock('../rollback', () => ({ rollBack: jest.fn(() => Promise.resolve(true)) }));
 
 const checkMock = checkForUpdate as jest.MockedFunction<typeof checkForUpdate>;
 const downloadMock = downloadBundle as jest.MockedFunction<typeof downloadBundle>;
+const stagedMock = stagedBundle as jest.MockedFunction<typeof stagedBundle>;
 
 const anOffer = {
   decision: 'update' as const,
@@ -55,6 +58,7 @@ const nothing = {
 };
 
 beforeEach(() => {
+  stagedMock.mockReset().mockReturnValue(null);
   resetBusyForTests();
   resetDeferralsForTests();
   checkMock.mockReset().mockResolvedValue(anOffer);
@@ -123,6 +127,47 @@ describe('UpdateGate', () => {
 
     await renderGate();
     await waitFor(() => expect(checkMock).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText('An update is ready.')).toBeNull();
+  });
+});
+
+
+/**
+ * INV-UPD-023 — a bundle staged by an earlier session keeps asking.
+ *
+ * The prompt was only ever raised by a download completing, so a bundle left
+ * unanswered was never mentioned again. Nothing else could raise it: the check
+ * reports a staged bundle as the one running, so the server rightly answers
+ * that there is nothing newer.
+ */
+describe('a bundle already waiting', () => {
+  it('is offered on launch, without asking the server', async () => {
+    stagedMock.mockReturnValue('b9');
+    await renderGate();
+    await waitFor(() => {
+      expect(screen.getByText('An update is ready.')).toBeTruthy();
+    });
+    expect(checkMock).not.toHaveBeenCalled();
+  });
+
+  it('stops being offered once it has been put off', async () => {
+    stagedMock.mockReturnValue('b9');
+    await renderGate();
+    await waitFor(() => {
+      expect(screen.getByText('An update is ready.')).toBeTruthy();
+    });
+    await fireEvent.press(screen.getByText('Later'));
+    await waitFor(() => {
+      expect(screen.queryByText('An update is ready.')).toBeNull();
+    });
+  });
+
+  it('asks the server when nothing is waiting', async () => {
+    checkMock.mockResolvedValue(nothing);
+    await renderGate();
+    await waitFor(() => {
+      expect(checkMock).toHaveBeenCalled();
+    });
     expect(screen.queryByText('An update is ready.')).toBeNull();
   });
 });

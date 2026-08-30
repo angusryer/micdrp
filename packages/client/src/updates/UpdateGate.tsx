@@ -4,7 +4,8 @@
  * The check runs on mount and on every return to the foreground, so a tester
  * who leaves the app open for days still sees a fix. What it finds is
  * downloaded silently; the modal only ever appears once there is a verified
- * bundle sitting ready.
+ * bundle sitting ready — including one staged by an earlier session and never
+ * answered (INV-UPD-023).
  *
  * Three things can hold it back, and all three matter:
  *   - a capture or practice session is running (INV-UPD-004) — a modal over a
@@ -20,6 +21,7 @@ import { useTranslation } from '../i18n';
 import { useTheme } from '../theme';
 import { applyUpdate, deferUpdate, isDeferred } from './apply';
 import { checkForUpdate } from './check';
+import { stagedBundle } from './bundle';
 import { downloadBundle } from './download';
 import { isBusy, subscribeToBusy } from '../app/activity';
 import { rollBack } from './rollback';
@@ -40,6 +42,17 @@ export default function UpdateGate(): React.ReactElement | null {
     }
     checking.current = true;
     try {
+      // A bundle already downloaded and waiting is offered before anything is
+      // asked of the server (INV-UPD-023). The prompt used to be raised only
+      // by a download completing, so one staged and left unanswered was never
+      // mentioned again — and nothing else could raise it, since the check
+      // reports a staged bundle as the one running and the server rightly
+      // answers that there is nothing newer.
+      const waiting = stagedBundle();
+      if (waiting != null && !isDeferred(waiting)) {
+        setPending({ bundleId: waiting });
+        return;
+      }
       const result = await checkForUpdate();
       if (result.decision === 'rollback') {
         await rollBack(result);

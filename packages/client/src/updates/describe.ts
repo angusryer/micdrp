@@ -11,7 +11,7 @@
  */
 import { readUpdatesConfig } from './config';
 import { resolveEligibility } from './eligibility';
-import { runningBundle } from './bundle';
+import { runningBundle, stagedBundle } from './bundle';
 import { lastUploadError, listPending } from '../dogfood/upload';
 import { lastRecordingError } from '../dogfood/session';
 import type { InstallDescription } from './types';
@@ -22,6 +22,9 @@ export async function describeInstall(): Promise<InstallDescription> {
     appVersion: config.appVersion,
     buildNumber: config.buildNumber,
     bundleId: runningBundle(),
+    // Named separately from the one running, because it is not that yet
+    // (INV-UPD-022).
+    waitingBundleId: stagedBundle(),
     eligibility: await resolveEligibility(),
     queuedClips: listPending().length,
     lastUploadError: lastUploadError(),
