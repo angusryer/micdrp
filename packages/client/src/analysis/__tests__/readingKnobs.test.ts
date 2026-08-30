@@ -41,13 +41,24 @@ describe('the knobs', () => {
       order.indexOf('onsetWindowMs')
     );
     expect(order.indexOf('minMoveSemitones')).toBeLessThan(
-      order.indexOf('minLevelDb')
+      order.indexOf('aspirationRiseDb')
     );
   });
 
-  it('leaves the drums last, since they are not the melody', () => {
-    const last = READING_KNOBS[READING_KNOBS.length - 1];
-    expect(last.group).toBe('percussion');
+  it('leaves the breath-push knobs last, since a tongue never swells', () => {
+    // A tongue stops the air and releases it. The rise that follows a note
+    // pushed again on the breath almost never fires for this player.
+    const order = READING_KNOBS.map((k) => k.key);
+    expect(order[order.length - 1]).toBe('onsetWindowMs');
+    expect(order[order.length - 2]).toBe('aspirationRiseDb');
+  });
+
+  it('puts the level knobs high, because a tongued repeat has no pitch clue', () => {
+    // On a repeated note the pitch trace runs straight through the tap, so
+    // the dip in level is the only evidence there are two notes at all.
+    const order = READING_KNOBS.map((k) => k.key);
+    expect(order.indexOf('articulationDropDb')).toBeLessThan(3);
+    expect(order.indexOf('maxGapMs')).toBeLessThan(3);
   });
 
   it('ranks every knob it declares', () => {

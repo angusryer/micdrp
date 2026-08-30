@@ -44,11 +44,11 @@ const SEGMENT_WORDS: Record<string, { title: string; hint: string }> = {
   },
   maxGapMs: {
     title: 'Note continues through a dropout of up to',
-    hint: 'How long the detector may lose the pitch without ending the note. Raise it if single notes break in two.'
+    hint: 'How long the detector may lose the pitch without ending the note. A tongue tap interrupts the air briefly: raise it if one note breaks in two, lower it if tongued repeats merge.'
   },
   articulationDropDb: {
     title: 'Note ends when the level drops by',
-    hint: 'How far the level must fall during a dropout for it to be a real stop. Rarely fires on a legato whistle; lower it if tongued notes read as one.'
+    hint: 'How far the level must fall during a dropout for the note to have ended. On a tongued repeat at the same pitch this is the only evidence there are two notes — lower it if they read as one.'
   },
   aspirationRiseDb: {
     title: 'New note when the level rises by',
