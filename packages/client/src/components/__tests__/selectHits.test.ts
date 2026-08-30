@@ -9,7 +9,8 @@
  * One surface still reads every touch (INT-NOTES-015). What changes is what
  * it knows to look for.
  */
-import { selectionAt, type HitPoint } from '../graphSelection';
+import { selectionAt } from '../graphHitTest';
+import type { HitPoint } from '../graphSelection';
 import type { NoteRect } from '../melodyLayout';
 
 const note = (x: number, cy: number): NoteRect => ({

@@ -197,3 +197,27 @@ invariants:
       A layer note offers no correction. The layer is context for reading the
       take, and moving its pitches would be editing the evidence rather than
       the reading.
+
+  - id: INV-NOTES-173
+    description: A short note is no harder to hit than a long one
+    severity: major
+    check: >
+      A note is chosen by a touch near it, not only by one inside it: there is
+      reach in both directions, so a note a few pixels wide is as reachable as
+      one that spans a bar. Where the touch is inside a note it means that
+      note. Where it is outside every note but near one, and near a beat or a
+      bar line as well, whichever is closer wins. Verified by asserting a touch
+      a few pixels to the side of a one-pixel note names that note, that a
+      touch inside a note beside a beat line names the note, and that a touch
+      on the line itself still names the line.
+
+      Notes were hit-tested with reach vertically and none horizontally: a
+      touch had to land within the note's own span in x. A whistled note can be
+      a handful of pixels wide, so it was a hairline, while a tapped beat
+      claims a fixed distance either side of itself across the whole height.
+      Every short note near a beat was therefore unselectable in practice — the
+      touch missed the note by two pixels and the beat took it.
+
+      Reach without a nearest rule would only move the problem: a note would
+      then swallow the line beside it. Inside beats near, and near beats
+      further, which is the same rule a person uses looking at it.

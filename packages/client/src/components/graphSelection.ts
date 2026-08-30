@@ -1,21 +1,13 @@
 /**
- * graphSelection — what a touch on the graph is pointing at.
+ * graphSelection — what can be chosen on the graph, and how far it reaches.
  *
- * The graph is a small space carrying bar lines and chord notes, several of
- * which can sit at the same moment. Every overlay used to own its own
- * full-size gesture layer, so whichever was drawn last swallowed everything
- * underneath it. One place that hit-tests everything replaces that, and
- * choosing a thing before acting on it is what makes the verbs nameable
+ * The vocabulary only: what a selection is, whether two name the same thing,
+ * and how close a touch must be to mean each kind. Reading an actual touch
+ * against a drawn graph is graphHitTest, split out to hold the file budget.
+ *
+ * Choosing a thing before acting on it is what makes the verbs nameable
  * controls rather than remembered gestures (INT-NOTES-015).
- *
- * Smallest target first: a chord note is a few points tall and can only be
- * meant, a sung note is larger, and a bar line spans the whole height and is
- * easy to hit from anywhere. Asking in that order means a deliberate touch
- * always beats an incidental one.
  */
-import type { ChordToneRect } from './chordLayout';
-import type { NoteRect } from './melodyLayout';
-
 /** A bar line as the surface needs it: an index and where it is drawn. */
 export interface BarHandlePoint {
   lineIndex: number;
@@ -39,8 +31,18 @@ export const BAR_REACH = 22;
 /** How far from a chord note's centre a touch still means that note. */
 export const TONE_REACH = 22;
 
-/** How far from a sung note a touch still means that note. */
+/** How far above or below a sung note a touch still means that note. */
 export const NOTE_REACH = 20;
+
+/**
+ * How far to either side of a sung note a touch still means that note.
+ *
+ * Shorter than the vertical reach, because time is the axis notes are packed
+ * along: a generous one here would have a note swallow its neighbour. Without
+ * any, a whistled note a few pixels wide was a hairline and the beat beside it
+ * took every touch (INV-NOTES-173).
+ */
+export const NOTE_X_REACH = 12;
 
 /** How far from a struck sound's mark a touch still means that sound. */
 export const HIT_REACH = 16;
@@ -110,13 +112,6 @@ export function isSame(a: Selection | null, b: Selection | null): boolean {
   return false;
 }
 
-/**
- * What a touch is pointing at, or null for empty space.
- *
- * A chord note wins a tie against a bar line, being the smaller target: a bar
- * line spans the whole height and is easy to hit from anywhere, while a note
- * is a few points tall and can only be meant deliberately.
- */
 /** A struck sound as the surface needs it: where its mark was drawn. */
 export interface HitPoint {
   index: number;
@@ -128,128 +123,4 @@ export interface HitPoint {
 export interface BeatLine {
   index: number;
   x: number;
-}
-
-export function selectionAt(
-  x: number,
-  y: number,
-  tones: readonly ChordToneRect[],
-  bars: readonly BarHandlePoint[],
-  notes: readonly NoteRect[] = [],
-  layerNotes: readonly NoteRect[] = [],
-  hits: readonly HitPoint[] = [],
-  beats: readonly BeatLine[] = []
-): Selection | null {
-  // The rhythm band first, and by distance in both directions. It sits below
-  // the drawing in a region of its own, so a touch there is unambiguous —
-  // nothing else is drawn in it (INV-NOTES-118).
-  let bestHit = -1;
-  let bestHitGap = HIT_REACH;
-  for (const point of hits) {
-    const gap = Math.hypot(x - point.x, y - point.y);
-    if (gap <= bestHitGap) {
-      bestHitGap = gap;
-      bestHit = point.index;
-    }
-  }
-  if (bestHit >= 0) {
-    return { kind: 'hit', index: bestHit };
-  }
-  let bestTone: ChordToneRect | null = null;
-  let bestToneGap = TONE_REACH;
-  for (const rect of tones) {
-    if (x < rect.x || x > rect.x + rect.width) {
-      continue;
-    }
-    const gap = Math.abs(y - (rect.y + rect.height / 2));
-    if (gap <= bestToneGap) {
-      bestToneGap = gap;
-      bestTone = rect;
-    }
-  }
-  if (bestTone) {
-    return { kind: 'chordTone', slot: bestTone.slot, tone: bestTone.tone };
-  }
-
-  let bestNote = -1;
-  let bestNoteGap = NOTE_REACH;
-  notes.forEach((rect, index) => {
-    if (x < rect.x || x > rect.x + rect.width) {
-      return;
-    }
-    const gap = Math.abs(y - rect.cy);
-    if (gap <= bestNoteGap) {
-      bestNoteGap = gap;
-      bestNote = index;
-    }
-  });
-  if (bestNote >= 0) {
-    return { kind: 'melodyNote', index: bestNote };
-  }
-
-  // The layer after the sung line: it is drawn behind, so a touch that could
-  // mean either means the one in front (INV-NOTES-118).
-  let bestLayer = -1;
-  let bestLayerGap = NOTE_REACH;
-  layerNotes.forEach((rect, index) => {
-    if (x < rect.x || x > rect.x + rect.width) {
-      return;
-    }
-    const gap = Math.abs(y - rect.cy);
-    if (gap <= bestLayerGap) {
-      bestLayerGap = gap;
-      bestLayer = index;
-    }
-  });
-  if (bestLayer >= 0) {
-    return { kind: 'layerNote', index: bestLayer };
-  }
-
-  // A tapped beat before a bar line: it is the narrower claim of the two —
-  // somebody put it exactly there — and a bar line spans the whole height and
-  // is reachable from anywhere (INV-NOTES-130).
-  let bestBeat = -1;
-  let bestBeatGap = BEAT_REACH;
-  for (const beat of beats) {
-    const gap = Math.abs(x - beat.x);
-    if (gap <= bestBeatGap) {
-      bestBeatGap = gap;
-      bestBeat = beat.index;
-    }
-  }
-  if (bestBeat >= 0) {
-    return { kind: 'beat', index: bestBeat };
-  }
-
-  let bestBar: BarHandlePoint | null = null;
-  let bestBarGap = BAR_REACH;
-  for (const bar of bars) {
-    const gap = Math.abs(x - bar.x);
-    if (gap <= bestBarGap) {
-      bestBarGap = gap;
-      bestBar = bar;
-    }
-  }
-  return bestBar ? { kind: 'barLine', lineIndex: bestBar.lineIndex } : null;
-}
-
-/** Whether a touch lands on the thing already chosen, which is what may be dragged. */
-export function touchesSelection(
-  selection: Selection | null,
-  x: number,
-  y: number,
-  tones: readonly ChordToneRect[],
-  bars: readonly BarHandlePoint[],
-  notes: readonly NoteRect[] = [],
-  layerNotes: readonly NoteRect[] = [],
-  hits: readonly HitPoint[] = [],
-  beats: readonly BeatLine[] = []
-): boolean {
-  if (!selection) {
-    return false;
-  }
-  return isSame(
-    selection,
-    selectionAt(x, y, tones, bars, notes, layerNotes, hits, beats)
-  );
 }

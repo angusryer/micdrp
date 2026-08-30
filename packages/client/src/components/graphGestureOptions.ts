@@ -7,8 +7,8 @@
  */
 import type { ChordToneRect } from './chordLayout';
 import type { NoteRect } from './melodyLayout';
+import { selectionAt } from './graphHitTest';
 import {
-  selectionAt,
   type BarHandlePoint,
   type BeatLine,
   type Chosen,

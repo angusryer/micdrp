@@ -1,12 +1,8 @@
 /**
  * What a touch on the graph is pointing at (INT-NOTES-015).
  */
-import {
-  isSame,
-  selectionAt,
-  touchesSelection,
-  type BarHandlePoint
-} from '../graphSelection';
+import { selectionAt, touchesSelection } from '../graphHitTest';
+import { isSame, type BarHandlePoint } from '../graphSelection';
 import type { ChordToneRect } from '../chordLayout';
 
 function tone(slot: number, index: number, x: number, y: number): ChordToneRect {

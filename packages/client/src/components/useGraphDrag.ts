@@ -9,7 +9,7 @@ import { Gesture } from 'react-native-gesture-handler';
 
 import { tapped } from '../utilities/haptics';
 import { isFlickAway, throwAway } from './flickAway';
-import { touchesSelection } from './graphSelection';
+import { touchesSelection } from './graphHitTest';
 import { moveBars, moveBeats, movePitched } from './graphDragMove';
 import { pitchOf, type SettledOptions } from './graphGestureOptions';
 
