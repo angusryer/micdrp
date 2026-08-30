@@ -1,0 +1,25 @@
+# What must hold of a published bundle's row, as distinct from the rules
+# that decide who may take it. Split from invariants.yml by concern.
+invariants:
+  - id: INV-UPD-021
+    description: A published row always names the app version it may run on
+    severity: critical
+    check: >
+      Every row a publish creates carries a targetAppVersion, whatever
+      hot-updater's own strategy does with that column. Verified by
+      publishing and asserting the row names the version, and by asking
+      the server as an install of the build just published and being
+      offered the bundle rather than nothing.
+
+      The server matches a bundle to an install on the keys the install
+      actually sends: channel, app version and build number. Under the
+      'fingerprint' strategy the CLI ignores --target-app-version and
+      writes null, so a published bundle matched no install at all and
+      the server answered every check with nothing. That is the same
+      silent failure as INV-UPD-020 arriving from the other side — the
+      release worked, the publish reported success, and nothing shipped.
+
+      The fingerprint is not what does this matching. Its job is native:
+      refusing a resident bundle that belongs to a different binary, at
+      launch, before any of this is consulted. Both guards are wanted and
+      neither substitutes for the other.

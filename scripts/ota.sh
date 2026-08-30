@@ -143,22 +143,47 @@ cmd_publish() {
       --target-app-version "$target_version" \
       ${message:+--message "$message"} )
 
-  # Stamp the one constraint their schema has no column for, onto the row the
-  # deploy just created — the newest on the channel.
+  # Put the app version back on the row (INV-UPD-021).
+  #
+  # --target-app-version is passed above and ignored: under the 'fingerprint'
+  # strategy their CLI writes null into that column, because their own server
+  # would match on the fingerprint instead. Ours matches on the keys an install
+  # actually sends — channel, app version, build number — so a null there means
+  # the bundle matches nobody and every check is answered with nothing. The
+  # publish said "Published"; the release said "shipped"; nothing shipped.
+  #
+  # The fingerprint still does its own job, which is a different one: refusing
+  # a resident bundle belonging to another binary, natively, at launch
+  # (INV-UPD-020).
+  #
+  # Stamped here rather than argued with, because their column is theirs.
   # Two numbers, and they answer different questions. min_build_number is the
   # lowest binary that CAN run this bundle. built_from_build is the binary
   # whose source it was built FROM — which is how recency is judged, because a
   # bundle made from an older build is a downgrade however recently it was
   # published (INV-UPD-010).
   d1 "UPDATE bundles
-         SET metadata = json_set(json_set(COALESCE(metadata, '{}'),
+         SET target_app_version = '${target_version}',
+             metadata = json_set(json_set(COALESCE(metadata, '{}'),
                                  '\$.min_build_number', ${min_build}),
                                  '\$.built_from_build', ${built_from})
        WHERE id = (SELECT id FROM bundles
                     WHERE channel = '${channel}' AND platform = 'ios'
                     ORDER BY id DESC LIMIT 1)"
 
-  info "Published to ${channel} for ${target_version} build >=${min_build}."
+  # Ask the server, as the oldest install this bundle claims to run on,
+  # whether it is offered the bundle. A publish that reports success and hands
+  # out nothing is the failure this whole file exists to prevent, and it is one
+  # request away from being knowable rather than assumed (INV-UPD-021).
+  local answer
+  answer="$(curl -fsS -X POST "$(env_value OTA_UPDATE_URL)/check" \
+    -H 'Content-Type: application/json' \
+    -d "{\"channel\":\"${channel}\",\"appVersion\":\"${target_version}\",\"buildNumber\":${min_build},\"bundleId\":\"00000000-0000-0000-0000-000000000000\"}" \
+    2>/dev/null || echo null)"
+  case "$answer" in
+    *'"UPDATE"'*) info "Published to ${channel} for ${target_version} build >=${min_build}." ;;
+    *) die "Published, but the server offers build ${min_build} nothing. Answer: ${answer}" ;;
+  esac
 }
 
 cmd_disable() {
