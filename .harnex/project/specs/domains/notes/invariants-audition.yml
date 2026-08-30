@@ -1,0 +1,83 @@
+# Hearing and seeing what is being edited. Split from invariants-selection.yml
+# by concern: that file is about what is chosen, this about what choosing it
+# does.
+invariants:
+  - id: INV-NOTES-175
+    description: Choosing a note sounds it
+    severity: major
+    check: >
+      Touching a sung note plays it, in the voice that track is set to, without
+      any further press. Choosing a set sounds nothing — there is no one note
+      to name — and choosing something with no pitch sounds nothing. Verified
+      by asserting a touch on a note sounds that note's pitch, that the voice
+      used is the one the melody track is set to, and that choosing a second
+      note silences the first.
+
+      "Hear it" sat in the sheet as a control, so checking a note cost two
+      presses: one to choose it and one to hear it. The pitch is the reason
+      the note was touched.
+
+      The audition voice was whatever the engine starts with, while every
+      track's voice is chosen (INV-NOTES-144). Checking a note in one timbre
+      and hearing it play in another compares two different sounds.
+
+  - id: INV-NOTES-176
+    description: A pitch changed is a pitch heard
+    severity: major
+    check: >
+      Changing a note's pitch sounds the pitch it becomes, however the change
+      was made — dragged on the graph or nudged from the sheet. Verified by
+      asserting a nudge sounds the new pitch, and that it obeys the same switch
+      and level the drag audition does.
+
+      A drag was its own audition (INV-NOTES-070) and the nudge beside it was
+      silent, so the same edit answered its own question or did not depending
+      on which control made it.
+
+  - id: INV-NOTES-177
+    description: What is chosen is brought into view
+    severity: major
+    check: >
+      Choosing a thing on the graph brings it to the middle of what can be
+      seen, along both axes where both can move, and the middle is measured
+      against the part of the graph the sheet is not covering. Something
+      already in view is not moved. Verified by asserting a choice off the
+      right of the view scrolls it to the middle, that the sheet's height is
+      taken off the bottom before the middle is worked out, and that a choice
+      already comfortably in view leaves the view alone.
+
+      A note reached by scrolling could be chosen and then hidden by the sheet
+      that describes it, which is the one moment its description is wanted.
+
+  - id: INV-NOTES-178
+    description: Retiming a note marks out the stretch to listen back to
+    severity: major
+    check: >
+      Changing when a note starts or how long it lasts marks a stretch of the
+      take running from before that note to after it, and plays that stretch.
+      The stretch is drawn over the graph, distinct from every line already
+      there. Changing pitch alone marks nothing: nothing about the timing
+      moved. Verified by asserting a length change marks a stretch that
+      contains the note with room either side, that a pitch change marks none,
+      and that the stretch plays once when it is marked.
+
+      Timing is the one thing that cannot be judged from a single note. A note
+      is early or late against what is around it, so the answer to "is that
+      right now" is the phrase, not the note — and playing the whole take to
+      hear two seconds of it is why people stop checking.
+
+  - id: INV-NOTES-179
+    description: The stretch has two ends, and each is moved on its own
+    severity: major
+    check: >
+      The marked stretch is bounded by two handles, told apart from each other
+      and from the playhead by colour, each moved without moving the other. A
+      handle cannot be dragged past its opposite. A control beside the stretch
+      plays it again from its start. Verified by asserting each handle moves
+      only its own end, that neither crosses the other, and that the control
+      plays from the stretch's start and stops at its end.
+
+      The stretch the app marks out is a guess at what a person wants to hear.
+      Making it adjustable is what stops the guess having to be right, and
+      replaying is the whole point of marking it — a phrase judged once is
+      judged against a memory of how it went before.
