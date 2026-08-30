@@ -157,3 +157,53 @@ describe('INV-PITCH-020: how loud the note was', () => {
     expect(factsOf({}).Loudness).toBe('not measured');
   });
 });
+
+describe('a chosen beat (INV-NOTES-163)', () => {
+  const selection: Selection = { kind: 'beat', index: 0 };
+
+  const withBeat = (isDownbeat: boolean, atMs = 1000, tappedAtMs = 1000) =>
+    fakeDetail({
+      beats: [{ atMs, tappedAtMs, isDownbeat }],
+      setBeatIsDownbeat: jest.fn(),
+      resetBeatAt: jest.fn(),
+      removeBeatAt: jest.fn()
+    });
+
+  it('can be thrown away whether or not it starts a bar', () => {
+    // A marked beat could be deleted and a plain one could not, which made
+    // "start a bar here" a one-way door.
+    for (const isDownbeat of [true, false]) {
+      expect(
+        labels(describeSelection(selection, withBeat(isDownbeat), ACCENT, jest.fn())!)
+      ).toContain('Delete this beat');
+    }
+  });
+
+  it('offers the same verbs either way, bar-marking aside', () => {
+    // Marking changes what a beat means and nothing else, so it should not
+    // change what can be done to it.
+    const plain = labels(describeSelection(selection, withBeat(false), ACCENT, jest.fn())!);
+    const marked = labels(describeSelection(selection, withBeat(true), ACCENT, jest.fn())!);
+    const verbs = (all: string[]) =>
+      all.filter((l) => l !== 'Start a bar here' && l !== 'Not a bar start');
+    expect(verbs(plain)).toEqual(verbs(marked));
+  });
+
+  it('offers to put it back only once it has been moved', () => {
+    expect(
+      labels(describeSelection(selection, withBeat(false), ACCENT, jest.fn())!)
+    ).not.toContain('Put it back');
+    expect(
+      labels(describeSelection(selection, withBeat(false, 1200, 1000), ACCENT, jest.fn())!)
+    ).toContain('Put it back');
+  });
+
+  it('deletes the one that was chosen', () => {
+    const detail = withBeat(false);
+    const found = describeSelection(selection, detail, ACCENT, jest.fn())!;
+    found.actions.find((a) => a.label === 'Delete this beat')?.run();
+    expect(
+      (detail as unknown as { removeBeatAt: jest.Mock }).removeBeatAt
+    ).toHaveBeenCalledWith(0);
+  });
+});

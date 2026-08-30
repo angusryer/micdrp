@@ -916,3 +916,30 @@ invariants:
       sat late by an unpredictable amount — on a feature whose entire value is
       that the moment came from a person rather than from a detector.
 
+  - id: INV-NOTES-163
+    description: A beat is a beat, and anything done to one can be done to any
+    severity: major
+    check: >
+      Every tapped beat can be moved, thrown away, and marked or unmarked as
+      the start of a bar, whether or not it is currently marked. A beat is
+      dragged by holding it and moving, so a drag is told apart from the
+      page's own scrolling by intent rather than by direction. Verified by
+      asserting a plain beat offers the same actions as a marked one, and that
+      a hold followed by a drag moves the beat rather than scrolling the page.
+
+      A marked beat could be deleted and a plain one could not, which made
+      "start a bar here" a one-way door: the only way to be rid of a beat was
+      to promote it first. Nothing about a beat changes when it is marked
+      except what it means, so nothing about what can be done to it should
+      change either.
+
+      Held before dragged because the graph lives inside a page that scrolls.
+      A vertical drag is ambiguous — the page wants it and so does the beat —
+      and holding first says which was meant, without spending the direction
+      that a horizontal drag already uses for placing.
+
+      Where there is something to snap to, a held drag lands on it. There is
+      not yet: the grid is being taken out of the app's hands and put into the
+      singer's, so for now a beat goes exactly where the finger leaves it
+      (INV-NOTES-161).
+

@@ -228,7 +228,9 @@ function describeHit(
  * A beat somebody tapped along with the take.
  *
  * The only thing on the graph that was stated rather than read, which is why
- * it can be moved, put back and made a bar start (INV-NOTES-130).
+ * it can be moved, put back, made a bar start and thrown away
+ * (INV-NOTES-130). Everything a marked beat can do, a plain one can do:
+ * marking changes what it means and nothing else (INV-NOTES-163).
  */
 function describeBeat(
   selection: Extract<Selection, { kind: 'beat' }>,
@@ -253,6 +255,13 @@ function describeBeat(
       run: () => detail.resetBeatAt(selection.index)
     });
   }
+  // On every beat, marked or not. A marked one could be deleted and a plain
+  // one could not, which made "start a bar here" a one-way door: the only way
+  // to be rid of a beat was to promote it first (INV-NOTES-163).
+  actions.push({
+    label: 'Delete this beat',
+    run: () => detail.removeBeatAt(selection.index)
+  });
   return {
     title: beat.isDownbeat ? 'Bar starts here' : 'Beat',
     accent,
