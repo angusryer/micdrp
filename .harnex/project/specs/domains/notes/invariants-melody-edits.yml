@@ -121,3 +121,31 @@ invariants:
       pieces of work. Throwing away both because one was wanted back would
       cost more than it saved — most often the pitches were right and the
       lengths were the experiment.
+
+  - id: INV-NOTES-174
+    description: A note edit moves the note, not the picture
+    severity: critical
+    check: >
+      Moving a note, or making one longer or shorter, changes that note and
+      nothing else on the graph. The tempo, where the grid sits, the tapped
+      beats and the bar lines all stay where they were, and the drawing does
+      not rescale around the edit. The pitch window never closes in below what
+      was heard, so putting a note back down does not resize the picture
+      either. Verified by asserting the grid read from a take is unchanged by
+      an edit to any note in it, that proposed downbeats are unchanged by one,
+      and that the vertical window of an edited take still contains the take
+      as heard.
+
+      The metrical grid was fitted to the melody with the corrections already
+      applied, so every edit re-read the tempo. A new bpm is a new
+      pixels-per-millisecond, and a new offset is a new zero, so the whole
+      drawing shifted and rescaled under a change to one note. Beats a person
+      had tapped moved on screen without being touched. Downbeats were
+      re-proposed from the same edited melody and moved with it.
+
+      Each step was defensible and the whole was a surprise, which is the
+      shape INV-NOTES-161 already names: a person is editing the reading of a
+      recording, and the recording is what the reading is fitted to. The take
+      as heard is the thing that does not move, so it is what the frame is
+      built from. Corrections informing the tempo is a re-reading, and a
+      re-reading is something a person asks for.

@@ -68,6 +68,9 @@ const EMPTY_READINGS: InterpretationDto[] = [];
 /** Likewise for a take with nothing struck in it. */
 const EMPTY_HITS: HitDto[] = [];
 
+/** Stable, so a take with nothing heard is the same take on every render. */
+const EMPTY_PITCHES: number[] = [];
+
 export function useNoteDetail(id: string) {
   // Bumped when the take is re-read, so the whole page recomputes from the
   // new reading rather than from the one it opened with (INV-NOTES-116).
@@ -186,7 +189,15 @@ export function useNoteDetail(id: string) {
   // persisted, so this costs nothing and needs no migration — and it means
   // notes captured before the tempo estimator was fixed are re-read correctly
   // instead of keeping a bpm that was often double what was actually sung.
-  const quantized = useMemo(() => quantize(melody), [melody]);
+  //
+  // Fitted to the take as heard, not to the take with corrections on top
+  // (INV-NOTES-174). A bpm is a pixels-per-millisecond and an offset is a
+  // zero, so re-fitting on every edit rescaled and shifted the whole drawing
+  // under a change to one note: tapped beats slid, and bar lines — held as
+  // step indices — landed at different moments than the beats they were
+  // arranged against. The recording is what the reading is fitted to, and the
+  // recording does not change when the reading is corrected.
+  const quantized = useMemo(() => quantize(heard), [heard]);
   // A tempo set by hand stands in front of the one read from the take. The
   // reading is left as it was — this is a decision about the take rather than
   // a correction to what was heard, and it has to survive a re-read
@@ -246,8 +257,12 @@ export function useNoteDetail(id: string) {
     // Read from the music, never from the taps. A mark somebody made on
     // their own recording must not redraw the thing it was made on
     // (INV-NOTES-161).
-    return proposeDownbeats(melody, grid, bass ? { bass } : {});
-  }, [melody, grid, bass]);
+    //
+    // From the take as heard, for the same reason the grid is: correcting a
+    // note must not move the bar lines out from under the person correcting
+    // it (INV-NOTES-174).
+    return proposeDownbeats(heard, grid, bass ? { bass } : {});
+  }, [heard, grid, bass]);
 
   // Where the downbeats fall. Detection proposes; a person arranges
   // (INT-NOTES-012).
@@ -346,6 +361,23 @@ export function useNoteDetail(id: string) {
     () => chordPitches(chords.slots, floorMidi),
     [chords.slots, floorMidi]
   );
+
+  /**
+   * The highest and lowest the take was heard at, kept in the window.
+   *
+   * The window is fitted to the notes drawn, so correcting the top note
+   * downwards closed it in and moved every other note on the graph. Declaring
+   * what was heard means the window never shrinks below the take, however the
+   * reading of it is edited (INV-NOTES-174). It still opens outwards for an
+   * edit that goes past what was heard, since a note has to stay visible.
+   */
+  const heardPitches = useMemo(() => {
+    if (heard.length === 0) {
+      return EMPTY_PITCHES;
+    }
+    const all = heard.map((n) => n.midi);
+    return [Math.min(...all), Math.max(...all)];
+  }, [heard]);
 
   // What is chosen on the graph. Held here so the upright page and the
   // sideways one are looking at the same thing (INT-NOTES-015).
@@ -509,6 +541,7 @@ export function useNoteDetail(id: string) {
     bars,
     chords,
     chordPitchesShown,
+    heardPitches,
     floorMidi,
     chordOctaves,
     listening,

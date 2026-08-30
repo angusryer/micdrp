@@ -115,15 +115,22 @@ export function NoteShapeSection({
     shownMelody: melody,
     gridForView,
     chordPitchesShown,
+    heardPitches,
     chords,
     bass,
     octaves
   } = detail;
   // The bass shares the melody's pitch window, so its notes are declared to
   // the layout that decides that window (INV-NOTES-079).
+  // What was heard is declared alongside them, so the window never closes in
+  // below the take when a note is corrected downwards (INV-NOTES-174).
   const shownWith = useMemo(
-    () => [...chordPitchesShown, ...(bass ?? []).map((n) => n.midi)],
-    [chordPitchesShown, bass]
+    () => [
+      ...chordPitchesShown,
+      ...heardPitches,
+      ...(bass ?? []).map((n) => n.midi)
+    ],
+    [chordPitchesShown, heardPitches, bass]
   );
   // The cards ride in the graph's own scroll so each one starts where its
   // chord starts (INV-NOTES-061). They take their room out of the height this
