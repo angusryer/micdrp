@@ -128,8 +128,8 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
   {
     group: 'percussion',
     key: 'minLevelDb',
-    title: 'Hit must be louder than',
-    hint: 'How far above silence a struck sound must be. Raise it if breath noise reads as drums.',
+    title: 'Drum sound must be louder than',
+    hint: 'How far above silence a mouth drum — a puh, a tss — must be. Raise it if breath noise is being read as drumming.',
     fallback: -45,
     min: -70,
     max: -20,
@@ -139,8 +139,8 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
   {
     group: 'percussion',
     key: 'maxDurationMs',
-    title: 'Hit must be shorter than',
-    hint: 'Longer than this and it is a note being sung badly rather than something struck.',
+    title: 'Drum sound must be shorter than',
+    hint: 'Longer than this and it was a note sung badly rather than something struck. Drums are over quickly.',
     fallback: 140,
     min: 40,
     max: 400,
@@ -150,8 +150,8 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
   {
     group: 'percussion',
     key: 'maxClarity',
-    title: 'Hit must be less pitched than',
-    hint: 'How periodic a sound may be and still be struck rather than sung. Lower it if hummed notes read as drums.',
+    title: 'Drum sound must be less pitched than',
+    hint: 'How much of a pitch a sound may have and still be a drum rather than a note. Lower it if hummed notes are being read as drumming.',
     fallback: 0.5,
     min: 0.1,
     max: 0.95,
@@ -161,8 +161,8 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
   {
     group: 'percussion',
     key: 'minFlatness',
-    title: 'Hit must be noisier than',
-    hint: 'How flat the spectrum must be — how little tone is in it — whatever the periodicity said.',
+    title: 'Drum sound must be noisier than',
+    hint: 'How little tone a sound must have to be a drum. Asked directly, rather than inferred from how periodic it is.',
     fallback: 0.25,
     min: 0.05,
     max: 0.9,
