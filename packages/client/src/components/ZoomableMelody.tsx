@@ -11,7 +11,7 @@
  * what lets the chord cards sit under the bars they describe rather than in a
  * row of their own that drifts out of step (INV-NOTES-061).
  */
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -24,6 +24,7 @@ import { GestureDetector } from 'react-native-gesture-handler';
 import { MelodyView } from './MelodyView';
 import type { MelodyGrid, MelodyLayout, MelodyNote } from './melodyLayout';
 import { useMelodyZoom } from './useMelodyZoom';
+import { offsetShowing, xForMs } from './melodyScale';
 
 export interface ZoomableMelodyProps {
   notes: readonly MelodyNote[];
@@ -75,6 +76,15 @@ export interface ZoomableMelodyProps {
    */
   onScaleChange?: (state: { isDefault: boolean; reset: () => void }) => void;
   /**
+   * Handed the way to bring a moment of the take into view (INV-NOTES-177).
+   *
+   * The scroll lives in here, so a caller that knows what has been chosen has
+   * no way to reach it. This is the same shape as `onScaleChange`: the thing
+   * that owns the machinery hands out the one verb, rather than the caller
+   * reaching in for the ScrollView.
+   */
+  onViewport?: (view: { bringIntoView: (atMs: number) => void }) => void;
+  /**
    * Drawn beneath the melody and inside the same scroll, so it keeps step
    * with the take at every scale and scroll position.
    */
@@ -113,6 +123,7 @@ export function ZoomableMelody({
   headerHeight = 0,
   children,
   onScaleChange,
+  onViewport,
   footer,
   footerHeight = 0,
   underHeight = 0
@@ -137,6 +148,28 @@ export function ZoomableMelody({
   const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     scrollX.current = e.nativeEvent.contentOffset.x;
   }, []);
+
+  // Only where the drawing is wider than the window: with the whole take in
+  // view there is nothing to bring into it.
+  const bringIntoView = useCallback(
+    (atMs: number) => {
+      const wanted = offsetShowing(
+        xForMs(layout.timeAxis, atMs),
+        width,
+        layout.contentWidth,
+        scrollX.current,
+        width / 4
+      );
+      if (wanted != null) {
+        scroller.current?.scrollTo({ x: wanted, animated: true });
+      }
+    },
+    [layout.timeAxis, layout.contentWidth, width]
+  );
+
+  useEffect(() => {
+    onViewport?.({ bringIntoView });
+  }, [onViewport, bringIntoView]);
 
   return (
     <GestureDetector gesture={pinch}>

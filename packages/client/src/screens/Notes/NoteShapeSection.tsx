@@ -10,7 +10,13 @@
  * the edges of whatever it is given (INV-NOTES-101).
  */
 import { type SharedValue } from 'react-native-reanimated';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { octaveLabel } from 'logic';
@@ -20,6 +26,9 @@ import { RhythmBand, rhythmBandHeight } from '../../components/RhythmBand';
 import type { Chosen, Selection } from '../../components/graphSelection';
 import { MelodyView } from '../../components/MelodyView';
 import { ZoomableMelody } from '../../components/ZoomableMelody';
+import { chosenMomentMs } from './chosenMoment';
+import { PlayRangeOverlay } from '../../components/PlayRangeOverlay';
+import { useListenBack } from './useListenBack';
 import { Icon } from '../../components/Icon';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
@@ -79,6 +88,8 @@ export interface NoteShapeSectionProps {
     /** The same moment, read every frame, for the drawn head (INV-NOTES-136). */
     drawnPositionMs: SharedValue<number>;
     seek: (ms: number) => void;
+    play?: () => void;
+    stop?: () => void;
   } | null;
 }
 
@@ -122,6 +133,36 @@ export function NoteShapeSection({
   } = detail;
   // The bass shares the melody's pitch window, so its notes are declared to
   // the layout that decides that window (INV-NOTES-079).
+  /**
+   * The way to bring a moment into view, handed out by the graph.
+   *
+   * A note chosen by touch is in view by definition; one chosen from the
+   * sheet's list, or left behind by a scroll, is not — and it is about to be
+   * described in a sheet, which is the one moment it is wanted (INV-NOTES-177).
+   */
+  const [viewport, setViewport] = useState<{
+    bringIntoView: (atMs: number) => void;
+  } | null>(null);
+  const chosenAtMs = useMemo(
+    () => chosenMomentMs(detail.selection, melody),
+    [detail.selection, melody]
+  );
+  useEffect(() => {
+    if (chosenAtMs != null) {
+      viewport?.bringIntoView(chosenAtMs);
+    }
+  }, [chosenAtMs, viewport]);
+
+  // A stretch to listen back to, marked when something is retimed
+  // (INV-NOTES-178). Its own hook, since it is the only thing that knows both
+  // the take's transport and what an edit did.
+  const listenBack = useListenBack({
+    transport,
+    durationMs: detail.note?.durationMs ?? 0,
+    retimed: detail.retimed,
+    selection: detail.selection
+  });
+
   // What was heard is declared alongside them, so the window never closes in
   // below the take when a note is corrected downwards (INV-NOTES-174).
   const shownWith = useMemo(
@@ -224,6 +265,7 @@ export function NoteShapeSection({
               ) : null
             }
             onScaleChange={onScaleChange}
+            onViewport={setViewport}
             // The rhythm band is part of the drawing rather than below it:
             // one surface reads every touch on the graph, and a struck sound
             // has to be selectable the same way a note is (INV-NOTES-118).
@@ -273,6 +315,18 @@ export function NoteShapeSection({
                   selection={selection}
                   onSelect={onSelect}
                   flashing={flashing}
+                />
+                <PlayRangeOverlay
+                  range={listenBack.range}
+                  timeAxis={timeAxis}
+                  height={graphHeight}
+                  shade={colors.neutral50}
+                  fromColor={colors.gold}
+                  toColor={colors.primary500}
+                  controlColor={colors.gold}
+                  onMoveEnd={listenBack.moveEnd}
+                  onPlay={listenBack.playRange}
+                  isPlaying={listenBack.isPlaying}
                 />
                 {/* Last, so the moment reads over the notes it is passing
                     rather than behind them (INV-NOTES-100). */}

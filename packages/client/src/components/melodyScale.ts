@@ -177,3 +177,32 @@ export function resolveScale(
     contentWidth: Math.max(request.width, span * pxPerMs + 2 * pad)
   };
 }
+
+/**
+ * How far to scroll so a point on the time axis sits in the middle of the
+ * view, or null where it is already comfortably inside it (INV-NOTES-177).
+ *
+ * Null rather than "the offset it already has", so a caller can tell "no move
+ * needed" from "a move that happens to be zero" and never animates a scroll
+ * to where it already is.
+ *
+ * The comfortable part is the middle of the view rather than all of it: a
+ * thing two pixels inside the edge is technically visible and practically
+ * not, and the thing chosen is usually about to be worked on.
+ */
+export function offsetShowing(
+  xContent: number,
+  viewportWidth: number,
+  contentWidth: number,
+  currentOffset: number,
+  marginPx = 0
+): number | null {
+  const furthest = Math.max(0, contentWidth - viewportWidth);
+  const room = Math.max(0, viewportWidth / 2 - marginPx);
+  const middle = currentOffset + viewportWidth / 2;
+  if (Math.abs(xContent - middle) <= room) {
+    return null;
+  }
+  const wanted = Math.min(furthest, Math.max(0, xContent - viewportWidth / 2));
+  return wanted === currentOffset ? null : wanted;
+}

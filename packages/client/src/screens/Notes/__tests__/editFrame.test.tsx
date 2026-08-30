@@ -98,3 +98,58 @@ describe('the picture under a note edit', () => {
     expect(result.current.heardPitches).toEqual([60, 67]);
   });
 });
+
+/**
+ * INV-NOTES-178 — retiming a note asks for the stretch around it; changing
+ * its pitch does not, because nothing about the timing moved.
+ */
+describe('what an edit asks to hear', () => {
+  it('marks the span of a note made longer', async () => {
+    const { result } = await open();
+    await act(async () => {
+      result.current.setSelection([{ kind: 'melodyNote', index: 2 }]);
+    });
+    await act(async () => {
+      result.current.resizeChosen(1, 'end');
+    });
+    expect(result.current.retimed).toEqual(
+      expect.objectContaining({ fromMs: 1490, toMs: 1900 })
+    );
+  });
+
+  it('marks the span of a note moved in time', async () => {
+    const { result } = await open();
+    await act(async () => {
+      result.current.setSelection([{ kind: 'melodyNote', index: 3 }]);
+    });
+    await act(async () => {
+      result.current.shiftChosen(1);
+    });
+    expect(result.current.retimed).toEqual(
+      expect.objectContaining({ fromMs: 2020, toMs: 2400 })
+    );
+  });
+
+  it('marks nothing for a pitch correction', async () => {
+    const { result } = await open();
+    await act(async () => {
+      result.current.correctNote(0, 5);
+    });
+    expect(result.current.retimed).toBeNull();
+  });
+
+  it('counts a second retiming as a second one', async () => {
+    const { result } = await open();
+    await act(async () => {
+      result.current.setSelection([{ kind: 'melodyNote', index: 2 }]);
+    });
+    await act(async () => {
+      result.current.resizeChosen(1, 'end');
+    });
+    const first = result.current.retimed!.nth;
+    await act(async () => {
+      result.current.resizeChosen(1, 'end');
+    });
+    expect(result.current.retimed!.nth).toBe(first + 1);
+  });
+});

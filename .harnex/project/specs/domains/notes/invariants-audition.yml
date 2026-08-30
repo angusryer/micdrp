@@ -39,15 +39,20 @@ invariants:
     severity: major
     check: >
       Choosing a thing on the graph brings it to the middle of what can be
-      seen, along both axes where both can move, and the middle is measured
-      against the part of the graph the sheet is not covering. Something
-      already in view is not moved. Verified by asserting a choice off the
-      right of the view scrolls it to the middle, that the sheet's height is
-      taken off the bottom before the middle is worked out, and that a choice
-      already comfortably in view leaves the view alone.
+      seen along the time axis. Something already comfortably in view is left
+      alone, and a thing near either end of the take is brought as far as the
+      take allows rather than past it. Verified by asserting a choice off the
+      right of the view scrolls it to the middle, that one already in view
+      moves nothing, and that neither end scrolls beyond the take.
 
-      A note reached by scrolling could be chosen and then hidden by the sheet
-      that describes it, which is the one moment its description is wanted.
+      A note reached by scrolling could be chosen and then read about in a
+      sheet, having scrolled out of sight — at the one moment its description
+      is wanted.
+
+      Only the time axis, because only the time axis scrolls. Pitch is fitted
+      to the height of the drawing, so every note is already within it and
+      there is no vertical view to move; the sheet takes its room from the
+      page below the graph rather than over it.
 
   - id: INV-NOTES-178
     description: Retiming a note marks out the stretch to listen back to

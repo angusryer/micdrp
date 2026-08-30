@@ -9,7 +9,7 @@
  * Nothing here re-touches the audio: the symbolic melody is read from the
  * cache and everything else is derived from it (INV-NOTES-003).
  */
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   collectNoteEdits,
@@ -58,6 +58,7 @@ import { useLayerVoices } from './useLayerVoices';
 import { useNoteLayers } from './useNoteLayers';
 import { useNotationView } from './useNotationView';
 import { useNotePlayback } from './useNotePlayback';
+import { useRetimed } from './useRetimed';
 
 /** How long a thing flashes when its row is pressed, in ms. */
 const FLASH_MS = 700;
@@ -382,6 +383,10 @@ export function useNoteDetail(id: string) {
   // What is chosen on the graph. Held here so the upright page and the
   // sideways one are looking at the same thing (INT-NOTES-015).
   const [selection, setSelection] = useState<Chosen>([]);
+  // The span of the last edit that changed when something happens, and the
+  // way to say one did (INV-NOTES-178).
+  const { retimed, markRetimed } = useRetimed();
+
   // Made to flash from its row in the sheet, so several things that read the
   // same in a list can be told apart on the graph (INV-NOTES-094).
   const [flashing, setFlashing] = useState<Selection | null>(null);
@@ -425,6 +430,7 @@ export function useNoteDetail(id: string) {
       if (chosen.length === 0 || !(beatMs > 0) || steps === 0) {
         return;
       }
+      markRetimed(chosen, melody);
       interpretation.updateNotes(
         collectNoteEdits(
           heard,
@@ -442,6 +448,7 @@ export function useNoteDetail(id: string) {
       melody,
       heard,
       interpretation,
+      markRetimed,
       settle
     ]
   );
@@ -457,6 +464,7 @@ export function useNoteDetail(id: string) {
       if (chosen.length === 0 || !(beatMs > 0) || steps === 0) {
         return;
       }
+      markRetimed(chosen, melody);
       interpretation.updateNotes(
         collectNoteEdits(
           heard,
@@ -471,6 +479,7 @@ export function useNoteDetail(id: string) {
       melody,
       heard,
       interpretation,
+      markRetimed,
       settle
     ]
   );
@@ -523,6 +532,56 @@ export function useNoteDetail(id: string) {
     chords,
     note?.durationMs ?? 0,
     hits
+  );
+
+  /**
+   * Choosing a note sounds it (INV-NOTES-175).
+   *
+   * "Hear it" sat in the sheet as a control, so checking a note cost two
+   * presses — one to choose it and one to hear it — when the pitch is the
+   * reason it was touched. Only for one note: a set has no single pitch to
+   * name, and sounding all of them answers a question nobody asked.
+   */
+  const sounded = useRef<number | null>(null);
+  useEffect(() => {
+    const one = selection.length === 1 ? selection[0] : null;
+    const index = one?.kind === 'melodyNote' ? one.index : null;
+    if (index == null) {
+      sounded.current = null;
+      return;
+    }
+    // Held, so the note does not sound again every time anything else on the
+    // page recomputes.
+    if (sounded.current === index) {
+      return;
+    }
+    sounded.current = index;
+    const chosen = melody[index];
+    if (chosen) {
+      playback.playNote(chosen.midi);
+    }
+  }, [selection, melody, playback]);
+
+  /**
+   * Nudging a pitch sounds the pitch it becomes (INV-NOTES-176).
+   *
+   * Through the drag's own audition rather than the tap's, so it obeys the
+   * same switch and sits at the same level: it is the same edit, and only the
+   * control making it differs.
+   */
+  const nudgeChosenAloud = useCallback(
+    (semitones: number) => {
+      nudgeChosen(semitones);
+      const one = selection.length === 1 ? selection[0] : null;
+      if (one?.kind !== 'melodyNote') {
+        return;
+      }
+      const moved = melody[one.index];
+      if (moved) {
+        playback.hearDragged(moved.midi + semitones);
+      }
+    },
+    [nudgeChosen, selection, melody, playback]
   );
 
   return {
@@ -623,7 +682,9 @@ export function useNoteDetail(id: string) {
     reread,
     resizeChosen,
     shiftChosen,
-    nudgeChosen,
+    nudgeChosen: nudgeChosenAloud,
+    /** The span of the last edit that changed when something happens. */
+    retimed,
     resetLengths,
     hasResized,
     isCorrected,
