@@ -57,6 +57,7 @@
     }
   },
   "devDependencies": {
+    "@expo/fingerprint": "^0.20.11",
     "@hot-updater/bare": "0.36.1",
     "@hot-updater/cloudflare": "0.36.1",
     "hot-updater": "0.36.1"
