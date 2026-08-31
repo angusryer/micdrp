@@ -182,7 +182,56 @@ async function handleCheck(request: Request, env: Env): Promise<Response> {
 
   const origin = new URL(request.url).origin;
   const bundles = await channelBundles(env, client.channel, origin);
-  return json(toUpdateInfo(decideUpdate(bundles, client)));
+  const answer = toUpdateInfo(decideUpdate(bundles, client));
+  await remember(env, client, answer);
+  return json(answer);
+}
+
+/** How many checks are kept. Enough to see a pattern, not a log. */
+const CHECKS_KEPT = 200;
+
+/**
+ * Write down what was asked and what was said (INV-UPD-026).
+ *
+ * Three faults in this domain were diagnosed by reasoning rather than by
+ * evidence, and the third was shipped without proof because there was no way
+ * to see whether a device was asking at all.
+ *
+ * Never fails the check. A server that refuses to answer because it could not
+ * write a diagnostic has turned an aid into an outage.
+ */
+async function remember(
+  env: Env,
+  client: UpdateClientDto,
+  answer: UpdateInfo | null
+): Promise<void> {
+  try {
+    await env.DB.prepare(
+      `INSERT INTO checks
+         (at, channel, app_version, build_number, bundle_id, decision, offered)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`
+    )
+      .bind(
+        new Date().toISOString(),
+        client.channel,
+        client.appVersion,
+        client.buildNumber,
+        client.bundleId,
+        answer?.status ?? 'NOTHING',
+        answer?.id ?? null
+      )
+      .run();
+    // Bounded here rather than on a schedule: one statement, and a table that
+    // is only ever written by this one place cannot drift between them.
+    await env.DB.prepare(
+      `DELETE FROM checks
+        WHERE id <= (SELECT MAX(id) - ?1 FROM checks)`
+    )
+      .bind(CHECKS_KEPT)
+      .run();
+  } catch {
+    // Nothing to do and nobody to tell: the answer above is what matters.
+  }
 }
 
 export default {

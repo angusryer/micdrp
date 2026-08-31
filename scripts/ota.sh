@@ -204,11 +204,26 @@ cmd_list() {
        ORDER BY id DESC"
 }
 
+# What the server has actually been asked, and what it said (INV-UPD-026).
+#
+# Three faults here were diagnosed by reasoning rather than by evidence.
+# "It never asked" and "it asked and was told no" have opposite causes and
+# looked identical from outside; this is what tells them apart.
+cmd_checks() {
+  local many="${1:-20}"
+  d1 "SELECT at, build_number AS build, bundle_id AS running,
+             decision, offered
+        FROM checks
+       ORDER BY id DESC
+       LIMIT ${many}"
+}
+
 case "${1:-}" in
   publish) shift; cmd_publish "$@" ;;
+  checks)  shift; cmd_checks "$@" ;;
   disable) shift; cmd_disable "$@" ;;
   list)    shift; cmd_list "$@" ;;
   whoami)  shift; cmd_whoami ;;
   deploy)  shift; cmd_deploy ;;
-  *) die "usage: yarn ota {publish <channel>|disable <bundleId>|list [channel]|whoami|deploy}" ;;
+  *) die "usage: yarn ota {publish <channel>|disable <bundleId>|list [channel]|checks [n]|whoami|deploy}" ;;
 esac

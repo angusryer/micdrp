@@ -67,3 +67,24 @@ invariants:
       Nothing about the diagnosis needed to be certain for this to be right.
       A notice that has to win a presentation contest to be seen is a notice
       that can be lost; one drawn in the tree cannot be.
+
+  - id: INV-UPD-026
+    description: The server remembers what it was asked and what it answered
+    severity: major
+    check: >
+      Every check is recorded with the moment, the build and bundle that asked,
+      and the answer given, and the record is readable from the command line.
+      The record is bounded, so it cannot grow without limit. Failing to record
+      never fails the check. Verified by asserting a check leaves a row naming
+      its answer, that an install offered nothing is recorded too, and that a
+      recording failure still returns the answer.
+
+      Three faults in this domain were diagnosed by reasoning rather than by
+      evidence, and the third was shipped without proof because there was no
+      way to see whether a device was asking at all. Tailing the server needs
+      somebody watching at the moment the app happens to check, which is not a
+      diagnosis, it is a coincidence.
+
+      An install offered nothing is the interesting row, not the boring one: it
+      is the difference between "it never asked" and "it asked and was told
+      no", and those have opposite causes.
