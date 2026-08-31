@@ -53,12 +53,20 @@ describe('the knobs', () => {
     expect(order[order.length - 2]).toBe('aspirationRiseDb');
   });
 
+  it('puts the smoothing window first, because it gates the rest', () => {
+    // Smoothing runs before segmentation, so a dropout shorter than the
+    // window is filled in before the gap rule is ever consulted. Measured: a
+    // 60ms dropout survives as 20ms at the default window, which no setting
+    // of maxGapMs can then split (logic/knobsChangeReading).
+    expect(READING_KNOBS[0].key).toBe('windowSize');
+  });
+
   it('puts the level knobs high, because a tongued repeat has no pitch clue', () => {
     // On a repeated note the pitch trace runs straight through the tap, so
     // the dip in level is the only evidence there are two notes at all.
     const order = READING_KNOBS.map((k) => k.key);
-    expect(order.indexOf('articulationDropDb')).toBeLessThan(3);
-    expect(order.indexOf('maxGapMs')).toBeLessThan(3);
+    expect(order.indexOf('articulationDropDb')).toBeLessThan(4);
+    expect(order.indexOf('maxGapMs')).toBeLessThan(4);
   });
 
   it('ranks every knob it declares', () => {

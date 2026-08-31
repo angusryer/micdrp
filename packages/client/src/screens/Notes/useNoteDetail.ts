@@ -507,7 +507,13 @@ export function useNoteDetail(id: string) {
    * nothing, which is what the warning says (INV-NOTES-116).
    */
   const reread = useCallback(async () => {
-    const uri = note?.audioPath ? await resolveAudio() : null;
+    // Whichever copy exists, by the same rule everything else that reads or
+    // sounds the take already uses (INV-NOTES-183). This used to ask for the
+    // uploaded path alone, while resolveAudio immediately above prefers the
+    // one on the device — so every take not yet uploaded refused to be read
+    // again, and said nothing about it.
+    const hasAudio = note?.audioPath != null || note?.localAudioUri != null;
+    const uri = hasAudio ? await resolveAudio() : null;
     const fresh = await rereadTake(uri);
     if (fresh == null || note == null) {
       return false;

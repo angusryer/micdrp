@@ -53,6 +53,9 @@ export function NoteDetailsPage({
   const { note, melody } = detail;
   // Held here so the button can say it is working while the take is re-read.
   const [isTuning, setIsTuning] = useState(false);
+  // What went wrong with the last reading, or null. Cleared when another is
+  // started, so it always describes the most recent attempt (INV-NOTES-184).
+  const [problem, setProblem] = useState<string | null>(null);
 
   if (!note) {
     return null;
@@ -97,9 +100,19 @@ export function NoteDetailsPage({
           <TuningPanel
             onReread={() => {
               setIsTuning(true);
-              void detail.reread().finally(() => setIsTuning(false));
+              setProblem(null);
+              void detail
+                .reread()
+                .then((read) => {
+                  setProblem(
+                    read ? null : 'Could not read this take — no audio to read.'
+                  );
+                })
+                .catch(() => setProblem('Could not read this take.'))
+                .finally(() => setIsTuning(false));
             }}
             isReading={isTuning}
+            problem={problem}
           />
 
           <NoteStats

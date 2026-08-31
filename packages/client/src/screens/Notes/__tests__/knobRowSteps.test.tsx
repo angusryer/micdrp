@@ -59,3 +59,31 @@ describe('turning a threshold', () => {
     expect(knobValue(shown)).toBe(HOLD.max);
   });
 });
+
+/**
+ * INV-NOTES-184 — a reading that did not happen says so.
+ *
+ * A failure was indistinguishable from a reading that changed nothing: the
+ * control said it was working, stopped, and the graph stayed as it was.
+ */
+describe('when a reading could not happen', () => {
+  it('says so beside the control it was asked for at', async () => {
+    await waitFor(() =>
+      render(
+        <ThemeProvider>
+          <TuningPanel
+            onReread={jest.fn()}
+            isReading={false}
+            problem="Could not read this take — no audio to read."
+          />
+        </ThemeProvider>
+      )
+    );
+    expect(screen.getByTestId('tuning-problem')).toBeTruthy();
+  });
+
+  it('says nothing when the reading worked', async () => {
+    await open();
+    expect(screen.queryByTestId('tuning-problem')).toBeNull();
+  });
+});

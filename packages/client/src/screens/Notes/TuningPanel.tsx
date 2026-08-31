@@ -32,11 +32,21 @@ export interface TuningPanelProps {
   /** Read the take again with whatever is set now. */
   onReread: () => void;
   isReading?: boolean;
+  /**
+   * Said where the last reading could not happen (INV-NOTES-184).
+   *
+   * A failure used to be indistinguishable from a reading that changed
+   * nothing — the control said it was working, stopped, and the graph stayed
+   * as it was. Somebody tuning presses, sees nothing, and concludes the knob
+   * does nothing, which is the wrong conclusion about the wrong thing.
+   */
+  problem?: string | null;
 }
 
 export function TuningPanel({
   onReread,
-  isReading = false
+  isReading = false,
+  problem = null
 }: TuningPanelProps): React.JSX.Element {
   const { colors } = useTheme();
   // One counter rather than a value per knob: what is stored is the truth and
@@ -70,6 +80,13 @@ export function TuningPanel({
           Back to defaults
         </Text>
       </View>
+      {/* Beside the control it belongs to, not in a banner somewhere else:
+          the reading was asked for here. */}
+      {problem != null ? (
+        <Text testID="tuning-problem" style={[styles.problem, { color: colors.gold }]}>
+          {problem}
+        </Text>
+      ) : null}
       {READING_KNOBS.map((knob) => (
         <KnobRow
           key={`${knob.group}.${knob.key}`}
@@ -96,6 +113,7 @@ export default TuningPanel;
 
 const styles = StyleSheet.create({
   wrap: { gap: 14 },
+  problem: { fontSize: 12 },
   group: { gap: 2 },
   groupTitle: { fontSize: 12, fontWeight: '600', paddingBottom: 2 },
   // Fixed width so a column of numbers does not jitter as they change.

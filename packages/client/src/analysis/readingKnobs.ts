@@ -44,7 +44,7 @@ const SEGMENT_WORDS: Record<string, { title: string; hint: string }> = {
   },
   maxGapMs: {
     title: 'Note continues through a dropout of up to',
-    hint: 'How long the detector may lose the pitch without ending the note. A tongue tap interrupts the air briefly: raise it if one note breaks in two, lower it if tongued repeats merge.'
+    hint: 'How long the detector may lose the pitch without ending the note. Acts only on what smoothing leaves: a dropout shorter than the smoothing window is filled in before this is consulted, so lower the smoothing window first if tongued repeats will not come apart.'
   },
   articulationDropDb: {
     title: 'Note ends when the level drops by',

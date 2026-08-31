@@ -149,3 +149,35 @@ invariants:
       but not both — a step small enough to settle with takes thirty presses
       to cross the range, which is not a search, and a step big enough to
       search with cannot be settled on.
+
+  - id: INV-NOTES-183
+    description: A take is read again from whichever copy of it exists
+    severity: critical
+    check: >
+      Reading a take again uses the copy on the device where there is one and
+      the uploaded copy otherwise, by the same rule everything else that
+      sounds or reads the take already uses. A take that has not been uploaded
+      is read again like any other. Verified by asserting a note with only a
+      local copy is re-read from it, and that one with only an uploaded copy
+      is re-read from that.
+
+      It was gated on the uploaded path alone while the function immediately
+      below it preferred the local copy — the guard and the thing it guarded
+      disagreed. Since capture became local first (INV-NOTES-139), a take is
+      local-only for as long as it takes to reach the server, and every take
+      in that state silently refused to be re-read.
+
+  - id: INV-NOTES-184
+    description: A reading that did not happen says so
+    severity: major
+    check: >
+      Where a take cannot be read again — no copy of it, or a file the engine
+      will not open — the singer is told, and told it in the place the reading
+      was asked for. Verified by asserting a failed re-read leaves a message
+      beside the control, and that a successful one leaves none.
+
+      A failure was indistinguishable from a reading that changed nothing:
+      the control said it was working, stopped saying it, and the graph stayed
+      as it was. Somebody tuning turns a knob, presses, sees nothing, and
+      concludes the knob does nothing — which is the wrong conclusion about
+      the wrong thing, and there is no way to tell from the outside.

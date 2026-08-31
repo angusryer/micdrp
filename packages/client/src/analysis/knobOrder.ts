@@ -29,6 +29,13 @@
 import { DECLARED_KNOBS, type ReadingKnob } from './readingKnobs';
 
 const BY_IMPACT: readonly string[] = [
+  // First, because it decides what the rest are even shown. The median window
+  // fills short dropouts before the segmenter sees them, so a tongue tap
+  // briefer than the window has already been smoothed away by the time
+  // maxGapMs is consulted — measured: a 60ms dropout survives as 20ms at the
+  // default window of five frames, which no setting of maxGapMs can then
+  // split. Lower this first if tongued repeats will not come apart.
+  'smooth.windowSize',
   // The scoop into a new pitch: how long that pitch must hold before it is a
   // note of its own.
   'segment.pitchHoldMs',
@@ -52,8 +59,8 @@ const BY_IMPACT: readonly string[] = [
   'percussion.minLevelDb',
   'percussion.maxDurationMs',
   'percussion.minFlatness',
-  // The trace everything is read from, and the floor under it.
-  'smooth.windowSize',
+  // The floor under the trace. The window itself is first in this list, not
+  // here: it decides what the segmenter is ever shown.
   'smooth.minClarity',
   // A tongue stops the air and releases it rather than swelling into the
   // note, so the rise that follows a breath push almost never fires.
