@@ -205,12 +205,19 @@ invariants:
     description: A page under a sheet can still be scrolled clear of it
     severity: major
     check: >
-      While the selection sheet is up, the page beneath keeps room at its foot
-      equal to what the sheet is covering, so its last row can be scrolled
-      into view. The sheet reports that height from where it actually settled
-      rather than it being assumed, and gives the room back when it goes.
-      Verified by asserting the reported cover is the screen below the sheet's
-      position, that it is never negative, and that dismissal returns zero.
+      While ANY sheet is up, the page beneath keeps room at its foot equal to
+      what the sheet is covering, so its last row can be scrolled into view.
+      Every sheet reports that height from where it actually settled rather
+      than it being assumed, and gives the room back when it goes. Verified by
+      asserting the reported cover is the screen below the sheet's position,
+      that it is never negative, that dismissal returns zero, and that a sheet
+      dragged to a new height reports the new one.
+
+      Any sheet, not one of them. This was fixed for the selection sheet and
+      then reappeared with the next sheet that covered a page, because the
+      reporting was written into that sheet rather than into what a sheet is.
+      One sheet with the behaviour built in is what stops it being fixed a
+      third time (INV-NOTES-181).
 
       The sheet is undimmed and non-modal so the page stays live behind it
       (INV-NOTES-078). That promise is only half kept if the page cannot be

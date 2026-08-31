@@ -109,3 +109,43 @@ invariants:
       turned have to stay under the thumb while the graph is watched, and a
       sheet that fits itself to its content would be nearly the whole screen
       here, which is what it already was.
+
+  - id: INV-NOTES-181
+    description: There is one sheet, and its behaviours are chosen not rebuilt
+    severity: major
+    check: >
+      Every bottom sheet in the app is the same component, told how it should
+      behave: how far up it opens and what it may be dragged to, whether what
+      is behind it is dimmed, and whether it scrolls its own contents. What is
+      common to all of them — presenting from a boolean, the grabber, the
+      corner, reporting what it covers, giving that room back when it goes —
+      is built in and cannot be forgotten. Verified by asserting each sheet
+      reports its cover, and that a sheet asked for a taller stop offers one.
+
+      There were four, each written out again, and they had drifted: one
+      reported what it covered and three did not, two dimmed what was behind
+      and two did not, and the differences were accidents of when each was
+      written rather than decisions. The scroll-clear fault was found and
+      fixed once, then shipped again with the next sheet.
+
+      Told how to behave rather than given a variant name. "The tall one" and
+      "the one over the graph" are descriptions of today's four; a sheet that
+      takes its heights and its dimming can be the fifth without a new name.
+
+  - id: INV-NOTES-182
+    description: A threshold moves in useful amounts and in small ones
+    severity: major
+    check: >
+      Every adjustable number offers a coarse step and a fine one. The coarse
+      step crosses its whole range in about ten presses; the fine step is the
+      smallest change that number can meaningfully take. Both are derived from
+      the range and the fine step already declared, so a new knob needs no
+      extra declaration. Verified by asserting the coarse step is a whole
+      multiple of the fine one, that about ten coarse presses cross the range,
+      and that neither can leave the range.
+
+      Tuning is a loop and the loop has two halves: finding roughly where the
+      answer is, then settling exactly on it. One step size can serve either
+      but not both — a step small enough to settle with takes thirty presses
+      to cross the range, which is not a search, and a step big enough to
+      search with cannot be settled on.

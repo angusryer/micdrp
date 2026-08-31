@@ -19,15 +19,10 @@
  * thing being looked at. It opens at two fifths, drags up to most of the
  * screen, and leaves the graph undimmed behind it.
  */
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions
-} from 'react-native';
-import { TrueSheet } from '@lodev09/react-native-true-sheet';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+
+import { Sheet } from '../../components/Sheet';
 
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
@@ -43,52 +38,40 @@ export interface NoteDetailsPageProps {
   detail: ReturnType<typeof useNoteDetail>;
   isOpen: boolean;
   onClose: () => void;
+  /** Told what it is covering, so the page beneath can scroll clear of it. */
+  onCover?: (px: number) => void;
 }
 
 export function NoteDetailsPage({
   detail,
   isOpen,
-  onClose
+  onClose,
+  onCover
 }: NoteDetailsPageProps): React.JSX.Element | null {
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const { height } = useWindowDimensions();
   const { note, melody } = detail;
   // Held here so the button can say it is working while the take is re-read.
   const [isTuning, setIsTuning] = useState(false);
-  const sheet = useRef<TrueSheet>(null);
-
-  // Driven from the caller's boolean, as every other sheet here is: they all
-  // already hold "is it open", and a second way of saying it is a second
-  // thing to keep in step.
-  useEffect(() => {
-    if (isOpen) {
-      void sheet.current?.present();
-    } else {
-      void sheet.current?.dismiss();
-    }
-  }, [isOpen]);
 
   if (!note) {
     return null;
   }
 
   return (
-    <TrueSheet
-      ref={sheet}
+    <Sheet
       name="note-analysis"
+      isOpen={isOpen}
+      onClose={onClose}
       // Two fifths to open at, most of the screen to drag to. Not 'auto':
       // what is in here is nearly a screenful, so fitting the content would
       // put it back where it started.
       detents={[0.4, 0.9]}
       // The graph behind it is the thing being watched while these are
       // turned. Dimming it would hide the very change being looked for.
-      dimmed={false}
-      grabber
-      grabberOptions={{ topMargin: 12 }}
-      cornerRadius={16}
-      backgroundColor={colors.neutral300}
-      onDidDismiss={onClose}
+      isDimmed={false}
+      onCover={onCover}
+      background={colors.neutral300}
     >
       <View style={styles.safe}>
         <View style={styles.head}>
@@ -104,11 +87,7 @@ export function NoteDetailsPage({
           </Text>
         </View>
 
-        <ScrollView
-          style={{ maxHeight: Math.round(height * 0.86) }}
-          contentContainerStyle={styles.content}
-          contentInsetAdjustmentBehavior="never"
-        >
+        <View style={styles.content}>
           <Text style={[styles.section, { color: colors.gray500 }]}>
             {t('notes.analysis')}
           </Text>
@@ -148,9 +127,9 @@ export function NoteDetailsPage({
           <RereadCard isStale={detail.isStale} onReread={detail.reread} />
 
           <ExportSheet midiUri={detail.midiUri} title={note.title} />
-        </ScrollView>
+        </View>
       </View>
-    </TrueSheet>
+    </Sheet>
   );
 }
 

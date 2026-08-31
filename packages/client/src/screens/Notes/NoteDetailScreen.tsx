@@ -71,7 +71,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   // Held here because the control that opens it lives on the graph's edge and
   // the sheet itself lives in the transport (INV-NOTES-142).
   const [showOptions, setShowOptions] = useState(false);
-  // What the selection sheet is covering, so the page can be scrolled clear
+  // What whichever sheet is up is covering, so the page can be scrolled clear
   // of it. It sits over a live page rather than a dimmed one, and a page
   // whose bottom row cannot be reached is live in name only (INV-NOTES-109).
   const [sheetCover, setSheetCover] = useState(0);
@@ -213,6 +213,10 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
         detail={detail}
         isOpen={showDetails}
         onClose={() => setShowDetails(false)}
+        // The same room every other sheet asks for. This one covers the page
+        // too, and did not say so — which is the fault INV-NOTES-109 was
+        // written for, reappearing with the next sheet (INV-NOTES-181).
+        onCover={setSheetCover}
       />
     </SafeAreaView>
   );

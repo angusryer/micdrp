@@ -15,11 +15,10 @@
  * still live, and a page that cannot reach its own bottom row is live in name
  * only (INV-NOTES-109).
  */
-import React, { useEffect, useRef } from 'react';
-import { Dimensions } from 'react-native';
-import { TrueSheet } from '@lodev09/react-native-true-sheet';
+import React from 'react';
 
 import type { Chosen } from '../../components/graphSelection';
+import { Sheet } from '../../components/Sheet';
 import { useTheme } from '../../theme';
 import { SelectionBody } from './SelectionBody';
 import type { useNoteDetail } from './useNoteDetail';
@@ -43,49 +42,26 @@ export function SelectionSheet({
   onCover
 }: SelectionSheetProps): React.JSX.Element {
   const { colors } = useTheme();
-  const sheet = useRef<TrueSheet>(null);
-
-  useEffect(() => {
-    if (selection.length > 0) {
-      void sheet.current?.present();
-    } else {
-      void sheet.current?.dismiss();
-    }
-  }, [selection]);
 
   return (
-    <TrueSheet
-      ref={sheet}
+    <Sheet
       name="selection"
-      detents={['auto']}
-      grabber
-      grabberOptions={{ topMargin: 12 }}
-      cornerRadius={16}
-      backgroundColor={colors.neutral50}
-      // The graph stays live behind it, which is the whole point
-      // (INV-NOTES-078).
-      dimmed={false}
+      isOpen={selection.length > 0}
       // Dragged away means put down, so the graph and the sheet never
       // disagree about whether anything is chosen.
-      onDidDismiss={() => {
-        onCover?.(0);
-        onSelect([]);
-      }}
-      // Its own height is the screen below where it settled. Measured rather
-      // than assumed: the sheet sizes itself to its content, which changes
-      // with what is chosen.
-      onDidPresent={(e) =>
-        onCover?.(
-          Math.max(0, Dimensions.get('window').height - e.nativeEvent.position)
-        )
-      }
+      onClose={() => onSelect([])}
+      // The graph stays live behind it, which is the whole point
+      // (INV-NOTES-078).
+      isDimmed={false}
+      onCover={onCover}
+      background={colors.neutral50}
     >
       <SelectionBody
         detail={detail}
         selection={selection}
         onSelect={onSelect}
       />
-    </TrueSheet>
+    </Sheet>
   );
 }
 

@@ -26,6 +26,7 @@ import {
   setKnobValue
 } from '../../analysis/readingValues';
 import { KnobRow } from './KnobRow';
+import { coarseStep, fineStep, steppedTo } from '../../analysis/knobSteps';
 
 export interface TuningPanelProps {
   /** Read the take again with whatever is set now. */
@@ -76,8 +77,9 @@ export function TuningPanel({
           value={knobValue(knob)}
           isOpen={open === knob.key}
           onExplain={() => setOpen(open === knob.key ? null : knob.key)}
-          onStep={(by) => {
-            setKnobValue(knob, knobValue(knob) + knob.step * by);
+          onStep={(by, size) => {
+            const amount = size === 'coarse' ? coarseStep(knob) : fineStep(knob);
+            setKnobValue(knob, steppedTo(knob, knobValue(knob), amount * by));
             setTurned((n) => n + 1);
           }}
           onReset={() => {

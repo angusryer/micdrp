@@ -9,11 +9,11 @@
  * The same glyph is drawn here as on the card — not a picture of it — so the
  * guide cannot come to describe an icon the card no longer has.
  */
-import React, { useEffect, useRef } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { TrueSheet } from '@lodev09/react-native-true-sheet';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { Icon, type IconName } from '../../components/Icon';
+import { Sheet } from '../../components/Sheet';
 import { useTheme } from '../../theme';
 import type { TrackName } from './playbackTracks';
 
@@ -66,15 +66,6 @@ export function GlyphGuideSheet({
   onClose
 }: GlyphGuideSheetProps): React.JSX.Element {
   const { colors } = useTheme();
-  const sheet = useRef<TrueSheet>(null);
-
-  useEffect(() => {
-    if (track) {
-      void sheet.current?.present();
-    } else {
-      void sheet.current?.dismiss();
-    }
-  }, [track]);
 
   // A track with nothing of its own gets the shared glyphs and no more: most
   // have none, and listing an empty entry per track is the drift the registry
@@ -83,17 +74,13 @@ export function GlyphGuideSheet({
   const slider = track ? (SLIDERS[track] ?? null) : null;
 
   return (
-    <TrueSheet
-      ref={sheet}
+    <Sheet
       name="glyph-guide"
-      detents={['auto']}
-      grabber
-      grabberOptions={{ topMargin: 12 }}
-      cornerRadius={16}
-      backgroundColor={colors.neutral50}
-      onDidDismiss={onClose}
+      isOpen={track != null}
+      onClose={onClose}
+      background={colors.neutral50}
     >
-      <ScrollView contentContainerStyle={styles.body}>
+      <View style={styles.body}>
         <Text style={[styles.title, { color: colors.typography }]}>
           What these do
         </Text>
@@ -121,8 +108,8 @@ export function GlyphGuideSheet({
             </View>
           </View>
         ))}
-      </ScrollView>
-    </TrueSheet>
+      </View>
+    </Sheet>
   );
 }
 

@@ -8,6 +8,12 @@
  * Stepped rather than dragged. Tuning a detector is a search for a boundary,
  * and a boundary is found by taking one step and listening, not by sliding
  * past it.
+ *
+ * Two step sizes, because the search has two halves (INV-NOTES-182). The
+ * double marks cross the range in about ten presses, which is how you find
+ * roughly where the answer is; the single marks move by the smallest amount
+ * the knob takes, which is how you settle on it. Both land on the same grid,
+ * so a value found with one can be adjusted with the other.
  */
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -27,7 +33,8 @@ export interface KnobRowProps {
   value: number;
   isOpen: boolean;
   onExplain: () => void;
-  onStep: (by: 1 | -1) => void;
+  /** Which way, and whether in the big amount or the small one. */
+  onStep: (by: 1 | -1, size: 'coarse' | 'fine') => void;
   /** Put this one back where it started, without touching the others. */
   onReset: () => void;
 }
@@ -57,9 +64,21 @@ export function KnobRow({
         </Pressable>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={`Lower ${knob.title} a lot`}
+          testID={`knob-${knob.key}-down-coarse`}
+          onPress={() => onStep(-1, 'coarse')}
+          hitSlop={8}
+          style={styles.step}
+        >
+          <Text style={[styles.stepText, { color: colors.primary500 }]}>
+            −−
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
           accessibilityLabel={`Lower ${knob.title}`}
           testID={`knob-${knob.key}-down`}
-          onPress={() => onStep(-1)}
+          onPress={() => onStep(-1, 'fine')}
           hitSlop={8}
           style={styles.step}
         >
@@ -72,11 +91,23 @@ export function KnobRow({
           accessibilityRole="button"
           accessibilityLabel={`Raise ${knob.title}`}
           testID={`knob-${knob.key}-up`}
-          onPress={() => onStep(1)}
+          onPress={() => onStep(1, 'fine')}
           hitSlop={8}
           style={styles.step}
         >
           <Text style={[styles.stepText, { color: colors.primary500 }]}>+</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Raise ${knob.title} a lot`}
+          testID={`knob-${knob.key}-up-coarse`}
+          onPress={() => onStep(1, 'coarse')}
+          hitSlop={8}
+          style={styles.step}
+        >
+          <Text style={[styles.stepText, { color: colors.primary500 }]}>
+            ++
+          </Text>
         </Pressable>
         {/* One knob back, rather than all of them. Tuning is a search, and a
             search needs to undo the last step without losing the others. */}
@@ -107,16 +138,16 @@ export function KnobRow({
 export default KnobRow;
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   name: { flex: 1 },
   label: { fontSize: 14 },
-  step: { paddingHorizontal: 6, paddingVertical: 4 },
+  step: { paddingHorizontal: 4, paddingVertical: 4 },
   stepText: { fontSize: 20, fontWeight: '700' },
   // Fixed width so a column of numbers does not jitter as they change.
   value: {
     fontSize: 14,
     fontVariant: ['tabular-nums'],
-    minWidth: 62,
+    minWidth: 58,
     textAlign: 'right'
   },
   hint: { fontSize: 12, paddingBottom: 6 }
