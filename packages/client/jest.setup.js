@@ -104,6 +104,7 @@ jest.mock('react-native-mmkv', () => {
 // TRUE_SHEET_POSITION is the Y the mock claims to have settled at; a test that
 // cares about the room left over sets it.
 globalThis.TRUE_SHEET_POSITION = 500;
+globalThis.TRUE_SHEET_PROPS = {};
 jest.mock('@lodev09/react-native-true-sheet', () => {
   const React = require('react');
   class TrueSheet extends React.Component {
@@ -122,6 +123,10 @@ jest.mock('@lodev09/react-native-true-sheet', () => {
       return Promise.resolve();
     }
     render() {
+      // Its props, kept by name, so a test can read what the sheet was asked
+      // to be — how far up it opens, whether it dims — which is not
+      // observable from the children it renders.
+      globalThis.TRUE_SHEET_PROPS[this.props.name] = this.props;
       return React.createElement(React.Fragment, null, this.props.children);
     }
   }

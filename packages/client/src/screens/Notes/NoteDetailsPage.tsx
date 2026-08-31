@@ -12,9 +12,22 @@
  * re-measures it — two readings can disagree while an edit is still being
  * made. Sharing the open note means there is one reading, and it is the one
  * on the graph behind this.
+ *
+ * A sheet that opens part way, not a full-screen page (INV-NOTES-180). The
+ * knobs in here are turned in a loop — turn one, read the take again, look at
+ * what changed — and that loop cannot be run through something covering the
+ * thing being looked at. It opens at two fifths, drags up to most of the
+ * screen, and leaves the graph undimmed behind it.
  */
-import React, { useState } from 'react';
-import { Modal, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions
+} from 'react-native';
+import { TrueSheet } from '@lodev09/react-native-true-sheet';
 
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
@@ -39,19 +52,45 @@ export function NoteDetailsPage({
 }: NoteDetailsPageProps): React.JSX.Element | null {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const { height } = useWindowDimensions();
   const { note, melody } = detail;
   // Held here so the button can say it is working while the take is re-read.
   const [isTuning, setIsTuning] = useState(false);
+  const sheet = useRef<TrueSheet>(null);
+
+  // Driven from the caller's boolean, as every other sheet here is: they all
+  // already hold "is it open", and a second way of saying it is a second
+  // thing to keep in step.
+  useEffect(() => {
+    if (isOpen) {
+      void sheet.current?.present();
+    } else {
+      void sheet.current?.dismiss();
+    }
+  }, [isOpen]);
 
   if (!note) {
     return null;
   }
 
   return (
-    <Modal animationType="slide" visible={isOpen} onRequestClose={onClose}>
-      <SafeAreaView
-        style={[styles.safe, { backgroundColor: colors.neutral300 }]}
-      >
+    <TrueSheet
+      ref={sheet}
+      name="note-analysis"
+      // Two fifths to open at, most of the screen to drag to. Not 'auto':
+      // what is in here is nearly a screenful, so fitting the content would
+      // put it back where it started.
+      detents={[0.4, 0.9]}
+      // The graph behind it is the thing being watched while these are
+      // turned. Dimming it would hide the very change being looked for.
+      dimmed={false}
+      grabber
+      grabberOptions={{ topMargin: 12 }}
+      cornerRadius={16}
+      backgroundColor={colors.neutral300}
+      onDidDismiss={onClose}
+    >
+      <View style={styles.safe}>
         <View style={styles.head}>
           <Text style={[styles.title, { color: colors.typography }]} numberOfLines={1}>
             {note.title}
@@ -65,7 +104,11 @@ export function NoteDetailsPage({
           </Text>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView
+          style={{ maxHeight: Math.round(height * 0.86) }}
+          contentContainerStyle={styles.content}
+          contentInsetAdjustmentBehavior="never"
+        >
           <Text style={[styles.section, { color: colors.gray500 }]}>
             {t('notes.analysis')}
           </Text>
@@ -106,15 +149,15 @@ export function NoteDetailsPage({
 
           <ExportSheet midiUri={detail.midiUri} title={note.title} />
         </ScrollView>
-      </SafeAreaView>
-    </Modal>
+      </View>
+    </TrueSheet>
   );
 }
 
 export default NoteDetailsPage;
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flexShrink: 1 },
   head: {
     flexDirection: 'row',
     alignItems: 'center',

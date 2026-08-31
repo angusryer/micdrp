@@ -86,3 +86,26 @@ invariants:
       Making it adjustable is what stops the guess having to be right, and
       replaying is the whole point of marking it — a phrase judged once is
       judged against a memory of how it went before.
+
+  - id: INV-NOTES-180
+    description: Tuning the reading happens in sight of what it changes
+    severity: major
+    check: >
+      The analysis sheet opens part way up the screen, leaves the graph
+      visible and undimmed behind it, and can be dragged between that opening
+      height and most of the screen. Reading the take again while it is open
+      redraws the graph behind it without the sheet moving or closing.
+      Verified by asserting the sheet opens at less than half the screen, that
+      it offers a taller stop as well, and that a re-read leaves it where it
+      was.
+
+      It was a full-screen page, so tuning a threshold and seeing what the
+      threshold did were two separate acts with a dismissal between them. The
+      whole point of exposing the knobs was a loop — turn one, read again,
+      look — and the loop cannot be run through something covering the thing
+      being looked at (INV-NOTES-172).
+
+      Part way rather than as small as the content allows: the controls being
+      turned have to stay under the thumb while the graph is watched, and a
+      sheet that fits itself to its content would be nearly the whole screen
+      here, which is what it already was.
