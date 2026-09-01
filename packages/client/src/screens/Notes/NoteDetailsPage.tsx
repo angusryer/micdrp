@@ -51,7 +51,7 @@ export interface NoteDetailsPageProps {
   isOpen: boolean;
   onClose: () => void;
   /** Told what it is covering, so the page beneath can scroll clear of it. */
-  onCover?: (px: number) => void;
+  onCover?: (name: string, px: number) => void;
 }
 
 export function NoteDetailsPage({

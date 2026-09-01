@@ -103,23 +103,51 @@ describe('moving an end of it', () => {
     expect(result.current.range!.fromMs).toBe(end - MIN_RANGE_MS);
   });
 
-  it('does not let a stretch stop the playback that replaced it', async () => {
+  it('silences a stretch that was sounding, rather than leaving it running', async () => {
+    // The comment always said moving an end was silent. It cancelled the
+    // timer that would have ended the sound and left the sound itself
+    // running, on past the end it no longer had (INV-NOTES-189).
     const transport = aTransport();
-    const { result } = await renderHook(() =>
-      usePlayRange(transport, BOUNDS)
-    );
+    const { result } = await renderHook(() => usePlayRange(transport, BOUNDS));
     await act(async () => {
       result.current.markAround(5000, 6000);
     });
     await act(async () => {
       result.current.moveEnd('to', 20000);
     });
-    // The first stretch's timer would have fired around here.
+    expect(transport.stop).toHaveBeenCalledTimes(1);
+    expect(result.current.isPlaying).toBe(false);
+  });
+
+  it('never stops anything again once it has fallen silent', async () => {
+    const transport = aTransport();
+    const { result } = await renderHook(() => usePlayRange(transport, BOUNDS));
+    await act(async () => {
+      result.current.markAround(5000, 6000);
+    });
+    await act(async () => {
+      result.current.moveEnd('to', 20000);
+    });
+    transport.stop.mockClear();
+    // The first stretch's timer would have fired around here, over whatever
+    // is playing by then.
     await act(async () => {
       jest.advanceTimersByTime(60000);
     });
     expect(transport.stop).not.toHaveBeenCalled();
   });
+
+  it('leaves a playback it did not start alone', async () => {
+    // Taking the mark off happens whenever the selection changes, so this
+    // must never stop a take that was already running (INV-NOTES-189).
+    const transport = aTransport();
+    const { result } = await renderHook(() => usePlayRange(transport, BOUNDS));
+    await act(async () => {
+      result.current.clear();
+    });
+    expect(transport.stop).not.toHaveBeenCalled();
+  });
+
 });
 
 describe('playing it again', () => {

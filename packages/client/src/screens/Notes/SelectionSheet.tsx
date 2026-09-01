@@ -32,7 +32,7 @@ export interface SelectionSheetProps {
    * gone. The page under it keeps that much room at its foot so its last row
    * can still be scrolled into view (INV-NOTES-109).
    */
-  onCover?: (height: number) => void;
+  onCover?: (name: string, px: number) => void;
 }
 
 export function SelectionSheet({

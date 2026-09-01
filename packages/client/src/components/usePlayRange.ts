@@ -50,6 +50,14 @@ export function usePlayRange(
   const [range, setRange] = useState<PlayRange | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const endsAt = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /**
+   * Whether this stretch is the thing currently sounding (INV-NOTES-189).
+   *
+   * A ref rather than the state above, because it is read inside callbacks
+   * that were made before the render that would have updated the state — and
+   * it decides whether stopping is ours to do at all.
+   */
+  const isOurs = useRef(false);
 
   const cancelStop = useCallback(() => {
     if (endsAt.current) {
@@ -58,6 +66,23 @@ export function usePlayRange(
     }
   }, []);
 
+  /**
+   * Fall silent, but only where this stretch is what is sounding.
+   *
+   * A thing that can stop playback must know whether it was the one that
+   * started it. This one drops its mark whenever the selection changes, so
+   * stopping unconditionally meant touching anything on the graph stopped the
+   * take — including the touch meant to hear a note against it.
+   */
+  const silence = useCallback(() => {
+    cancelStop();
+    setIsPlaying(false);
+    if (isOurs.current) {
+      isOurs.current = false;
+      void playable?.stop();
+    }
+  }, [cancelStop, playable]);
+
   const sound = useCallback(
     (playing: PlayRange) => {
       if (!playable) {
@@ -65,9 +90,11 @@ export function usePlayRange(
       }
       cancelStop();
       void playable.play(playing.fromMs);
+      isOurs.current = true;
       setIsPlaying(true);
       endsAt.current = setTimeout(() => {
         endsAt.current = null;
+        isOurs.current = false;
         setIsPlaying(false);
         void playable.stop();
       }, rangeLengthMs(playing));
@@ -90,12 +117,12 @@ export function usePlayRange(
     (edge: RangeEdge, toMs: number) => {
       // Silent while an end is being moved: the stretch is being decided, and
       // deciding it against a recording that keeps restarting is harder than
-      // deciding it in quiet.
-      cancelStop();
-      setIsPlaying(false);
+      // deciding it in quiet. The sound, not only the timer that would have
+      // ended it — otherwise it runs on past the end it no longer has.
+      silence();
       setRange((was) => (was ? moveEdge(was, edge, toMs, bounds) : was));
     },
-    [bounds, cancelStop]
+    [bounds, silence]
   );
 
   const playRange = useCallback(() => {
@@ -105,11 +132,9 @@ export function usePlayRange(
   }, [range, sound]);
 
   const clear = useCallback(() => {
-    cancelStop();
-    setIsPlaying(false);
+    silence();
     setRange(null);
-    void playable?.stop();
-  }, [cancelStop, playable]);
+  }, [silence]);
 
   // The view going takes the timer with it, or a stretch stops a playback
   // begun after the screen was left.

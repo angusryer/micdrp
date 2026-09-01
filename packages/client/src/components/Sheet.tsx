@@ -55,7 +55,7 @@ export interface SheetProps {
    * goes. A page that does not use this cannot have its last row reached
    * (INV-NOTES-109).
    */
-  onCover?: (px: number) => void;
+  onCover?: (name: string, px: number) => void;
   /** Whether it scrolls its own contents. Off where the caller scrolls. */
   isScrolling?: boolean;
   /** What it is drawn on. Defaults to the raised surface. */
@@ -93,9 +93,9 @@ export function Sheet({
   // knowable from here.
   const settledAt = useCallback(
     (position: number) => {
-      onCover?.(Math.max(0, Dimensions.get('window').height - position));
+      onCover?.(name, Math.max(0, Dimensions.get('window').height - position));
     },
-    [onCover]
+    [name, onCover]
   );
 
   const tallest = detents.reduce<number>(
@@ -122,7 +122,7 @@ export function Sheet({
       // drag, and the page below does not need to re-lay-out on each one.
       onDetentChange={(e) => settledAt(e.nativeEvent.position)}
       onDidDismiss={() => {
-        onCover?.(0);
+        onCover?.(name, 0);
         onClose();
       }}
     >

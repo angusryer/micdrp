@@ -267,3 +267,58 @@ invariants:
       Every audition was the same fixed length, so a semiquaver and a whole
       note sounded identical — which hides the thing most often being checked
       after a length has just been edited.
+
+  - id: INV-NOTES-189
+    description: A stretch silences only what it started
+    severity: critical
+    check: >
+      Taking the mark off a stretch stops the recording only where the stretch
+      itself was sounding it. Choosing something on the graph, which takes the
+      mark off, never stops a take that was already playing. Moving an end of
+      a sounding stretch silences it, rather than leaving it running past the
+      end it no longer has. Verified by asserting a choice made during
+      playback leaves it playing, that clearing a sounding stretch stops it,
+      and that moving an end of a sounding stretch stops it too.
+
+      The mark is dropped whenever the selection changes, and dropping it
+      stopped the transport unconditionally — so touching anything on the
+      graph stopped the take, including the touch that was meant to hear a
+      note against it. A thing that can stop playback must know whether it
+      was the one that started it.
+
+      Moving an end cancelled the timer that would have stopped the sound and
+      left the sound itself running, so the comment saying it was silent
+      described the timer rather than the recording.
+
+  - id: INV-NOTES-190
+    description: Whoever takes the shared voice says so, and gives it back as found
+    severity: major
+    check: >
+      The one preview voice is claimed by exactly one thing at a time, and
+      anything that takes it leaves nothing claiming to be sounding. Nothing
+      that borrows it leaves its level changed for the next caller. Verified
+      by asserting that sounding a chord or a dragged pitch while the melody
+      plays leaves the melody control offering play rather than stop, and that
+      an audition after a drag is at its own level rather than the drag's.
+
+      Three of the four callers cleared the melody; the chord and the drag did
+      not, so the control went on offering to stop a melody that had already
+      been cut off and stopping it did nothing. The drag also set the voice's
+      level for itself and never put it back, so every later audition and the
+      melody preview played at the drag's level for the rest of the session.
+
+  - id: INV-NOTES-191
+    description: The room a page keeps is the room every open sheet needs
+    severity: major
+    check: >
+      Where more than one sheet is open, the page keeps room for the one
+      covering most of it, and keeps it until the last of them has gone.
+      Verified by asserting that dismissing one of two open sheets leaves the
+      room the other still needs, and that dismissing the last returns none.
+
+      Two sheets wrote one number, so whichever was dismissed first set the
+      room to zero while the other was still covering the page — which is
+      INV-NOTES-109 failing again through a door it was not written for. The
+      analysis sheet and the selection sheet are open together whenever a note
+      is chosen while the knobs are being turned, which is most of the time
+      they are being turned at all.

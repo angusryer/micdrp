@@ -26,6 +26,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { RootStackParamList } from '../../navigation/types';
 import { hasTakeAudio } from '../../data/takeAudio';
+import { useSheetCover } from './useSheetCover';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { NoteDetailsPage } from './NoteDetailsPage';
@@ -75,7 +76,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   // What whichever sheet is up is covering, so the page can be scrolled clear
   // of it. It sits over a live page rather than a dimmed one, and a page
   // whose bottom row cannot be reached is live in name only (INV-NOTES-109).
-  const [sheetCover, setSheetCover] = useState(0);
+  const { cover: sheetCover, report: reportCover } = useSheetCover();
 
   const [transport, setTransport] = useState<{
     positionMs: number;
@@ -176,7 +177,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
               detail={detail}
               selection={detail.selection}
               onSelect={detail.setSelection}
-              onCover={setSheetCover}
+              onCover={reportCover}
             />
 
             {/* The take plays while the layer is sung over it — that is what
@@ -217,7 +218,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
         // The same room every other sheet asks for. This one covers the page
         // too, and did not say so — which is the fault INV-NOTES-109 was
         // written for, reappearing with the next sheet (INV-NOTES-181).
-        onCover={setSheetCover}
+        onCover={reportCover}
       />
     </SafeAreaView>
   );

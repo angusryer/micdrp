@@ -26,7 +26,7 @@ jest.mock('../SelectionBody', () => {
 
 const detail = {} as never;
 
-const show = (selection: Chosen, onCover: (h: number) => void) =>
+const show = (selection: Chosen, onCover: (name: string, px: number) => void) =>
   render(
     <I18nProvider>
       <ThemeProvider>
@@ -57,7 +57,7 @@ describe('the room the selection sheet takes', () => {
     settleAt(500);
     await show(CHOSEN, onCover);
 
-    expect(onCover).toHaveBeenCalledWith(screenHeight - 500);
+    expect(onCover).toHaveBeenCalledWith('selection', screenHeight - 500);
   });
 
   it('measures rather than assumes, since its height follows its content', async () => {
@@ -66,7 +66,7 @@ describe('the room the selection sheet takes', () => {
     await show(CHOSEN, onCover);
 
     // A taller sheet settles higher and asks for more room, by the same rule.
-    expect(onCover).toHaveBeenCalledWith(screenHeight - 300);
+    expect(onCover).toHaveBeenCalledWith('selection', screenHeight - 300);
   });
 
   it('gives the room back when it goes', async () => {
@@ -90,7 +90,7 @@ describe('the room the selection sheet takes', () => {
       );
     });
 
-    expect(onCover).toHaveBeenCalledWith(0);
+    expect(onCover).toHaveBeenCalledWith('selection', 0);
   });
 
   it('never asks for negative room', async () => {
@@ -100,7 +100,7 @@ describe('the room the selection sheet takes', () => {
     settleAt(screenHeight * 2);
     await show(CHOSEN, onCover);
 
-    expect(onCover).toHaveBeenCalledWith(0);
+    expect(onCover).toHaveBeenCalledWith('selection', 0);
     expect(screen.queryByTestId('body')).not.toBeNull();
   });
 });

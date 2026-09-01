@@ -44,11 +44,9 @@ describe('every sheet', () => {
     const onCover = jest.fn();
     settleAt(500);
     await open({ onCover });
-    expect(onCover).toHaveBeenCalledWith(
-      // The screen below where it settled.
-      expect.any(Number)
-    );
-    expect(onCover.mock.calls[0][0]).toBeGreaterThan(0);
+    expect(onCover).toHaveBeenCalledWith('probe', expect.any(Number));
+    expect(onCover.mock.calls[0][0]).toBe('probe');
+    expect(onCover.mock.calls[0][1]).toBeGreaterThan(0);
   });
 
   it('never reports a negative cover', async () => {
@@ -57,7 +55,7 @@ describe('every sheet', () => {
     // of it rather than as a negative.
     settleAt(99999);
     await open({ onCover });
-    expect(onCover.mock.calls[0][0]).toBe(0);
+    expect(onCover.mock.calls[0][1]).toBe(0);
   });
 
   it('gives the room back when it goes', async () => {
@@ -79,7 +77,7 @@ describe('every sheet', () => {
         </ThemeProvider>
       )
     );
-    expect(onCover).toHaveBeenLastCalledWith(0);
+    expect(onCover).toHaveBeenLastCalledWith('probe', 0);
     expect(onClose).toHaveBeenCalled();
   });
 
