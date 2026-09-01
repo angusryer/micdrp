@@ -13,18 +13,24 @@
  */
 import React, { useCallback, useEffect, useRef } from 'react';
 import {
-  ScrollView,
   StyleSheet,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent
 } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  scrollTo,
+  useAnimatedRef,
+  useAnimatedReaction,
+  useSharedValue,
+  type SharedValue
+} from 'react-native-reanimated';
 
 import { MelodyView } from './MelodyView';
 import type { MelodyGrid, MelodyLayout, MelodyNote } from './melodyLayout';
 import { useMelodyZoom } from './useMelodyZoom';
-import { offsetShowing, xForMs } from './melodyScale';
+import { offsetCentring, offsetShowing, xForMs } from './melodyScale';
 
 export interface ZoomableMelodyProps {
   notes: readonly MelodyNote[];
@@ -85,6 +91,16 @@ export interface ZoomableMelodyProps {
    */
   onViewport?: (view: { bringIntoView: (atMs: number) => void }) => void;
   /**
+   * The moment being played, read every frame, for the view to follow
+   * (INV-NOTES-193).
+   *
+   * The same value the head is drawn from, so the two cannot disagree about
+   * where the take has reached.
+   */
+  followMs?: SharedValue<number>;
+  /** Whether to follow it. Off, the view stays where it was left. */
+  isFollowing?: boolean;
+  /**
    * Drawn beneath the melody and inside the same scroll, so it keeps step
    * with the take at every scale and scroll position.
    */
@@ -124,12 +140,21 @@ export function ZoomableMelody({
   children,
   onScaleChange,
   onViewport,
+  followMs,
+  isFollowing = false,
   footer,
   footerHeight = 0,
   underHeight = 0
 }: ZoomableMelodyProps): React.JSX.Element {
-  const scroller = useRef<ScrollView>(null);
+  const scroller = useAnimatedRef<Animated.ScrollView>();
   const scrollX = useRef(0);
+  /**
+   * Set while a hand is on the graph, so following lets go of the view.
+   *
+   * Two things scrolling one view fight, and the hand must win: a person who
+   * has taken hold of the drawing is looking at something.
+   */
+  const isHeld = useSharedValue(false);
 
   const { beatWidth, layout, pinch, zoomBy } = useMelodyZoom({
     notes,
@@ -148,6 +173,37 @@ export function ZoomableMelody({
   const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     scrollX.current = e.nativeEvent.contentOffset.x;
   }, []);
+
+  /**
+   * Follow the take, holding the moment being played in the middle.
+   *
+   * On the UI thread, for the same reason the head itself is drawn there: a
+   * view scrolled from JavaScript moves at whatever rate renders happen,
+   * which is the judder the head was moved off that thread to avoid
+   * (INV-NOTES-136).
+   */
+  const axis = layout.timeAxis;
+  const contentWidth = layout.contentWidth;
+  useAnimatedReaction(
+    () => (isFollowing && followMs ? followMs.value : null),
+    (atMs) => {
+      'worklet';
+      if (atMs == null || isHeld.value) {
+        return;
+      }
+      scrollTo(
+        scroller,
+        offsetCentring(
+          axis.pad + (atMs - axis.t0) * axis.pxPerMs,
+          width,
+          contentWidth
+        ),
+        0,
+        false
+      );
+    },
+    [isFollowing, followMs, axis, contentWidth, width]
+  );
 
   // Only where the drawing is wider than the window: with the whole take in
   // view there is nothing to bring into it.
@@ -171,10 +227,23 @@ export function ZoomableMelody({
     onViewport?.({ bringIntoView });
   }, [onViewport, bringIntoView]);
 
+  // Starting to play takes the view back, so a take followed once, scrolled
+  // away from, and played again follows once more.
+  useEffect(() => {
+    if (isFollowing) {
+      isHeld.value = false;
+    }
+  }, [isFollowing, isHeld]);
+
   return (
     <GestureDetector gesture={pinch}>
-      <ScrollView
+      <Animated.ScrollView
         ref={scroller}
+        // A hand on the drawing stops it following, until the take is played
+        // again. Two things scrolling one view fight, and the hand wins.
+        onScrollBeginDrag={() => {
+          isHeld.value = true;
+        }}
         horizontal
         style={{
           width,
@@ -250,7 +319,7 @@ export function ZoomableMelody({
             })}
           </View>
         ) : null}
-      </ScrollView>
+      </Animated.ScrollView>
     </GestureDetector>
   );
 }

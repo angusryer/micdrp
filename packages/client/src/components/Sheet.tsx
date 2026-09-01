@@ -98,11 +98,6 @@ export function Sheet({
     [name, onCover]
   );
 
-  const tallest = detents.reduce<number>(
-    (most, one) => (typeof one === 'number' ? Math.max(most, one) : most),
-    0.86
-  );
-
   return (
     <TrueSheet
       ref={sheet}
@@ -116,6 +111,17 @@ export function Sheet({
       grabberOptions={{ topMargin: 12 }}
       cornerRadius={16}
       backgroundColor={background ?? colors.neutral50}
+      // Without this the sheet does not pin the scroll to the room it has, so
+      // the content runs past the bottom and nothing scrolls at all. It is
+      // off by default, which is why the analysis sheet could not be scrolled
+      // (INV-NOTES-194).
+      scrollable={isScrolling}
+      scrollableOptions={{
+        // Scrolling scrolls; only the grabber changes the height. A sheet
+        // opened part way so the graph stays visible must not close over it
+        // the moment its own content is scrolled.
+        scrollingExpandsSheet: false
+      }}
       onDidPresent={(e) => settledAt(e.nativeEvent.position)}
       // Dragged to another stop is a new height to scroll clear of. On the
       // stop rather than continuously: position changes fire every frame of a
@@ -127,12 +133,9 @@ export function Sheet({
       }}
     >
       {isScrolling ? (
-        <ScrollView
-          style={{
-            maxHeight: Math.round(Dimensions.get('window').height * tallest)
-          }}
-          contentInsetAdjustmentBehavior="never"
-        >
+        // No height of its own: the sheet pins it to the room it has, which
+        // is the only thing that knows how much that is.
+        <ScrollView contentInsetAdjustmentBehavior="never">
           {children}
         </ScrollView>
       ) : (

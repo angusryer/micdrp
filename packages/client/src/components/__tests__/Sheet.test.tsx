@@ -23,7 +23,12 @@ const props = () =>
     globalThis as unknown as {
       TRUE_SHEET_PROPS: Record<
         string,
-        { detents: (number | string)[]; dimmed?: boolean }
+        {
+          detents: (number | string)[];
+          dimmed?: boolean;
+          scrollable?: boolean;
+          scrollableOptions?: { scrollingExpandsSheet?: boolean };
+        }
       >;
     }
   ).TRUE_SHEET_PROPS.probe;
@@ -96,6 +101,25 @@ describe('every sheet', () => {
     expect(props().dimmed).toBe(true);
     await open({ isDimmed: false });
     expect(props().dimmed).toBe(false);
+  });
+
+  it('pins its own scroll, or its content cannot be reached', async () => {
+    // Off unless asked for, so the content ran past the bottom of the sheet
+    // and nothing scrolled at all (INV-NOTES-194).
+    await open();
+    expect(props().scrollable).toBe(true);
+  });
+
+  it('is not expanded by scrolling its contents', async () => {
+    // A sheet held part way so the graph stays visible must not close over it
+    // the moment its own content is scrolled.
+    await open();
+    expect(props().scrollableOptions?.scrollingExpandsSheet).toBe(false);
+  });
+
+  it('does not pin a scroll where the caller supplies one', async () => {
+    await open({ isScrolling: false });
+    expect(props().scrollable).toBe(false);
   });
 
   it('shows what it was given', async () => {

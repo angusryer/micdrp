@@ -206,3 +206,25 @@ export function offsetShowing(
   const wanted = Math.min(furthest, Math.max(0, xContent - viewportWidth / 2));
   return wanted === currentOffset ? null : wanted;
 }
+
+/**
+ * The scroll offset that puts a point in the middle of the view
+ * (INV-NOTES-193).
+ *
+ * Unconditional, unlike {@link offsetShowing}: following a playhead means
+ * holding it in one place, not moving the view only once it has drifted out.
+ * Clamped at both ends, so the take does not scroll past its own beginning or
+ * run on past its end.
+ *
+ * A worklet, because the view is scrolled on the UI thread for the same
+ * reason the head is drawn there (INV-NOTES-136).
+ */
+export function offsetCentring(
+  xContent: number,
+  viewportWidth: number,
+  contentWidth: number
+): number {
+  'worklet';
+  const furthest = Math.max(0, contentWidth - viewportWidth);
+  return Math.min(furthest, Math.max(0, xContent - viewportWidth / 2));
+}

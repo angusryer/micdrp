@@ -12,6 +12,16 @@ import { tapped } from '../utilities/haptics';
 import { isChosen, isSame, toggleChosen } from './graphSelection';
 import { foundAt, stepAtX, type SettledOptions } from './graphGestureOptions';
 
+/**
+ * Where a press stops being a tap and becomes a hold, in ms (INV-NOTES-192).
+ *
+ * One number for both, so no press can fall between them. They were 300 and
+ * 400, and a press released in between did nothing at all — not on a note,
+ * not on a line, not on empty space. Nothing reported it, so it read as the
+ * app having missed the press.
+ */
+const HOLD_FROM_MS = 400;
+
 export function useGraphChoose(o: SettledOptions) {
   const { onSelect, onAddBar, originX, stepWidth, selection } = o;
 
@@ -66,7 +76,7 @@ export function useGraphChoose(o: SettledOptions) {
     () =>
       Gesture.Tap()
         .withTestId('graph-select')
-        .maxDuration(300)
+        .maxDuration(HOLD_FROM_MS)
         .onEnd((e) => choose(e.x, e.y))
         .runOnJS(true),
     [choose]
@@ -78,7 +88,7 @@ export function useGraphChoose(o: SettledOptions) {
     () =>
       Gesture.LongPress()
         .withTestId('graph-add-bar')
-        .minDuration(400)
+        .minDuration(HOLD_FROM_MS)
         .onStart((e) => {
           // On something: add it to the set. On nothing: put a downbeat
           // there. One gesture, and what is under it decides — holding empty

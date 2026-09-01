@@ -88,6 +88,8 @@ export interface NoteShapeSectionProps {
     /** The same moment, read every frame, for the drawn head (INV-NOTES-136). */
     drawnPositionMs: SharedValue<number>;
     seek: (ms: number) => void;
+    /** Whether the take is sounding, so the view follows only then. */
+    isPlaying?: boolean;
     play?: () => void;
     stop?: () => void;
   } | null;
@@ -266,6 +268,10 @@ export function NoteShapeSection({
             }
             onScaleChange={onScaleChange}
             onViewport={setViewport}
+            // The same value the head is drawn from, so the view and the head
+            // cannot disagree about where the take has reached (INV-NOTES-193).
+            followMs={transport?.drawnPositionMs}
+            isFollowing={transport?.isPlaying ?? false}
             // The rhythm band is part of the drawing rather than below it:
             // one surface reads every touch on the graph, and a struck sound
             // has to be selectable the same way a note is (INV-NOTES-118).

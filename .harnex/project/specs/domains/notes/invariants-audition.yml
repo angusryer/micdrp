@@ -322,3 +322,60 @@ invariants:
       analysis sheet and the selection sheet are open together whenever a note
       is chosen while the knobs are being turned, which is most of the time
       they are being turned at all.
+
+  - id: INV-NOTES-192
+    description: Every length of press means something
+    severity: major
+    check: >
+      A press released before the hold threshold chooses what is under it; one
+      held past that threshold adds to the set, or places a bar line where
+      there is nothing to add. There is no length of press that means nothing.
+      The two are the same number, read from one declaration, so a gap cannot
+      open between them. Verified by asserting the tap's longest press and the
+      hold's shortest are the same value.
+
+      They were 300 and 400, so a press released between the two did nothing
+      at all — not on a note, not on a bar line, not on empty space. Nothing
+      reported it and nothing could be learnt from it: the press simply had no
+      effect, which reads as the app having missed it.
+
+  - id: INV-NOTES-193
+    description: The graph follows the playhead, and the playhead stays in the middle
+    severity: major
+    check: >
+      While a take is playing the drawing scrolls so the playhead stays in the
+      middle of what can be seen, moving every frame rather than in steps, and
+      stopping at each end of the take rather than scrolling past it. Scrolling
+      by hand stops it following until playback starts again, so the two never
+      fight over the same view. Verified by asserting the offset that centres a
+      moment, that it is clamped at both ends, and that a hand on the graph
+      stops the following.
+
+      The head was drawn inside the scroll and moved by transform, so it was
+      smooth but walked off the right edge and stayed there — past the first
+      few seconds the thing being watched was off screen, and following it
+      meant scrolling by hand at the speed of the music.
+
+      On the UI thread, for the same reason the head itself is: a view scrolled
+      from JavaScript moves at whatever rate renders happen, which is the
+      judder the drawn head was moved off the JavaScript thread to avoid
+      (INV-NOTES-136).
+
+  - id: INV-NOTES-194
+    description: A sheet's own contents can be scrolled
+    severity: major
+    check: >
+      Where a sheet scrolls its contents, the sheet pins that scroll to the
+      room it has, so content taller than the sheet can be reached. Scrolling
+      the contents scrolls them and does not change the sheet's height; only
+      the grabber does that. Verified by asserting a scrolling sheet declares
+      itself scrollable, and that scrolling does not expand it.
+
+      The pinning is off unless asked for, so the content simply ran past the
+      bottom of the sheet and nothing scrolled at all — the knobs below the
+      fold could not be reached.
+
+      Scrolling must not expand it, because the sheet is opened part way on
+      purpose: it is held at two fifths so the graph stays visible behind it,
+      and a scroll that closed the sheet over the graph would undo the reason
+      it opens there (INV-NOTES-180).
