@@ -6,6 +6,8 @@
  * `PitchSample[]` can be passed directly without importing across packages.
  */
 
+import { READ_DEFAULTS } from './readDefaults';
+
 export interface PitchFrame {
   timestampMs: number;
   midi: number | null;
@@ -162,14 +164,14 @@ export function segmentNotes(
   frames: PitchFrame[],
   options: SegmentOptions = {}
 ): NoteEvent[] {
-  const minDuration = options.minDurationMs ?? 60;
-  const maxGap = options.maxGapMs ?? 40;
-  const vibrato = options.vibratoSemitones ?? 0.6;
-  const hold = options.pitchHoldMs ?? 90;
-  const articulationDrop = options.articulationDropDb ?? 12;
-  const aspirationRise = options.aspirationRiseDb ?? 8;
-  const onsetWindow = options.onsetWindowMs ?? 70;
-  const onsetFlux = options.onsetFluxDb ?? -6;
+  const minDuration = options.minDurationMs ?? READ_DEFAULTS.segment.minDurationMs;
+  const maxGap = options.maxGapMs ?? READ_DEFAULTS.segment.maxGapMs;
+  const vibrato = options.vibratoSemitones ?? READ_DEFAULTS.segment.vibratoSemitones;
+  const hold = options.pitchHoldMs ?? READ_DEFAULTS.segment.pitchHoldMs;
+  const articulationDrop = options.articulationDropDb ?? READ_DEFAULTS.segment.articulationDropDb;
+  const aspirationRise = options.aspirationRiseDb ?? READ_DEFAULTS.segment.aspirationRiseDb;
+  const onsetWindow = options.onsetWindowMs ?? READ_DEFAULTS.segment.onsetWindowMs;
+  const onsetFlux = options.onsetFluxDb ?? READ_DEFAULTS.segment.onsetFluxDb;
 
   const notes: NoteEvent[] = [];
 

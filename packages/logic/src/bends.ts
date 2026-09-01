@@ -11,6 +11,8 @@
  * that is the same note bending, and the evidence is entirely in how near it
  * sits to what surrounds it (INV-PITCH-020).
  */
+import { READ_DEFAULTS } from './readDefaults';
+
 import type { NoteEvent } from './segmentation';
 
 /**
@@ -28,7 +30,7 @@ import type { NoteEvent } from './segmentation';
  * notes instead. This is a limit of the body, and the body does not speed up
  * because the song does.
  */
-export const MIN_ARTICULATION_MS = 90;
+export const MIN_ARTICULATION_MS = READ_DEFAULTS.minArticulationMs;
 
 export interface BendOptions {
   /**
@@ -113,16 +115,16 @@ export function mergeBends(
   notes: readonly NoteEvent[],
   options: BendOptions = {}
 ): NoteEvent[] {
-  const step = options.stepSemitones ?? 1;
+  const step = options.stepSemitones ?? READ_DEFAULTS.bends.stepSemitones;
   // A bend is continuous: the voice slides from one pitch to the next without
   // stopping, so its parts touch. Two notes separated by real silence were
   // separated on purpose, and joining them across the gap is what turned "da
   // da da da" into one held note (INV-PITCH-023).
-  const maxGap = options.maxJoinGapMs ?? 40;
+  const maxGap = options.maxJoinGapMs ?? READ_DEFAULTS.bends.maxJoinGapMs;
   // A bend is a change of pitch. Two segments at the very same pitch are not
   // one note bending — the segmenter only splits there when it had a reason
   // to, and that reason is articulation (INV-PITCH-024).
-  const minMove = options.minMoveSemitones ?? 0.1;
+  const minMove = options.minMoveSemitones ?? READ_DEFAULTS.bends.minMoveSemitones;
   if (notes.length < 2) {
     return [...notes];
   }

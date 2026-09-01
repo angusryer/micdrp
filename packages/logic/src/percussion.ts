@@ -23,6 +23,8 @@
  * a track recorded as drums does not, and can be read with the guessing
  * turned off (INV-NOTES-115).
  */
+import { READ_DEFAULTS } from './readDefaults';
+
 import type { PitchFrame } from './segmentation';
 
 /** What a hit sounded like, by where its energy sat. */
@@ -108,12 +110,12 @@ export function readPercussion(
   frames: readonly PitchFrame[],
   options: PercussionOptions = {}
 ): Hit[] {
-  const minLevel = options.minLevelDb ?? -45;
-  const maxDuration = options.maxDurationMs ?? 140;
-  const maxClarity = options.maxClarity ?? 0.5;
-  const minFlatness = options.minFlatness ?? 0.25;
-  const thumpBelow = options.thumpBelowHz ?? 700;
-  const hissAbove = options.hissAboveHz ?? 3500;
+  const minLevel = options.minLevelDb ?? READ_DEFAULTS.percussion.minLevelDb;
+  const maxDuration = options.maxDurationMs ?? READ_DEFAULTS.percussion.maxDurationMs;
+  const maxClarity = options.maxClarity ?? READ_DEFAULTS.percussion.maxClarity;
+  const minFlatness = options.minFlatness ?? READ_DEFAULTS.percussion.minFlatness;
+  const thumpBelow = options.thumpBelowHz ?? READ_DEFAULTS.percussion.thumpBelowHz;
+  const hissAbove = options.hissAboveHz ?? READ_DEFAULTS.percussion.hissAboveHz;
 
   const hits: Hit[] = [];
   let run: Run | null = null;

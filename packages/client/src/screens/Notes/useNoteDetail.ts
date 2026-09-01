@@ -43,6 +43,7 @@ import {
   HEADPHONE_FLOOR_MIDI
 } from '../../components/chordLayout';
 import { cacheReading, cachedNotes } from '../../data/notesSync';
+import { hasTakeAudio } from '../../data/takeAudio';
 import { rereadTake } from '../../analysis/reread';
 import { notesRepo } from '../../data/notesRepo';
 import { useBarLayout } from './useBarLayout';
@@ -512,8 +513,7 @@ export function useNoteDetail(id: string) {
     // uploaded path alone, while resolveAudio immediately above prefers the
     // one on the device — so every take not yet uploaded refused to be read
     // again, and said nothing about it.
-    const hasAudio = note?.audioPath != null || note?.localAudioUri != null;
-    const uri = hasAudio ? await resolveAudio() : null;
+    const uri = hasTakeAudio(note) ? await resolveAudio() : null;
     let outcome = await rereadTake(uri);
     // A local copy that is no longer there — which is every take after a
     // reinstall — falls back to the uploaded one rather than failing
@@ -572,7 +572,7 @@ export function useNoteDetail(id: string) {
     sounded.current = index;
     const chosen = melody[index];
     if (chosen) {
-      playback.playNote(chosen.midi);
+      playback.playNote(chosen.midi, chosen.endMs - chosen.startMs);
     }
   }, [selection, melody, playback]);
 

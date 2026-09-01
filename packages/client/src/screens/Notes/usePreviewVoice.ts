@@ -17,8 +17,17 @@ import { createTonePlayer, SynthBus } from '../../audio/synthPlayer';
 import { useDragAudition } from './useDragAudition';
 import type { useChordTrack } from './useChordTrack';
 
-/** How long a tapped reference note sounds, in ms. */
+/**
+ * How long a note with no length of its own sounds, in ms.
+ *
+ * Only for a pitch asked about on its own — a chord tone, a row in a list of
+ * pitches. A note that knows how long it lasts sounds for that long
+ * (INV-NOTES-188).
+ */
 const TAP_NOTE_MS = 700;
+
+/** Short enough to be a note, so nothing is inaudible however brief it was. */
+const LEAST_AUDIBLE_MS = 120;
 
 export function usePreviewVoice(
   melodyTones: readonly TargetNote[],
@@ -68,12 +77,19 @@ export function usePreviewVoice(
   // Shifted like the rest: a tap that checks a pitch has to agree with what
   // playing the melody sounds, or it is checking a different note.
   const playNote = useCallback(
-    (midi: number) => {
+    (midi: number, forMs?: number) => {
       // One voice for all three, so the control never claims to be playing a
       // melody a tap has just cut off.
       stopMelody();
+      // Its own length where it has one: a semiquaver and a whole note sounded
+      // identical, which hides the thing most often being checked right after
+      // a length has been edited (INV-NOTES-188).
+      const lasts =
+        forMs != null && forMs > 0
+          ? Math.max(LEAST_AUDIBLE_MS, forMs)
+          : TAP_NOTE_MS;
       tonePlayer.play([
-        { midi: transposeMidi(midi, octaves), startMs: 0, endMs: TAP_NOTE_MS }
+        { midi: transposeMidi(midi, octaves), startMs: 0, endMs: lasts }
       ]);
     },
     [tonePlayer, octaves, stopMelody]

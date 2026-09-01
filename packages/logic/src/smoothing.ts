@@ -8,6 +8,8 @@
  * same `PitchFrame` shape used throughout the pipeline.
  */
 
+import { READ_DEFAULTS } from './readDefaults';
+
 import type { PitchFrame } from './segmentation';
 
 export interface SmoothOptions {
@@ -21,8 +23,8 @@ export function smoothPitch(
   frames: PitchFrame[],
   options: SmoothOptions = {}
 ): PitchFrame[] {
-  const minClarity = options.minClarity ?? 0;
-  let windowSize = options.windowSize ?? 5;
+  const minClarity = options.minClarity ?? READ_DEFAULTS.smooth.minClarity;
+  let windowSize = options.windowSize ?? READ_DEFAULTS.smooth.windowSize;
   if (windowSize < 1) {
     windowSize = 1;
   }

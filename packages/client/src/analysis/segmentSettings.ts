@@ -11,6 +11,8 @@
  * There are three places that segment notes and they must agree about what a
  * note is (INV-PITCH-015).
  */
+import { READ_DEFAULTS as D } from 'logic';
+
 import { getJSON, setJSON } from '../data/store';
 
 /** One adjustable, with the range it is meaningful over. */
@@ -32,22 +34,22 @@ export interface SegmentKnob {
 export const SEGMENT_KNOBS: readonly SegmentKnob[] = [
   // How wide a wobble is still one note. Voices differ more than any default
   // covers — an operatic vibrato is several times a folk singer's.
-  { key: 'vibratoSemitones', fallback: 0.6, min: 0.15, max: 1.2, step: 0.05, decimals: 2 },
+  { key: 'vibratoSemitones', fallback: D.segment.vibratoSemitones, min: 0.15, max: 1.2, step: 0.05, decimals: 2 },
   // How long a departure must hold before it is a different note rather than
   // the voice passing through.
-  { key: 'pitchHoldMs', fallback: 90, min: 30, max: 300, step: 10, unit: 'ms' },
+  { key: 'pitchHoldMs', fallback: D.segment.pitchHoldMs, min: 30, max: 300, step: 10, unit: 'ms' },
   // How long the detector may lose the pitch mid-note without ending it.
-  { key: 'maxGapMs', fallback: 40, min: 10, max: 200, step: 10, unit: 'ms' },
+  { key: 'maxGapMs', fallback: D.segment.maxGapMs, min: 10, max: 200, step: 10, unit: 'ms' },
   // How far the level must fall during that gap for it to be a stop rather
   // than a flicker — the tongued "da da da" rule (INV-PITCH-023).
-  { key: 'articulationDropDb', fallback: 12, min: 3, max: 40, step: 1, unit: 'dB' },
+  { key: 'articulationDropDb', fallback: D.segment.articulationDropDb, min: 3, max: 40, step: 1, unit: 'dB' },
   // How far the level must climb, fast, for a note to have been pushed again
   // on the breath — the "ha ha ha" rule (INV-PITCH-024).
-  { key: 'aspirationRiseDb', fallback: 8, min: 3, max: 30, step: 1, unit: 'dB' },
+  { key: 'aspirationRiseDb', fallback: D.segment.aspirationRiseDb, min: 3, max: 30, step: 1, unit: 'dB' },
   // How quickly that climb has to happen to be a re-attack and not a swell.
-  { key: 'onsetWindowMs', fallback: 70, min: 20, max: 250, step: 10, unit: 'ms' },
+  { key: 'onsetWindowMs', fallback: D.segment.onsetWindowMs, min: 20, max: 250, step: 10, unit: 'ms' },
   // The shortest thing that can have been sung on purpose.
-  { key: 'minDurationMs', fallback: 60, min: 20, max: 200, step: 10, unit: 'ms' }
+  { key: 'minDurationMs', fallback: D.segment.minDurationMs, min: 20, max: 200, step: 10, unit: 'ms' }
 ];
 
 const STORE_PREFIX = 'analysis.segment.';

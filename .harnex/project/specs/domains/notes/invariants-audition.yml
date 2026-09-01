@@ -206,3 +206,64 @@ invariants:
       already does it: that keeps the fix shippable to the binary already
       installed, which is the difference between fixing this today and fixing
       it next release.
+
+  - id: INV-NOTES-186
+    description: A take has audio if any copy of it exists, asked in one place
+    severity: critical
+    check: >
+      Whether a take can be played is decided by whether any copy of it
+      exists — on the device, on the server, or both — and every part of the
+      app asks the same function. A take recorded and not yet uploaded offers
+      its play control in the list and its player in the detail view, the same
+      as one that has been uploaded. Verified by asserting a note with only a
+      local copy can be played from both, that one with only an uploaded copy
+      can, and that one with neither offers nothing.
+
+      Three places asked whether the uploaded path was set, which since
+      capture became local first (INV-NOTES-139) is a different question from
+      whether there is a recording. A take was silently unplayable for as long
+      as it took to reach the server, and permanently if it never did — the
+      list card simply drew no button, which reads as a take with nothing in
+      it rather than as a fault.
+
+      One function, because the same mistake was made four times: the list
+      card, the detail player, the sideways player, and reading the take again
+      (INV-NOTES-183). Four copies of a question are four chances to ask it
+      the wrong way, and fixing them one at a time is how the fourth was still
+      wrong a day after the third.
+
+  - id: INV-NOTES-187
+    description: A knob's default is the reading's own default, not a copy of it
+    severity: critical
+    check: >
+      Every adjustable threshold takes its default from the same declaration
+      the reading uses when nothing is set, so putting the knobs back gives
+      the reading the take was originally read with. No default is written
+      down twice. Verified by asserting each knob's default equals the
+      library's own, and that a take read with the knobs at their defaults
+      matches one read with no options at all.
+
+      "Too brief to have been intended" was declared at 70ms beside a library
+      that defaults it to 90. Turning the knobs and pressing "back to
+      defaults" therefore did not go back: it went to a reading the take had
+      never had, and the original could not be recovered from inside the app
+      at all. A person tuning cannot tell that from a detector that simply
+      behaves oddly, and everything they conclude afterwards is built on it.
+
+      One source rather than a test that the two agree (Axiom 2). A test says
+      when they have drifted; taking the value from one place means they
+      cannot. The test is kept as well, for a knob added later and wired to
+      nothing.
+
+  - id: INV-NOTES-188
+    description: A note sounds for as long as the note lasts
+    severity: major
+    check: >
+      Sounding a note from the graph or the list plays it for its own length,
+      not a fixed one. A note with no length to speak of still sounds long
+      enough to be heard. Verified by asserting two notes of different lengths
+      sound for different lengths, and that each matches its own.
+
+      Every audition was the same fixed length, so a semiquaver and a whole
+      note sounded identical — which hides the thing most often being checked
+      after a length has just been edited.

@@ -16,6 +16,7 @@
 import React, { useCallback } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
+import { hasTakeAudio } from '../../data/takeAudio';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { MelodyView } from '../../components/MelodyView';
@@ -79,7 +80,9 @@ export function NoteCard({
   // A take silenced in the note is not offered here either. A play button
   // that produces nothing is worse than one that is plainly unavailable
   // (INV-NOTES-124).
-  const canPlay = note.audioPath != null && isTakeAudible;
+  // Any copy of the recording, not the uploaded one alone: a take is on the
+  // device before it is on the server, and may never reach it (INV-NOTES-186).
+  const canPlay = hasTakeAudio(note) && isTakeAudible;
 
   return (
     <View

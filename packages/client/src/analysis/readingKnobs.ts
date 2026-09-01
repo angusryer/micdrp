@@ -18,6 +18,8 @@
  * separate judgement about how the person tuning actually sings, and lives in
  * `knobOrder`.
  */
+import { READ_DEFAULTS } from 'logic';
+
 import type { SegmentKnob } from './segmentSettings';
 import { SEGMENT_KNOBS } from './segmentSettings';
 
@@ -70,7 +72,7 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
     key: 'windowSize',
     title: 'Pitch smoothed across frames',
     hint: 'How many frames are averaged together before anything is read. Raise it for a steadier trace, lower it to keep fast movement.',
-    fallback: 5,
+    fallback: READ_DEFAULTS.smooth.windowSize,
     min: 1,
     max: 15,
     step: 2
@@ -80,7 +82,7 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
     key: 'minClarity',
     title: 'Ignored below this clarity',
     hint: 'Frames less periodic than this are treated as unvoiced before anything is read. Raise it in a noisy room.',
-    fallback: 0,
+    fallback: READ_DEFAULTS.smooth.minClarity,
     min: 0,
     max: 0.9,
     step: 0.05,
@@ -97,7 +99,7 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
     key: 'maxJoinGapMs',
     title: 'Joined across a silence of up to',
     hint: 'The widest silence two notes may be separated by and still be read as one note bending between them.',
-    fallback: 40,
+    fallback: READ_DEFAULTS.bends.maxJoinGapMs,
     min: 0,
     max: 200,
     step: 10,
@@ -108,7 +110,7 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
     key: 'minMoveSemitones',
     title: 'Counted as a bend above',
     hint: 'How far the pitch must actually move for the join to be a bend. Below this the two are simply the same note.',
-    fallback: 0.1,
+    fallback: READ_DEFAULTS.bends.minMoveSemitones,
     min: 0.02,
     max: 1,
     step: 0.02,
@@ -119,7 +121,7 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
     key: 'minArticulationMs',
     title: 'Too brief to have been intended',
     hint: 'Anything shorter is dropped as a detector artefact rather than something anybody meant to make.',
-    fallback: 70,
+    fallback: READ_DEFAULTS.minArticulationMs,
     min: 10,
     max: 250,
     step: 10,
@@ -130,7 +132,7 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
     key: 'minLevelDb',
     title: 'Drum sound must be louder than',
     hint: 'How far above silence a mouth drum — a puh, a tss — must be. Raise it if breath noise is being read as drumming.',
-    fallback: -45,
+    fallback: READ_DEFAULTS.percussion.minLevelDb,
     min: -70,
     max: -20,
     step: 1,
@@ -141,7 +143,7 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
     key: 'maxDurationMs',
     title: 'Drum sound must be shorter than',
     hint: 'Longer than this and it was a note sung badly rather than something struck. Drums are over quickly.',
-    fallback: 140,
+    fallback: READ_DEFAULTS.percussion.maxDurationMs,
     min: 40,
     max: 400,
     step: 10,
@@ -152,7 +154,7 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
     key: 'maxClarity',
     title: 'Drum sound must be less pitched than',
     hint: 'How much of a pitch a sound may have and still be a drum rather than a note. Lower it if hummed notes are being read as drumming.',
-    fallback: 0.5,
+    fallback: READ_DEFAULTS.percussion.maxClarity,
     min: 0.1,
     max: 0.95,
     step: 0.05,
@@ -163,7 +165,7 @@ export const DECLARED_KNOBS: readonly ReadingKnob[] = [
     key: 'minFlatness',
     title: 'Drum sound must be noisier than',
     hint: 'How little tone a sound must have to be a drum. Asked directly, rather than inferred from how periodic it is.',
-    fallback: 0.25,
+    fallback: READ_DEFAULTS.percussion.minFlatness,
     min: 0.05,
     max: 0.9,
     step: 0.05,

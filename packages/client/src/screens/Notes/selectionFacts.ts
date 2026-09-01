@@ -131,7 +131,10 @@ function describeSungNote(
   const note = detail.melody[selection.index];
   const isCorrected = detail.isCorrected(selection.index);
   const actions: SelectionAction[] = [
-    { label: 'Hear it', run: () => note && detail.playNote(note.midi) }
+    {
+      label: 'Hear it',
+      run: () => note && detail.playNote(note.midi, note.endMs - note.startMs)
+    }
   ];
   if (isCorrected) {
     actions.push({
@@ -186,7 +189,13 @@ function describeLayerNote(
         ]
       : [],
     actions: note
-      ? [{ label: 'Hear it', run: () => detail.playNote(note.midi) }]
+      ? [
+          {
+            label: 'Hear it',
+            run: () =>
+              detail.playNote(note.midi, note.endMs - note.startMs)
+          }
+        ]
       : []
   };
 }

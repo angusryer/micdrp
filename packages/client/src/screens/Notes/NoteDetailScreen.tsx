@@ -25,6 +25,7 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { RootStackParamList } from '../../navigation/types';
+import { hasTakeAudio } from '../../data/takeAudio';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { NoteDetailsPage } from './NoteDetailsPage';
@@ -118,7 +119,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
           {note.title}
         </Text>
 
-        {note.audioPath ? (
+        {hasTakeAudio(note) ? (
           <PlaybackBar
             resolveAudioUri={detail.resolveAudio}
             durationLabel={formatDuration(note.durationMs)}

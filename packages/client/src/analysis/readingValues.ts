@@ -6,6 +6,8 @@
  * where the values live — the two change for different reasons, and a table
  * entry is read far more often than a storage rule.
  */
+import { READ_DEFAULTS } from 'logic';
+
 import { getJSON, setJSON } from '../data/store';
 
 import {
@@ -83,6 +85,6 @@ export function readingOptions(): {
     segment: of('segment'),
     bends: of('bends'),
     percussion: of('percussion'),
-    minArticulationMs: top ? knobValue(top) : 70
+    minArticulationMs: top ? knobValue(top) : READ_DEFAULTS.minArticulationMs
   };
 }

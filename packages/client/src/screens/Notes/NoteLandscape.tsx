@@ -30,6 +30,7 @@ import {
   type LayoutChangeEvent
 } from 'react-native';
 
+import { hasTakeAudio } from '../../data/takeAudio';
 import { useTheme } from '../../theme';
 import { MIN_GRAPH_HEIGHT, NoteShapeSection } from './NoteShapeSection';
 import { PlaybackBar } from './PlaybackBar';
@@ -94,7 +95,7 @@ export function NoteLandscape({
         </View>
         {/* Everything together, without turning the phone back to reach it.
             Padded on its own, since the graph above it is not. */}
-        {note?.audioPath ? (
+        {hasTakeAudio(note) ? (
           <View style={styles.transport}>
           <PlaybackBar
             resolveAudioUri={detail.resolveAudio}
