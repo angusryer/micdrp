@@ -514,15 +514,23 @@ export function useNoteDetail(id: string) {
     // again, and said nothing about it.
     const hasAudio = note?.audioPath != null || note?.localAudioUri != null;
     const uri = hasAudio ? await resolveAudio() : null;
-    const fresh = await rereadTake(uri);
-    if (fresh == null || note == null) {
-      return false;
+    let outcome = await rereadTake(uri);
+    // A local copy that is no longer there — which is every take after a
+    // reinstall — falls back to the uploaded one rather than failing
+    // (INV-NOTES-185).
+    if (!outcome.ok && note?.audioPath != null && note.localAudioUri != null) {
+      outcome = await rereadTake(
+        await notesRepo.audioUrlFor(id, note.audioPath)
+      );
     }
-    cacheReading(note.id, fresh);
-    await notesRepo.saveReading(note.id, fresh);
+    if (!outcome.ok || note == null) {
+      return outcome.ok ? null : outcome.because;
+    }
+    cacheReading(note.id, outcome.reading);
+    await notesRepo.saveReading(note.id, outcome.reading);
     setReadingAt((was) => was + 1);
-    return true;
-  }, [note, resolveAudio]);
+    return null;
+  }, [id, note, resolveAudio]);
 
   // The layers as performances rather than as readings of them
   // (INV-NOTES-134). Loaded when the note opens, so a press is a schedule.

@@ -168,16 +168,41 @@ invariants:
       in that state silently refused to be re-read.
 
   - id: INV-NOTES-184
-    description: A reading that did not happen says so
+    description: A reading that did not happen says which way it failed
     severity: major
     check: >
-      Where a take cannot be read again — no copy of it, or a file the engine
-      will not open — the singer is told, and told it in the place the reading
-      was asked for. Verified by asserting a failed re-read leaves a message
-      beside the control, and that a successful one leaves none.
+      Where a take cannot be read again the singer is told, in the place the
+      reading was asked for, and told which of the two things went wrong: that
+      there is no recording to read, or that the recording would not open.
+      Verified by asserting each failure leaves its own message, that a
+      successful reading leaves none, and that the reason the engine gave
+      survives to be shown.
 
       A failure was indistinguishable from a reading that changed nothing:
       the control said it was working, stopped saying it, and the graph stayed
       as it was. Somebody tuning turns a knob, presses, sees nothing, and
       concludes the knob does nothing — which is the wrong conclusion about
       the wrong thing, and there is no way to tell from the outside.
+
+  - id: INV-NOTES-185
+    description: A take held only on the server is fetched before it is read
+    severity: critical
+    check: >
+      Reading a take again works whether the recording is on the device or
+      only on the server. Where it is only on the server it is fetched to a
+      scratch file first, read from there, and the scratch file is removed
+      afterwards however the reading ended. A local copy that is no longer
+      there falls back to the uploaded one rather than failing. Verified by
+      asserting a take with only an uploaded copy is read, that the scratch
+      file does not survive, and that a stale local path falls back.
+
+      The analyser reads with AVAudioFile, which opens local files only —
+      handed an https URL it built a nonsense file path out of it and failed.
+      Playback had already met this and fetches to a scratch file first; the
+      analyser never did. So a take whose local copy had gone, which is every
+      take after a reinstall, could be played but not re-read.
+
+      Fetched in JavaScript rather than natively, though the native decoder
+      already does it: that keeps the fix shippable to the binary already
+      installed, which is the difference between fixing this today and fixing
+      it next release.

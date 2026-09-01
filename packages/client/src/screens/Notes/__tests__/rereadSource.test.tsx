@@ -26,8 +26,16 @@ const mockUploaded = {
   audioPath: 'notes/remote.m4a'
 };
 
+/** Recorded here and since uploaded, then reinstalled: the local path is dead. */
+const mockStale = {
+  ...mockLocalOnly,
+  id: 'stale',
+  localAudioUri: 'file:///gone/old-container.m4a',
+  audioPath: 'notes/stale.m4a'
+};
+
 jest.mock('../../../data/notesSync', () => ({
-  cachedNotes: () => [mockLocalOnly, mockUploaded],
+  cachedNotes: () => [mockLocalOnly, mockUploaded, mockStale],
   cacheReading: jest.fn()
 }));
 
@@ -35,10 +43,12 @@ const mockReadFrom = jest.fn();
 jest.mock('../../../analysis/reread', () => ({
   rereadTake: (uri: string | null) => {
     mockReadFrom(uri);
+    // A path under /gone stands for a local copy the reinstall took away.
+    const readable = uri != null && !uri.includes('/gone/');
     return Promise.resolve(
-      uri
-        ? { melody: [], hits: [], analysisVersion: 1 }
-        : null
+      readable
+        ? { ok: true, reading: { melody: [], hits: [], analysisVersion: 1 } }
+        : { ok: false, because: 'no-recording' }
     );
   }
 }));
@@ -61,12 +71,12 @@ beforeEach(() => {
 describe('reading a take again', () => {
   it('reads a take that has only been recorded, never uploaded', async () => {
     const { result } = await renderHook(() => useNoteDetail('local'));
-    let read = false;
+    let failed: string | null = 'not run';
     await act(async () => {
-      read = await result.current.reread();
+      failed = await result.current.reread();
     });
     expect(mockReadFrom).toHaveBeenCalledWith('file:///takes/local.m4a');
-    expect(read).toBe(true);
+    expect(failed).toBeNull();
   });
 
   it('reads an uploaded take from where it was uploaded', async () => {
@@ -77,5 +87,24 @@ describe('reading a take again', () => {
     expect(mockReadFrom).toHaveBeenCalledWith(
       'https://example.com/notes/remote.m4a'
     );
+  });
+
+  it('falls back to the uploaded copy when the local one has gone', async () => {
+    // Every take after a reinstall: the note still names a local path, and
+    // there is nothing at it (INV-NOTES-185).
+    const { result } = await renderHook(() => useNoteDetail('stale'));
+    let failed: string | null = 'not run';
+    await act(async () => {
+      failed = await result.current.reread();
+    });
+    expect(mockReadFrom).toHaveBeenNthCalledWith(
+      1,
+      'file:///gone/old-container.m4a'
+    );
+    expect(mockReadFrom).toHaveBeenNthCalledWith(
+      2,
+      'https://example.com/notes/stale.m4a'
+    );
+    expect(failed).toBeNull();
   });
 });

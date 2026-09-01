@@ -34,6 +34,18 @@ import { TuningPanel } from './TuningPanel';
 import { TempoRow } from './TempoRow';
 import type { useNoteDetail } from './useNoteDetail';
 
+/**
+ * What each way of failing is called (INV-NOTES-184).
+ *
+ * Two, because they call for different things: a take with no recording
+ * behind it will never be readable, and one that would not open might be on
+ * the next attempt.
+ */
+const WHY: Record<'no-recording' | 'unreadable', string> = {
+  'no-recording': 'There is no recording of this take to read.',
+  unreadable: 'Could not open this recording.'
+};
+
 export interface NoteDetailsPageProps {
   detail: ReturnType<typeof useNoteDetail>;
   isOpen: boolean;
@@ -103,12 +115,8 @@ export function NoteDetailsPage({
               setProblem(null);
               void detail
                 .reread()
-                .then((read) => {
-                  setProblem(
-                    read ? null : 'Could not read this take — no audio to read.'
-                  );
-                })
-                .catch(() => setProblem('Could not read this take.'))
+                .then((failed) => setProblem(failed ? WHY[failed] : null))
+                .catch(() => setProblem(WHY.unreadable))
                 .finally(() => setIsTuning(false));
             }}
             isReading={isTuning}

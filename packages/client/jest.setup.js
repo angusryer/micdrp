@@ -241,6 +241,12 @@ jest.mock(
     // The app bundle root. `updates/eligibility` looks for the StoreKit
     // receipt beneath it to tell a TestFlight install from an App Store one.
     MainBundlePath: '/tmp/micdrp/micdrp.app',
+    // Where a take held only on the server is fetched to before it is read
+    // (INV-NOTES-185). The analyser opens local files only.
+    TemporaryDirectoryPath: '/tmp',
+    downloadFile: jest.fn(() => ({
+      promise: Promise.resolve({ statusCode: 200 })
+    })),
     writeFile: jest.fn(() => Promise.resolve()),
     readFile: jest.fn(() => Promise.resolve('')),
     unlink: jest.fn(() => Promise.resolve()),

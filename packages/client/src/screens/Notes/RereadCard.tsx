@@ -24,8 +24,11 @@ import { useTheme } from '../../theme';
 export interface RereadCardProps {
   /** False where this take was already read by the current engine. */
   isStale: boolean;
-  /** Re-read it. Resolves false where there was nothing to read. */
-  onReread: () => Promise<boolean>;
+  /**
+   * Re-read it. Resolves with why it failed, or null where it worked
+   * (INV-NOTES-184).
+   */
+  onReread: () => Promise<string | null>;
 }
 
 export function RereadCard({
@@ -40,7 +43,7 @@ export function RereadCard({
     setFailed(false);
     setIsReading(true);
     void onReread()
-      .then((ok) => setFailed(!ok))
+      .then((why) => setFailed(why != null))
       .finally(() => setIsReading(false));
   };
 
