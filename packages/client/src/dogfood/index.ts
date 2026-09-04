@@ -22,6 +22,7 @@ export {
 } from './config';
 export { countdownColor, countdownLabel } from './countdown';
 export { default as ShareTakeSection } from './ShareTakeSection';
+export { ShareTakeControl } from './ShareTakeControl';
 export { shareTake } from './samples';
 export { flushShares, lastShareError } from './sampleUpload';
 export { withdrawTake, refreshShared } from './sampleRecord';

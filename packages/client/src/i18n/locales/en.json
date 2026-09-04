@@ -337,12 +337,27 @@
       "dismiss": "OK"
     },
     "share": {
-      "what": "Send this recording and what the app read out of it, so the reading can be checked against the sound. Nothing else goes with it.",
-      "give": "Share this take",
-      "given": "Shared on {{when}}. The recording is on the server until you take it back.",
-      "withdraw": "Stop sharing",
-      "waiting": "Waiting to send",
-      "noRecording": "There is no recording of this take to send."
+      "give": "Share",
+      "sending": "Sending\u2026",
+      "given": "Shared",
+      "failed": "Couldn't share this take",
+      "confirm": {
+        "title": "Share this take?",
+        "body": "This recording, and what the app read out of it, go up so the reading can be checked against the sound. Nothing else goes with it, and you can stop sharing at any time.",
+        "cancel": "Cancel",
+        "send": "Share"
+      },
+      "stop": {
+        "title": "Stop sharing this take?",
+        "body": "The recording and the reading are deleted from the server. The take on this device is untouched.",
+        "cancel": "Keep sharing",
+        "confirm": "Stop sharing"
+      },
+      "pending": {
+        "title": "Still sending",
+        "body": "This take hasn't reached the server yet. It will go on trying.",
+        "wait": "OK"
+      }
     }
   }
 }

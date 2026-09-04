@@ -10,7 +10,7 @@ import React, { useMemo } from 'react';
 import type { NoteEventDto, ReadableTake } from 'shared';
 
 import { hasTakeAudio } from '../data/takeAudio';
-import { ShareTakeRow } from './ShareTakeRow';
+import { ShareTakeControl } from './ShareTakeControl';
 import { useTakeShare } from './useTakeShare';
 
 /** A take, as much of one as sharing needs. */
@@ -55,7 +55,7 @@ export function ShareTakeSection({
   );
   const share = useTakeShare(input);
 
-  return <ShareTakeRow share={share} hasAudio={hasTakeAudio(note)} />;
+  return <ShareTakeControl share={share} hasAudio={hasTakeAudio(note)} />;
 }
 
 export default ShareTakeSection;

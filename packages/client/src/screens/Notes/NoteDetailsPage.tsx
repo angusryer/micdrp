@@ -94,6 +94,13 @@ export function NoteDetailsPage({
           <Text style={[styles.title, { color: colors.typography }]} numberOfLines={1}>
             {note.title}
           </Text>
+          {/* Quiet, and left of the close: what to do with the whole take
+              rather than with a part of it belongs up here (VIEW-DOG-003). */}
+          <ShareTakeSection
+            note={note}
+            melody={melody}
+            resolveAudio={detail.resolveAudio}
+          />
           <Text
             accessibilityRole="button"
             onPress={onClose}
@@ -149,15 +156,6 @@ export function NoteDetailsPage({
           <RereadCard isStale={detail.isStale} onReread={detail.reread} />
 
           <ExportSheet midiUri={detail.midiUri} title={note.title} />
-
-          {/* A sibling of export, and last for the same reason: both take a
-              finished take and send it somewhere else, and neither is
-              wanted in the middle of working on one (VIEW-DOG-003). */}
-          <ShareTakeSection
-            note={note}
-            melody={melody}
-            resolveAudio={detail.resolveAudio}
-          />
         </View>
       </View>
     </Sheet>

@@ -34,6 +34,14 @@ export interface TakeShare {
   isWorking: boolean;
   share: () => Promise<void>;
   withdraw: () => Promise<void>;
+  /**
+   * Forget the last refusal, once it has been shown.
+   *
+   * The control raises it rather than printing it, and an alert shown from
+   * an effect would be raised again on every render until the thing that
+   * triggered it is cleared.
+   */
+  clearProblem: () => void;
 }
 
 /** Read the device's own answer. Synchronous, so the row never flickers. */
@@ -108,6 +116,7 @@ export function useTakeShare(input: ShareTakeInput | null): TakeShare {
     waitingBecause: local.state === 'pending' ? lastShareError() : null,
     isWorking,
     share,
-    withdraw
+    withdraw,
+    clearProblem: useCallback(() => setProblem(null), [])
   };
 }

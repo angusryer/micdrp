@@ -63,8 +63,8 @@ interactions:
       signed in.
     steps:
       - Open the take's details
-      - Read the line saying what will be sent
-      - Tap share
+      - Tap share, in the top right
+      - Read what the confirmation says will be sent, and confirm
     outcome: >
       The recording and the reading it produced go up together as one
       sample. The row says it is shared. Nothing else happens: no
@@ -84,7 +84,8 @@ interactions:
     precondition: A take is shared.
     steps:
       - Open the take's details
-      - Tap withdraw
+      - Tap the control, which now says the take is shared
+      - Confirm stopping
     outcome: >
       The sample and the copy of the audio are deleted from the server.
       The take, its audio and its reading are untouched, and the row
