@@ -35,9 +35,7 @@ import {
   readMetre,
   countedBars,
   countedMetre,
-  snappedMelody,
   tappedTempo,
-  timelineFromGrid,
   timelineFromTaps,
   type NoteEdge,
   type NoteEvent
@@ -64,7 +62,6 @@ import { trackSpec } from './trackRegistry';
 import { useLayerVoices } from './useLayerVoices';
 import { useNoteLayers } from './useNoteLayers';
 import { useNotationView } from './useNotationView';
-import { useQuantised } from './useQuantised';
 import { useNotePlayback } from './useNotePlayback';
 import { useRetimed } from './useRetimed';
 
@@ -248,43 +245,11 @@ export function useNoteDetail(id: string) {
    * nothing downstream reads this, and the only thing that can act on it
    * is a person pressing the offer in the tempo row (INV-NOTES-161).
    */
-  const tappedTimeline = useMemo(() => timelineFromTaps(beats), [beats]);
-  /**
-   * The beat everything is read against.
-   *
-   * The taps where there are any, and the fitted grid otherwise — both
-   * arrive as a timeline, so there is one snapping and not two
-   * (INV-NOTES-202). A metronome is a timeline whose beats happen to be
-   * evenly spaced; that is the only difference between them.
-   */
-  const timeline = useMemo(
-    () =>
-      tappedTimeline ??
-      (quantized.grid.bpm > 0
-        ? timelineFromGrid(quantized.grid, note?.durationMs ?? 0)
-        : null),
-    [tappedTimeline, quantized.grid, note?.durationMs]
-  );
+  const timeline = useMemo(() => timelineFromTaps(beats), [beats]);
   const tapped = useMemo(
-    () => (tappedTimeline == null ? null : tappedTempo(tappedTimeline)),
-    [tappedTimeline]
+    () => (timeline == null ? null : tappedTempo(timeline)),
+    [timeline]
   );
-
-  // One choice for the whole take, kept with it (INV-NOTES-202).
-  const { isQuantised, setQuantised } = useQuantised(note?.id ?? null);
-
-  /**
-   * The melody as the beat would have it. Never stored and never edited:
-   * this is a second reading of the same notes, and which one is drawn,
-   * played, clicked and exported is the toggle above.
-   */
-  const snapped = useMemo(
-    () => (timeline == null ? null : snappedMelody(melody, timeline)),
-    [melody, timeline]
-  );
-
-  /** What every surface reads. One melody, so none of them can disagree. */
-  const melodyInForce = isQuantised && snapped != null ? snapped : melody;
 
   // What was counted, and what was played. The count is a performance and
   // stays on the graph, but it is not music: it states a tempo and implies no
@@ -366,13 +331,9 @@ export function useNoteDetail(id: string) {
   // plain in the picture and all but inaudible in a short take, which is how
   // the quantizer gets judged (INV-NOTES-026). Only the drawing follows this:
   // the chords, the bars and the edits are all read from the melody itself.
-  // The graph reads the melody in force, so it cannot show what was sung
-  // while the ear hears it tidied (INV-NOTES-202).
-  const notation = useNotationView(melodyInForce, quantized.notes, hasGrid);
+  const notation = useNotationView(melody, quantized.notes, hasGrid);
 
-  // The export carries whichever reading is in force. It used to ignore
-  // the question entirely (INV-NOTES-202).
-  const midiUri = useExportedMidi(note?.id ?? null, melodyInForce);
+  const midiUri = useExportedMidi(note?.id ?? null, melody);
 
   // Where the backdrop sits, which is really a question about what you are
   // listening on. A phone speaker has almost nothing in the low register, so
@@ -598,15 +559,11 @@ export function useNoteDetail(id: string) {
   );
 
   const playback = useNotePlayback(
-    melodyInForce,
+    melody,
     quantized,
     chords,
     note?.durationMs ?? 0,
-    hits,
-    // The click strikes where the beats actually are, so moving one is
-    // audible — which is how a person hears whether a fix was right
-    // (INV-NOTES-203).
-    timeline
+    hits
   );
 
   /**
@@ -756,12 +713,6 @@ export function useNoteDetail(id: string) {
      * applied only when pressed — the taps stay marks until then
      * (INV-NOTES-161, INV-NOTES-196).
      */
-    isQuantised,
-    setQuantised,
-    /** True when there is a beat to snap to at all. */
-    canQuantise: timeline != null && timeline.beats.length > 1,
-    /** The beat everything is read against, tapped or fitted. */
-    timeline,
     tappedBpm: tapped?.medianBpm ?? null,
     /**
      * The slowest and fastest the pulse ran, where it moved. One number

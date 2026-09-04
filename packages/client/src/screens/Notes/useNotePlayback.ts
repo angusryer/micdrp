@@ -9,11 +9,9 @@ import { trackBus } from './trackRegistry';
 import { useMemo, useState } from 'react';
 
 import {
-  clicksOnBeats,
   metronome,
   playbackTargets,
   transposeTargets,
-  type BeatTimeline,
   type NoteEvent,
   type PlaybackMode,
   type quantize
@@ -54,9 +52,7 @@ export function useNotePlayback(
   /** How long the recording runs, so the click keeps time to the end of it. */
   durationMs = 0,
   /** The struck sounds read out of the take (INV-NOTES-120). */
-  hits: readonly { atMs: number; kind: string }[] = [],
-  /** The beat in force, so the click strikes where the beats are. */
-  timeline: BeatTimeline | null = null
+  hits: readonly { atMs: number; kind: string }[] = []
 ) {
   // Play sounds the backdrop with the take, or on its own, or not at all —
   // whichever the choice beside the play control is set to (INV-NOTES-019).
@@ -90,26 +86,9 @@ export function useNotePlayback(
       ),
     [melody, quantized.grid?.bpm, quantized.grid?.beatsPerBar, durationMs]
   );
-
-  /**
-   * The click, on the beats that were actually stated (INV-NOTES-203).
-   *
-   * A click laid out from a single tempo argues with the person it is
-   * playing to: they said where the beats were, and a metronome that
-   * ignores that is telling them they were wrong. Falls back to the
-   * counted-in click where nobody tapped.
-   */
-  const clicks = useMemo(() => {
-    if (timeline == null || !timeline.isTapped || timeline.beats.length < 2) {
-      return counted.clicks;
-    }
-    // Built where the click's own pitches live, so the tapped click and
-    // the counted one sound like the same instrument.
-    return clicksOnBeats(timeline.beats, timeline.barStarts);
-  }, [timeline, counted.clicks]);
   const countTones = useMemo(
     () =>
-      clicks.map((beat) => ({
+      counted.clicks.map((beat) => ({
         midi: beat.midi,
         startMs: beat.startMs,
         endMs: beat.endMs
@@ -218,7 +197,7 @@ export function useNotePlayback(
      * where the pulse is, and these are the app ticking it out
      * (INV-NOTES-130).
      */
-    clickBeats: clicks,
+    clickBeats: counted.clicks,
     rhythmMix,
     playbackMode,
     setPlaybackMode,

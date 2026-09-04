@@ -206,22 +206,4 @@ then:
     action: notes_assert_interpretation_state
     params: { label: "{label}", state: "{value}" }
     resolution: One of queued, saved.
-  - id: WX-NOTES-QUANTISE-ON
-    pattern: 'the singer turns quantising on'
-    mode: extension
-    action: notes_set_quantised
-  - id: TX-NOTES-SURFACE-SNAPPED
-    pattern: 'the {value} shows the snapped melody'
-    mode: extension
-    action: notes_assert_surface_snapped
-    params: { surface: "{value}" }
-  - id: TX-NOTES-EXPORT-SNAPPED
-    pattern: 'the export carries the snapped melody'
-    mode: extension
-    action: notes_assert_export_snapped
-  - id: TX-NOTES-FIELD-UNCHANGED
-    pattern: 'the note field {field} is unchanged'
-    mode: extension
-    action: notes_assert_field_unchanged
-    params: { field: "{field}" }
 

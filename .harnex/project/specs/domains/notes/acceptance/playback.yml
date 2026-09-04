@@ -110,33 +110,3 @@ acceptance:
       capability: notes.play
       invariants: [INV-NOTES-016]
       interaction: INT-NOTES-010
-
-  - id: ACC-NOTES-049
-    interface: module
-    title: Quantising reaches every surface at once
-    given:
-      - singer alice has a note N titled Whistle
-      - 8 beats are tapped at 92 bpm
-    when:
-      - the singer turns quantising on
-    then:
-      - the graph shows the snapped melody
-      - the export carries the snapped melody
-    maps_to:
-      capability: notes.set_notation_view
-      invariants: [INV-NOTES-202]
-
-  - id: ACC-NOTES-050
-    interface: module
-    title: Quantising changes nothing that was stored
-    given:
-      - singer alice has a note N titled Whistle
-      - 8 beats are tapped at 92 bpm
-    when:
-      - the singer turns quantising on
-    then:
-      - the note field melody is unchanged
-    maps_to:
-      capability: notes.set_notation_view
-      invariants: [INV-NOTES-202]
-

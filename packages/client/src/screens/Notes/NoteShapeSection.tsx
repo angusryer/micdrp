@@ -37,7 +37,6 @@ import { NoteShapeControls } from './NoteShapeControls';
 import { Playhead } from './Playhead';
 import { TrackRail, TRACK_RAIL_WIDTH } from './TrackRail';
 import { Scrubber } from './Scrubber';
-import { TogglePill } from './TogglePill';
 import type { useNoteDetail } from './useNoteDetail';
 import type { Hit } from 'logic';
 
@@ -206,21 +205,6 @@ export function NoteShapeSection({
     <>
       {onDetails != null ? (
         <View style={styles.aboveGraph}>
-          {/* One press turns the whole take from what was performed into
-              what it would be written as — the graph, the click, what is
-              played and what is exported together (INV-NOTES-202). Here
-              rather than behind the options, because judging whether a
-              tidied reading is right means hearing it against the
-              untidied one immediately, and a control two presses away is
-              not a comparison. */}
-          <TogglePill
-            testID="quantise"
-            label="Quantise"
-            accessibilityLabel="Read this take as it would be written down"
-            isOn={detail.isQuantised}
-            isDisabled={!detail.canQuantise}
-            onPress={() => detail.setQuantised(!detail.isQuantised)}
-          />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('notes.detailTitle')}
@@ -411,13 +395,7 @@ const styles = StyleSheet.create({
   // they are one instrument, and a gap would read as two panels.
   // Above the drawing and hard right: it opens a reading OF the graph, so it
   // belongs to the graph without being in it.
-  aboveGraph: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 8,
-    paddingRight: 4
-  },
+  aboveGraph: { alignItems: 'flex-end', paddingRight: 4 },
   analysis: { padding: 6 },
   withRail: { flexDirection: 'row' },
   drawing: { flex: 1 },

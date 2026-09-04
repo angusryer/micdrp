@@ -431,31 +431,6 @@ invariants:
       take on disk does not change, and that no surface is left showing
       the other version.
 
-      One setting, kept with the take. It was a playback-only choice held
-      in component state, so the graph went on drawing what was sung
-      while the ear heard it tidied, and the export ignored the question
-      entirely. Three surfaces disagreeing about which reading is in
-      force is worse than none of them offering the choice.
-
-      Where beats were tapped, the snapping follows them; where none
-      were, it follows the fitted grid. Both arrive as a timeline, so
-      there is one snapping and not two (INV-NOTES-198).
-
-  - id: INV-NOTES-203
-    description: The click follows the beat that was tapped
-    severity: major
-    check: >
-      With beats tapped, the metronome strikes on those beats and
-      accents the ones marked as downbeats. With none tapped it falls
-      back to the fitted grid. Verified by asserting the click times
-      equal the tap times.
-
-      A click laid out from a single tempo argues with the person it is
-      playing to: they stated where the beats were, and a metronome that
-      ignores that is telling them they were wrong. Following the taps
-      also makes an edit audible — move a beat and the click moves,
-      which is how a person hears whether the fix was right.
-
       The point of it is turning what was actually sung into an idea that
       reads clearly, and judging whether it worked needs the two heard
       and seen against each other. A toggle that reached the graph but
