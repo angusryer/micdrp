@@ -69,6 +69,32 @@ check('another singer lists none of it', (await call('/api/collections/notes/rec
 check('an anonymous caller lists nothing', ((await call('/api/collections/notes/records')).data?.items ?? []).length === 0);
 check('the record survived every attempt', (await call(`/api/collections/notes/records/${note.id}`, { token: alice.token })).ok);
 
+// A shared take is a recording of somebody singing, handed over so a reading
+// can be checked against it. Ownership is the whole of what protects it, and
+// the contract promises 403 to anyone else (dogfood/contracts.yml).
+const { data: sample } = await call('/api/collections/take_samples/records', {
+  method: 'POST',
+  token: alice.token,
+  body: {
+    user: alice.record.id,
+    note_id: note.id,
+    title: 'Alice idea',
+    duration_ms: 1200,
+    sample_rate_hz: 44100,
+    reading: { melody: [], hits: [], noteCount: 0 },
+    app_version: '1.0.0',
+    build_number: 1,
+    shared_at_ms: Date.now(),
+    state: 'shared'
+  }
+});
+
+check('the owner reads their own shared take', (await call(`/api/collections/take_samples/records/${sample.id}`, { token: alice.token })).ok);
+check('another singer cannot hear it', !(await call(`/api/collections/take_samples/records/${sample.id}`, { token: bob.token })).ok);
+check('another singer cannot unshare it', !(await call(`/api/collections/take_samples/records/${sample.id}`, { method: 'DELETE', token: bob.token })).ok);
+check('another singer lists no shared takes', (await call('/api/collections/take_samples/records', { token: bob.token })).data.items.length === 0);
+check('the owner can take it back', (await call(`/api/collections/take_samples/records/${sample.id}`, { method: 'DELETE', token: alice.token })).ok);
+
 const failed = checks.filter((c) => !c.pass).length;
 console.log(`\n${checks.length - failed}/${checks.length} ownership checks passed`);
 process.exit(failed === 0 ? 0 : 1);
