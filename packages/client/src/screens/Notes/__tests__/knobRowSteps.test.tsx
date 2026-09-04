@@ -53,7 +53,7 @@ describe('turning a threshold', () => {
     await open();
     // What the two sizes exist for: the search half of the loop.
     for (let i = 0; i < 12; i += 1) {
-      // eslint-disable-next-line no-await-in-loop -- one press at a time
+       
       await fireEvent.press(screen.getByTestId('knob-pitchHoldMs-up-coarse'));
     }
     expect(knobValue(shown)).toBe(HOLD.max);

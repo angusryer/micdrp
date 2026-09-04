@@ -1,0 +1,16 @@
+# Reading the shared takes on this machine, with no device involved.
+commands:
+  - id: CMD-PITCH-001
+    name: yarn corpus
+    maps_to: pitch.read_note
+    arguments:
+      positional: []
+      flags:
+        "samples": { type: string, default: ".samples", description: "Directory the shared takes were pulled into" }
+        "max-hz": { type: integer, default: 2500, description: "Pitch ceiling to read at, for sweeping it" }
+    output: >
+      One block per sample: how many notes the reading found, how much of
+      the audible singing ended up inside a note, how many of those notes
+      landed within a quartertone of the pitch actually there, and the
+      median signed error. Scored against frames detected at a fixed high
+      ceiling, so the numbers stay comparable across a sweep.

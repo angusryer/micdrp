@@ -14,7 +14,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { activeInterpretation, type InterpretationDto } from 'shared';
 import type { ChordSlotEdit, NoteEdit, TappedBeat } from 'logic';
 
-import { notesRepo } from '../../data/notesRepo';
+import {
+  flushInterpretations,
+  queueInterpretations
+} from '../../data/interpretationQueue';
 
 /** Long enough to cover a gesture, short enough to survive leaving quickly. */
 const SAVE_DELAY_MS = 800;
@@ -126,12 +129,16 @@ export function useInterpretation(
         flush.current = null;
         // Frozen readings are never touched: their whole purpose is to be
         // unaffected by anything that happens afterwards (INV-NOTES-023).
-        void notesRepo
-          .saveInterpretations(noteId, [
-            ...frozen.current,
-            { ...NEW_READING(), ...latest.current }
-          ])
-          .then(() => setFailed(false))
+        const interpretations = [
+          ...frozen.current,
+          { ...NEW_READING(), ...latest.current }
+        ];
+        // Queued before it is attempted, so a save that fails — or that is
+        // interrupted between sending and answering — leaves the decision
+        // somewhere rather than nowhere (INV-NOTES-197).
+        queueInterpretations(noteId, interpretations);
+        void flushInterpretations()
+          .then((sent) => setFailed(sent === 0))
           .catch(() => setFailed(true));
       };
       flush.current = write;

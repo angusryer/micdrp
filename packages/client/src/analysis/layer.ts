@@ -13,16 +13,14 @@
 import {
   ANALYSIS_VERSION,
   alignLayer,
-  readTake,
-  recentreNotes,
   type Hit,
   type NoteEvent
 } from 'logic';
 import type { NoteLayerDto, LayerRole } from 'shared';
 
 import type { RecordingHandle } from '../audio/contract';
-import { segmentOptions } from './segmentSettings';
 import { takeRoleFor } from './layerRoles';
+import { readMelody } from './readMelody';
 
 export interface LayerCapture {
   /** The layer, ready to store beside the take it was sung over. */
@@ -47,14 +45,10 @@ export function analyzeLayer(
   // Read the way its role says. A bass line is all notes; a drum layer is all
   // hits. The role was being carried to storage and never consulted, so a
   // layer recorded as drums was read as singing (INV-NOTES-122).
-  const { notes, hits } = readTake(handle.samples, takeRoleFor(role), {
-    segment: segmentOptions()
-  });
-  // Read against the centre this layer was sung at, exactly as a take is: a
-  // bass hummed a little flat throughout should still name the root it means
-  // rather than the one it landed nearest (INV-PITCH-013). Only notes have a
-  // centre — a struck sound has no pitch to recentre.
-  const { notes: heard } = recentreNotes(notes);
+  // The one reader, exactly as a take is read (INV-PITCH-028) — including
+  // the re-centring, so a bass hummed a little flat throughout still names
+  // the root it means rather than the one it landed nearest.
+  const { notes: heard, hits } = readMelody(handle.samples, takeRoleFor(role));
 
   return {
     heard,

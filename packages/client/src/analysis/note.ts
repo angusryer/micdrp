@@ -8,24 +8,17 @@
  * capture; this is a single cheap symbolic pass over `handle.samples`, off the
  * live audio path.
  *
- *   smoothPitch → segmentNotes → { melody, range }
- *                              → detectKey / estimateTempo / scorePitch(self)
+ *   readMelody → { melody, hits } → takeSummary → { key, tempo, range, … }
+ *
+ * The reading itself is `readMelody`, which every path in the app shares
+ * (INV-PITCH-028); what is left here is what a *note* needs on top of it.
  */
-import {
-  dropTooBriefToSing,
-  mergeBends,
-  recentreNotes,
-  readPercussion,
-  segmentNotes,
-  smoothPitch,
-  ANALYSIS_VERSION,
-  type Hit,
-  type NoteEvent
-} from 'logic';
+import { smoothPitch, ANALYSIS_VERSION, type Hit, type NoteEvent } from 'logic';
 import type { CreateNoteInput } from 'shared';
 
 import type { RecordingHandle } from '../audio/contract';
-import { segmentOptions } from './segmentSettings';
+import { readMelody } from './readMelody';
+import { readingOptions } from './readingValues';
 import { takeSummary } from './summary';
 
 export interface CaptureAnalysis {
@@ -42,18 +35,13 @@ export interface CaptureAnalysis {
  * metrics. Pure (depends only on the handle).
  */
 export function analyzeCapture(handle: RecordingHandle): CaptureAnalysis {
-  const smoothed = smoothPitch(handle.samples);
-  // Read against the centre this take was sung at, before anything rounds to
-  // a semitone. A take sitting near a boundary otherwise splits one scale
-  // degree across two semitones, and the key estimate — and so the harmony
-  // built on it — inherits that (INV-PITCH-013).
-  const { notes } = recentreNotes(
-    dropTooBriefToSing(mergeBends(segmentNotes(smoothed, segmentOptions())))
-  );
-  // The struck sounds in the same take. A first take is a person switching
-  // between humming and drumming without announcing it, so it is read both
-  // ways (INV-NOTES-115).
-  const hits = readPercussion(handle.samples);
+  // One reader, whatever is reading (INV-PITCH-028). A first take is a
+  // person switching between humming and drumming without announcing it,
+  // so the mixed role reads it both ways (INV-NOTES-115).
+  const { notes, hits } = readMelody(handle.samples, 'mixed');
+  // Intonation is a question about the trace rather than about the notes,
+  // so the summary needs the smoothed frames the notes came from.
+  const smoothed = smoothPitch([...handle.samples], readingOptions().smooth);
   // Every measured field, from the same helper a re-read uses — so a take
   // read again cannot end up with a melody from one reading and a range
   // from another (INV-NOTES-195).

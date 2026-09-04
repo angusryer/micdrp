@@ -12,11 +12,12 @@
  * new reading on their own; an edit whose note is no longer there simply finds
  * nothing, which is the honest outcome and the thing worth warning about.
  */
-import { ANALYSIS_VERSION, readTake, smoothPitch, type TakeRole } from 'logic';
+import { ANALYSIS_VERSION, smoothPitch, type TakeRole } from 'logic';
 import type { HitDto, NoteEventDto } from 'shared';
 
 import { audioEngine } from '../audio/AudioEngine';
 import { localCopyOf } from './localCopy';
+import { readMelody } from './readMelody';
 import { readingOptions } from './readingValues';
 import { takeSummary, type TakeSummary } from './summary';
 
@@ -77,13 +78,15 @@ export async function rereadTake(
   if (samples.length === 0) {
     return { ok: false, because: 'unreadable' };
   }
-  // Every threshold the reading turns on, as it is currently set
-  // (INV-NOTES-172).
-  const options = readingOptions();
-  const { notes, hits } = readTake(samples, role, options);
-  // Smoothed the same way readTake smoothed it, so the intonation measure
+  // The one reader, with every threshold as it is currently set
+  // (INV-PITCH-028, INV-NOTES-172).
+  const { notes, hits } = readMelody(samples, role);
+  // Smoothed the same way the reader smoothed it, so the intonation measure
   // is taken against the trace the notes actually came from.
-  const summary = takeSummary(notes, smoothPitch([...samples], options.smooth));
+  const summary = takeSummary(
+    notes,
+    smoothPitch([...samples], readingOptions().smooth)
+  );
   // The DTOs mirror the logic types field-for-field on purpose, so this is a
   // rename rather than a conversion (see shared/dto/note).
   return {

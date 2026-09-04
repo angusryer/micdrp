@@ -201,3 +201,6 @@ packages/client/ios/release.xcconfig
 # Shared takes pulled down to work against: recordings of a person's
 # voice, kept beside the code and never committed (INV-DOG-038).
 .samples/
+
+# Built only so the offline corpus harness can require it (yarn corpus).
+packages/logic/dist/

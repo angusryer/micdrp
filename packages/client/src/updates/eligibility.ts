@@ -91,7 +91,7 @@ export async function resolveEligibility(): Promise<Eligibility> {
 
   try {
     for (const candidate of receiptCandidates()) {
-      // eslint-disable-next-line no-await-in-loop -- ordered, stops on the first hit
+       
       if (await exists(candidate.path)) {
         return verdict(
           candidate.sandbox ? 'testflight' : 'app_store',

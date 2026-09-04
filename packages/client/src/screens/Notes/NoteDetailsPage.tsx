@@ -149,6 +149,7 @@ export function NoteDetailsPage({
             bpm={detail.bpm}
             readBpm={detail.readBpm}
             isByHand={detail.isBpmByHand}
+            tappedBpm={detail.tappedBpm}
             onSet={detail.setBpm}
           />
 

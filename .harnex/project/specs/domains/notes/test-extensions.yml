@@ -168,4 +168,42 @@ then:
     mode: extension
     action: notes_assert_field_not
     params: { field: "{field}", value: "{value}" }
+  - id: GX-NOTES-TAPPED-BPM
+    pattern: '{N} beats are tapped at {value} bpm'
+    mode: extension
+    action: notes_set_tapped_beats
+    params: { count: "{N}", bpm: "{value}" }
+  - id: WX-NOTES-OPEN-DETAILS
+    pattern: 'the singer opens the take details'
+    mode: extension
+    action: notes_open_details
+  - id: TX-NOTES-TEMPO-ROW
+    pattern: 'the tempo row is shown'
+    mode: extension
+    action: notes_assert_tempo_row
+  - id: TX-NOTES-TEMPO-OFFER
+    pattern: 'the tempo row offers {N}'
+    mode: extension
+    action: notes_assert_tempo_offer
+    params: { bpm: "{N}" }
+  - id: WX-NOTES-TAP-BEAT
+    pattern: 'the singer taps a beat on note {label}'
+    mode: extension
+    action: notes_tap_beat
+    params: { label: "{label}" }
+  - id: WX-NOTES-INTERP-QUEUE
+    pattern: 'the interpretation queue runs'
+    mode: extension
+    action: notes_flush_interpretations
+  - id: WX-NOTES-RENAMED
+    pattern: 'note {label} is uploaded and renamed'
+    mode: extension
+    action: notes_upload_and_rename
+    params: { label: "{label}" }
+  - id: TX-NOTES-INTERP-STATE
+    pattern: 'the interpretation for note {label} is {value}'
+    mode: extension
+    action: notes_assert_interpretation_state
+    params: { label: "{label}", state: "{value}" }
+    resolution: One of queued, saved.
 

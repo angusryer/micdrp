@@ -32,7 +32,8 @@
     "testflight:watch": "./scripts/testflight-status.py --watch",
     "ota": "./scripts/ota.sh",
     "ota:deploy": "./scripts/ota.sh deploy",
-    "dogfood": "node --experimental-strip-types scripts/dogfood/cli.ts"
+    "dogfood": "node --experimental-strip-types scripts/dogfood/cli.ts",
+    "corpus": "tsc -p packages/logic/tsconfig.build.json && node --experimental-strip-types scripts/corpus/cli.ts"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

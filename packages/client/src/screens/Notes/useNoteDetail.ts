@@ -33,6 +33,7 @@ import {
   replaceTaps,
   resetBeat,
   readMetre,
+  tempoFromBeats,
   type NoteEdge,
   type NoteEvent
 } from 'logic';
@@ -232,6 +233,18 @@ export function useNoteDetail(id: string) {
     return quantized.grid;
   }, [quantized.grid, interpretation.savedBpm]);
   const hasGrid = grid.bpm > 0 && melody.length > 1;
+
+  /**
+   * The tempo the marks imply, worked out but never applied.
+   *
+   * Computing it is not inferring from it: nothing downstream reads this,
+   * and the only thing that can act on it is a person pressing the offer
+   * in the tempo row (INV-NOTES-161).
+   */
+  const tappedTempo = useMemo(
+    () => (beats.length > 0 ? tempoFromBeats(beats, quantized.grid.bpm) : null),
+    [beats, quantized.grid.bpm]
+  );
 
   // What was counted, and what was played. The count is a performance and
   // stays on the graph, but it is not music: it states a tempo and implies no
@@ -690,6 +703,12 @@ export function useNoteDetail(id: string) {
     /** The tempo in use, and how to set it by hand (INV-NOTES-123). */
     bpm: grid.bpm,
     isBpmByHand: interpretation.savedBpm != null,
+    /**
+     * What the tapped beats imply, or null. Offered by the tempo row and
+     * applied only when pressed — the taps stay marks until then
+     * (INV-NOTES-161, INV-NOTES-196).
+     */
+    tappedBpm: tappedTempo?.bpm ?? null,
     setBpm: interpretation.updateBpm,
     readBpm: quantized.grid.bpm,
     isStale: isStale(note?.analysisVersion),

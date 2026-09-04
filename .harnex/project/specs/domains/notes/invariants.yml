@@ -308,3 +308,48 @@ invariants:
       measurement of the take rather than as a leftover, and it was
       nearly used as evidence about the singer.
 
+  - id: INV-NOTES-196
+    description: A take with no tempo can still be given one
+    severity: major
+    check: >
+      Where no tempo was read, the tempo row still appears and offers to
+      set one. Where beats have been tapped, it offers the tempo those
+      taps imply as the value to start from, and applies it only when
+      pressed. Verified by asserting the row renders with no read tempo,
+      and that the offered tempo changes nothing until it is taken.
+
+      The row rendered only when a tempo was already known, so the one
+      take that most needed a tempo stated — the one nothing could be
+      read from — was the one take that could not be given one. A
+      whistled take came back with no tempo at all while sixteen taps
+      sat in its interpretation saying plainly what it was.
+
+      Offering is not inferring. A tapped beat stays a mark and reads no
+      tempo on its own (INV-NOTES-161); this puts what the marks imply
+      in front of the person who made them and waits. The difference is
+      the whole of why that rule exists: four taps once re-cut the
+      harmony of a take somebody was in the middle of reading, and no
+      offer can do that.
+
+  - id: INV-NOTES-197
+    description: What a person did to a take is not lost by a bad connection
+    severity: critical
+    check: >
+      An interpretation whose save fails is queued, survives a relaunch,
+      and is retried; and one saved against a note that has since been
+      given a server id is retried under the new id. Verified by failing
+      a save, restarting, and asserting the interpretation still reaches
+      the server.
+
+      A take has exactly two things that cannot be produced again: the
+      recording, and what a person did to it. The recording has an upload
+      queue. The interpretation had none — one catch that set a flag
+      nothing surfaced, no retry, and no memory of the attempt. So beats
+      tapped offline were gone, and so were beats tapped before the note
+      itself had uploaded, because a note takes a new id when it arrives
+      and the save went to an id the server had never heard of.
+
+      Observed: sixteen tapped beats sat in an interpretation the server
+      never received, on a take whose reading reported no tempo at all.
+      Nothing failed loudly; the marks were simply not there afterwards.
+

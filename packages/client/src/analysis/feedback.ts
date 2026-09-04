@@ -24,10 +24,6 @@ import {
   detectKey,
   estimateTempo,
   scorePitch,
-  dropTooBriefToSing,
-  mergeBends,
-  recentreNotes,
-  segmentNotes,
   smoothPitch,
   DEFAULT_TOLERANCE_CENTS,
   INTONATION_TOLERANCE_CENTS,
@@ -40,7 +36,8 @@ import {
 import { type FeedbackDto, type NoteFeedback } from 'shared';
 
 import type { RecordingHandle } from '../audio/contract';
-import { segmentOptions } from './segmentSettings';
+import { readMelody } from './readMelody';
+import { readingOptions } from './readingValues';
 
 /** Score above which intonation is praised rather than flagged. */
 const STRONG_SCORE = 85;
@@ -208,14 +205,10 @@ export function computeFeedback(
   handle: RecordingHandle,
   externalTargets?: readonly TargetNote[]
 ): FeedbackDto {
-  const smoothed = smoothPitch(handle.samples);
-  // Read against the centre this take was sung at, before anything rounds to
-  // a semitone. A take sitting near a boundary otherwise splits one scale
-  // degree across two semitones, and the key estimate — and so the harmony
-  // built on it — inherits that (INV-PITCH-013).
-  const { notes } = recentreNotes(
-    dropTooBriefToSing(mergeBends(segmentNotes(smoothed, segmentOptions())))
-  );
+  // The one reader, so a take scored here and the same take read into a
+  // note cannot disagree about what was sung (INV-PITCH-028).
+  const { notes } = readMelody(handle.samples, 'mixed');
+  const smoothed = smoothPitch([...handle.samples], readingOptions().smooth);
   const usingTargets = externalTargets != null && externalTargets.length > 0;
   const targets = usingTargets ? [...externalTargets] : selfTargets(notes);
   const score = scorePitch(smoothed, targets);

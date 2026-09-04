@@ -18,6 +18,7 @@
  */
 import type { CreateNoteInput } from 'shared';
 
+import { flushInterpretations, renameQueued } from './interpretationQueue';
 import { notesRepo } from './notesRepo';
 import { dtoToMeta } from './notesSync';
 import { dropNote, pendingNotes, putNote } from './notesLocal';
@@ -69,6 +70,11 @@ export async function flushPending(): Promise<number> {
       }
       try {
         const dto = await notesRepo.create(inputFor(note), { audioUri: uri });
+        // The server named it. Anything a person did to this take while it
+        // was still local was saved against the old id, which the server has
+        // never heard of — so it follows the note rather than being stranded
+        // (INV-NOTES-197).
+        renameQueued(note.id, dto.id);
         // The server named it, so the local id retires. Written before the
         // old one is dropped: a crash between the two leaves a duplicate,
         // which is visible and fixable, rather than nothing, which is not.
@@ -78,6 +84,11 @@ export async function flushPending(): Promise<number> {
       } catch {
         break;
       }
+    }
+    // Anything a person decided about a take that has only just arrived can
+    // go up now that the server knows the take exists.
+    if (sent > 0) {
+      await flushInterpretations();
     }
     return sent;
   })();

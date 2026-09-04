@@ -149,3 +149,79 @@ acceptance:
       capability: notes.reread_take
       invariants: [INV-NOTES-195]
 
+  - id: ACC-NOTES-044
+    interface: ui
+    title: A take with no tempo still offers to be given one
+    given:
+      - singer alice has a note N titled Whistle
+      - the note field tempoBpm is 0
+    when:
+      - the singer opens the take details
+    then:
+      - the tempo row is shown
+    maps_to:
+      capability: notes.set_tempo
+      invariants: [INV-NOTES-196]
+
+  - id: ACC-NOTES-045
+    interface: ui
+    title: The tempo the taps imply is offered, not applied
+    given:
+      - singer alice has a note N titled Whistle
+      - the note field tempoBpm is 0
+      - 16 beats are tapped at 92 bpm
+    when:
+      - the singer opens the take details
+    then:
+      - the tempo row offers 92
+      - the note field tempoBpm is 0
+    maps_to:
+      capability: notes.set_tempo
+      invariants: [INV-NOTES-196, INV-NOTES-161]
+
+  - id: ACC-NOTES-046
+    interface: module
+    title: An interpretation survives a failed save
+    given:
+      - singer alice has a note N titled Whistle
+      - the server is unreachable
+    when:
+      - the singer taps a beat on note N
+      - the app relaunches
+    then:
+      - the interpretation for note N is queued
+    maps_to:
+      capability: notes.save_interpretation
+      invariants: [INV-NOTES-197]
+
+  - id: ACC-NOTES-047
+    interface: module
+    title: A queued interpretation reaches the server when it can
+    given:
+      - singer alice has a note N titled Whistle
+      - the server is unreachable
+    when:
+      - the singer taps a beat on note N
+      - the interpretation queue runs
+    then:
+      - the interpretation for note N is saved
+    maps_to:
+      capability: notes.save_interpretation
+      invariants: [INV-NOTES-197]
+
+  - id: ACC-NOTES-048
+    interface: module
+    title: An interpretation follows a note that was given a server id
+    given:
+      - singer alice has a note N titled Whistle
+      - the server is unreachable
+    when:
+      - the singer taps a beat on note N
+      - note N is uploaded and renamed
+      - the interpretation queue runs
+    then:
+      - the interpretation for note N is saved
+    maps_to:
+      capability: notes.save_interpretation
+      invariants: [INV-NOTES-197]
+

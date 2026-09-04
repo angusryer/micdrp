@@ -21,10 +21,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   notesToMidi,
   scorePitch,
-  dropTooBriefToSing,
-  mergeBends,
-  recentreNotes,
-  segmentNotes,
   smoothPitch,
   type NoteEvent,
   type PitchScore,
@@ -37,7 +33,8 @@ import { practiceProgressRepo } from '../../data/practiceProgressRepo';
 import { writeMidi } from '../../data/files';
 import type { RecordingHandle } from '../../audio/contract';
 import type { PracticeParams } from '../../navigation/types';
-import { segmentOptions } from '../../analysis/vibratoSetting';
+import { readMelody } from '../../analysis/readMelody';
+import { readingOptions } from '../../analysis/readingValues';
 
 /** Persistence status for the one-shot progress write + MIDI write. */
 export type PersistStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -87,14 +84,9 @@ export function analyzeHandle(
   handle: RecordingHandle,
   targets?: readonly TargetNote[]
 ): ResultsAnalysis {
-  const smoothed = smoothPitch(handle.samples);
-  // Read against the centre this take was sung at, before anything rounds to
-  // a semitone. A take sitting near a boundary otherwise splits one scale
-  // degree across two semitones, and the key estimate — and so the harmony
-  // built on it — inherits that (INV-PITCH-013).
-  const { notes } = recentreNotes(
-    dropTooBriefToSing(mergeBends(segmentNotes(smoothed, segmentOptions())))
-  );
+  // The one reader (INV-PITCH-028).
+  const { notes } = readMelody(handle.samples, 'mixed');
+  const smoothed = smoothPitch([...handle.samples], readingOptions().smooth);
   const midi = notesToMidi(notes);
   const grid = targets && targets.length > 0 ? [...targets] : selfTargets(notes);
   const score = scorePitch(smoothed, grid);

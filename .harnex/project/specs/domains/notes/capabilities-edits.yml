@@ -1,5 +1,27 @@
 # Keeping and restoring what a person made of a take.
 capabilities:
+  - name: notes.set_tempo
+    description: >
+      State the tempo of a take by hand, standing in front of whatever was
+      read from it rather than replacing it — so the estimate is always
+      there to go back to, and a re-read cannot undo the decision
+      (INV-NOTES-123).
+    actor: singer
+    implemented_by: packages/client/src/screens/Notes/TempoRow.tsx
+    parameters:
+      required: [noteId, bpm]
+    preconditions:
+      - the take belongs to the singer
+    postconditions:
+      - the stated tempo is used everywhere the read one would have been
+      - the reading is untouched, and going back to it is one press
+      - the row is offered even when nothing could be read from the take,
+        because that is the take that most needs a tempo stated
+        (INV-NOTES-196)
+      - where beats have been tapped, the tempo they imply is offered as
+        the value to start from and applied only when pressed; tapping
+        alone still changes nothing (INV-NOTES-161)
+
   - name: notes.save_interpretation
     description: >
       Keep the active reading with the note, so a decision outlives the

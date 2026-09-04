@@ -1,0 +1,20 @@
+{
+  // Emit CommonJS for the offline corpus harness. Node's ESM loader cannot
+  // resolve this package's extensionless imports — they are extensionless
+  // for Metro's benefit — and its CommonJS resolver can, so the harness
+  // loads the built output rather than the source.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": false,
+    "composite": false,
+    "outDir": "dist",
+    // The root tsconfig has no target, so tsc falls back to ES5 and
+    // refuses to iterate a Map or a Set. The app runs on a modern engine;
+    // this only has to match it.
+    "target": "es2022",
+    "lib": ["es2022"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/__tests__/**"]
+}

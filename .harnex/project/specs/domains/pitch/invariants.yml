@@ -186,3 +186,26 @@ invariants:
       Singers slide into notes and vibrato is rarely symmetrical. An
       average is dragged by both; the middle value is not moved by how
       far the approach travelled, only by how long it lasted.
+
+  - id: INV-PITCH-028
+    description: One recording reads the same way wherever it is read
+    severity: critical
+    check: >
+      Every path that turns pitch frames into notes calls one function
+      with one set of knobs — capture, a layer, a re-read, the practice
+      feedback and the results screen alike. Verified by asserting no
+      caller segments notes itself, and that the same frames produce the
+      same melody through each.
+
+      There were five, and no two agreed. A capture applied the segment
+      knobs and re-centred; a re-read applied smooth, segment, bends and
+      articulation and did not re-centre; a layer did a third thing. So
+      the button offered for tuning a detector did not run the pipeline
+      that had produced the reading being tuned, and the smooth and bend
+      knobs the panel puts first reached a re-read and nothing else.
+
+      Measured on a shared take: read one way it came back as 26 notes,
+      read the other as 35, from the same recording. Which is right is a
+      question worth arguing about; that the same audio answers it twice
+      is not.
+
