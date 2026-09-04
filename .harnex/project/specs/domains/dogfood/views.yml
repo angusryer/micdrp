@@ -112,6 +112,13 @@ views:
       take it back. Sending, it says that instead, so a bad connection
       looks like a bad connection rather than like nothing happening.
 
+      Once the take has been read again since it was shared, it offers
+      to share again instead: the reading is new evidence about the same
+      recording, and comparing two readings of one take is what the
+      corpus is for. Sharing again adds to what is there rather than
+      replacing it, so the reading that showed the fault survives beside
+      the one that showed it fixed.
+
       A take with no recording behind it shows the control unavailable
       rather than hidden. Hidden reads as a bug; dimmed says there is
       nothing here to send.
@@ -128,6 +135,8 @@ views:
       - The same control saying it is sending while a share is queued
       - The same control saying it is shared once it is, and offering to
         take it back when raised again
+      - The same control offering to share again once the take has been
+        read again since
       - A dimmed, unavailable control when there is no recording to send
     absent_elements:
       - Any full-width button, because the sheet is for tuning a reading

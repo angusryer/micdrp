@@ -8,13 +8,17 @@
  * is already up. That is minutes of audio uploaded twice to answer
  * nothing (INV-DOG-034), so the row asks the server once when it opens.
  */
-import { TAKE_SAMPLES_COLLECTION } from 'shared';
+import {
+  readingFingerprint,
+  TAKE_SAMPLES_COLLECTION,
+  type TakeReadingDto
+} from 'shared';
 
 import { backend } from '../lib/backend';
 import {
   dropPending,
   forgetShared,
-  markShared,
+  replaceShared,
   sharedTake,
   type SharedTake
 } from './shares';
@@ -51,13 +55,18 @@ export async function withdrawTake(noteId: string): Promise<string | null> {
   if (shared == null) {
     return null;
   }
-  try {
-    await backend.collection(TAKE_SAMPLES_COLLECTION).delete(shared.sampleId);
-  } catch (error) {
-    if (!isGone(error)) {
-      return error instanceof Error ? error.message : String(error);
+  // Every reading of this take, not only the last. One control says
+  // whether the take is shared, so it cannot leave earlier readings of it
+  // on the server after saying it is not (INV-DOG-035).
+  for (const sampleId of shared.sampleIds) {
+    try {
+      await backend.collection(TAKE_SAMPLES_COLLECTION).delete(sampleId);
+    } catch (error) {
+      if (!isGone(error)) {
+        return error instanceof Error ? error.message : String(error);
+      }
+      // Already gone is the outcome that was asked for.
     }
-    // Already gone is the outcome that was asked for.
   }
   forgetShared(noteId);
   return null;
@@ -72,23 +81,33 @@ export async function withdrawTake(noteId: string): Promise<string | null> {
  * row until the network answers costs every visit.
  */
 export async function refreshShared(noteId: string): Promise<SharedTake | null> {
-  let found;
+  type Row = { id: string; shared_at_ms: number; reading: TakeReadingDto };
+  let rows;
   try {
-    found = await backend
+    rows = await backend
       .collection(TAKE_SAMPLES_COLLECTION)
-      .getFirstListItem<{ id: string; shared_at_ms: number }>(
-        `note_id = "${noteId}"`
-      );
-  } catch (error) {
-    if (!isGone(error)) {
-      return sharedTake(noteId);
-    }
+      .getFullList<Row>({ filter: `note_id = "${noteId}"`, sort: 'shared_at_ms' });
+  } catch {
+    // Offline, or the server is unhappy. The index stands as it is: being
+    // wrong about this offline costs a duplicate at worst, and refusing to
+    // show the control until the network answers costs every visit.
+    return sharedTake(noteId);
+  }
+  if (rows.length === 0) {
     // The server is sure there is none. Only then is forgetting right: a
     // record removed elsewhere should stop being claimed here.
     forgetShared(noteId);
     return null;
   }
-  const shared = { sampleId: found.id, sharedAtMs: found.shared_at_ms };
-  markShared(noteId, shared);
+  const newest = rows[rows.length - 1];
+  const shared: SharedTake = {
+    sampleIds: rows.map((row) => row.id),
+    sharedAtMs: newest.shared_at_ms,
+    // Recomputed from what the server holds rather than stored in a column:
+    // the fingerprint is a pure function of the reading, so the server
+    // already has everything needed to work it out.
+    readingHash: readingFingerprint(newest.reading)
+  };
+  replaceShared(noteId, shared);
   return shared;
 }

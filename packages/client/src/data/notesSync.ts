@@ -100,13 +100,24 @@ export function cachedNotes(): NoteMeta[] {
  */
 export function cacheReading(
   noteId: string,
-  reading: { melody: NoteEventDto[]; hits: HitDto[]; analysisVersion: number }
+  reading: {
+    melody: NoteEventDto[];
+    hits: HitDto[];
+    analysisVersion: number;
+    /**
+     * The measured fields from the same pass. Spread over the cached note
+     * so the range and the tuning measures cannot be left describing a
+     * reading that no longer exists (INV-NOTES-195).
+     */
+    summary?: Partial<NoteMeta>;
+  }
 ): void {
+  const { summary, ...read } = reading;
   const index: Record<string, NoteMeta> = {};
   for (const meta of listNotes()) {
     index[meta.id] =
       meta.id === noteId
-        ? { ...meta, ...reading, noteCount: reading.melody.length }
+        ? { ...meta, ...read, ...(summary ?? {}), noteCount: read.melody.length }
         : meta;
   }
   setJSON(NOTES_INDEX_KEY, index);

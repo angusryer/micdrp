@@ -287,3 +287,24 @@ invariants:
       was sung, and a reading is allowed to be wrong because it can be made
       again (INV-NOTES-170).
 
+  - id: INV-NOTES-195
+    description: Reading a take again replaces everything read from it
+    severity: critical
+    check: >
+      A re-read writes the melody, the hits, the note count, the range,
+      the key, the tempo and the tuning measures — every field derived
+      from the recording, from the same pass. Verified by re-reading a
+      take whose range has changed and asserting the stored range moved
+      with the melody.
+
+      Only the melody, the hits, the count and the version were written.
+      The range and the tuning measures stayed as the first reading left
+      them, so a take re-read with a raised pitch ceiling held notes up
+      to MIDI 93 while still reporting a range topping out at 86, and a
+      mean error of 35 cents measured against a reading that no longer
+      existed.
+
+      A stale summary is worse than an absent one: it is read as a
+      measurement of the take rather than as a leftover, and it was
+      nearly used as evidence about the singer.
+

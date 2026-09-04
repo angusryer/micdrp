@@ -33,7 +33,10 @@ export interface ShareTakeControlProps {
 const WORD: Record<TakeShare['state'], string> = {
   none: 'dogfood.share.give',
   pending: 'dogfood.share.sending',
-  shared: 'dogfood.share.given'
+  shared: 'dogfood.share.given',
+  // Shared, and read again since. A different offer, not a different
+  // shade of the same one (INV-DOG-034).
+  stale: 'dogfood.share.again'
 };
 
 export function ShareTakeControl({
@@ -44,10 +47,11 @@ export function ShareTakeControl({
   const { t } = useTranslation();
 
   const isShared = share.state === 'shared';
+  const isStale = share.state === 'stale';
   // Dimmed rather than hidden. Hidden reads as a bug; dimmed says there is
   // nothing here to send. A take already shared stays tappable even if its
   // audio has since gone from this device — withdrawing needs no file.
-  const disabled = (!hasAudio && !isShared) || share.isWorking;
+  const disabled = (!hasAudio && !isShared && !isStale) || share.isWorking;
 
   const onPress = useCallback(async () => {
     if (isShared) {
@@ -64,11 +68,15 @@ export function ShareTakeControl({
       }
       return;
     }
-    if (!(await confirmShare(t))) {
+    // Shared already, and read again since: the offer is to hand over the
+    // new reading beside the old one, not to replace it. Withdrawing is
+    // still reachable — it is what the control offers once this lands and
+    // the two readings agree again.
+    if (!(await confirmShare(t, isStale))) {
       return;
     }
     await share.share();
-  }, [isShared, share, t]);
+  }, [isShared, isStale, share, t]);
 
   // Raised rather than printed: there is no room for a line of explanation
   // beside one word, and a share that did not happen has to say so. In an

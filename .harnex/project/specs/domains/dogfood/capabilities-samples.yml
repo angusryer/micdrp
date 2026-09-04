@@ -30,7 +30,8 @@ capabilities:
         together in one record
       - the sample holds its own copy of the audio, so re-reading or
         deleting the note afterwards leaves it untouched
-      - a take already shared is not shared again
+      - a reading already shared is not shared again; a reading that has
+        changed since is added beside it rather than replacing it
       - a share that cannot be sent stays queued and is retried, and
         survives a relaunch
       - the queue drains only while the microphone is free
@@ -53,7 +54,9 @@ capabilities:
     preconditions:
       - the take is shared
     postconditions:
-      - the sample record and its audio are deleted from the server
+      - every sample of that take is deleted from the server, with its
+        audio — a take is shared or it is not, and one control saying so
+        cannot leave earlier readings of it behind
       - a share still waiting in the queue is dropped before it is sent
       - the take itself, its audio and its reading are untouched
       - the control returns to offering to share

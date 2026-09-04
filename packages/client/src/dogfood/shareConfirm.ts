@@ -21,11 +21,12 @@ type Translate = (key: string) => string;
  * dismissing counts as no, which is why this resolves rather than
  * taking a callback for the accept alone.
  */
-export function confirmShare(t: Translate): Promise<boolean> {
+export function confirmShare(t: Translate, again = false): Promise<boolean> {
+  const key = again ? 'dogfood.share.againConfirm' : 'dogfood.share.confirm';
   return new Promise((resolve) => {
-    Alert.alert(t('dogfood.share.confirm.title'), t('dogfood.share.confirm.body'), [
-      { text: t('dogfood.share.confirm.cancel'), style: 'cancel', onPress: () => resolve(false) },
-      { text: t('dogfood.share.confirm.send'), onPress: () => resolve(true) }
+    Alert.alert(t(`${key}.title`), t(`${key}.body`), [
+      { text: t(`${key}.cancel`), style: 'cancel', onPress: () => resolve(false) },
+      { text: t(`${key}.send`), onPress: () => resolve(true) }
     ]);
   });
 }

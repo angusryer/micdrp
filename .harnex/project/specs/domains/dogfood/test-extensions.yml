@@ -225,3 +225,9 @@ then:
     pattern: 'the share control was told the queue changed'
     mode: extension
     action: dog_assert_share_notified
+  - id: TX-DOG-TWO-SAMPLES
+    pattern: 'take {label} has two samples'
+    mode: extension
+    action: dog_assert_two_samples
+    params: { label: "{label}" }
+

@@ -44,6 +44,33 @@ capabilities:
       - role: visitor
         notes: Pure computation over a handle the caller already holds.
 
+  - name: notes.reread_take
+    description: >
+      Read a stored recording again with whatever the engine and the
+      knobs can do now, and replace everything that was read from it.
+
+      The recording and what a person did to it are the only parts of a
+      take that cannot be produced again (INV-NOTES-116). Everything
+      else is a reading, so an engine that improved is only useful to
+      the takes already in the library if those readings can be thrown
+      away and made afresh.
+    actor: singer
+    implemented_by: packages/client/src/analysis/reread.ts
+    parameters:
+      required: [noteId]
+    preconditions:
+      - the take has a recording, on this device or on the server
+    postconditions:
+      - every field read from the recording is replaced from the same
+        pass — the melody, the hits, the count, the range, the key, the
+        tempo and the tuning measures (INV-NOTES-195)
+      - the interpretation is untouched, and replays onto the new reading
+      - a reading that failed replaces nothing, and says which way it
+        failed
+    permissions:
+      - role: singer
+        notes: Their own take, read again on their own device.
+
   - name: notes.list
     description: >
       Show the singer's notes newest first, painting the cache

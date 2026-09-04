@@ -57,7 +57,7 @@ acceptance:
 
   - id: ACC-DOG-040
     interface: module
-    title: Sharing twice makes one sample
+    title: Sharing an unchanged reading twice makes one sample
     given:
       - take T is shared
     when:
@@ -67,6 +67,37 @@ acceptance:
     maps_to:
       capability: dogfood.share_take
       invariants: [INV-DOG-034]
+
+  - id: ACC-DOG-047
+    interface: module
+    title: A reading that changed can be shared beside the one before it
+    given:
+      - take T has been read as 12 notes
+      - take T is shared
+    when:
+      - take T is read again as 35 notes
+      - the maintainer shares take T
+    then:
+      - take T has two samples
+    maps_to:
+      capability: dogfood.share_take
+      invariants: [INV-DOG-034]
+
+  - id: ACC-DOG-048
+    interface: module
+    title: Withdrawing takes every reading of that take with it
+    given:
+      - take T has been read as 12 notes
+      - take T is shared
+    when:
+      - take T is read again as 35 notes
+      - the maintainer shares take T
+      - the maintainer withdraws take T
+    then:
+      - sample T is gone
+    maps_to:
+      capability: dogfood.withdraw_take
+      invariants: [INV-DOG-035]
 
   - id: ACC-DOG-041
     interface: module

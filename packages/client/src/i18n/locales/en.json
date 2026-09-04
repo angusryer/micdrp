@@ -341,6 +341,13 @@
       "sending": "Sending\u2026",
       "given": "Shared",
       "failed": "Couldn't share this take",
+      "again": "Share again",
+      "againConfirm": {
+        "title": "Share this reading too?",
+        "body": "This take has been read again since you shared it. Sending the new reading adds it beside the one already there, so the two can be compared. The earlier one is kept.",
+        "cancel": "Cancel",
+        "send": "Share again"
+      },
       "confirm": {
         "title": "Share this take?",
         "body": "This recording, and what the app read out of it, go up so the reading can be checked against the sound. Nothing else goes with it, and you can stop sharing at any time.",

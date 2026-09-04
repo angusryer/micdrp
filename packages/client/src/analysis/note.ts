@@ -12,9 +12,6 @@
  *                              → detectKey / estimateTempo / scorePitch(self)
  */
 import {
-  detectKey,
-  estimateTempo,
-  scorePitch,
   dropTooBriefToSing,
   mergeBends,
   recentreNotes,
@@ -23,18 +20,13 @@ import {
   smoothPitch,
   ANALYSIS_VERSION,
   type Hit,
-  type NoteEvent,
-  type TargetNote
+  type NoteEvent
 } from 'logic';
 import type { CreateNoteInput } from 'shared';
 
 import type { RecordingHandle } from '../audio/contract';
 import { segmentOptions } from './segmentSettings';
-
-/** detectKey confidence below which the key is too weak to assert. */
-const MIN_KEY_CONFIDENCE = 0.04;
-/** estimateTempo confidence below which the tempo is too weak to assert. */
-const MIN_TEMPO_CONFIDENCE = 0.4;
+import { takeSummary } from './summary';
 
 export interface CaptureAnalysis {
   /** Discrete sung notes — the symbolic melody (`NoteEvent` ≡ `NoteEventDto`). */
@@ -43,11 +35,6 @@ export interface CaptureAnalysis {
   hits: Hit[];
   /** The fields needed to persist this capture as a note. */
   noteInput: Omit<CreateNoteInput, 'title'>;
-}
-
-/** Self-referential target grid: each note is the target for its own span. */
-function selfTargets(notes: readonly NoteEvent[]): TargetNote[] {
-  return notes.map((n) => ({ midi: n.midi, startMs: n.startMs, endMs: n.endMs }));
 }
 
 /**
@@ -67,27 +54,10 @@ export function analyzeCapture(handle: RecordingHandle): CaptureAnalysis {
   // between humming and drumming without announcing it, so it is read both
   // ways (INV-NOTES-115).
   const hits = readPercussion(handle.samples);
-  const hasNotes = notes.length > 0;
-
-  // Intonation steadiness: how cleanly each sustained pitch was held (no grade).
-  const score = scorePitch(smoothed, selfTargets(notes));
-
-  const key = detectKey(notes);
-  const keyLabel =
-    hasNotes && key.confidence >= MIN_KEY_CONFIDENCE
-      ? `${key.tonicName} ${key.mode}`
-      : null;
-
-  const tempo = estimateTempo(notes);
-  const tempoBpm =
-    tempo.bpm > 0 && tempo.confidence >= MIN_TEMPO_CONFIDENCE ? tempo.bpm : null;
-
-  let low: number | null = null;
-  let high: number | null = null;
-  for (const n of notes) {
-    low = low == null ? n.midi : Math.min(low, n.midi);
-    high = high == null ? n.midi : Math.max(high, n.midi);
-  }
+  // Every measured field, from the same helper a re-read uses — so a take
+  // read again cannot end up with a melody from one reading and a range
+  // from another (INV-NOTES-195).
+  const summary = takeSummary(notes, smoothed);
 
   return {
     melody: notes,
@@ -97,13 +67,7 @@ export function analyzeCapture(handle: RecordingHandle): CaptureAnalysis {
       sampleRateHz: handle.sampleRateHz,
       // NoteEvent is structurally identical to NoteEventDto.
       melody: notes,
-      key: keyLabel,
-      tempoBpm,
-      inTuneRatio: hasNotes ? score.inTuneRatio : null,
-      meanCentsError: hasNotes ? score.meanCentsError : null,
-      noteCount: notes.length,
-      rangeLowMidi: low,
-      rangeHighMidi: high,
+      ...summary,
       hits,
       // Stamped with the reading that produced all of the above, so a later
       // engine can tell this take apart from one it has already read
@@ -112,5 +76,3 @@ export function analyzeCapture(handle: RecordingHandle): CaptureAnalysis {
     }
   };
 }
-
-export default analyzeCapture;

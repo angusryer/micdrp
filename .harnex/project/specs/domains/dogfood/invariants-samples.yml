@@ -51,14 +51,27 @@ invariants:
       recording the agent will never know it was promised.
 
   - id: INV-DOG-034
-    description: A take is shared once, and says which it is
+    description: One reading is shared once; a changed reading may be shared again
     severity: high
     check: >
-      Sharing a take that is already shared or already queued does
-      nothing, and the control shows shared rather than offering to
-      share again. Verified by tapping twice and asserting one sample
-      exists. A take is minutes of audio; a second copy costs the same
-      as the first and answers nothing the first did not.
+      Sharing a take whose reading has not changed since it was last
+      shared does nothing. Sharing one whose reading has changed adds a
+      sample rather than replacing the one before it. Verified by
+      sharing twice unchanged and asserting one sample, then re-reading
+      and sharing again and asserting two.
+
+      The first rule here was "a take is shared once", written to stop
+      minutes of audio going up twice to say the same thing. It was the
+      wrong rule. The whole point of the corpus is comparing readings of
+      one recording as a detector changes, and that rule made the only
+      way to share a second reading withdrawing the first — which
+      deleted the very evidence the comparison needed. It happened on
+      the first attempt: a ceiling was raised, the take was read again,
+      and the reading that proved the ceiling was wrong had to be
+      destroyed to hand over the one that proved it fixed.
+
+      What is worth refusing is a duplicate that says nothing new, and
+      that is a question about the reading, not about the take.
 
   - id: INV-DOG-035
     description: Sharing is revocable, and revoking takes the audio with it

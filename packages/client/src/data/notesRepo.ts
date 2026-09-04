@@ -262,20 +262,47 @@ export const notesRepo = {
    * the detector first heard them and replay against whatever is read now
    * (INV-NOTES-116).
    */
+  /**
+   * Replace everything that was read from a recording.
+   *
+   * Every measured field, not only the melody. Writing the melody and
+   * leaving the range and the tuning measures behind left a take reporting
+   * a range that its own notes had outgrown, which reads as a measurement
+   * rather than as a leftover (INV-NOTES-195).
+   */
   async saveReading(
     noteId: string,
     reading: {
       melody: readonly NoteEventDto[];
       hits: readonly HitDto[];
       analysisVersion: number;
+      summary?: {
+        key: string | null;
+        tempoBpm: number | null;
+        inTuneRatio: number | null;
+        meanCentsError: number | null;
+        rangeLowMidi: number | null;
+        rangeHighMidi: number | null;
+      };
     }
   ): Promise<void> {
+    const { summary } = reading;
     try {
       await backend.collection(COLLECTIONS.notes).update(noteId, {
         melody_json: reading.melody,
         hits_json: reading.hits,
         analysis_version: reading.analysisVersion,
-        note_count: reading.melody.length
+        note_count: reading.melody.length,
+        ...(summary
+          ? {
+              key: summary.key ?? '',
+              tempo_bpm: summary.tempoBpm ?? 0,
+              in_tune_ratio: summary.inTuneRatio ?? 0,
+              mean_cents_error: summary.meanCentsError ?? 0,
+              range_low_midi: summary.rangeLowMidi ?? 0,
+              range_high_midi: summary.rangeHighMidi ?? 0
+            }
+          : {})
       });
     } catch (error) {
       throw appError(AppErrorCode.Network, 'Could not save the new reading', error);

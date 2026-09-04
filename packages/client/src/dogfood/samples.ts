@@ -8,12 +8,17 @@
  * loop that transcribed one would find words in it and act on them
  * (INV-DOG-036).
  */
-import { readingOf, type NoteEventDto, type ReadableTake } from 'shared';
+import {
+  readingFingerprint,
+  readingOf,
+  type NoteEventDto,
+  type ReadableTake
+} from 'shared';
 
 import { readClipOrigin } from './config';
 import { runningBundleId } from './origin';
 import { flushShares, noteShareProblem } from './sampleUpload';
-import { queueShare, sharedTake } from './shares';
+import { pendingShare, queueShare, sharedTake } from './shares';
 import { takeSource } from './takeSource';
 
 /** Everything sharing one take needs that this module cannot work out. */
@@ -43,11 +48,19 @@ export interface ShareTakeInput {
  * Mark a take to share, and try to send it now.
  *
  * Returns the reason it could not be marked, or null. Failing to *send* is
- * not one of those reasons: the share is queued and retried, and the row
- * says it is waiting rather than saying it is done (INV-DOG-033).
+ * not one of those reasons: the share is queued and retried, and the
+ * control says it is waiting rather than saying it is done (INV-DOG-033).
  */
 export async function shareTake(input: ShareTakeInput): Promise<string | null> {
-  if (sharedTake(input.noteId) != null) {
+  const reading = readingOf(input.take, input.corrected);
+  const readingHash = readingFingerprint(reading);
+  // Refused only when this exact reading is already up. A take read again
+  // is new evidence about the same recording, and comparing two readings
+  // of one take is the whole point of the corpus (INV-DOG-034).
+  if (sharedTake(input.noteId)?.readingHash === readingHash) {
+    return null;
+  }
+  if (pendingShare(input.noteId)?.readingHash === readingHash) {
     return null;
   }
   const source = await takeSource(
@@ -69,7 +82,8 @@ export async function shareTake(input: ShareTakeInput): Promise<string | null> {
     audioExt: source.audioExt,
     durationMs: input.durationMs,
     sampleRateHz: input.sampleRateHz,
-    reading: readingOf(input.take, input.corrected),
+    reading,
+    readingHash,
     appVersion: origin.appVersion,
     buildNumber: origin.buildNumber,
     bundleId: runningBundleId(),

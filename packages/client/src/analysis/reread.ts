@@ -12,17 +12,25 @@
  * new reading on their own; an edit whose note is no longer there simply finds
  * nothing, which is the honest outcome and the thing worth warning about.
  */
-import { ANALYSIS_VERSION, readTake, type TakeRole } from 'logic';
+import { ANALYSIS_VERSION, readTake, smoothPitch, type TakeRole } from 'logic';
 import type { HitDto, NoteEventDto } from 'shared';
 
 import { audioEngine } from '../audio/AudioEngine';
 import { localCopyOf } from './localCopy';
 import { readingOptions } from './readingValues';
+import { takeSummary, type TakeSummary } from './summary';
 
 export interface Reread {
   melody: NoteEventDto[];
   hits: HitDto[];
   analysisVersion: number;
+  /**
+   * Everything else the recording says about itself, measured in the same
+   * pass. Written back with the melody, because a range or a mean error
+   * left over from an earlier reading is read as a measurement of the take
+   * rather than as a leftover (INV-NOTES-195).
+   */
+  summary: TakeSummary;
 }
 
 /**
@@ -71,11 +79,20 @@ export async function rereadTake(
   }
   // Every threshold the reading turns on, as it is currently set
   // (INV-NOTES-172).
-  const { notes, hits } = readTake(samples, role, readingOptions());
+  const options = readingOptions();
+  const { notes, hits } = readTake(samples, role, options);
+  // Smoothed the same way readTake smoothed it, so the intonation measure
+  // is taken against the trace the notes actually came from.
+  const summary = takeSummary(notes, smoothPitch([...samples], options.smooth));
   // The DTOs mirror the logic types field-for-field on purpose, so this is a
   // rename rather than a conversion (see shared/dto/note).
   return {
     ok: true,
-    reading: { melody: notes, hits, analysisVersion: ANALYSIS_VERSION }
+    reading: {
+      melody: notes,
+      hits,
+      analysisVersion: ANALYSIS_VERSION,
+      summary
+    }
   };
 }

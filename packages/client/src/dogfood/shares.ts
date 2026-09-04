@@ -33,6 +33,8 @@ export interface PendingShare {
   audioUri: string;
   /** True when audioUri is a copy this queue made and must clean up. */
   isTemp: boolean;
+  /** Which reading this carries, so an unchanged re-share is refused. */
+  readingHash: string;
   /** The take's own format, so the corpus gets a file it can open. */
   audioExt: string;
   durationMs: number;
@@ -44,10 +46,19 @@ export interface PendingShare {
   sharedAtMs: number;
 }
 
-/** A take that reached the server, and the sample it became. */
+/**
+ * A take that reached the server, and every sample it has become.
+ *
+ * A list, not one id. The corpus exists to compare readings of one
+ * recording as a detector changes, so a take read again is worth sharing
+ * beside what is already there rather than instead of it (INV-DOG-034).
+ */
 export interface SharedTake {
-  sampleId: string;
+  sampleIds: string[];
+  /** When the most recent one went. */
   sharedAtMs: number;
+  /** The reading that one carried, so an unchanged re-share is refused. */
+  readingHash: string;
 }
 
 type Index = Record<string, SharedTake>;
@@ -97,15 +108,22 @@ export function pendingShare(noteId: string): PendingShare | null {
 }
 
 /**
- * Mark a take to share. A take already queued is left alone rather than
- * queued twice: a second copy of minutes of audio answers nothing the
- * first did not (INV-DOG-034).
+ * Mark a take to share.
+ *
+ * A queued share for the same take carrying the same reading is left
+ * alone; one carrying a different reading replaces it, because the newer
+ * reading is the one worth sending and the older one never left the
+ * device to be compared against anything (INV-DOG-034).
  */
 export function queueShare(share: PendingShare): void {
-  if (pendingShare(share.noteId) != null) {
+  const queued = pendingShare(share.noteId);
+  if (queued?.readingHash === share.readingHash) {
     return;
   }
-  writeQueue([...readQueue(), share]);
+  writeQueue([
+    ...readQueue().filter((held) => held.noteId !== share.noteId),
+    share
+  ]);
 }
 
 /** Take a share out of the queue. Says whether there was one. */
@@ -122,8 +140,28 @@ export function sharedTake(noteId: string): SharedTake | null {
   return readIndex()[noteId] ?? null;
 }
 
-/** Note that a take is now on the server. */
-export function markShared(noteId: string, shared: SharedTake): void {
+/** Note that another reading of a take is now on the server. */
+export function markShared(
+  noteId: string,
+  sample: { sampleId: string; sharedAtMs: number; readingHash: string }
+): void {
+  const held = readIndex()[noteId];
+  writeIndex({
+    ...readIndex(),
+    [noteId]: {
+      sampleIds: [...(held?.sampleIds ?? []), sample.sampleId],
+      sharedAtMs: sample.sharedAtMs,
+      readingHash: sample.readingHash
+    }
+  });
+}
+
+/** Replace what is known about a take, from the server's own answer. */
+export function replaceShared(noteId: string, shared: SharedTake | null): void {
+  if (shared == null) {
+    forgetShared(noteId);
+    return;
+  }
   writeIndex({ ...readIndex(), [noteId]: shared });
 }
 

@@ -121,3 +121,31 @@ acceptance:
       invariants: [INV-NOTES-013]
       interaction: INT-NOTES-001
 
+  - id: ACC-NOTES-042
+    interface: module
+    title: Reading again moves the range with the melody
+    given:
+      - singer alice has a note N titled Whistle
+      - the note field rangeHighMidi is 86
+    when:
+      - the take is read again and the melody now tops out at midi 93
+    then:
+      - the note field rangeHighMidi is 93
+    maps_to:
+      capability: notes.reread_take
+      invariants: [INV-NOTES-195]
+
+  - id: ACC-NOTES-043
+    interface: module
+    title: Reading again replaces the tuning measures too
+    given:
+      - singer alice has a note N titled Whistle
+      - the note field meanCentsError is 35
+    when:
+      - the take is read again and the melody now tops out at midi 93
+    then:
+      - the note field meanCentsError is not 35
+    maps_to:
+      capability: notes.reread_take
+      invariants: [INV-NOTES-195]
+

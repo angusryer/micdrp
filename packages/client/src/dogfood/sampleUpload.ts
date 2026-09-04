@@ -97,7 +97,11 @@ export async function flushShares(): Promise<number> {
         lastError = error instanceof Error ? error.message : String(error);
         break;
       }
-      markShared(share.noteId, { sampleId, sharedAtMs: share.sharedAtMs });
+      markShared(share.noteId, {
+      sampleId,
+      sharedAtMs: share.sharedAtMs,
+      readingHash: share.readingHash
+    });
       dropPending(share.noteId);
       await releaseSource(share);
       sent += 1;

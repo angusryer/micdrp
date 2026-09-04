@@ -7,6 +7,7 @@ import { flushShares } from '../sampleUpload';
 import { withdrawTake } from '../sampleRecord';
 import {
   pendingShare,
+  pendingShares,
   resetSharesForTests,
   sharedTake,
   subscribeToShares
@@ -97,12 +98,36 @@ describe('sharing a take', () => {
     expect(sentField('user')).toBe('user-1');
   });
 
-  it('ACC-DOG-040: sharing twice makes one sample', async () => {
+  it('ACC-DOG-040: sharing an unchanged reading twice makes one sample', async () => {
     await shareTake(take);
     await flushShares();
     await shareTake(take);
     await flushShares();
     expect(mockCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it('ACC-DOG-047: a reading that changed goes beside the one before it', async () => {
+    // The corpus exists to compare readings of one recording as a detector
+    // changes. Refusing the second reading, or replacing the first with it,
+    // both destroy exactly the comparison it was built for.
+    await shareTake(take);
+    await flushShares();
+    mockCreate.mockResolvedValue({ id: 'sample-2' });
+    const reread = { melody: [...heard, ...corrected], noteCount: 2, analysisVersion: 3 };
+    expect(await shareTake({ ...take, take: reread })).toBeNull();
+    await flushShares();
+    expect(mockCreate).toHaveBeenCalledTimes(2);
+    expect(sharedTake('note-1')?.sampleIds).toEqual(['sample-1', 'sample-2']);
+  });
+
+  it('replaces a queued share when the take is read again before it goes', async () => {
+    // Neither reading has left the device, so there is nothing to compare
+    // the older one against — the newer one is simply the one worth sending.
+    mockCreate.mockRejectedValue(new Error('offline'));
+    await shareTake(take);
+    const reread = { melody: [...heard, ...corrected], noteCount: 2, analysisVersion: 3 };
+    await shareTake({ ...take, take: reread });
+    expect(pendingShares()).toHaveLength(1);
   });
 
   it('refuses a take with no recording anywhere', async () => {
@@ -165,6 +190,22 @@ describe('taking it back', () => {
     expect(sharedTake('note-1')).toBeNull();
   });
 
+  it('ACC-DOG-048: takes every reading of that take with it', async () => {
+    // One control says whether the take is shared, so it cannot leave an
+    // earlier reading on the server after saying it is not.
+    await shareTake(take);
+    await flushShares();
+    mockCreate.mockResolvedValue({ id: 'sample-2' });
+    await shareTake({
+      ...take,
+      take: { melody: [...heard, ...corrected], noteCount: 2, analysisVersion: 3 }
+    });
+    await flushShares();
+    expect(await withdrawTake('note-1')).toBeNull();
+    expect(mockDelete.mock.calls.map((c) => c[0])).toEqual(['sample-1', 'sample-2']);
+    expect(sharedTake('note-1')).toBeNull();
+  });
+
   it('ACC-DOG-042: a share that never left is dropped before it can go', async () => {
     mockCreate.mockRejectedValue(new Error('offline'));
     await shareTake(take);
@@ -182,7 +223,7 @@ describe('taking it back', () => {
     await flushShares();
     mockDelete.mockRejectedValue(new Error('offline'));
     expect(await withdrawTake('note-1')).toMatch(/offline/);
-    expect(sharedTake('note-1')?.sampleId).toBe('sample-1');
+    expect(sharedTake('note-1')?.sampleIds).toEqual(['sample-1']);
   });
 
   it('treats a record already gone as withdrawn', async () => {

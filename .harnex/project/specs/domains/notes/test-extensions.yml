@@ -158,3 +158,14 @@ then:
     action: assert_voicing_floor
     params: { floor: "{N}" }
     resolution: Assert the recorded voicing respects the backdrop floor.
+  - id: WX-NOTES-REREAD-HIGHER
+    pattern: 'the take is read again and the melody now tops out at midi {N}'
+    mode: extension
+    action: notes_reread_with_top
+    params: { midi: "{N}" }
+  - id: TX-NOTES-FIELD-NOT
+    pattern: 'the note field {field} is not {value}'
+    mode: extension
+    action: notes_assert_field_not
+    params: { field: "{field}", value: "{value}" }
+

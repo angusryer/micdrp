@@ -112,6 +112,36 @@ export function readingOf(
   };
 }
 
+/**
+ * A short, stable stand-in for a reading, so two of them can be told
+ * apart without keeping either.
+ *
+ * What it is used for is one question: has this take been read again
+ * since it was last shared? That decides whether sharing it once more
+ * would add evidence or just upload the same minutes of audio to say the
+ * same thing (INV-DOG-034).
+ *
+ * FNV-1a over the reading's JSON. Not a security hash and not trying to
+ * be — a collision here costs one share that should have happened, which
+ * the next re-read offers again.
+ */
+export function readingFingerprint(reading: TakeReadingDto): string {
+  const json = JSON.stringify([
+    reading.melody,
+    reading.corrected ?? null,
+    reading.interpretations,
+    reading.hits,
+    reading.analysisVersion ?? null
+  ]);
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < json.length; i += 1) {
+    hash ^= json.charCodeAt(i);
+    // The FNV prime, by shifts, so this stays in 32 bits without BigInt.
+    hash = (hash + (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24)) >>> 0;
+  }
+  return `${hash.toString(16)}-${json.length.toString(16)}`;
+}
+
 /** One shared take, as either end sees it. */
 export interface TakeSampleDto {
   id: string;
