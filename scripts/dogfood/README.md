@@ -9,7 +9,23 @@ yarn dogfood --once        # one pass
 yarn dogfood               # poll every 2 minutes
 yarn dogfood status        # running, or halted and why
 yarn dogfood resume        # clear a halt
+yarn dogfood samples       # pull shared takes into .samples/
 ```
+
+## Shared takes are the other direction
+
+`yarn dogfood samples` fetches nothing to act on. A remark says a reading was
+wrong; a shared take *is* the reading being wrong, and a detector can be run
+against it. Each one lands in `.samples/<date>-<title>-<id>/` as the recording
+plus a `reading.json` holding what the app heard, what the maintainer corrected
+by hand, and which analysis version produced it — so a change to pitch
+detection can be scored against a real voice instead of against a test written
+from the same assumptions that caused the error.
+
+They live in a separate collection from the clips and no run ever claims one
+(INV-DOG-036). Audio arriving from the same person through the same door would
+otherwise be transcribed, found to contain words, and acted on. The corpus is
+never committed (INV-DOG-038): it is recordings of a person singing.
 
 ## Run it with `--dry-run` first
 

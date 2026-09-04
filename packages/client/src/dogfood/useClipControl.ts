@@ -18,6 +18,7 @@ import { runningBundleId } from './origin';
 import { announceOutOfTime } from './outOfTime';
 import { currentRoute, subscribeToRoute } from './route';
 import { IDLE_SESSION, type RecordingSession } from './types';
+import { flushShares } from './sampleUpload';
 import { enqueue, flushPending } from './upload';
 
 /** Just enough of i18n's `t` for the out-of-time alert. */
@@ -82,8 +83,17 @@ export function useClipControl(t: Translate): {
     return () => clearInterval(timer);
   }, [view.state, session, refresh, finish]);
 
-  // A take starting or ending changes whether the control is available.
-  useEffect(() => subscribeToBusy(refresh), [refresh]);
+  // A take starting or ending changes whether the control is available —
+  // and a take ending is when a shared take may finally go up, since
+  // nothing competes with the microphone for the uplink (INV-DOG-037).
+  useEffect(
+    () =>
+      subscribeToBusy(() => {
+        refresh();
+        void flushShares();
+      }),
+    [refresh]
+  );
 
   // Navigating mid-sentence is context, not an interruption (INV-DOG-002).
   useEffect(
@@ -91,9 +101,11 @@ export function useClipControl(t: Translate): {
     [session]
   );
 
-  // Anything left over from a previous session goes up on launch.
+  // Anything left over from a previous session goes up on launch —
+  // remarks and shared takes alike.
   useEffect(() => {
     void flushPending();
+    void flushShares();
   }, []);
 
   // One control, two shapes. Round starts the clip; the square it becomes

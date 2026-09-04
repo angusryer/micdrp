@@ -5,6 +5,7 @@ export * from './dto/profile';
 export * from './dto/updateBundle';
 export * from './dto/dogfood';
 export * from './dto/dogfoodAgent';
+export * from './dto/takeSample';
 export * from './dto/audioFormat';
 export * from './dto/interpretation';
 export * from './dto/clipProgress';

@@ -63,3 +63,16 @@ commands:
       flags:
         "follow": { type: boolean, default: false }
     output: What the scheduled runs have done, newest last.
+
+  - id: CMD-DOG-007
+    name: yarn dogfood samples
+    maps_to: dogfood.pull_samples
+    arguments:
+      positional: []
+      flags:
+        "all": { type: boolean, default: false, description: "Fetch every sample again, not only the ones not yet pulled" }
+        "out": { type: string, default: ".samples", description: "Directory to write the corpus into. Ignored by git." }
+    output: >
+      One line per sample written — its title, how long it is, and how
+      many notes the app read out of it — then the directory they went
+      to. Nothing new prints nothing, like the loop itself.

@@ -26,6 +26,16 @@ domain:
     its own. And nothing here may interrupt singing — the microphone
     serves one purpose at a time, and a take is worth more than a remark.
 
+    The domain also carries the other direction of the same idea. Saying
+    "it heard that wrong" is a description of a mistake; the recording
+    that caused it is the mistake itself. So a take can be handed over
+    whole — the audio, and what the app read out of it — and pulled down
+    beside the code, where a detector can be run against a real voice
+    instead of against a test written from the assumptions that produced
+    the error. A shared take is evidence and never an instruction: it is
+    kept apart from the spoken clips, and nothing claims it or builds
+    from it (INV-DOG-036).
+
   interfaces:
     - type: ui
       description: >
@@ -56,9 +66,14 @@ domain:
       - Claiming, transcribing and interpreting a clip
       - Deciding whether an interpretation is safe to act on unattended
       - Building, verifying and delivering the changes a clip asks for
+      - Sharing a take's recording and its reading as a sample, and
+        withdrawing one
+      - Pulling shared takes down into a corpus beside the code
     does_not_own:
       - Singing feedback, scoring, or anything FeedbackDto means
       - Capturing or analysing a musical take (notes, pitch, practice)
+      - What a reading of a shared take should have been; this hands over
+        the evidence and leaves the judgement to notes and pitch
       - Whether an over-the-air bundle reaches a device (updates owns that)
       - The release scripts, signing, or anything that needs a native build
 

@@ -54,3 +54,44 @@ interactions:
       without needing to change screens.
     maps_to:
       capability: dogfood.start_clip
+
+  - id: INT-DOG-005
+    name: Hand over a recording
+    view: VIEW-DOG-003
+    precondition: >
+      The maintainer is looking at a take whose reading is wrong, and is
+      signed in.
+    steps:
+      - Open the take's details
+      - Read the line saying what will be sent
+      - Tap share
+    outcome: >
+      The recording and the reading it produced go up together as one
+      sample. The row says it is shared. Nothing else happens: no
+      transcription, no request, no build — the agent has a recording to
+      test against, which is the whole of it.
+    error_handling: >
+      A failed upload keeps the share queued and retries; the row says
+      it is waiting rather than saying it is done. A take with no
+      recording on the device or the server cannot be shared, and the
+      row says why.
+    maps_to:
+      capability: dogfood.share_take
+
+  - id: INT-DOG-006
+    name: Take it back
+    view: VIEW-DOG-003
+    precondition: A take is shared.
+    steps:
+      - Open the take's details
+      - Tap withdraw
+    outcome: >
+      The sample and the copy of the audio are deleted from the server.
+      The take, its audio and its reading are untouched, and the row
+      offers to share again.
+    error_handling: >
+      A share still queued on the device is dropped before it is sent,
+      so withdrawing something that never left works the same way as
+      withdrawing something that did.
+    maps_to:
+      capability: dogfood.withdraw_take

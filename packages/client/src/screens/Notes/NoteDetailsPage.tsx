@@ -23,6 +23,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Sheet } from '../../components/Sheet';
+import { ShareTakeSection } from '../../dogfood/ShareTakeSection';
 
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
@@ -148,6 +149,15 @@ export function NoteDetailsPage({
           <RereadCard isStale={detail.isStale} onReread={detail.reread} />
 
           <ExportSheet midiUri={detail.midiUri} title={note.title} />
+
+          {/* A sibling of export, and last for the same reason: both take a
+              finished take and send it somewhere else, and neither is
+              wanted in the middle of working on one (VIEW-DOG-003). */}
+          <ShareTakeSection
+            note={note}
+            melody={melody}
+            resolveAudio={detail.resolveAudio}
+          />
         </View>
       </View>
     </Sheet>

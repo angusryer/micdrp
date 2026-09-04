@@ -197,3 +197,7 @@ packages/client/ios/release.xcconfig
 
 # Cached app login for scheduled runs (0600, never committed).
 .micdrp-dogfood-credentials
+
+# Shared takes pulled down to work against: recordings of a person's
+# voice, kept beside the code and never committed (INV-DOG-038).
+.samples/

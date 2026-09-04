@@ -1,0 +1,139 @@
+# Handing over a real recording, and taking it back.
+acceptance:
+  - id: ACC-DOG-036
+    interface: module
+    title: A shared take carries its reading
+    given:
+      - take T has been read as 12 notes
+    when:
+      - the maintainer shares take T
+    then:
+      - sample T holds 12 notes
+      - sample T holds the analysis version
+    maps_to:
+      capability: dogfood.share_take
+      invariants: [INV-DOG-031]
+
+  - id: ACC-DOG-037
+    interface: module
+    title: Re-reading a take does not change what was shared
+    given:
+      - take T has been read as 12 notes
+      - take T is shared
+    when:
+      - take T is read again as 9 notes
+    then:
+      - sample T holds 12 notes
+    maps_to:
+      capability: dogfood.share_take
+      invariants: [INV-DOG-032]
+
+  - id: ACC-DOG-038
+    interface: module
+    title: Deleting the take leaves the sample
+    given:
+      - take T is shared
+    when:
+      - take T is deleted
+    then:
+      - sample T is in state shared
+    maps_to:
+      capability: dogfood.share_take
+      invariants: [INV-DOG-032]
+
+  - id: ACC-DOG-039
+    interface: module
+    title: A failed share stays queued
+    given:
+      - the server is unreachable
+      - take T is shared
+    when:
+      - the app relaunches
+    then:
+      - sample T is in state pending_share
+    maps_to:
+      capability: dogfood.share_take
+      invariants: [INV-DOG-033]
+
+  - id: ACC-DOG-040
+    interface: module
+    title: Sharing twice makes one sample
+    given:
+      - take T is shared
+    when:
+      - the maintainer shares take T
+    then:
+      - take T has one sample
+    maps_to:
+      capability: dogfood.share_take
+      invariants: [INV-DOG-034]
+
+  - id: ACC-DOG-041
+    interface: module
+    title: Withdrawing removes the audio
+    given:
+      - take T is shared
+    when:
+      - the maintainer withdraws take T
+    then:
+      - sample T is gone
+    maps_to:
+      capability: dogfood.withdraw_take
+      invariants: [INV-DOG-035]
+
+  - id: ACC-DOG-042
+    interface: module
+    title: Withdrawing before it is sent sends nothing
+    given:
+      - the server is unreachable
+      - take T is shared
+    when:
+      - the maintainer withdraws take T
+      - the share queue runs
+    then:
+      - sample T is gone
+    maps_to:
+      capability: dogfood.withdraw_take
+      invariants: [INV-DOG-035]
+
+  - id: ACC-DOG-043
+    interface: module
+    title: The queue waits for the microphone
+    given:
+      - take T is shared
+      - a capture is in progress
+    when:
+      - the share queue runs
+    then:
+      - sample T is in state pending_share
+    maps_to:
+      capability: dogfood.share_take
+      invariants: [INV-DOG-037]
+
+  - id: ACC-DOG-044
+    interface: cli
+    title: A sample is never claimed
+    given:
+      - take T is shared
+    when:
+      - the loop runs once
+    then:
+      - sample T is in state shared
+    maps_to:
+      capability: dogfood.pull_samples
+      invariants: [INV-DOG-036]
+
+  - id: ACC-DOG-045
+    interface: cli
+    title: Pulling twice downloads once
+    given:
+      - take T is shared
+    when:
+      - samples are pulled
+      - samples are pulled
+    then:
+      - sample T is in state pulled
+      - the pull writes 0 samples
+    maps_to:
+      capability: dogfood.pull_samples
+      invariants: [INV-DOG-038]

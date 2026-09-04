@@ -335,6 +335,14 @@
       "title": "Time's up",
       "body": "If you didn't describe your feature, and you've run out of time, you can submit another feature request.",
       "dismiss": "OK"
+    },
+    "share": {
+      "what": "Send this recording and what the app read out of it, so the reading can be checked against the sound. Nothing else goes with it.",
+      "give": "Share this take",
+      "given": "Shared on {{when}}. The recording is on the server until you take it back.",
+      "withdraw": "Stop sharing",
+      "waiting": "Waiting to send",
+      "noRecording": "There is no recording of this take to send."
     }
   }
 }

@@ -17,6 +17,7 @@ import { guardedRun } from './loop.ts';
 import { isHalted } from './guard.ts';
 import { install, isScheduled, uninstall, LOG } from './schedule.ts';
 import { loadCachedCredentials, loadProfileSecrets } from './credentials.ts';
+import { DEFAULT_OUT, pullSamples } from './pull.ts';
 
 const REPO = new URL('../..', import.meta.url).pathname;
 const HALT_FILE = join(REPO, '.dogfood-halt');
@@ -26,6 +27,10 @@ const has = (flag: string) => argv.includes(flag);
 const valueOf = (flag: string, fallback: number): number => {
   const at = argv.indexOf(flag);
   return at >= 0 ? Number(argv[at + 1]) || fallback : fallback;
+};
+const textOf = (flag: string, fallback: string): string => {
+  const at = argv.indexOf(flag);
+  return at >= 0 ? (argv[at + 1] ?? fallback) : fallback;
 };
 
 const run = promisify(execFile);
@@ -79,6 +84,13 @@ async function main(): Promise<void> {
 
   if (command === 'uninstall') {
     await uninstall();
+    return;
+  }
+
+  if (command === 'samples') {
+    // Nothing to claim and nothing to build: this fetches shared takes and
+    // stops, which is the whole of what a sample is for (INV-DOG-036).
+    await pullSamples({ all: has('--all'), out: textOf('--out', DEFAULT_OUT) });
     return;
   }
 

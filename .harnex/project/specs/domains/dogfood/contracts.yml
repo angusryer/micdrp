@@ -69,6 +69,69 @@ contracts:
         "200": { description: "Stored" }
         "403": { description: "Not the owner" }
 
+    - name: share_take
+      method: POST
+      path: /api/collections/take_samples/records
+      maps_to: dogfood.share_take
+      description: >
+        Hand over one take. The audio and the reading it produced go up
+        in a single multipart request, so a sample is never a recording
+        with nothing to check it against.
+      request_body:
+        note_id: { type: string, required: true, description: "The take it was copied from, as the device knew it" }
+        title: { type: string, required: true }
+        audio: { type: file, required: true, description: "The take's own copy of the recording" }
+        duration_ms: { type: number, required: true }
+        sample_rate_hz: { type: number, required: true }
+        reading: { type: json, required: true, description: "TakeReading, frozen at the moment of sharing" }
+        app_version: { type: string, required: true }
+        build_number: { type: number, required: true }
+        bundle_id: { type: string, nullable: true }
+        shared_at_ms: { type: number, required: true }
+        state: { type: string, enum: [shared, pulled] }
+      responses:
+        "200": { description: "Accepted; the record is returned with its id" }
+        "400": { description: "Malformed record or missing audio" }
+        "403": { description: "Not signed in, or writing as another owner" }
+
+    - name: list_samples
+      method: GET
+      path: /api/collections/take_samples/records
+      maps_to: dogfood.pull_samples
+      description: >
+        What has been shared. The pull reads this filtered to state
+        shared, oldest first; nothing here is ever claimed, because a
+        sample carries no instruction (INV-DOG-036).
+      responses:
+        "200": { description: "The caller's own samples only" }
+        "403": { description: "Not signed in" }
+
+    - name: mark_sample_pulled
+      method: PATCH
+      path: /api/collections/take_samples/records/{id}
+      maps_to: dogfood.pull_samples
+      description: >
+        Say that a copy now exists on the machine the agent works on, so
+        a second pull downloads nothing.
+      request_body:
+        state: { type: string, required: true }
+        pulled_at_ms: { type: number, required: true }
+      responses:
+        "200": { description: "Marked" }
+        "403": { description: "Not the owner" }
+
+    - name: withdraw_take
+      method: DELETE
+      path: /api/collections/take_samples/records/{id}
+      maps_to: dogfood.withdraw_take
+      description: >
+        Unshare. Deleting the record takes the copy of the audio with
+        it; the take it came from is untouched.
+      responses:
+        "204": { description: "Gone" }
+        "403": { description: "Not the owner" }
+        "404": { description: "Already gone, which is the outcome asked for" }
+
   error_format:
     description: >
       PocketBase's own: a status code, a message, and a per-field data

@@ -58,6 +58,17 @@ given:
     action: dog_set_failed_runs
     params: { count: "{N}" }
 
+  - id: GX-DOG-TAKE-READ
+    pattern: 'take {label} has been read as {N} notes'
+    mode: extension
+    action: dog_set_take_reading
+    params: { label: "{label}", noteCount: "{N}" }
+  - id: GX-DOG-SHARED
+    pattern: 'take {label} is shared'
+    mode: extension
+    action: dog_set_take_shared
+    params: { label: "{label}" }
+
 when:
   - id: WX-DOG-TAP
     pattern: 'the maintainer taps {value}'
@@ -99,6 +110,35 @@ when:
     mode: extension
     action: dog_claim_concurrent
 
+  - id: WX-DOG-SHARE
+    pattern: 'the maintainer shares take {label}'
+    mode: extension
+    action: dog_share_take
+    params: { label: "{label}" }
+  - id: WX-DOG-WITHDRAW
+    pattern: 'the maintainer withdraws take {label}'
+    mode: extension
+    action: dog_withdraw_take
+    params: { label: "{label}" }
+  - id: WX-DOG-REREAD
+    pattern: 'take {label} is read again as {N} notes'
+    mode: extension
+    action: dog_reread_take
+    params: { label: "{label}", noteCount: "{N}" }
+  - id: WX-DOG-DELETE-TAKE
+    pattern: 'take {label} is deleted'
+    mode: extension
+    action: dog_delete_take
+    params: { label: "{label}" }
+  - id: WX-DOG-SHARE-QUEUE
+    pattern: 'the share queue runs'
+    mode: extension
+    action: dog_flush_shares
+  - id: WX-DOG-PULL
+    pattern: 'samples are pulled'
+    mode: extension
+    action: dog_pull_samples
+
 then:
   - id: TX-DOG-STATE
     pattern: 'the clip is in state {state}'
@@ -110,7 +150,7 @@ then:
     mode: extension
     action: dog_assert_labelled_state
     params: { kind: "{value}", label: "{label}", state: "{state}" }
-    resolution: kind is clip or request.
+    resolution: kind is clip, request or sample.
   - id: TX-DOG-TRAIL
     pattern: 'the trail is {value}'
     mode: extension
@@ -159,3 +199,25 @@ then:
     resolution: >
       One of: built nothing, left the working tree unchanged, halted the
       loop, claimed nothing, transcribed once.
+  - id: TX-DOG-SAMPLE-HOLDS
+    pattern: 'sample {label} holds {value}'
+    mode: extension
+    action: dog_assert_sample_holds
+    params: { label: "{label}", held: "{value}" }
+    resolution: >
+      held is a note count ("12 notes") or the analysis version.
+  - id: TX-DOG-SAMPLE-GONE
+    pattern: 'sample {label} is gone'
+    mode: extension
+    action: dog_assert_sample_gone
+    params: { label: "{label}" }
+  - id: TX-DOG-ONE-SAMPLE
+    pattern: 'take {label} has one sample'
+    mode: extension
+    action: dog_assert_one_sample
+    params: { label: "{label}" }
+  - id: TX-DOG-PULL-WROTE
+    pattern: 'the pull writes {N} samples'
+    mode: extension
+    action: dog_assert_pull_wrote
+    params: { count: "{N}" }

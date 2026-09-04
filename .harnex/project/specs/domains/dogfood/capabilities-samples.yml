@@ -1,0 +1,82 @@
+# Handing a real recording to the agent. The device side, and the one
+# command that brings it down to the machine the agent works on.
+capabilities:
+  - name: dogfood.share_take
+    description: >
+      Send one take's audio, and what the app read out of it, so the
+      reading can be checked against the sound that produced it.
+
+      A spoken remark says a reading is wrong. It cannot say how. The
+      agent can rewrite the detector and can run the tests, but every
+      test it has is one it wrote itself out of the same assumptions
+      that produced the mistake — so it can be confidently wrong for as
+      long as it likes. One real recording of a real voice ends that:
+      the sound is the fact, and the reading is either right about it
+      or it is not.
+
+      One tap, nothing spoken. If there is something to say about the
+      take, that is what the record control is for; the two arrive
+      separately and are read together.
+    actor: maintainer
+    implemented_by: packages/client/src/dogfood/samples.ts
+    parameters:
+      required: [noteId]
+    preconditions:
+      - the take has a recording behind it, on this device or on the server
+      - the maintainer is signed in
+    postconditions:
+      - the whole take is sent, not a selected part of it
+      - the audio, the melody as read, and every measured value go up
+        together in one record
+      - the sample holds its own copy of the audio, so re-reading or
+        deleting the note afterwards leaves it untouched
+      - a take already shared is not shared again
+      - a share that cannot be sent stays queued and is retried, and
+        survives a relaunch
+      - the queue drains only while the microphone is free
+    permissions:
+      - role: maintainer
+        notes: Their own singing, shared deliberately, one take at a time.
+
+  - name: dogfood.withdraw_take
+    description: >
+      Unshare a take. The record goes, and the copy of the audio on the
+      server goes with it.
+
+      Sharing a recording of your own voice is a decision that has to be
+      reversible, and reversible without asking anyone: the same control
+      that shared it takes it back.
+    actor: maintainer
+    implemented_by: packages/client/src/dogfood/samples.ts
+    parameters:
+      required: [noteId]
+    preconditions:
+      - the take is shared
+    postconditions:
+      - the sample record and its audio are deleted from the server
+      - a share still waiting in the queue is dropped before it is sent
+      - the take itself, its audio and its reading are untouched
+      - the control returns to offering to share
+
+  - name: dogfood.pull_samples
+    description: >
+      Bring shared takes down to the machine the agent works on, as
+      plain files it can open: the audio beside the reading it produced.
+
+      This is the whole point of the feature. A recording that stays on
+      a server is a recording nothing can be run against.
+    actor: system
+    implemented_by: scripts/dogfood/samples.ts
+    parameters:
+      required: []
+    preconditions:
+      - the loop's credentials are available
+    postconditions:
+      - every sample not yet pulled is written to its own directory
+      - each directory holds the audio and the reading, and nothing that
+        has to be parsed out of a log to be useful
+      - a sample that has been pulled is marked so, and is not pulled
+        again unless asked for
+      - a sample whose audio the server no longer has is reported rather
+        than written empty
+      - the corpus is never committed; it is recordings of a person

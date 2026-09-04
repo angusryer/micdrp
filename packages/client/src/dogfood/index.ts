@@ -21,6 +21,18 @@ export {
   readClipOrigin
 } from './config';
 export { countdownColor, countdownLabel } from './countdown';
+export { default as ShareTakeSection } from './ShareTakeSection';
+export { shareTake } from './samples';
+export { flushShares, lastShareError } from './sampleUpload';
+export { withdrawTake, refreshShared } from './sampleRecord';
+export {
+  pendingShare,
+  pendingShares,
+  sharedTake,
+  type PendingShare,
+  type SharedTake
+} from './shares';
+export { useTakeShare, type TakeShare } from './useTakeShare';
 export { newClipId } from './id';
 export { runningBundleId } from './origin';
 export type {

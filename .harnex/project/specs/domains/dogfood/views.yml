@@ -78,3 +78,54 @@ views:
       - Any list of past clips, because they are the agent loop's business
       - Any time that counts up, because what matters while talking is
         how much is left, not how much has gone
+
+  # VIEW-DOG-002 is the feedback queue in settings, which exists in code
+  # and has not been written down yet. Left free rather than reused.
+  - id: VIEW-DOG-003
+    name: Share this take
+    route: Notes/NoteDetailsPage
+    description: >
+      A row at the foot of a take's details sheet, below the way to
+      export it, offering to hand the recording to the agent.
+
+      It sits there because it is a sibling of export: both take a
+      finished take and send it somewhere else, both are wanted
+      occasionally and never in the middle of working on a note, and
+      both belong behind the control rather than under the graph.
+
+      One row, two states, and the second is not a new control but the
+      same one saying what it did. Unshared, it offers to share and says
+      in a line what sharing means: the recording and the reading go to
+      the agent so the reading can be checked against the sound. Shared,
+      it says so, says when, and offers to take it back — the same row,
+      because a person who shared a recording of their own voice should
+      not have to go and find a different screen to undo it.
+
+      It says what travels, in plain words, before it is tapped rather
+      than after. This is the one control in the app that sends a
+      recording of the maintainer's singing anywhere, and a control like
+      that explains itself first.
+
+      A take with no recording behind it shows the row unavailable with
+      the reason, not hidden: hidden reads as a bug, and the reason —
+      there is nothing to send — is the useful thing to say.
+    requires_auth: true
+    min_role: maintainer
+    data_sources:
+      - dogfood.share_take
+      - dogfood.withdraw_take
+    elements:
+      - A row at the foot of the details sheet, below export
+      - A line saying what is sent — the recording, and the reading of it
+      - A control that shares, and becomes the one that withdraws
+      - The state of the share while it is queued, so a bad connection
+        is visible rather than looking like nothing happened
+      - When it was shared, once it has been
+      - An unavailable row with its reason when there is no recording
+    absent_elements:
+      - Any way to share part of a take, because the context around a
+        bad passage is usually what explains it
+      - Any prompt to say something while sharing, because that is what
+        the record control is for and the two arrive separately
+      - Any sharing of a take the maintainer did not tap
+      - Any playback here, because the take is played on the graph behind

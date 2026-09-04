@@ -1,0 +1,154 @@
+# A shared take: the sound, and what the app made of it.
+entities:
+  - name: TakeSample
+    description: >
+      One take, handed over so the reading of it can be checked against
+      the recording that produced it.
+
+      It is a copy, not a reference. The note it came from is local
+      first, gets a new id when it reaches the server, is re-read
+      whenever a detector is tuned, and can be deleted — a sample that
+      pointed at one would change or vanish under the person checking
+      it, which is the one thing a fixture may not do.
+
+      The reading stored here is the one that was on the graph at the
+      moment it was shared. If it was wrong, this is the record of it
+      being wrong, and re-reading the note later must not quietly repair
+      the evidence.
+    properties:
+      - name: id
+        type: string
+        required: true
+      - name: noteId
+        type: string
+        required: true
+        description: >
+          The take it was copied from, as the device knew it. Kept to
+          find the take again, not to read anything out of: a note that
+          had not yet reached the server carries the id it had on the
+          device, which the server has never heard of.
+      - name: title
+        type: string
+        required: true
+        description: >
+          What the take is called, so a corpus directory can be
+          recognised by a human rather than by a fifteen-character id.
+      - name: audioPath
+        type: string
+        required: false
+        description: >
+          The sample's own durable server-side filename. A filename, not
+          a URL: a file token expires in about two minutes.
+      - name: durationMs
+        type: number
+        required: true
+        constraints: ["is greater than 0"]
+      - name: sampleRateHz
+        type: number
+        required: true
+        description: >
+          The rate the audio was captured at. A reading cannot be
+          reproduced from a file whose rate has to be guessed.
+      - name: reading
+        type: object
+        required: true
+        description: >
+          What the app heard, entire: the melody as a list of notes, the
+          key, the tempo, the tuning measures, the note count, the range,
+          and the version of the analysis that produced them. Without the
+          analysis version a disagreement cannot be told from a change.
+      - name: appVersion
+        type: string
+        required: true
+      - name: buildNumber
+        type: number
+        required: true
+      - name: bundleId
+        type: string
+        required: false
+        description: >
+          The over-the-air bundle running when it was shared, or null for
+          the binary's own.
+      - name: sharedAtMs
+        type: number
+        required: true
+      - name: state
+        type: string
+        required: true
+    states:
+      - name: pending_share
+        description: >
+          Marked to share and on the device only. Exists so that tapping
+          share on a bad connection is still the last thing the
+          maintainer has to do about it.
+      - name: shared
+        description: On the server, and nothing has fetched it yet.
+      - name: pulled
+        description: >
+          A copy exists on the machine the agent works on. Said out loud
+          so a second pull is silent rather than downloading the whole
+          corpus again.
+    transitions:
+      - from: pending_share
+        to: shared
+        trigger: the server accepts the sample
+      - from: shared
+        to: pulled
+        trigger: dogfood.pull_samples
+      - from: pending_share, shared, or pulled
+        to: (removed)
+        trigger: >
+          dogfood.withdraw_take. There is no cancelled state and no run
+          to tell: nothing claims a sample, so withdrawing one is a
+          deletion rather than an instruction.
+
+  - name: TakeReading
+    description: >
+      The app's account of a take, frozen at the moment of sharing. The
+      same values the notes domain measures — named here only so that a
+      sample can be read without the notes schema to hand.
+    properties:
+      - name: melody
+        type: array
+        required: true
+        description: The notes as read, in order, with their times.
+      - name: corrected
+        type: array
+        required: false
+        description: >
+          The melody with the corrections a person made by hand replayed
+          onto it, present only when there are any.
+
+          The most valuable thing in a sample and the cheapest to
+          collect: every other field says what the app decided, and this
+          says what the person who was there says it should have been.
+          The difference between the two is the mistake, stated rather
+          than inferred, and a detector can be scored against it without
+          anyone listening to anything.
+      - name: analysisVersion
+        type: number
+        required: false
+        description: >
+          Which reading produced this. Absent means the oldest one, the
+          same as a take stored before readings were numbered.
+      - name: key
+        type: string
+        required: false
+      - name: tempoBpm
+        type: number
+        required: false
+      - name: inTuneRatio
+        type: number
+        required: false
+      - name: meanCentsError
+        type: number
+        required: false
+      - name: noteCount
+        type: number
+        required: true
+      - name: rangeLowMidi
+        type: number
+        required: false
+      - name: rangeHighMidi
+        type: number
+        required: false
