@@ -22,6 +22,8 @@ export * from './percussion';
 export * from './readTake';
 export * from './tappedBeats';
 export * from './beatGrid';
+export * from './beatTimeline';
+export * from './quantizeToTimeline';
 export * from './levelMatch';
 export * from './snapToGrid';
 export * from './sungCount';

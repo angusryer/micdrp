@@ -33,7 +33,10 @@ import {
   replaceTaps,
   resetBeat,
   readMetre,
-  tempoFromBeats,
+  countedBars,
+  countedMetre,
+  tappedTempo,
+  timelineFromTaps,
   type NoteEdge,
   type NoteEvent
 } from 'logic';
@@ -235,15 +238,17 @@ export function useNoteDetail(id: string) {
   const hasGrid = grid.bpm > 0 && melody.length > 1;
 
   /**
-   * The tempo the marks imply, worked out but never applied.
+   * The beat the taps state, and the pulse they were made at.
    *
-   * Computing it is not inferring from it: nothing downstream reads this,
-   * and the only thing that can act on it is a person pressing the offer
-   * in the tempo row (INV-NOTES-161).
+   * A tap is one beat and the taps are the beat (INV-NOTES-198); nothing
+   * is fitted to them. Working the tempo out is not inferring from it:
+   * nothing downstream reads this, and the only thing that can act on it
+   * is a person pressing the offer in the tempo row (INV-NOTES-161).
    */
-  const tappedTempo = useMemo(
-    () => (beats.length > 0 ? tempoFromBeats(beats, quantized.grid.bpm) : null),
-    [beats, quantized.grid.bpm]
+  const timeline = useMemo(() => timelineFromTaps(beats), [beats]);
+  const tapped = useMemo(
+    () => (timeline == null ? null : tappedTempo(timeline)),
+    [timeline]
   );
 
   // What was counted, and what was played. The count is a performance and
@@ -708,7 +713,18 @@ export function useNoteDetail(id: string) {
      * applied only when pressed — the taps stay marks until then
      * (INV-NOTES-161, INV-NOTES-196).
      */
-    tappedBpm: tappedTempo?.bpm ?? null,
+    tappedBpm: tapped?.medianBpm ?? null,
+    /**
+     * The slowest and fastest the pulse ran, where it moved. One number
+     * for a take that breathes is a claim nobody made (INV-NOTES-201).
+     */
+    tappedRange: tapped == null ? null : [tapped.slowestBpm, tapped.fastestBpm],
+    /** Gaps that look like a missed tap. Pointed at, never filled. */
+    suspectGaps: timeline?.suspectGaps ?? [],
+    /** The bars counted between marked downbeats (INV-NOTES-199). */
+    countedBars: timeline == null ? [] : countedBars(timeline),
+    /** The metre those counts imply, or null where the bars disagree. */
+    countedMetre: timeline == null ? null : countedMetre(timeline),
     setBpm: interpretation.updateBpm,
     readBpm: quantized.grid.bpm,
     isStale: isStale(note?.analysisVersion),

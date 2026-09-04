@@ -45,10 +45,20 @@ export interface TempoRowProps {
   readBpm: number;
   isByHand: boolean;
   /**
-   * The tempo the tapped beats imply, or null. Offered, never applied —
-   * the taps are marks and stay marks until this is pressed.
+   * The middle of the pulse the taps were made at, or null. Offered,
+   * never applied — the taps are marks and stay marks until this is
+   * pressed.
    */
   tappedBpm?: number | null;
+  /**
+   * The slowest and fastest that pulse ran.
+   *
+   * Shown beside the middle wherever it moved, because one number for a
+   * take that breathes is a claim nobody made (INV-NOTES-201). A person
+   * who eased off to land a note should see that they did, not see it
+   * averaged away.
+   */
+  tappedRange?: readonly [number, number] | null;
   onSet: (bpm: number | undefined) => void;
 }
 
@@ -57,9 +67,17 @@ export function TempoRow({
   readBpm,
   isByHand,
   tappedBpm = null,
+  tappedRange = null,
   onSet
 }: TempoRowProps): React.JSX.Element | null {
   const { colors } = useTheme();
+  // Rounded before comparing: a pulse that ran 91.6 to 92.4 is one tempo
+  // as far as anybody counting is concerned.
+  const spread =
+    tappedRange == null
+      ? null
+      : ([Math.round(tappedRange[0]), Math.round(tappedRange[1])] as const);
+  const moved = spread != null && spread[0] !== spread[1];
   const offered =
     tappedBpm != null && tappedBpm >= MIN_BPM && tappedBpm <= MAX_BPM
       ? Math.round(tappedBpm)
@@ -75,7 +93,9 @@ export function TempoRow({
           <Text style={[styles.hint, { color: colors.gray300 }]}>
             {offered == null
               ? 'None could be read from this take.'
-              : `None could be read. Your taps are at about ${offered}.`}
+              : moved
+                ? `None could be read. You tapped around ${offered}, ranging ${spread[0]} to ${spread[1]}.`
+                : `None could be read. You tapped ${offered}.`}
           </Text>
         </View>
         <Pressable

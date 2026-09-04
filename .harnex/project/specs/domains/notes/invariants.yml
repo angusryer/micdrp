@@ -353,3 +353,87 @@ invariants:
       never received, on a take whose reading reported no tempo at all.
       Nothing failed loudly; the marks were simply not there afterwards.
 
+  - id: INV-NOTES-198
+    description: A tap is one beat, and the taps are the beat
+    severity: critical
+    check: >
+      Each tap is the next beat. The taps in order are the beat timeline
+      of the take, at the intervals they were made, and nothing fits a
+      period to them or decides that a gap spanned several beats.
+      Verified by asserting that n taps produce n beats whatever their
+      spacing.
+
+      A person tapping while they sing is stating the pulse their singing
+      lives around, and that pulse moves — slowing to land a note is
+      playing, not error. A fitted period discards exactly that, and
+      discarding it is discarding the performance.
+
+      This is not the grid that INV-NOTES-131 removed. That one inferred:
+      it guessed how many beats a gap spanned, fitted a uniform tempo,
+      and let the result silently re-cut a person's harmony. This one
+      counts, and changes nothing on its own.
+
+  - id: INV-NOTES-199
+    description: Bars are counted between downbeats, never fitted
+    severity: critical
+    check: >
+      The beats a bar holds are the beats from one marked downbeat up to
+      the next, counted. Bars of unequal length are reported as unequal.
+      A time signature is named only when every whole bar agrees, and is
+      otherwise reported as mixed. Verified by marking downbeats four,
+      four and three beats apart and asserting three bars of 4, 4 and 3.
+
+      Three half notes meant as a bar of four are six beats to any
+      arithmetic, and only the person who sang them knows. So the count
+      is theirs, taken from where they said a bar begins, and the metre
+      is read back from it rather than imposed on it (INV-NOTES-050).
+
+      Beats before the first downbeat are a pickup and beats after the
+      last are a trailing part-bar. Neither is padded out to a full bar.
+
+  - id: INV-NOTES-200
+    description: A gap that looks like a missed tap is pointed at, not filled
+    severity: major
+    check: >
+      An interval about twice its neighbours is marked as suspect and
+      nothing else happens: no beat is inserted, no bar is renumbered, no
+      count changes. Verified by asserting a doubled gap is reported and
+      that the timeline through it is identical to one without the mark.
+
+      One tap is one beat (INV-NOTES-198), so a missed tap makes a bar
+      genuinely short, and the app has no way to tell that from a bar
+      that was short. Saying which gaps look odd costs a person one
+      glance; guessing on their behalf is the inference that this whole
+      part of the app exists to avoid.
+
+  - id: INV-NOTES-201
+    description: The tapped tempo is a range, because a pulse moves
+    severity: major
+    check: >
+      Where beats were tapped, the tempo is reported as the median of the
+      intervals between them with the slowest and fastest beside it, and
+      no single figure is stored on the take. Verified by asserting a
+      take tapped with a moving pulse reports a spread rather than one
+      number.
+
+      One number for a take that breathes is a claim nobody made. The
+      median is there to be taken deliberately — for an export, or a
+      click — and taking it is a person's act, never the reading's.
+
+  - id: INV-NOTES-202
+    description: Quantising is a view, and covers everything at once
+    severity: critical
+    check: >
+      With quantising on, the graph, the notated playback, the metronome
+      and the export all read the snapped positions; with it off, all
+      four read what was performed. The stored notes and the stored taps
+      are identical either way. Verified by toggling and asserting the
+      take on disk does not change, and that no surface is left showing
+      the other version.
+
+      The point of it is turning what was actually sung into an idea that
+      reads clearly, and judging whether it worked needs the two heard
+      and seen against each other. A toggle that reached the graph but
+      not the playback would make that comparison impossible, and one
+      that reached the stored take would make it unrepeatable.
+
