@@ -145,3 +145,30 @@ invariants:
       heard sat on this screen unfound for months because nothing connected it
       to the room the singing was happening in (INV-ACCOUNT-013). A knob that
       cannot ship without one is the only version of that rule that holds.
+
+  - id: INV-ACCOUNT-015
+    description: A setting the singer changes reaches the thing it sets
+    severity: critical
+    check: >
+      The resolved engine settings are applied to the audio engine on
+      launch and again whenever they change, before the next capture or
+      re-read. Verified by changing a field and asserting the engine was
+      configured with the resolved value.
+
+      Storing a setting and reading it back is not applying it. Every
+      engine field — the frequency bounds, the clarity thresholds, the
+      level floor — was written to the device store and read back only
+      by the screen that wrote it: nothing ever called configure, so the
+      native engine ran on its compiled-in defaults from launch to
+      launch and every one of those controls did nothing at all.
+
+      It cost a real reading. A whistled take sat at a median of 1238 Hz
+      against a ceiling of 1200; more than half of it was above the
+      ceiling and was dropped, which read as a singer who drifted and
+      left gaps rather than as a detector that had stopped listening —
+      and the one control that would have fixed it was the inert one.
+
+      A setting that does nothing is worse than an absent one. An absent
+      control sends someone looking for the real cause; a dead control
+      persuades them the cause has been ruled out.
+

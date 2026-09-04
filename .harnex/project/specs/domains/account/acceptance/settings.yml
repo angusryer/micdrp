@@ -84,3 +84,30 @@ acceptance:
     maps_to:
       capability: account.set_analysis_settings
       invariants: [INV-ACCOUNT-009]
+
+  - id: ACC-ACCOUNT-021
+    interface: ui
+    title: Changing an engine setting configures the engine
+    given:
+      - the stored engine settings are {}
+    when:
+      - the singer sets maxFrequencyHz to 2500
+    then:
+      - the engine was configured with maxFrequencyHz 2500
+    maps_to:
+      capability: account.set_engine_settings
+      invariants: [INV-ACCOUNT-015]
+
+  - id: ACC-ACCOUNT-022
+    interface: ui
+    title: A stored engine setting is applied on launch
+    given:
+      - the stored engine settings are maxFrequencyHz 2500
+    when:
+      - the app launches
+    then:
+      - the engine was configured with maxFrequencyHz 2500
+    maps_to:
+      capability: account.set_engine_settings
+      invariants: [INV-ACCOUNT-015]
+

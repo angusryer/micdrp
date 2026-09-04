@@ -16,9 +16,13 @@ invariants:
       pile of sound that someone has to listen to by hand, which is the
       work this was built to avoid.
 
-      Where the person corrected notes by hand, those travel too. A
-      correction is the only statement of what the take should have been
-      that exists anywhere, and it costs nothing to carry.
+      Everything the person did to the take travels with it: corrected
+      notes, the beat they tapped, the bar lines they placed, the tempo
+      they set, the chords they chose. Those are the only statements of
+      what the take should have been that exist anywhere, and they cost
+      nothing to carry. The first sample shared carried none of them, so
+      it could show that the tempo had been missed and never what the
+      tempo was.
 
   - id: INV-DOG-032
     description: A sample is a copy, and stops changing once it is made
@@ -107,3 +111,21 @@ invariants:
       be worked with and not to be published. A fixture that earns a
       permanent place in the test suite is promoted by hand, as a
       deliberate act, with the person who sang it saying so.
+
+  - id: INV-DOG-039
+    description: The control stops saying sending once it has sent
+    severity: high
+    check: >
+      Anything showing a take's share state is told when the queue
+      changes, and re-reads it. Verified by queueing a share, draining
+      the queue, and asserting the state becomes shared without the
+      screen being closed and reopened.
+
+      The queue is module state written by an upload that finishes
+      whenever the network lets it; React is told nothing by that on its
+      own. The first version read the state on mount and after a tap, so
+      a share sent a second after the tap went on saying "Sending…"
+      until the sheet was closed and opened again — which reads as a
+      stuck upload, and is the one thing this control must never do,
+      because saying a recording is still going when it has arrived is
+      the same lie as saying it arrived when it has not.

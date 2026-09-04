@@ -125,6 +125,21 @@ entities:
           The difference between the two is the mistake, stated rather
           than inferred, and a detector can be scored against it without
           anyone listening to anything.
+      - name: interpretations
+        type: array
+        required: false
+        description: >
+          Everything the person did to the take: the beat they tapped,
+          the bar lines they placed, the tempo they set by hand, the
+          chords they chose, the notes they corrected.
+
+          Carried for the same reason the corrected melody is. These are
+          not readings — they are the only statements of intent that
+          exist anywhere, and a tapped beat says what the tempo detector
+          should have found as plainly as a corrected note says what the
+          pitch detector should have heard. Leaving them behind meant a
+          sample could show that a tempo was missed and never what it
+          was.
       - name: analysisVersion
         type: number
         required: false

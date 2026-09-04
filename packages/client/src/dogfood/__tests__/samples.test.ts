@@ -5,7 +5,12 @@
 import { shareTake } from '../samples';
 import { flushShares } from '../sampleUpload';
 import { withdrawTake } from '../sampleRecord';
-import { pendingShare, resetSharesForTests, sharedTake } from '../shares';
+import {
+  pendingShare,
+  resetSharesForTests,
+  sharedTake,
+  subscribeToShares
+} from '../shares';
 
 const mockCreate = jest.fn();
 const mockDelete = jest.fn();
@@ -125,6 +130,29 @@ describe('sharing a take', () => {
     expect(await flushShares()).toBe(0);
     expect(mockCreate).not.toHaveBeenCalled();
     expect(pendingShare('note-1')).not.toBeNull();
+  });
+});
+
+describe('following the queue', () => {
+  it('ACC-DOG-046: says the share landed without the sheet being reopened', async () => {
+    // The upload finishes whenever the network lets it, and React is told
+    // nothing by that on its own — which is how the control went on saying
+    // "Sending…" after the take had arrived.
+    const told: string[] = [];
+    const stop = subscribeToShares(() => told.push(sharedTake('note-1') ? 'shared' : 'pending'));
+    await shareTake(take);
+    await flushShares();
+    stop();
+    expect(told).toContain('shared');
+    expect(sharedTake('note-1')).not.toBeNull();
+  });
+
+  it('stops telling a listener that has gone away', async () => {
+    let count = 0;
+    subscribeToShares(() => (count += 1))();
+    await shareTake(take);
+    await flushShares();
+    expect(count).toBe(0);
   });
 });
 

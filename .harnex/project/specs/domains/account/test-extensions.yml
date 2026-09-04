@@ -182,3 +182,9 @@ then:
     action: assert_resolved_setting
     params: { which: "{value}", field: "{field}", value: "{value2}" }
     resolution: Assert one field of the resolved settings.
+  - id: TX-ACCOUNT-ENGINE-CONFIGURED
+    pattern: 'the engine was configured with {value} {value2}'
+    mode: extension
+    action: account_assert_engine_configured
+    params: { field: "{value}", value: "{value2}" }
+

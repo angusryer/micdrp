@@ -52,10 +52,39 @@ export interface SharedTake {
 
 type Index = Record<string, SharedTake>;
 
+/**
+ * Who wants to know when any of this moves.
+ *
+ * Both records are module state, written by an upload that finishes
+ * whenever the network lets it. React is told nothing by that on its own,
+ * so a control that read the state on mount went on saying "Sending…"
+ * after the share had arrived — which reads as a stuck upload, and is the
+ * one thing a control like that must never do (INV-DOG-039).
+ */
+const listeners = new Set<() => void>();
+
+/** Be told when a share is queued, sent, or forgotten. Returns the undo. */
+export function subscribeToShares(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+const announce = (): void => {
+  for (const listener of listeners) {
+    listener();
+  }
+};
+
 const readQueue = (): PendingShare[] => getJSON<PendingShare[]>(QUEUE_KEY) ?? [];
-const writeQueue = (shares: PendingShare[]): void => setJSON(QUEUE_KEY, shares);
+const writeQueue = (shares: PendingShare[]): void => {
+  setJSON(QUEUE_KEY, shares);
+  announce();
+};
 const readIndex = (): Index => getJSON<Index>(INDEX_KEY) ?? {};
-const writeIndex = (index: Index): void => setJSON(INDEX_KEY, index);
+const writeIndex = (index: Index): void => {
+  setJSON(INDEX_KEY, index);
+  announce();
+};
 
 /** What is marked to share but not yet accepted, oldest first. */
 export function pendingShares(): PendingShare[] {

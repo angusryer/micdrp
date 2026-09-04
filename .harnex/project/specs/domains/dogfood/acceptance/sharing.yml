@@ -137,3 +137,17 @@ acceptance:
     maps_to:
       capability: dogfood.pull_samples
       invariants: [INV-DOG-038]
+
+  - id: ACC-DOG-046
+    interface: module
+    title: The control follows the queue without being reopened
+    given:
+      - take T is shared
+    when:
+      - the share queue runs
+    then:
+      - sample T is in state shared
+      - the share control was told the queue changed
+    maps_to:
+      capability: dogfood.share_take
+      invariants: [INV-DOG-039]

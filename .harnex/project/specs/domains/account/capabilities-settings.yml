@@ -17,6 +17,8 @@ capabilities:
         filling anything not overridden
       - nothing outside this capability writes the engine settings key
       - the settings are device-local and are not uploaded
+      - the resolved configuration is applied to the audio engine, so the
+        next capture and the next re-read both use it (INV-ACCOUNT-015)
     permissions:
       - role: visitor
         notes: Device-local; no account is required to tune capture.

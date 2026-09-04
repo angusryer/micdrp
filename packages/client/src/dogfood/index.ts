@@ -30,6 +30,7 @@ export {
   pendingShare,
   pendingShares,
   sharedTake,
+  subscribeToShares,
   type PendingShare,
   type SharedTake
 } from './shares';

@@ -36,6 +36,21 @@ describe('the reading a sample carries', () => {
     expect(reading.rangeLowMidi).toBeNull();
   });
 
+  it('carries what the person did, not only what the app decided', () => {
+    // A tapped beat says what the tempo detector should have found as
+    // plainly as a corrected note says what the pitch detector missed.
+    const interpretations = [
+      { id: 'r1', createdAtMs: 1, chords: [], beats: [{ atMs: 500 }] }
+    ] as never;
+    expect(readingOf({ ...take, interpretations }).interpretations).toEqual(
+      interpretations
+    );
+  });
+
+  it('says there were none rather than leaving the field off', () => {
+    expect(readingOf(take).interpretations).toEqual([]);
+  });
+
   it('carries corrections, which say what it should have been', () => {
     const corrected = [{ ...heard[0], midi: 62 }, heard[1]];
     expect(readingOf(take, corrected).corrected).toEqual(corrected);

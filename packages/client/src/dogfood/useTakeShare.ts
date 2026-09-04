@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { refreshShared, withdrawTake } from './sampleRecord';
 import { lastShareError } from './sampleUpload';
 import { shareTake, type ShareTakeInput } from './samples';
-import { pendingShare, sharedTake } from './shares';
+import { pendingShare, sharedTake, subscribeToShares } from './shares';
 
 /** What the row is showing. */
 export type TakeShareState = 'none' | 'pending' | 'shared';
@@ -79,6 +79,11 @@ export function useTakeShare(input: ShareTakeInput | null): TakeShare {
     setLocal(localState(noteId));
     void refreshShared(noteId).then(() => setLocal(localState(noteId)));
   }, [noteId]);
+
+  // The queue drains on its own — on launch, when a take ends, and a moment
+  // after the tap that filled it. Without this the control would still say
+  // "Sending…" long after the share arrived (INV-DOG-039).
+  useEffect(() => subscribeToShares(reread), [reread]);
 
   const share = useCallback(async () => {
     if (input == null || isWorking) {

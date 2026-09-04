@@ -25,7 +25,11 @@ entities:
       - name: maxFrequencyHz
         type: number
         required: true
-        description: Detections above this are rejected. Default 1200.
+        description: >
+          Detections above this are rejected. Default 2500, set for
+          whistling rather than for singing: a whistled take runs well
+          above a sung one, and a ceiling low enough to be safe for
+          voices silently discards most of a whistle.
       - name: clarityThreshold
         type: number
         required: true

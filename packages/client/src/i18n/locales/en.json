@@ -276,7 +276,7 @@
       "frameSizeHint": "Very short notes, or fast runs — smaller catches them, larger steadies long held notes.",
       "hopSizeHint": "Quick ornaments and grace notes, where the pitch moves between readings.",
       "minFrequencyHint": "Singing at the very bottom of your range, where low notes go undetected.",
-      "maxFrequencyHint": "Whistling, or a high falsetto — most whistling sits above the usual ceiling.",
+      "maxFrequencyHint": "The highest sound still counted as a note. Set for whistling, which runs well above singing; lower it if high noise is being read as pitch.",
       "clarityThresholdHint": "Which pitch is heard when a note is ambiguous — lower it and octaves start being read wrong. Not the one for notes going missing.",
       "emitRateHint": "Watching the live pitch line while you sing — how smoothly it moves.",
       "voicedClarityMin": "Faintest note",

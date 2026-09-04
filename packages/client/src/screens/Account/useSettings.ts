@@ -16,13 +16,16 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { DEFAULT_ENGINE_CONFIG, type EngineConfig } from '../../audio/contract';
+import {
+  applyEngineConfig,
+  KEY_ENGINE_CONFIG,
+  resolvedEngineConfig,
+  storedOverrides,
+  type EngineConfigOverrides
+} from '../../audio/engineSettings';
 import store from '../../data/store';
 
-/** MMKV key — keep stable; changing it orphans existing persisted data. */
-const KEY_ENGINE_CONFIG = 'settings:engineConfig';
-
-/** All overrides are optional; any key absent means "use the default". */
-export type EngineConfigOverrides = Partial<EngineConfig>;
+export type { EngineConfigOverrides };
 
 export interface UseSettingsValue {
   /**
@@ -41,10 +44,9 @@ export interface UseSettingsValue {
   resetEngineConfig(): void;
 }
 
-function loadEngineConfig(): EngineConfig {
-  const overrides = store.getJSON<EngineConfigOverrides>(KEY_ENGINE_CONFIG);
-  return { ...DEFAULT_ENGINE_CONFIG, ...(overrides ?? {}) };
-}
+// The resolver lives beside the engine, not here: the launch path needs it
+// too and has no component to hang a hook on (INV-ACCOUNT-015).
+const loadEngineConfig = resolvedEngineConfig;
 
 export function useSettings(): UseSettingsValue {
   const [engineConfig, setEngineConfigState] = useState<EngineConfig>(loadEngineConfig);
@@ -59,15 +61,19 @@ export function useSettings(): UseSettingsValue {
     setEngineConfigState((_prev) => {
       // Read the already-persisted overrides so we accumulate deltas, then
       // merge the new partial on top.
-      const existing = store.getJSON<EngineConfigOverrides>(KEY_ENGINE_CONFIG) ?? {};
+      const existing = storedOverrides();
       const next: EngineConfigOverrides = { ...existing, ...overrides };
       store.setJSON(KEY_ENGINE_CONFIG, next);
+      // Stored is not applied. Without this the control moves, the number
+      // sticks, and the engine goes on using what it was compiled with.
+      void applyEngineConfig();
       return { ...DEFAULT_ENGINE_CONFIG, ...next };
     });
   }, []);
 
   const resetEngineConfig = useCallback((): void => {
     store.remove(KEY_ENGINE_CONFIG);
+    void applyEngineConfig();
     setEngineConfigState({ ...DEFAULT_ENGINE_CONFIG });
   }, []);
 

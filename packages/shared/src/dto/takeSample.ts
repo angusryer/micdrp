@@ -9,6 +9,7 @@
  *
  * Spec: .harnex/project/specs/domains/dogfood/entities-samples.yml
  */
+import type { InterpretationDto } from './interpretation';
 import type { HitDto, NoteEventDto } from './note';
 
 /** The collection samples land in. One name, so both ends use the same. */
@@ -40,6 +41,18 @@ export interface TakeReadingDto {
    * listening to anything.
    */
   corrected?: NoteEventDto[];
+  /**
+   * Everything the person did to the take: the beat they tapped, the bar
+   * lines they placed, the tempo they set by hand, the chords they chose.
+   *
+   * Carried for the same reason `corrected` is. These are not readings —
+   * they are statements of intent, and a tapped beat says what the tempo
+   * detector should have found as plainly as a corrected note says what
+   * the pitch detector should have heard. The first sample shared carried
+   * none of them, so it could show that the tempo had been missed and
+   * never what the tempo was.
+   */
+  interpretations: InterpretationDto[];
   hits: HitDto[];
   /** Absent means the oldest reading, as a take stored before numbering. */
   analysisVersion?: number;
@@ -56,6 +69,7 @@ export interface TakeReadingDto {
 export interface ReadableTake {
   melody: NoteEventDto[];
   hits?: HitDto[];
+  interpretations?: InterpretationDto[];
   analysisVersion?: number;
   key?: string | null;
   tempoBpm?: number | null;
@@ -85,6 +99,7 @@ export function readingOf(
   return {
     melody: take.melody,
     corrected: differs ? corrected : undefined,
+    interpretations: take.interpretations ?? [],
     hits: take.hits ?? [],
     analysisVersion: take.analysisVersion,
     key: take.key ?? null,

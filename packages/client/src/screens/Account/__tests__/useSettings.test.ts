@@ -18,6 +18,7 @@
 import { harnessElement } from '../../../testing/harness';
 import TestRenderer, { act } from 'react-test-renderer';
 
+import { audioEngine } from '../../../audio/AudioEngine';
 import { DEFAULT_ENGINE_CONFIG } from '../../../audio/contract';
 import store from '../../../data/store';
 import { useSettings, type UseSettingsValue } from '../useSettings';
@@ -177,5 +178,39 @@ describe('useSettings', () => {
       const { api } = mount();
       expect(api().engineConfig).toEqual(DEFAULT_ENGINE_CONFIG);
     });
+  });
+});
+
+describe('the setting reaches the engine (INV-ACCOUNT-015)', () => {
+  it('ACC-ACCOUNT-021: configures the engine when a value changes', () => {
+    const configure = jest
+      .spyOn(audioEngine, 'configure')
+      .mockResolvedValue(undefined);
+    const { api, unmount } = mount();
+    act(() => api().setEngineConfig({ maxFrequencyHz: 2500 }));
+    expect(configure).toHaveBeenCalledWith(
+      expect.objectContaining({ maxFrequencyHz: 2500 })
+    );
+    act(() => unmount());
+    configure.mockRestore();
+  });
+
+  it('configures the engine when the settings are reset', () => {
+    const configure = jest
+      .spyOn(audioEngine, 'configure')
+      .mockResolvedValue(undefined);
+    const { api, unmount } = mount();
+    act(() => api().setEngineConfig({ maxFrequencyHz: 3000 }));
+    configure.mockClear();
+    act(() => api().resetEngineConfig());
+    // Resetting must push the defaults down too. Leaving the engine on the
+    // cleared value is the same bug in the other direction.
+    expect(configure).toHaveBeenCalledWith(
+      expect.objectContaining({
+        maxFrequencyHz: DEFAULT_ENGINE_CONFIG.maxFrequencyHz
+      })
+    );
+    act(() => unmount());
+    configure.mockRestore();
   });
 });

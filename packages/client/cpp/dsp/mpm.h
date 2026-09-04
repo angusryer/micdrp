@@ -29,7 +29,10 @@ struct EngineConfig {
   std::size_t frameSize = 2048;
   std::size_t hopSize = 512;
   double minFrequencyHz = 70.0;
-  double maxFrequencyHz = 1200.0;
+  // Mirrors DEFAULT_ENGINE_CONFIG in audio/contract.ts, which is the one
+  // that decides: the resolved settings are pushed down at launch
+  // (INV-ACCOUNT-015). This is what runs until they arrive.
+  double maxFrequencyHz = 2500.0;
   // MPM's peak-picking parameter: which NSDF peak counts as the fundamental,
   // as a fraction of the tallest one. It decides WHICH pitch, never WHETHER
   // there is one — lowering it makes octave errors more likely, not quiet

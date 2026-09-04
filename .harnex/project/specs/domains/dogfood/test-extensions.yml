@@ -221,3 +221,7 @@ then:
     mode: extension
     action: dog_assert_pull_wrote
     params: { count: "{N}" }
+  - id: TX-DOG-SHARE-NOTIFIED
+    pattern: 'the share control was told the queue changed'
+    mode: extension
+    action: dog_assert_share_notified

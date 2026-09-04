@@ -57,7 +57,7 @@ export interface EngineConfig {
   frameSize: number; // analysis window, default 2048
   hopSize: number; // default 512
   minFrequencyHz: number; // default 70
-  maxFrequencyHz: number; // default 1200
+  maxFrequencyHz: number; // default 2500
   /**
    * MPM's peak-picking parameter: which NSDF peak counts as the fundamental,
    * as a fraction of the tallest one. It decides WHICH pitch was sung, never
@@ -86,7 +86,21 @@ export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   // times cheaper (INV-PITCH-026).
   hopSize: 512,
   minFrequencyHz: 70,
-  maxFrequencyHz: 1200,
+  /**
+   * The ceiling on what counts as a pitch.
+   *
+   * 2500 Hz, not 1200. Whistling is a primary way melodies get sketched
+   * here, and it sits far above singing: a measured whistled take ran to a
+   * median of 1238 Hz and a peak of 2309, so at 1200 more than half of it
+   * was above the ceiling and was thrown away — which read back as a
+   * singer who drifted and left gaps rather than as a detector that had
+   * stopped listening.
+   *
+   * Raising it costs little. The bound only sets the shortest lag the
+   * detector will consider; which peak counts as the fundamental is
+   * clarityThreshold's decision, and that is what octave errors turn on.
+   */
+  maxFrequencyHz: 2500,
   clarityThreshold: 0.9,
   voicedClarityMin: 0.5,
   voicedLevelDb: -55,
