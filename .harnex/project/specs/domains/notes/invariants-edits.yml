@@ -100,9 +100,17 @@ invariants:
       since a snap onto the wrong step is plain in the picture and all
       but inaudible in a short take.
 
-      The two choices are made separately, and neither drives the
-      other: looking at the notation while listening to the raw take is
-      how a person tells which of the two is wrong. Sitting them among
+      A single control now sits above the two and moves both at once,
+      along with the click and the export (INV-NOTES-202). It is not a
+      replacement: turning a whole take from what was performed into
+      what it would be written as, and back, is a different question
+      from either of these, and it has to be one press to be worth
+      anything — judging whether a tidied reading is right means hearing
+      it against the untidied one immediately.
+
+      The two stay because they answer what the combined one cannot.
+      Looking at the notation while listening to the raw take is how a
+      person tells which of the two is wrong. Sitting them among
       the tracks does not join them — they are one more thing that
       decides what you are about to hear and see, and a segmented
       control of their own beneath the graph made them look like a

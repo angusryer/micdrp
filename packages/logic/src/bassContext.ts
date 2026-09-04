@@ -227,3 +227,28 @@ export function countIn(
   });
   return { clicks, leadInMs };
 }
+
+/**
+ * The click on the beats somebody actually stated (INV-NOTES-203).
+ *
+ * Here rather than beside the timeline because this is what a click
+ * sounds like — the pitches and the length belong to the metronome, and
+ * two places deciding what a click sounds like is one too many.
+ *
+ * A click laid out from a single tempo argues with the person it is
+ * playing to: they said where the beats were, and a metronome that
+ * ignores that is telling them they were wrong. It also makes an edit
+ * audible — move a beat and the click moves with it.
+ */
+export function clicksOnBeats(
+  beats: readonly number[],
+  downbeats: readonly number[] = []
+): CountBeat[] {
+  const marked = new Set(downbeats);
+  return beats.map((startMs, i) => ({
+    midi: marked.has(i) ? DOWNBEAT_MIDI : CLICK_MIDI,
+    startMs,
+    endMs: startMs + CLICK_MS
+  }));
+}
+
