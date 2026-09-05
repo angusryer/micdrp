@@ -257,7 +257,7 @@ export function NoteShapeSection({
             header={({ contentWidth, timeAxis, firstNoteMs }) =>
               transport != null ? (
                 <Scrubber
-                  positionMs={transport.drawnPositionMs}
+                  positionMs={transport.positionMs}
                   timeAxis={timeAxis}
                   contentWidth={contentWidth}
                   height={SCRUB_BAND_HEIGHT}

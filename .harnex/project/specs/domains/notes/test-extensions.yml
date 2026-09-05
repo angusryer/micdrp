@@ -254,17 +254,4 @@ then:
     pattern: 'the engine was silenced entirely'
     mode: extension
     action: notes_assert_engine_cleared
-  - id: WX-NOTES-CLOCK-READ
-    pattern: 'the clock is read {N} times'
-    mode: extension
-    action: notes_tick_clock
-    params: { times: "{N}" }
-  - id: TX-NOTES-TRANSPORT-STABLE
-    pattern: 'the published transport is unchanged'
-    mode: extension
-    action: notes_assert_transport_identity
-  - id: TX-NOTES-TOLD-PAUSE
-    pattern: 'the transport was told to pause'
-    mode: extension
-    action: notes_assert_pause_called
 

@@ -99,13 +99,8 @@ export interface PlaybackBarProps {
    * composition.
    */
   onTransport?: (transport: {
-    /**
-     * The moment, read every frame on the UI thread (INV-NOTES-136).
-     *
-     * The only shape it comes in. A number that ticks was published here
-     * too, and it re-rendered the screen above this one twice a second
-     * (INV-NOTES-206).
-     */
+    positionMs: number;
+    /** The same moment, read every frame, for the drawn head (INV-NOTES-136). */
     drawnPositionMs: SharedValue<number>;
     /**
      * Whether a sound is actually running. A beat tapped against a stopped
@@ -205,6 +200,7 @@ export function PlaybackBar({
   useEffect(
     () =>
       onTransport?.({
+        positionMs,
         drawnPositionMs,
         // Whether a sound is actually running, not merely whether there is a
         // transport. A beat tapped against a stopped take has no moment to be
@@ -215,13 +211,7 @@ export function PlaybackBar({
         play: () => void play(),
         stop: () => void stop()
       }),
-    // Deliberately without `positionMs`. It changes twice a second while a
-    // take runs, and publishing it re-rendered the whole screen above this
-    // — graph, neck and chord track — faster than that screen could draw,
-    // so the JS thread never went idle and a press had nowhere to be
-    // handled (INV-NOTES-206). The moment reaches the displays as a shared
-    // value the UI thread advances instead.
-    [onTransport, drawnPositionMs, state, cueTo, play, stop]
+    [onTransport, positionMs, drawnPositionMs, state, cueTo, play, stop]
   );
 
   return (

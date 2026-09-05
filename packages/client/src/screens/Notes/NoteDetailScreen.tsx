@@ -78,16 +78,8 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   // whose bottom row cannot be reached is live in name only (INV-NOTES-109).
   const { cover: sheetCover, report: reportCover } = useSheetCover();
 
-  /**
-   * What the transport offers this screen.
-   *
-   * No ticking position. One used to be here, and it changed twice a
-   * second while a take ran — so every reading of the clock re-rendered
-   * this whole screen, graph and neck and chord track, faster than it
-   * could draw. The moment arrives on the UI thread instead
-   * (INV-NOTES-206).
-   */
   const [transport, setTransport] = useState<{
+    positionMs: number;
     drawnPositionMs: SharedValue<number>;
     isPlaying: boolean;
     seek: (ms: number) => void;
