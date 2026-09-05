@@ -66,3 +66,33 @@ acceptance:
       capability: notes.set_playback_mix
       invariants: [INV-NOTES-019]
       interaction: INT-NOTES-011
+
+  - id: ACC-NOTES-216
+    interface: ui
+    title: Toggling a track does not freeze the level match
+    given:
+      - a signed-in singer S
+      - singer S has a note N whose take was measured as quiet
+      - no level on note N has been moved by hand
+    when:
+      - singer S turns a track on and reopens note N
+    then:
+      - the note field tracksFollowTheTake is true
+    maps_to:
+      capability: notes.set_playback_mix
+      invariants: [INV-NOTES-141]
+
+  - id: ACC-NOTES-217
+    interface: ui
+    title: A level moved by hand is kept and still wins
+    given:
+      - a signed-in singer S
+      - singer S has a note N whose take was measured as quiet
+    when:
+      - singer S sets the melody level by hand and reopens note N
+    then:
+      - the note field melodyLevelSetByHand is true
+      - the note field otherTracksFollowTheTake is true
+    maps_to:
+      capability: notes.set_playback_mix
+      invariants: [INV-NOTES-141]

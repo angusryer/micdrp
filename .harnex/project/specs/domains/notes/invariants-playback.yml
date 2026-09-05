@@ -756,6 +756,17 @@ invariants:
       one, that the ratios between tracks are unchanged, and that a note whose
       loudness was never measured is left alone.
 
+      "A level set by hand still wins" means a level the singer actually
+      moved. What was kept was every level, including the ones nobody had
+      touched — so opening a note and toggling any track wrote the whole
+      balance to storage, and from then on the defaults of that day
+      shadowed the match permanently. The measurement was computed
+      correctly on every open and discarded every time.
+
+      What is remembered is now only what was moved, so a track nobody
+      has balanced follows the take and one that has been balanced stays
+      where it was put.
+
       Dead for as long as it has existed, and silently. The engine
       measures a level for every frame and reports it, the segmenter
       builds a note's loudness out of those frames, and the match was

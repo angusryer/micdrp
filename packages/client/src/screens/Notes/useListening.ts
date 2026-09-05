@@ -12,7 +12,7 @@
  * chords is not a reading of the music, and freezing it into one would be a
  * category error. This is a local listening preference and stays local.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getJSON, setJSON } from '../../data/store';
 import type { VoiceName } from '../../audio/voices';
@@ -65,6 +65,49 @@ const START: Listening = {
 const keyFor = (noteId: string) => `notes.${noteId}.listening`;
 
 /**
+ * Which levels the singer actually moved (INV-NOTES-141).
+ *
+ * Only these are remembered. Keeping every level meant that opening a note
+ * and toggling any track wrote the whole balance to storage, and the
+ * defaults of that day shadowed the level match from then on — the
+ * measurement was computed correctly on every open and discarded every
+ * time. A track nobody has balanced follows the take; one that has been
+ * balanced stays where it was put.
+ */
+type ChosenLevels = Partial<TrackLevels>;
+
+interface Kept extends Omit<Partial<Listening>, 'levels'> {
+  /** Levels moved by hand. */
+  chosenLevels?: ChosenLevels;
+  /** What older installs wrote: every level, moved or not. */
+  levels?: Partial<TrackLevels>;
+}
+
+/**
+ * The hand-set levels in what was kept.
+ *
+ * An older install wrote all of them. Those equal to the flat defaults were
+ * nobody's decision — they are what the sliders happened to be sitting at —
+ * so they are dropped and the match takes them back. Anything that differs
+ * was moved, and is kept.
+ */
+function chosenFrom(kept: Kept): ChosenLevels {
+  if (kept.chosenLevels != null) {
+    return kept.chosenLevels;
+  }
+  const chosen: ChosenLevels = {};
+  for (const [track, level] of Object.entries(kept.levels ?? {}) as [
+    TrackName,
+    number
+  ][]) {
+    if (level !== DEFAULT_LEVELS[track]) {
+      chosen[track] = level;
+    }
+  }
+  return chosen;
+}
+
+/**
  * Read what was kept for this note, filling anything absent from the defaults.
  *
  * Merged field by field rather than taken wholesale: a note balanced before a
@@ -76,13 +119,14 @@ function read(noteId: string | null, startLevels: TrackLevels): Listening {
   if (noteId == null) {
     return start;
   }
-  const kept = getJSON<Partial<Listening>>(keyFor(noteId));
+  const kept = getJSON<Kept>(keyFor(noteId));
   if (kept == null) {
     return start;
   }
   return {
     mix: { ...start.mix, ...kept.mix },
-    levels: { ...start.levels, ...kept.levels },
+    // The match underneath, and only what was moved on top.
+    levels: { ...start.levels, ...chosenFrom(kept) },
     chordOctaves: kept.chordOctaves ?? start.chordOctaves,
     beatIsFelt: kept.beatIsFelt ?? start.beatIsFelt,
     snapToGrid: kept.snapToGrid ?? start.snapToGrid,
@@ -113,20 +157,34 @@ export function useListening(
   const [listening, setListening] = useState<Listening>(() =>
     read(noteId, startLevels)
   );
+  /**
+   * Which levels this singer has moved, so only those are remembered
+   * (INV-NOTES-141). Kept beside the state rather than in it: it is a fact
+   * about what was decided, not about what is currently sounding.
+   */
+  const chosen = useRef<ChosenLevels>({});
 
   // A different note is a different balance. Read rather than carried over,
   // so opening a second note never inherits the first note's mix.
-  useEffect(
-    () => setListening(read(noteId, startLevels)),
-    [noteId, startLevels]
-  );
+  useEffect(() => {
+    const kept = noteId == null ? null : getJSON<Kept>(keyFor(noteId));
+    chosen.current = kept == null ? {} : chosenFrom(kept);
+    setListening(read(noteId, startLevels));
+  }, [noteId, startLevels]);
 
   const change = useCallback(
     (next: (was: Listening) => Listening) => {
       setListening((was) => {
         const now = next(was);
         if (noteId != null) {
-          setJSON(keyFor(noteId), now);
+          // The levels written are the ones moved by hand, not every level
+          // currently sounding: writing all of them is what let a track
+          // toggle freeze the match at that day's defaults (INV-NOTES-141).
+          const { levels: _sounding, ...rest } = now;
+          setJSON(keyFor(noteId), {
+            ...rest,
+            chosenLevels: chosen.current
+          } satisfies Kept);
         }
         return now;
       });
@@ -142,8 +200,11 @@ export function useListening(
       [change]
     ),
     setLevel: useCallback(
-      (track, level) =>
-        change((was) => ({ ...was, levels: { ...was.levels, [track]: level } })),
+      (track, level) => {
+        // Moved by hand, so this one is remembered from here on.
+        chosen.current = { ...chosen.current, [track]: level };
+        change((was) => ({ ...was, levels: { ...was.levels, [track]: level } }));
+      },
       [change]
     ),
     setChordOctaves: useCallback(
