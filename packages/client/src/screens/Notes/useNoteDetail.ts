@@ -23,6 +23,7 @@ import {
   ANALYSIS_VERSION,
   isStale,
   matchedLevels,
+  takeGain,
   snapNotes,
   sungLoudnessDb,
   addTap,
@@ -351,15 +352,26 @@ export function useNoteDetail(id: string) {
    * by ear against one recording: against a quieter take those numbers bury
    * it, and against a loud one they vanish under it (INV-NOTES-141).
    */
+  const sungDb = useMemo(() => sungLoudnessDb(heard), [heard]);
   const startLevels = useMemo(
     () =>
       matchedLevels(
         DEFAULT_LEVELS,
-        sungLoudnessDb(heard),
+        sungDb,
         (track) => trackSpec(track).role === 'recording'
       ),
-    [heard]
+    [sungDb]
   );
+  /**
+   * How much the take itself is lifted to sit with the tracks read from it
+   * (INV-NOTES-141).
+   *
+   * A recording at a level of one is already as loud as it was sung, so
+   * without this the match could only push the tracks down — and against a
+   * take quieter than its floor it ran out of room and left them above the
+   * singing.
+   */
+  const takeMakeUp = useMemo(() => takeGain(sungDb), [sungDb]);
   const listening = useListening(note?.id ?? null, startLevels);
   const { chordOctaves, setChordOctaves } = listening;
   const floorMidi = HEADPHONE_FLOOR_MIDI + 12 * chordOctaves;
@@ -654,6 +666,7 @@ export function useNoteDetail(id: string) {
     floorMidi,
     chordOctaves,
     listening,
+    takeMakeUp,
     setChordOctaves,
     resolveAudio,
     midiUri,

@@ -96,3 +96,18 @@ acceptance:
     maps_to:
       capability: notes.set_playback_mix
       invariants: [INV-NOTES-141]
+
+  - id: ACC-NOTES-218
+    interface: ui
+    title: A quiet take is lifted rather than leaving the tracks above it
+    given:
+      - a signed-in singer S
+      - singer S has a note N whose take was sung far below the reference
+    when:
+      - singer S plays note N with the transcription on
+    then:
+      - the note field takeMakeUpGain is above 1
+      - the note field takeSitsWithTheTracks is true
+    maps_to:
+      capability: notes.set_playback_mix
+      invariants: [INV-NOTES-141]

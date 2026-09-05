@@ -79,6 +79,16 @@ export interface UsePlaybackMixOptions {
   /** Which voice each track speaks in (INV-NOTES-144). */
   voices?: TrackVoices;
   /**
+   * How much the take is lifted before its level is applied
+   * (INV-NOTES-141).
+   *
+   * A recording at a level of one is already as loud as it was sung. Without
+   * this the match could only push the synthesized tracks down towards a
+   * quiet take, and against one quieter than its floor it ran out of room.
+   * One means a take already at the reference, which is most of them.
+   */
+  takeMakeUp?: number;
+  /**
    * A voice that follows the take itself rather than the chord track.
    *
    * The detected melody belongs here. Hanging it off the accompaniment made it
@@ -141,7 +151,8 @@ export function usePlaybackMix({
   layers,
   bass,
   levels,
-  voices
+  voices,
+  takeMakeUp = 1
 }: UsePlaybackMixOptions): MixedPlayback {
   const {
     state: takeState,
@@ -164,14 +175,25 @@ export function usePlaybackMix({
     // Muting is a level, not a stop (INV-TPORT-013). The take runs
     // whatever the mix says; turning it off makes it silent and leaves
     // the transport alone, which is how every mixing desk works.
-    setTakeLevel(mix.take ? levels.take : 0);
+    setTakeLevel(mix.take ? levels.take * takeMakeUp : 0);
     accompaniment?.setLevel?.(levels.chords);
     voice?.setLevel?.(levels.melody);
     count?.setLevel?.(levels.count);
     rhythm?.setLevel?.(levels.rhythm);
     layers?.setLevel?.(levels.layers);
     bass?.setLevel?.(levels.bass);
-  }, [levels, mix.take, accompaniment, voice, count, rhythm, layers, bass, setTakeLevel]);
+  }, [
+    levels,
+    mix.take,
+    takeMakeUp,
+    accompaniment,
+    voice,
+    count,
+    rhythm,
+    layers,
+    bass,
+    setTakeLevel
+  ]);
 
   // What each track sounds like, told to the engine directly rather than
   // through the players: a timbre belongs to a bus, and a bus is what a track

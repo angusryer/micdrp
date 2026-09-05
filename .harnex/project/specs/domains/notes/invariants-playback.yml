@@ -767,6 +767,15 @@ invariants:
       has balanced follows the take and one that has been balanced stays
       where it was put.
 
+      The match must be able to move both sides. A bus level could not
+      exceed one, so a quiet take at full level was as loud as it could
+      ever be and the match could only push the tracks down towards it.
+      Against a take quieter than the floor allows, it ran out of room
+      and the accompaniment stayed louder than the singing — the exact
+      complaint the measurement exists to answer. A take below the
+      reference is lifted towards it, bounded, and the tracks move the
+      rest of the way.
+
       Dead for as long as it has existed, and silently. The engine
       measures a level for every frame and reports it, the segmenter
       builds a note's loudness out of those frames, and the match was

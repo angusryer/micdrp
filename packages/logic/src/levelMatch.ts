@@ -32,6 +32,15 @@ const MIN_GAIN = 0.25;
 const MAX_GAIN = 2;
 
 /**
+ * The most a take may be lifted, as a multiple of what was recorded.
+ *
+ * Make-up gain on a quiet recording raises the room with it, so this is
+ * about how much noise is worth accepting to hear the singing. Mirrors
+ * `kMaxBusLevel` in cpp/dsp/synth.h, which holds anything past it anyway.
+ */
+const MAX_TAKE_GAIN = 4;
+
+/**
  * How loud the sung notes were, in dBFS, or null when nothing measured them.
  *
  * The median, because one shouted note is not the loudness of a performance.
@@ -55,20 +64,49 @@ export function sungLoudnessDb(
     : measured[mid];
 }
 
+/** What the take was recorded at, as an amplitude, or null. */
+function amplitudeOf(loudnessDb: number | null): number | null {
+  if (loudnessDb == null) {
+    return null;
+  }
+  const amplitude = Math.pow(10, loudnessDb / 20);
+  return amplitude > 0 ? amplitude : null;
+}
+
+/**
+ * How much the take itself is lifted, to sit where a voice sits.
+ *
+ * Never below one: a take louder than the reference is left alone and the
+ * tracks come up to meet it instead. This exists because a bus level could
+ * not exceed one, so a quiet take at full level was as loud as it could
+ * ever be — the match could only push the tracks down towards it, ran out
+ * of room against a genuinely quiet take, and left the accompaniment above
+ * the singing (INV-NOTES-141).
+ */
+export function takeGain(loudnessDb: number | null): number {
+  const amplitude = amplitudeOf(loudnessDb);
+  if (amplitude == null) {
+    return 1;
+  }
+  return Math.min(MAX_TAKE_GAIN, Math.max(1, VOICE_PEAK / amplitude));
+}
+
 /**
  * How much every synthesized track moves, to sit where the take sits.
  *
  * One factor for all of them, so the balance they were given survives and
- * only the whole moves. Bounded, because a take recorded at arm's length
- * across a room should quieten the accompaniment and not silence it.
+ * only the whole moves. Measured against the take *after* it has been
+ * lifted, so the two halves of the match do not both spend the same
+ * difference. Bounded, because a take recorded at arm's length across a
+ * room should quieten the accompaniment and not silence it.
  */
 export function matchGain(loudnessDb: number | null): number {
-  if (loudnessDb == null) {
+  const amplitude = amplitudeOf(loudnessDb);
+  if (amplitude == null) {
     return 1;
   }
-  const takeAmplitude = Math.pow(10, loudnessDb / 20);
-  const wanted = takeAmplitude / VOICE_PEAK;
-  return Math.min(MAX_GAIN, Math.max(MIN_GAIN, wanted));
+  const lifted = amplitude * takeGain(loudnessDb);
+  return Math.min(MAX_GAIN, Math.max(MIN_GAIN, lifted / VOICE_PEAK));
 }
 
 /**

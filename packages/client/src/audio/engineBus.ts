@@ -18,17 +18,30 @@
  */
 import NativeSynth from '../specs/NativeSynth';
 
+/**
+ * The most a bus may be turned up, as a multiple of the audio on it.
+ *
+ * Above one on purpose: a take is a recording, so at a level of one it is
+ * already as loud as it was sung and a quiet one could never be brought up
+ * to sit with the tracks read from it (INV-NOTES-141). Mirrors
+ * `kMaxBusLevel` in cpp/dsp/synth.h, which holds anything past it anyway —
+ * stated here so a caller is not silently clamped on the way down.
+ */
+export const MAX_BUS_LEVEL = 4;
+
 /** Whether there is an engine to talk to at all. */
 export const hasEngine = (): boolean => NativeSynth != null;
 
 /**
- * How loud a bus sits, 0..1.
+ * How loud a bus sits, from silence up to `MAX_BUS_LEVEL`.
  *
  * Reaches voices already sounding, which is what makes a level a mix
- * decision rather than a property of the next note (INV-NOTES-027).
+ * decision rather than a property of the next note (INV-NOTES-027). Past
+ * one is make-up gain on a recording, not a synthesized voice — see the
+ * constant above.
  */
 export function setBusLevel(bus: number, level: number): void {
-  NativeSynth?.setBusLevel(bus, Math.max(0, Math.min(1, level)));
+  NativeSynth?.setBusLevel(bus, Math.max(0, Math.min(MAX_BUS_LEVEL, level)));
 }
 
 /**

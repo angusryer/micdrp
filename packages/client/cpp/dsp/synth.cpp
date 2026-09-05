@@ -67,7 +67,7 @@ void Synth::setBusWave(Bus bus, Wave wave) {
 Wave Synth::busWave(Bus bus) const { return busWaves_[busIndex(bus)]; }
 
 void Synth::setBusLevel(Bus bus, float level) {
-  busLevels_[busIndex(bus)] = std::min(1.0f, std::max(0.0f, level));
+  busLevels_[busIndex(bus)] = std::min(kMaxBusLevel, std::max(0.0f, level));
 }
 
 float Synth::busLevel(Bus bus) const { return busLevels_[busIndex(bus)]; }

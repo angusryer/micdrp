@@ -81,6 +81,11 @@ export interface PlaybackBarProps {
    * The control that opens it moved to the rail beside the graph, which this
    * component cannot see (INV-NOTES-142).
    */
+  /**
+   * How much the take is lifted to sit with the tracks read from it
+   * (INV-NOTES-141). Measured from the take; 1 leaves it as recorded.
+   */
+  takeMakeUp?: number;
   isOptionsOpen?: boolean;
   onOptionsOpen?: (open: boolean) => void;
   /**
@@ -135,6 +140,7 @@ export function PlaybackBar({
   rhythm,
   layers,
   bass,
+  takeMakeUp = 1,
   isOptionsOpen,
   onOptionsOpen,
   beats = [],
@@ -207,7 +213,8 @@ export function PlaybackBar({
       rhythm,
       layers,
       bass,
-      voices: listening?.voices ?? own.voices
+      voices: listening?.voices ?? own.voices,
+      takeMakeUp
     });
 
   // The click, felt instead of heard, when the note was left that way. It
