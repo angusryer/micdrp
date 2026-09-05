@@ -943,3 +943,25 @@ invariants:
       singer's, so for now a beat goes exactly where the finger leaves it
       (INV-NOTES-161).
 
+  - id: INV-NOTES-204
+    description: Stopping stops, including a press that has not started yet
+    severity: critical
+    check: >
+      Stopping or pausing cancels a press still waiting on the count-in,
+      so nothing begins sounding afterwards. Verified by pressing play
+      with a count in force, stopping before the count ends, and
+      asserting the take never starts.
+
+      Play waited out the count on a bare timer that nothing could
+      cancel. Pressing stop during the count cleared what was sounding
+      and set the transport to stopped — and then the timer resolved and
+      started the take regardless. From the outside the take began
+      playing after it had been stopped, and nothing would end it: the
+      transport already read stopped, so pressing stop again did
+      nothing, pausing did nothing, and the scrubber had no run to move.
+      It played to its end, including into the background.
+
+      A press is cancellable from the moment it is made. Anything that
+      resumes after an await checks that the run it belongs to is still
+      the current one, the way the tone player already does.
+

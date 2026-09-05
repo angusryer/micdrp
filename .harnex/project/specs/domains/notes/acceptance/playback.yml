@@ -110,3 +110,32 @@ acceptance:
       capability: notes.play
       invariants: [INV-NOTES-016]
       interaction: INT-NOTES-010
+
+  - id: ACC-NOTES-051
+    interface: module
+    title: Stopping during the count stops the press
+    given:
+      - a take with a count-in in force
+    when:
+      - the singer presses play
+      - the singer presses stop before the count ends
+    then:
+      - the take never starts
+    maps_to:
+      capability: notes.play
+      invariants: [INV-NOTES-204]
+
+  - id: ACC-NOTES-052
+    interface: module
+    title: Pausing during the count stops the press
+    given:
+      - a take with a count-in in force
+    when:
+      - the singer presses play
+      - the singer pauses before the count ends
+    then:
+      - the take never starts
+    maps_to:
+      capability: notes.play
+      invariants: [INV-NOTES-204]
+

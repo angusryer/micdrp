@@ -258,7 +258,18 @@ export function usePlaybackMix({
     takeElapsedMs
   ]);
 
+  /**
+   * Which press is the current one (INV-NOTES-204).
+   *
+   * Play waits out the count on a timer, and a press has to be
+   * cancellable from the moment it is made rather than from the moment it
+   * starts sounding. Anything resuming after an await checks this first —
+   * the same guard the tone player keeps for the same reason.
+   */
+  const run = useRef(0);
+
   const stop = useCallback(async (): Promise<void> => {
+    run.current += 1;
     clearEndTimer();
     setChordsRunning(false);
     await stopTake();
@@ -275,6 +286,7 @@ export function usePlaybackMix({
    * over the other tracks and reads no clock, so its head never moved.
    */
   const pause = useCallback(async (): Promise<void> => {
+    run.current += 1;
     clearEndTimer();
     setChordsRunning(false);
     const reachedMs = await pauseTake();
@@ -284,6 +296,7 @@ export function usePlaybackMix({
   }, [clearEndTimer, pauseTake, takeWanted]);
 
   const play = useCallback(async (fromMs = cueMs): Promise<void> => {
+    const mine = (run.current += 1);
     // The count starts now; everything else waits for it to finish. Timed
     // rather than sample-accurate on purpose — a count is a scaffold to come
     // in on, not part of the recording.
@@ -293,6 +306,12 @@ export function usePlaybackMix({
       setChordsRunning(true);
       latestCount.current?.start(0);
       await new Promise((resolve) => setTimeout(resolve, leadInMs));
+      // Stopped, paused, or pressed again while the count ran. Carrying on
+      // would start a take after it had been stopped, and leave a transport
+      // that already reads stopped with no way to end it (INV-NOTES-204).
+      if (mine !== run.current) {
+        return;
+      }
       setChordsRunning(false);
     }
     if (wantsTake) {

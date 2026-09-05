@@ -206,4 +206,26 @@ then:
     action: notes_assert_interpretation_state
     params: { label: "{label}", state: "{value}" }
     resolution: One of queued, saved.
+  - id: GX-NOTES-COUNT-IN
+    pattern: 'a take with a count-in in force'
+    mode: extension
+    action: notes_set_count_in
+  - id: WX-NOTES-PRESS
+    pattern: 'the singer presses {value}'
+    mode: extension
+    action: notes_press_transport
+    params: { control: "{value}" }
+  - id: WX-NOTES-PRESS-DURING-COUNT
+    pattern: 'the singer presses {value} before the count ends'
+    mode: extension
+    action: notes_press_during_count
+    params: { control: "{value}" }
+  - id: WX-NOTES-PAUSE-DURING-COUNT
+    pattern: 'the singer pauses before the count ends'
+    mode: extension
+    action: notes_pause_during_count
+  - id: TX-NOTES-TAKE-NEVER-STARTS
+    pattern: 'the take never starts'
+    mode: extension
+    action: notes_assert_take_not_started
 
