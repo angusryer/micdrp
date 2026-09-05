@@ -134,7 +134,12 @@ export function useDrawnPosition(
     return () => clearInterval(id);
   }, [running, fromMs, positionMs, reading, sample]);
 
-  useFrameCallback(({ timeSinceFirstFrame }) => {
+  // `timestamp`, not `timeSinceFirstFrame` (INV-TPORT-031). The latter is
+  // measured from when this callback was registered, and `useFrameCallback`
+  // re-registers whenever the callback's identity changes — which, for a
+  // worklet written inline, is every render. It restarted several times a
+  // second while the moment measured against it did not.
+  useFrameCallback(({ timestamp }) => {
     'worklet';
     if (!running) {
       return;
@@ -144,9 +149,9 @@ export function useDrawnPosition(
       // Folded in against where the head is right now, so this frame draws
       // exactly where the last one did and the gap closes over the interval
       // that follows (INV-TPORT-029, INV-TPORT-030).
-      sample.value = fold(latest, positionMs.value, timeSinceFirstFrame);
+      sample.value = fold(latest, positionMs.value, timestamp);
     }
-    positionMs.value = drawnAt(sample.value, timeSinceFirstFrame);
+    positionMs.value = drawnAt(sample.value, timestamp);
   }, true);
 
   return positionMs;

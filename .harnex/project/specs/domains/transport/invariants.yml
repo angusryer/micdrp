@@ -473,3 +473,28 @@ invariants:
       the singer something untrue about their take, and it is the shape
       every fault in this history took: the drawing disagreeing with the
       sound and the drawing being believed.
+
+  - id: INV-TPORT-031
+    description: The frame clock is an absolute timestamp, never a time since start
+    severity: critical
+    check: >
+      Anything drawn from frame time reads `timestamp`, which is the same
+      clock for the life of the app. `timeSinceFirstFrame` is measured
+      from when the current frame callback registration began and returns
+      to zero whenever it is re-registered. Verified by asserting the
+      drawn head is unmoved by a frame clock that jumps backwards.
+
+      `useFrameCallback` re-registers whenever the callback's identity
+      changes, and a worklet written inline in a component body is a new
+      identity on every render. So the clock restarted several times a
+      second while the moment measured against it did not — elapsed time
+      went sharply negative and the head jumped to the start of the take,
+      then slid forward until the next render did it again.
+
+      This is the fault under every playhead symptom in this domain's
+      history. Fixing the tear (INV-TPORT-021) and then the snap
+      (INV-TPORT-029) each removed a layer of it and left it running,
+      because both were reasoning about a clock that was not one.
+
+      Elapsed time is also floored at zero, so no discontinuity in any
+      clock can move the head backwards again (INV-TPORT-030).

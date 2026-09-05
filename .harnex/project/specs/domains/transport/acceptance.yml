@@ -335,3 +335,16 @@ acceptance:
     maps_to:
       capability: transport.observe
       invariants: [INV-TPORT-030, INV-TPORT-029]
+
+  - id: ACC-TPORT-025
+    interface: module
+    title: A frame clock that restarts does not move the head
+    given:
+      - a head folded in at a frame clock reading of 5000
+    when:
+      - the frame clock returns 0, as it does when the callback re-registers
+    then:
+      - the head does not move backwards
+    maps_to:
+      capability: transport.observe
+      invariants: [INV-TPORT-031, INV-TPORT-030]

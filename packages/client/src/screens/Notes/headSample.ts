@@ -117,7 +117,14 @@ export function drawnAt(sample: HeadSample, frameMs: number): number {
   if (sample.frameMs < 0) {
     return sample.atMs;
   }
-  const elapsed = frameMs - sample.frameMs;
+  // Floored, so no discontinuity in the frame clock can move the head
+  // backwards (INV-TPORT-030, INV-TPORT-031). `timeSinceFirstFrame`
+  // restarts every time the frame callback is re-registered, which is
+  // every render — that went negative here and threw the head to the
+  // start of the take. The caller passes an absolute timestamp now, and
+  // this refuses to go backwards whatever it is passed.
+  const raw = frameMs - sample.frameMs;
+  const elapsed = raw > 0 ? raw : 0;
   const left = 1 - elapsed / sample.windowMs;
   const remaining = left > 0 ? left : 0;
   return sample.atMs + elapsed + sample.errorMs * remaining;

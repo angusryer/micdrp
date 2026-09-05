@@ -138,3 +138,32 @@ describe('across a run of readings', () => {
     expect(Math.abs(drawn - (2000 - LAG))).toBeLessThanOrEqual(20);
   });
 });
+
+describe('a frame clock that restarts', () => {
+  /**
+   * ACC-TPORT-025 / INV-TPORT-031 — the fault under every playhead symptom
+   * in this domain's history.
+   *
+   * `useFrameCallback` re-registers whenever the callback's identity
+   * changes, and a worklet written inline in a component body is a new
+   * identity every render. Registration sets `startTime` to null, so
+   * `timeSinceFirstFrame` restarts at zero — several times a second, while
+   * the moment measured against it did not. Elapsed time went sharply
+   * negative and the head was thrown to the start of the take.
+   *
+   * The caller reads `timestamp` now, which is the same clock for the life
+   * of the app. This is the second line of defence: whatever clock it is
+   * handed, the head does not go backwards.
+   */
+  it('does not throw the head backwards', () => {
+    const folded = fold({ atMs: 12000, seq: 3 }, 12000, 5000);
+    // The clock restarts. Elapsed would be -5000.
+    expect(drawnAt(folded, 0)).toBe(12000);
+    expect(drawnAt(folded, 1)).toBe(12000);
+  });
+
+  it('picks up again from where it was', () => {
+    const folded = fold({ atMs: 12000, seq: 3 }, 12000, 5000);
+    expect(drawnAt(folded, 5100)).toBeCloseTo(12100, 6);
+  });
+});
