@@ -48,16 +48,6 @@ export interface ScrubberProps {
    * move without a render (INV-NOTES-206).
    */
   positionMs: SharedValue<number>;
-  /**
-   * Where a press would start from, used while nothing is running.
-   *
-   * The shared value above follows where the last run of playback began,
-   * so on its own it left the handle behind after a rewind or a drag on
-   * a stopped take — right about the take and silent about it
-   * (INV-NOTES-208). A seek is rare enough to cost a render.
-   */
-  cueMs: number;
-  isPlaying: boolean;
   timeAxis: TimeAxis;
   contentWidth: number;
   height: number;
@@ -69,8 +59,6 @@ export interface ScrubberProps {
 
 export function Scrubber({
   positionMs,
-  cueMs,
-  isPlaying,
   timeAxis,
   contentWidth,
   height,
@@ -123,13 +111,11 @@ export function Scrubber({
   // crashed the app natively the instant a note was opened.
   const trailStyle = useAnimatedStyle(() => {
     'worklet';
-    const at = isPlaying ? positionMs.value : cueMs;
-    return { left: scrubPlacement(timeAxis, at, firstNoteMs, HANDLE).trailX };
+    return { left: scrubPlacement(timeAxis, positionMs.value, firstNoteMs, HANDLE).trailX };
   });
   const handleStyle = useAnimatedStyle(() => {
     'worklet';
-    const at = isPlaying ? positionMs.value : cueMs;
-    return { left: scrubPlacement(timeAxis, at, firstNoteMs, HANDLE).handleX };
+    return { left: scrubPlacement(timeAxis, positionMs.value, firstNoteMs, HANDLE).handleX };
   });
 
   return (

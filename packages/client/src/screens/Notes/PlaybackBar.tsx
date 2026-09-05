@@ -20,7 +20,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '../../components/Icon';
 import { PlaybackSheet } from './PlaybackSheet';
 import { useTheme } from '../../theme';
-import { noteTransport, traceLine } from './transportTrace';
 import { offeredTracks } from './offeredTracks';
 import { useListening, type UseListening } from './useListening';
 import { useHapticBeat } from './useHapticBeat';
@@ -107,8 +106,6 @@ export interface PlaybackBarProps {
      * (INV-NOTES-206).
      */
     drawnPositionMs: SharedValue<number>;
-    /** Where a press would start from, for a stopped head to be drawn. */
-    cueMs: number;
     /**
      * Whether a sound is actually running. A beat tapped against a stopped
      * take has no moment to be at (INV-NOTES-130).
@@ -246,25 +243,17 @@ export function PlaybackBar({
             there (INV-NOTES-152). */}
         <PlaybackButton
           state={state}
-          // Temporary, and each before the next can fail: a touch that
-          // never lands, a press that starts, a press that fires.
-          onTouch={() => noteTransport('touchedPause')}
+          // As the finger lands, not as it lifts. A transport should
+          // answer the press, and a press that has to survive until
+          // release is one anything cancelling a press can take away —
+          // something was taking them (INV-TPORT-004).
           onPressIn={() => {
-            noteTransport('pressInPause');
-            if (state !== 'playing') {
-              return;
+            if (state === 'playing') {
+              void pause();
             }
-            // Pausing as the finger lands rather than as it lifts. A
-            // transport should answer the press, and a press that has to
-            // survive until release is one something else can take away.
-            noteTransport('pressedPause');
-            void pause();
           }}
           onPlay={() => void play()}
-          onPause={() => {
-            noteTransport('pressedPause');
-            void pause();
-          }}
+          onPause={() => void pause()}
         />
 
         {durationLabel != null ? (
@@ -281,18 +270,6 @@ export function PlaybackBar({
 
       </View>
 
-      {/* Temporary, and here on purpose. Four attempts at one bug failed
-          because nothing could say from the outside whether a press
-          reached the engine — a press that never arrived and a press that
-          arrived and was ignored look identical from a chair. This counts
-          what the transport actually did. It comes out once the fault is
-          understood. */}
-      <Text
-        testID="transport-trace"
-        style={[styles.trace, { color: colors.gray300 }]}
-      >
-        {`${state}  ${Math.round(positionMs)}ms  ${traceLine()}`}
-      </Text>
 
       <PlaybackSheet
         isOpen={isSheetOpen}
@@ -347,7 +324,6 @@ export default PlaybackBar;
 
 const styles = StyleSheet.create({
   rewind: { padding: 4, marginRight: 4 },
-  trace: { fontSize: 10, paddingHorizontal: 12, paddingBottom: 4 },
   details: { padding: 6 },
   stack: { gap: 8 },
   container: {

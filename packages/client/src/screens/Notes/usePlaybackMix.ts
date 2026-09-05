@@ -140,6 +140,8 @@ export function usePlaybackMix({
     play: playTake,
     pause: pauseTake,
     stop: stopTake,
+    seek: seekTake,
+    cueMs,
     setLevel: setTakeLevel
   } = usePlayback({ resolveAudioUri });
   // Applied on change rather than at the start of a press: a level moved
@@ -183,7 +185,9 @@ export function usePlaybackMix({
   const [chordsRunning, setChordsRunning] = useState(false);
   // Where a press would start from. It is where the take stopped, or wherever
   // the playhead was last put.
-  const [cueMs, setCueMs] = useState(0);
+  // No cue of its own. The transport below holds the one there is, and
+  // a screen keeping a second copy is how a seek came to move one while
+  // every display drew the other (INV-TPORT-007).
   const endTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearEndTimer = useCallback(() => {
     if (endTimer.current) {
@@ -291,11 +295,9 @@ export function usePlaybackMix({
     run.current += 1;
     clearEndTimer();
     setChordsRunning(false);
-    const reachedMs = await pauseTake();
-    if (takeWanted.current) {
-      setCueMs(reachedMs);
-    }
-  }, [clearEndTimer, pauseTake, takeWanted]);
+    // The moment held is the transport's answer; nothing here records it.
+    await pauseTake();
+  }, [clearEndTimer, pauseTake]);
 
   const play = useCallback(async (
     fromMs = cueMs,
@@ -388,17 +390,17 @@ export function usePlaybackMix({
       const from = isPlaying ? takeElapsedMs() : cueMs;
       const to = Math.max(0, from - byMs);
       if (!isPlaying) {
-        setCueMs(to);
+        await seekTake(to);
         return;
       }
       // Sounding, and it goes on sounding from the new moment: this transport
       // starts at a moment rather than jumping to one, so moving means
       // stopping and starting again.
       await stop();
-      setCueMs(to);
+      await seekTake(to);
       await play(to, true);
     },
-    [state, takeElapsedMs, cueMs, stop, play]
+    [state, takeElapsedMs, cueMs, seekTake, stop, play]
   );
 
   // Playing, it is where the take has reached; stopped, it is where a press
@@ -406,15 +408,12 @@ export function usePlaybackMix({
   // nothing until something is sounding.
   const cueTo = useCallback(
     (ms: number) => {
-      setCueMs(Math.max(0, ms));
-      // Moving the head while something is sounding stops it rather than
-      // seeking live: this transport can only start at a moment, not jump to
-      // one, and a stutter would be a worse answer than a stop.
-      if (state === 'playing') {
-        void stop();
-      }
+      // The transport decides what a seek means: it moves the head, and
+      // where something was sounding it starts again from the new moment
+      // rather than jumping to it (INV-TPORT-007).
+      void seekTake(Math.max(0, ms));
     },
-    [state, stop]
+    [seekTake]
   );
 
   return {

@@ -31,9 +31,11 @@ const GLYPH = 20;
 
 export interface PlaybackButtonProps {
   state: PlaybackState;
-  /** Counted before the press machinery has any say. Temporary. */
-  onTouch?: () => void;
-  /** The press machinery accepted the start of a press. Temporary. */
+  /**
+   * Answered as the finger lands (INV-TPORT-004). A press that has to
+   * survive until release is one anything cancelling a press can take
+   * away, and something was.
+   */
   onPressIn?: () => void;
   onPlay: () => void;
   /**
@@ -46,7 +48,6 @@ export interface PlaybackButtonProps {
 
 export function PlaybackButton({
   state,
-  onTouch,
   onPressIn,
   onPlay,
   onPause
@@ -63,10 +64,6 @@ export function PlaybackButton({
       // A press while the take is still being fetched would only be swallowed
       // by usePlayback; saying so lets the platform dim it instead.
       disabled={isLoading}
-      // Both temporary, and both before onPress can be reached: a touch
-      // that never lands and a press cancelled on its way to firing are
-      // the same nothing from a chair, and different faults entirely.
-      onTouchStart={onTouch}
       onPressIn={onPressIn}
       // Pausing on the press going down rather than coming up. A
       // transport should answer the finger landing, and a press that has

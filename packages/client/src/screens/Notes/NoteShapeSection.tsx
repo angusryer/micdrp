@@ -258,8 +258,6 @@ export function NoteShapeSection({
               transport != null ? (
                 <Scrubber
                   positionMs={transport.drawnPositionMs}
-                  cueMs={transport.cueMs}
-                  isPlaying={transport.isPlaying}
                   timeAxis={timeAxis}
                   contentWidth={contentWidth}
                   height={SCRUB_BAND_HEIGHT}
@@ -341,8 +339,6 @@ export function NoteShapeSection({
                 {transport != null ? (
                   <Playhead
                     positionMs={transport.drawnPositionMs}
-                    cueMs={transport.cueMs}
-                    isPlaying={transport.isPlaying}
                     timeAxis={timeAxis}
                     contentWidth={contentWidth}
                     height={graphHeight}

@@ -69,6 +69,8 @@ export function useTakeVoice({ resolveAudioUri }: UsePlaybackOptions): Playback 
     setLevel: engine.setLevel,
     play: (fromMs) => transport.play(fromMs),
     stop: () => transport.stop(),
+    seek: (atMs) => transport.seek(atMs),
+    cueMs: snapshot.cueMs,
     // Resolves with the moment held, which is where the next press picks
     // up (INV-NOTES-152). The transport already knows it.
     pause: async () => {

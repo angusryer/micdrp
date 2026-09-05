@@ -50,4 +50,15 @@ export interface Playback {
    */
   pause(): Promise<number>;
   stop(): Promise<void>;
+  /**
+   * Put the head somewhere. Decides nothing about sound
+   * (INV-TPORT-007).
+   *
+   * Through the transport, so there is one cue rather than two. The
+   * screen above used to keep its own, and a seek moved that one while
+   * every display drew the other.
+   */
+  seek(atMs: number): Promise<void>;
+  /** Where a press would start from. The transport's, and the only one. */
+  cueMs: number;
 }
