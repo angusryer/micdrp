@@ -59,11 +59,35 @@ const SLIDERS: Partial<Record<TrackName, string | null>> = {
 export interface GlyphGuideSheetProps {
   track: TrackName | null;
   onClose: () => void;
+  /**
+   * What was measured of the take, and what the mix did about it
+   * (INV-NOTES-141).
+   *
+   * Shown on the take, because the balance every other track starts at is
+   * derived from this and there was no way to see it. A take whose
+   * loudness was never measured reads as unmeasured rather than as
+   * silent — they are different claims and only one is about the singing
+   * (INV-PITCH-020).
+   */
+  measured?: { sungDb: number | null; takeMakeUp: number };
+}
+
+/** How loud the take was sung, in the words a person would use. */
+function sungLine(measured: { sungDb: number | null; takeMakeUp: number }): string {
+  if (measured.sungDb == null) {
+    return 'Nothing measured how loud this take was sung, so the other tracks start where they always do. Reading the take again measures it.';
+  }
+  const lift =
+    measured.takeMakeUp > 1.05
+      ? ` It is being brought up ${measured.takeMakeUp.toFixed(1)}× to sit with the tracks read from it.`
+      : ' It is loud enough to sit with the tracks read from it as recorded.';
+  return `Sung at ${measured.sungDb.toFixed(1)} dB.${lift}`;
 }
 
 export function GlyphGuideSheet({
   track,
-  onClose
+  onClose,
+  measured
 }: GlyphGuideSheetProps): React.JSX.Element {
   const { colors } = useTheme();
 
@@ -84,6 +108,14 @@ export function GlyphGuideSheet({
         <Text style={[styles.title, { color: colors.typography }]}>
           What these do
         </Text>
+        {track === 'take' && measured != null ? (
+          <Text
+            testID="take-measured"
+            style={[styles.slider, { color: colors.gray300 }]}
+          >
+            {sungLine(measured)}
+          </Text>
+        ) : null}
         <Text style={[styles.slider, { color: colors.gray300 }]}>
           The top slider is how loud this track sits in the mix.
         </Text>

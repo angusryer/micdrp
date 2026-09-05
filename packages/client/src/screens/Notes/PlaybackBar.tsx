@@ -86,6 +86,8 @@ export interface PlaybackBarProps {
    * (INV-NOTES-141). Measured from the take; 1 leaves it as recorded.
    */
   takeMakeUp?: number;
+  /** How loud the take was sung, in dBFS, or null where nothing measured it. */
+  sungDb?: number | null;
   isOptionsOpen?: boolean;
   onOptionsOpen?: (open: boolean) => void;
   /**
@@ -141,6 +143,7 @@ export function PlaybackBar({
   layers,
   bass,
   takeMakeUp = 1,
+  sungDb = null,
   isOptionsOpen,
   onOptionsOpen,
   beats = [],
@@ -343,6 +346,7 @@ export function PlaybackBar({
       <GlyphGuideSheet
         track={explaining}
         onClose={() => setExplaining(null)}
+        measured={{ sungDb, takeMakeUp }}
       />
     </View>
   );

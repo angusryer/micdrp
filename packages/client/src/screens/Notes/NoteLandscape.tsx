@@ -107,6 +107,7 @@ export function NoteLandscape({
             beats={detail.clickBeats}
             listening={detail.listening}
           takeMakeUp={detail.takeMakeUp}
+            sungDb={detail.sungDb}
           />
           </View>
         ) : null}

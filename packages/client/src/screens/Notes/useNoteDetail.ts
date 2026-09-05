@@ -667,6 +667,7 @@ export function useNoteDetail(id: string) {
     chordOctaves,
     listening,
     takeMakeUp,
+    sungDb,
     setChordOctaves,
     resolveAudio,
     midiUri,
