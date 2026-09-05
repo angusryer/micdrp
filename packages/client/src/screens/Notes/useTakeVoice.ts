@@ -15,7 +15,7 @@
  * levels as every synthesized voice (INV-NOTES-133) — that part is the
  * engine's, next door.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { createTransport } from '../../audio/transportStore';
 import type { TransportState } from '../../audio/transportState';
@@ -60,6 +60,30 @@ export function useTakeVoice({ resolveAudioUri }: UsePlaybackOptions): Playback 
   // The same moment, read every frame on the UI thread (INV-NOTES-136).
   const drawnPositionMs = useDrawnPosition(running, snapshot.cueMs);
 
+  /**
+   * The commands, bound once (INV-TPORT-002).
+   *
+   * Fresh closures here are not a tidiness question. They travel up
+   * through the mix into the object the screen is handed, so a new one
+   * per render re-publishes the transport, which re-renders the screen,
+   * which makes new ones — a loop that starves the JS thread until the
+   * app is backgrounded and React stops rendering. Which is exactly how
+   * this presented: a play that never left its spinner, and audio
+   * starting the moment the app went to the background.
+   */
+  const play = useCallback(
+    (fromMs?: number) => transport.play(fromMs),
+    [transport]
+  );
+  const stop = useCallback(() => transport.stop(), [transport]);
+  const seek = useCallback((atMs: number) => transport.seek(atMs), [transport]);
+  // Resolves with the moment held, which is where the next press picks up
+  // (INV-NOTES-152). The transport already knows it.
+  const pause = useCallback(async () => {
+    await transport.pause();
+    return transport.snapshot().cueMs;
+  }, [transport]);
+
   return {
     state,
     positionMs,
@@ -67,15 +91,10 @@ export function useTakeVoice({ resolveAudioUri }: UsePlaybackOptions): Playback 
     elapsedMs: engine.elapsedMs,
     durationMs: engine.durationMs(),
     setLevel: engine.setLevel,
-    play: (fromMs) => transport.play(fromMs),
-    stop: () => transport.stop(),
-    seek: (atMs) => transport.seek(atMs),
+    play,
+    stop,
+    seek,
     cueMs: snapshot.cueMs,
-    // Resolves with the moment held, which is where the next press picks
-    // up (INV-NOTES-152). The transport already knows it.
-    pause: async () => {
-      await transport.pause();
-      return transport.snapshot().cueMs;
-    }
+    pause
   };
 }
