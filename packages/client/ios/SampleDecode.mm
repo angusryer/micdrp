@@ -46,11 +46,57 @@ NSURL *_Nullable localURLFor(NSString *path, NSError **error) {
   return scratch;
 }
 
+/// The one format anything resident is held in: mono, engine rate, and
+/// sixteen-bit because that is the precision the microphone captured
+/// (INV-TPORT-026).
 AVAudioFormat *monoAt(double sampleRateHz) {
-  return [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
+  return [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatInt16
                                           sampleRate:sampleRateHz
                                             channels:1
                                          interleaved:NO];
+}
+
+/// Which cache file a recording's frames belong in.
+///
+/// Keyed on the address without its query, because a backend file token is
+/// minted fresh on every press and the recording it points at is the same
+/// one (INV-NOTES-014, INV-TPORT-020). FNV-1a, so the name is the same in
+/// this launch and the next.
+NSString *cacheKeyFor(NSString *path) {
+  NSString *bare = path;
+  const NSRange query = [path rangeOfString:@"?"];
+  if (query.location != NSNotFound) {
+    bare = [path substringToIndex:query.location];
+  }
+  std::uint64_t hash = 14695981039346656037ULL;
+  for (const char *c = bare.UTF8String; c != nullptr && *c != 0; ++c) {
+    hash ^= static_cast<unsigned char>(*c);
+    hash *= 1099511628211ULL;
+  }
+  return [NSString stringWithFormat:@"%016llx.pcm", hash];
+}
+
+/// Where cache files live. Under Caches on purpose: the system may reclaim
+/// them, and everything here can be made again from the recording.
+NSURL *_Nullable cacheDirectory(NSError **error) {
+  NSFileManager *fm = [NSFileManager defaultManager];
+  NSURL *base = [fm URLForDirectory:NSCachesDirectory
+                           inDomain:NSUserDomainMask
+                  appropriateForURL:nil
+                             create:YES
+                              error:error];
+  if (base == nil) {
+    return nil;
+  }
+  NSURL *dir = [base URLByAppendingPathComponent:@"micdrp-frames"
+                                     isDirectory:YES];
+  if (![fm createDirectoryAtURL:dir
+      withIntermediateDirectories:YES
+                       attributes:nil
+                            error:error]) {
+    return nil;
+  }
+  return dir;
 }
 
 /// Convert a whole file into one buffer at the target format.
@@ -108,13 +154,13 @@ AVAudioPCMBuffer *_Nullable convertWhole(AVAudioFile *file,
   return out;
 }
 
-}  // namespace
-
-Frames decodeSample(NSString *path, double sampleRateHz, NSError **error) {
+/// Everything up to a buffer: fetch if remote, open, convert whole.
+AVAudioPCMBuffer *_Nullable decodeWhole(NSString *path, double sampleRateHz,
+                                        NSError **error) {
   const BOOL isRemote = [path hasPrefix:@"http"];
   NSURL *local = localURLFor(path, error);
   if (local == nil) {
-    return nullptr;
+    return nil;
   }
   AVAudioFile *file = [[AVAudioFile alloc] initForReading:local error:error];
   AVAudioPCMBuffer *audio =
@@ -124,12 +170,63 @@ Frames decodeSample(NSString *path, double sampleRateHz, NSError **error) {
   if (isRemote) {
     [[NSFileManager defaultManager] removeItemAtURL:local error:nil];
   }
-  if (audio == nil) {
+  return audio;
+}
+
+}  // namespace
+
+std::int64_t frameCountOf(NSURL *cache) {
+  NSNumber *size = nil;
+  NSError *err = nil;
+  if (![cache getResourceValue:&size forKey:NSURLFileSizeKey error:&err] ||
+      size == nil) {
+    return 0;
+  }
+  return size.longLongValue / static_cast<std::int64_t>(sizeof(std::int16_t));
+}
+
+Frames residentFrames(NSURL *cache, NSError **error) {
+  // Mapped for the read and copied out of, which is a read on a background
+  // queue rather than a page fault on the audio thread (INV-TPORT-028).
+  NSData *data = [NSData dataWithContentsOfURL:cache
+                                       options:NSDataReadingMappedIfSafe
+                                         error:error];
+  if (data == nil) {
     return nullptr;
   }
-  const float *source = audio.floatChannelData[0];
-  return std::make_shared<std::vector<float>>(source,
-                                              source + audio.frameLength);
+  const std::int16_t *first = static_cast<const std::int16_t *>(data.bytes);
+  return std::make_shared<std::vector<std::int16_t>>(
+      first, first + data.length / sizeof(std::int16_t));
+}
+
+NSURL *_Nullable frameCacheFor(NSString *path, double sampleRateHz,
+                               NSError **error) {
+  NSURL *dir = cacheDirectory(error);
+  if (dir == nil) {
+    return nil;
+  }
+  NSURL *cache = [dir URLByAppendingPathComponent:cacheKeyFor(path)];
+  if (frameCountOf(cache) > 0) {
+    return cache;  // converted on a previous sighting (INV-TPORT-027)
+  }
+  AVAudioPCMBuffer *audio = decodeWhole(path, sampleRateHz, error);
+  if (audio == nil) {
+    return nil;
+  }
+  NSData *raw =
+      [NSData dataWithBytes:audio.int16ChannelData[0]
+                     length:audio.frameLength * sizeof(std::int16_t)];
+  // Atomic, so a cache file that exists is a cache file that is complete —
+  // a half-written one would read as a take that stops early.
+  if (![raw writeToURL:cache options:NSDataWritingAtomic error:error]) {
+    return nil;
+  }
+  return cache;
+}
+
+Frames decodeSample(NSString *path, double sampleRateHz, NSError **error) {
+  NSURL *cache = frameCacheFor(path, sampleRateHz, error);
+  return cache == nil ? nullptr : residentFrames(cache, error);
 }
 
 }  // namespace micdrp

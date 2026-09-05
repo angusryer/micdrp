@@ -263,3 +263,45 @@ acceptance:
     maps_to:
       capability: transport.play
       invariants: [INV-TPORT-024]
+
+  - id: ACC-TPORT-020
+    interface: module
+    title: A resident take costs two bytes a frame
+    given:
+      - a recording of known length
+    when:
+      - it is loaded into a slot
+    then:
+      - the resident audio is 16-bit mono at the engine rate
+    maps_to:
+      capability: transport.play
+      invariants: [INV-TPORT-026]
+
+  - id: ACC-TPORT-021
+    interface: module
+    title: A second load of the same recording decodes nothing
+    given:
+      - a recording already loaded once
+    when:
+      - it is loaded again
+    then:
+      - no decoder is opened
+      - the frames come from the raw file written by the first load
+    maps_to:
+      capability: transport.play
+      invariants: [INV-TPORT-027]
+
+  - id: ACC-TPORT-022
+    interface: module
+    title: A streamed take renders silence rather than waiting
+    given:
+      - a streamed take whose window has been drained
+    when:
+      - the audio thread reads a frame that is not resident
+    then:
+      - the read reports a shortfall
+      - the underrun is counted
+      - nothing blocks
+    maps_to:
+      capability: transport.play
+      invariants: [INV-TPORT-028]

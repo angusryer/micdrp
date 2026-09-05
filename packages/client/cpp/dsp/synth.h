@@ -76,12 +76,22 @@ enum class Bus : int {
  */
 constexpr int kMaxSamples = 8;
 
+/// Sixteen-bit frames to the float the mixer works in (INV-TPORT-026).
+inline constexpr float kInt16ToFloat = 1.0f / 32768.0f;
+
 /**
  * One block of recorded audio, resident and ready to sound.
  *
- * Mono, already at the engine's rate: converting while rendering would be a
+ * Mono, already at the engine's rate: resampling while rendering would be a
  * per-sample cost on the audio thread for a conversion that is identical
  * every time it is done (INV-NOTES-133).
+ *
+ * Sixteen-bit, which is the precision the microphone captured at. Held as
+ * float it cost four bytes a frame — 11 MB a minute, and again for every
+ * layer sung over the take, up to eight resident at once — to carry two
+ * bytes the recording never had (INV-TPORT-026). Widening to float is one
+ * multiply per frame, in a loop that already does an oscillator, an
+ * envelope and a bus level.
  *
  * The frames are NOT owned here. The audio thread holds this pointer for as
  * long as a voice is reading it, which is what keeps rendering
@@ -90,7 +100,7 @@ constexpr int kMaxSamples = 8;
  * memory in the render callback.
  */
 struct SampleData {
-  const float* frames = nullptr;
+  const std::int16_t* frames = nullptr;
   std::size_t frameCount = 0;
 };
 
@@ -240,7 +250,7 @@ class Synth {
     bool isSample = false;
     /// Bound at admission and held to the end, so replacing a slot cannot
     /// change what a sounding voice is reading (INV-NOTES-133).
-    const float* source = nullptr;
+    const std::int16_t* source = nullptr;
     std::size_t sourceCount = 0;
     std::int64_t sourcePos = 0;
   };

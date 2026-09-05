@@ -380,3 +380,51 @@ invariants:
       applied, and every one of them passed. An optional call cannot fail,
       so it cannot be caught being wrong — including by the tests meant to
       prove the code works.
+
+  - id: INV-TPORT-026
+    description: Recorded audio is held at the precision it was captured at
+    severity: high
+    check: >
+      A resident take is stored as 16-bit integer frames, mono, at the
+      engine's rate, and converted to float once per sample as it is
+      mixed. Verified by asserting a decoded take occupies two bytes per
+      frame.
+
+      It was stored as float32, which is four bytes a frame — 11 MB for
+      every minute of a take, and again for every layer sung over it, up
+      to eight resident at once. The microphone captured 16-bit; the
+      extra two bytes carried no information the recording ever had. The
+      conversion is one multiply per frame, against an oscillator, an
+      envelope and a bus level already in that loop.
+
+  - id: INV-TPORT-027
+    description: A take is converted once, not once per load
+    severity: high
+    check: >
+      The first load of a recording writes a raw file of engine-rate
+      mono frames beside it, and every later load reads that instead of
+      decoding again. Verified by asserting a second load of the same
+      recording opens no decoder.
+
+      Every load ran the source through AVAudioFile with a format
+      conversion and a resample — the slow step, paid again on every
+      note opened, and the step that had a chance to fail at all
+      (INV-TPORT-019). It is also what makes reading a passage from disk
+      possible at all: a reader thread cannot run a codec
+      (INV-TPORT-028).
+
+  - id: INV-TPORT-028
+    description: A take too long to hold is read from disk, never faulted in
+    severity: critical
+    check: >
+      Above a threshold a take is streamed: a reader thread fills a ring
+      ahead of the playhead and the audio thread reads only what is
+      already there, counting an underrun and rendering silence when it
+      is not. Verified on the host by draining a window and asserting
+      the read reports the shortfall rather than blocking.
+
+      The audio thread may not touch a file, and it may not touch mapped
+      pages either — a page fault inside the render callback is an
+      unbounded stall, which is the exact thing the lock-free command
+      ring exists to avoid. Memory-mapping a take reads as the simple
+      answer and is the one shape that cannot be made real-time safe.

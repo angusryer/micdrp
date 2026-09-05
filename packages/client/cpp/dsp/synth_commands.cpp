@@ -40,8 +40,8 @@ bool postScheduleSample(SynthMailbox& mailbox, double busIndex, double slot,
   return mailbox.post(c);
 }
 
-bool postSetSample(SynthMailbox& mailbox, double slot, const float* frames,
-                   std::size_t frameCount) {
+bool postSetSample(SynthMailbox& mailbox, double slot,
+                   const std::int16_t* frames, std::size_t frameCount) {
   SynthCommand c;
   c.kind = SynthCommand::Kind::SetSample;
   c.sampleSlot = static_cast<int>(slot);

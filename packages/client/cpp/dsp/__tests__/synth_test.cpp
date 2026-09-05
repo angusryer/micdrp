@@ -230,12 +230,22 @@ void scheduledOutOfOrder() {
 // ---------------------------------------------------------------------------
 // Recorded audio: a take is a voice like any other (INV-NOTES-133).
 
+/// A unit level as the engine now stores audio: sixteen-bit (INV-TPORT-026).
+std::int16_t pcm(float unit) {
+  return static_cast<std::int16_t>(unit * 32767.0f);
+}
+
+/// And back, for comparing a stored frame against what the mixer produced.
+float asFloat(std::int16_t frame) {
+  return static_cast<float>(frame) * micdrp::kInt16ToFloat;
+}
+
 /// A recognisable block of "recorded" audio: frame n holds the value n/10000,
 /// which stays inside full scale so the output clamp never hides a mismatch.
-std::vector<float> ramp(std::size_t frames) {
-  std::vector<float> data(frames);
+std::vector<std::int16_t> ramp(std::size_t frames) {
+  std::vector<std::int16_t> data(frames);
   for (std::size_t i = 0; i < frames; ++i) {
-    data[i] = static_cast<float>(i) / 10000.0f;
+    data[i] = pcm(static_cast<float>(i) / 10000.0f);
   }
   return data;
 }
@@ -255,7 +265,7 @@ ScheduledNote takeNote(int slot, std::int64_t start, std::int64_t end,
 void soundsTheFramesItWasGiven() {
   Synth synth;
   synth.configure(48000.0);
-  const std::vector<float> audio = ramp(2000);
+  const std::vector<std::int16_t> audio = ramp(2000);
   synth.setSample(0, SampleData{audio.data(), audio.size()});
   synth.schedule(takeNote(0, 0, 1500));
 
@@ -263,28 +273,28 @@ void soundsTheFramesItWasGiven() {
   synth.render(out.data(), out.size());
   // Past the ramp-in, the output is the recorded frame at unity — not a tone,
   // and not attenuated the way a synthesized voice is.
-  check(std::fabs(out[1000] - audio[1000]) < 0.01f,
+  check(std::fabs(out[1000] - asFloat(audio[1000])) < 0.01f,
         "a scheduled take sounds its own frames");
 }
 
 void beginsWhereItWasAskedTo() {
   Synth synth;
   synth.configure(48000.0);
-  const std::vector<float> audio = ramp(2000);
+  const std::vector<std::int16_t> audio = ramp(2000);
   synth.setSample(0, SampleData{audio.data(), audio.size()});
   // Resuming a take part-way through is how a scrubbed playhead sounds.
   synth.schedule(takeNote(0, 0, 900, 1000));
 
   std::vector<float> out(512, 0.0f);
   synth.render(out.data(), out.size());
-  check(std::fabs(out[500] - audio[1500]) < 0.01f,
+  check(std::fabs(out[500] - asFloat(audio[1500])) < 0.01f,
         "a take begins at the frame it was asked for");
 }
 
 void stopsWhenItsSpanEnds() {
   Synth synth;
   synth.configure(48000.0);
-  const std::vector<float> audio(4000, 0.5f);
+  const std::vector<std::int16_t> audio(4000, pcm(0.5f));
   synth.setSample(0, SampleData{audio.data(), audio.size()});
   synth.schedule(takeNote(0, 0, 256));
 
@@ -301,7 +311,7 @@ void stopsWhenItsSpanEnds() {
 void runsOutRatherThanLooping() {
   Synth synth;
   synth.configure(48000.0);
-  const std::vector<float> audio(100, 0.5f);
+  const std::vector<std::int16_t> audio(100, pcm(0.5f));
   synth.setSample(0, SampleData{audio.data(), audio.size()});
   // A span far longer than the audio: what is not there is silence, not the
   // beginning again.
@@ -316,7 +326,7 @@ void runsOutRatherThanLooping() {
 void busLevelScalesTheTake() {
   Synth synth;
   synth.configure(48000.0);
-  const std::vector<float> audio(4000, 0.8f);
+  const std::vector<std::int16_t> audio(4000, pcm(0.8f));
   synth.setSample(0, SampleData{audio.data(), audio.size()});
   synth.setBusLevel(Bus::Take, 0.25f);
   synth.schedule(takeNote(0, 0, 2000));
@@ -330,8 +340,8 @@ void busLevelScalesTheTake() {
 void replacingASlotLeavesASoundingVoiceAlone() {
   Synth synth;
   synth.configure(48000.0);
-  const std::vector<float> first(4000, 0.6f);
-  const std::vector<float> second(4000, 0.1f);
+  const std::vector<std::int16_t> first(4000, pcm(0.6f));
+  const std::vector<std::int16_t> second(4000, pcm(0.1f));
   synth.setSample(0, SampleData{first.data(), first.size()});
   synth.schedule(takeNote(0, 0, 4000));
 
@@ -358,7 +368,7 @@ void anEmptySlotSoundsNothing() {
 void takeAndToneShareTheClock() {
   Synth synth;
   synth.configure(48000.0);
-  const std::vector<float> audio(48000, 0.4f);
+  const std::vector<std::int16_t> audio(48000, pcm(0.4f));
   synth.setSample(0, SampleData{audio.data(), audio.size()});
   // Both booked for the same moment, which is the whole point of one engine.
   synth.schedule(takeNote(0, 4800, 24000));
@@ -380,7 +390,7 @@ void takeAndToneShareTheClock() {
 void reconfiguringForgetsLoadedAudio() {
   Synth synth;
   synth.configure(48000.0);
-  const std::vector<float> audio(4000, 0.5f);
+  const std::vector<std::int16_t> audio(4000, pcm(0.5f));
   synth.setSample(0, SampleData{audio.data(), audio.size()});
   // Frames at one rate are a different duration at another, so they are not
   // audio for the new rate.
@@ -392,7 +402,7 @@ void reconfiguringForgetsLoadedAudio() {
 void slotsOutOfRangeAreIgnored() {
   Synth synth;
   synth.configure(48000.0);
-  const std::vector<float> audio(4000, 0.5f);
+  const std::vector<std::int16_t> audio(4000, pcm(0.5f));
   synth.setSample(-1, SampleData{audio.data(), audio.size()});
   synth.setSample(999, SampleData{audio.data(), audio.size()});
   check(synth.sample(-1).frames == nullptr, "a slot below the range is ignored");

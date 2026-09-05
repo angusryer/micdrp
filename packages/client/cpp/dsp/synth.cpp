@@ -254,7 +254,8 @@ void Synth::render(float* out, std::size_t frames) {
         // has nothing more to say, and looping it would say something else.
         if (v.source != nullptr &&
             v.sourcePos < static_cast<std::int64_t>(v.sourceCount)) {
-          mix += v.source[v.sourcePos] * level * kSamplePeak;
+          mix += static_cast<float>(v.source[v.sourcePos]) * kInt16ToFloat *
+                 level * kSamplePeak;
         }
         ++v.sourcePos;
         continue;
