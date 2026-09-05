@@ -401,6 +401,85 @@ void slotsOutOfRangeAreIgnored() {
 
 }  // namespace
 
+
+/**
+ * The run: time passing, owned by the engine (INV-TPORT-010).
+ *
+ * The app used to remember a start moment and compute elapsed against a
+ * wall clock, which is right until the engine is late, suspended or
+ * short of a block. And it predicted the end with a timeout set from a
+ * duration measured at decode, which is wrong whenever the prediction
+ * is and cannot be right about a run that failed early.
+ */
+void aRunAdvancesWithRenderedBlocks() {
+  Synth s;
+  s.configure(48000.0);
+  s.startTransport(0, 0, 48000);
+  check(s.report().running, "a run that began is running");
+  std::vector<float> out(4800);
+  s.render(out.data(), out.size());
+  check(s.report().positionSamples == 4800,
+        "the position is where the rendered blocks left it");
+}
+
+void aRunBeginsWhereItWasTold() {
+  Synth s;
+  s.configure(48000.0);
+  // Resumed a second in: the position is of the material, not of the run.
+  s.startTransport(0, 48000, 96000);
+  check(s.report().positionSamples == 48000,
+        "a resumed run starts from the offset it was given");
+}
+
+void aRunEndsItselfAndSaysSo() {
+  Synth s;
+  s.configure(48000.0);
+  s.startTransport(0, 0, 2400);
+  std::vector<float> out(4800);
+  s.render(out.data(), out.size());
+  const micdrp::TransportReport r = s.report();
+  check(!r.running, "a run past its end is not running");
+  check(r.ended == 1, "the ending was counted");
+  check(r.positionSamples == 2400, "the position stops at the end, not past it");
+}
+
+void aStoppedRunHoldsItsPosition() {
+  Synth s;
+  s.configure(48000.0);
+  s.startTransport(0, 0, 48000);
+  std::vector<float> out(4800);
+  s.render(out.data(), out.size());
+  s.stopTransport();
+  const std::int64_t held = s.report().positionSamples;
+  s.render(out.data(), out.size());
+  check(s.report().positionSamples == held,
+        "a stopped run does not go on advancing");
+}
+
+void startingAgainReplacesTheRun() {
+  Synth s;
+  s.configure(48000.0);
+  s.startTransport(0, 0, 48000);
+  const std::uint32_t first = s.report().generation;
+  s.startTransport(0, 24000, 48000);
+  const micdrp::TransportReport r = s.report();
+  check(r.generation != first, "a new run is a new generation");
+  check(r.positionSamples == 24000, "the newer run replaced the older one");
+}
+
+/** Muting is not stopping (INV-TPORT-013). */
+void aSilentBusStillPassesTime() {
+  Synth s;
+  s.configure(48000.0);
+  s.setBusLevel(Bus::Melody, 0.0f);
+  s.startTransport(0, 0, 48000);
+  std::vector<float> out(4800);
+  s.render(out.data(), out.size());
+  check(s.report().running, "time passes with every bus silent");
+  check(s.report().positionSamples == 4800,
+        "the position advances with every bus silent");
+}
+
 int main() {
   soundsWhatWasScheduled();
   silentBeforeAndAfter();
@@ -424,6 +503,12 @@ int main() {
   takeAndToneShareTheClock();
   reconfiguringForgetsLoadedAudio();
   slotsOutOfRangeAreIgnored();
+  aRunAdvancesWithRenderedBlocks();
+  aRunBeginsWhereItWasTold();
+  aRunEndsItselfAndSaysSo();
+  aStoppedRunHoldsItsPosition();
+  startingAgainReplacesTheRun();
+  aSilentBusStillPassesTime();
 
   if (failures > 0) {
     std::printf("%d check(s) failed\n", failures);

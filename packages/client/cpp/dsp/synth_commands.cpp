@@ -69,6 +69,22 @@ bool postBusWave(SynthMailbox& mailbox, double busIndex, double wave) {
   return mailbox.post(c);
 }
 
+bool postStartTransport(SynthMailbox& mailbox, double fromMs, double startMs,
+                        double endMs, double sampleRateHz) {
+  SynthCommand c;
+  c.kind = SynthCommand::Kind::StartTransport;
+  c.note.sourceFrame = samplesFromMs(fromMs, sampleRateHz);
+  c.note.startSample = samplesFromMs(startMs, sampleRateHz);
+  c.note.endSample = samplesFromMs(endMs, sampleRateHz);
+  return mailbox.post(c);
+}
+
+bool postStopTransport(SynthMailbox& mailbox) {
+  SynthCommand c;
+  c.kind = SynthCommand::Kind::StopTransport;
+  return mailbox.post(c);
+}
+
 bool postClearBus(SynthMailbox& mailbox, double busIndex) {
   SynthCommand c;
   c.kind = SynthCommand::Kind::ClearBus;

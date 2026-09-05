@@ -213,6 +213,34 @@ constexpr double kRenderSampleRate = 48000.0;
   [self warnIfRefused:micdrp::postClearBus(_mailbox, bus)];
 }
 
+- (void)startTransportFromMs:(double)fromMs
+                     startMs:(double)startMs
+                       endMs:(double)endMs {
+  [self warnIfRefused:micdrp::postStartTransport(_mailbox, fromMs, startMs,
+                                                 endMs, kRenderSampleRate)];
+}
+
+- (void)stopTransport {
+  [self warnIfRefused:micdrp::postStopTransport(_mailbox)];
+}
+
+/**
+ * What the engine is doing, read straight off the synth (INV-TPORT-010).
+ *
+ * Not through the mailbox: that carries commands down, and this is a
+ * read. The seqlock in `report()` is what makes reading it from another
+ * thread safe, and it never blocks the audio thread.
+ */
+- (NSDictionary *)transportReport {
+  const micdrp::TransportReport r = _synth.report();
+  return @{
+    @"positionMs": @(r.positionSamples / kRenderSampleRate * 1000.0),
+    @"running": @(r.running),
+    @"generation": @(r.generation),
+    @"ended": @(r.ended)
+  };
+}
+
 - (void)clearAll {
   [self warnIfRefused:micdrp::postClearAll(_mailbox)];
 }

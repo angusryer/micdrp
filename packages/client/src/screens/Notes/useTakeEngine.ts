@@ -17,6 +17,11 @@ import { useCallback, useEffect, useRef } from 'react';
 import NativeSynth from '../../specs/NativeSynth';
 import { SCHEDULE_LEAD_MS, audioNowMs } from '../../audio/audioClock';
 import type { TransportEngine } from '../../audio/transportStore';
+import {
+  beginEngineRun,
+  endEngineRun,
+  engineRun
+} from '../../audio/engineTransport';
 import { useTakeAnchor } from './useTakeAnchor';
 import { trackBus } from './trackRegistry';
 import { TAKE_SLOT } from './sampleSlots';
@@ -80,6 +85,10 @@ export function useTakeEngine(
           endMs: beginsAtMs + (takeMs - offsetMs)
         }
       ]);
+      // The run and the sound begin together but are not the same thing:
+      // one is time passing, the other is a voice. Muting the take must
+      // not stop the clock (INV-TPORT-013).
+      beginEngineRun(offsetMs, beginsAtMs, beginsAtMs + (takeMs - offsetMs));
       anchor.mark(beginsAtMs - offsetMs);
       return takeMs;
     },
@@ -113,6 +122,7 @@ export function useTakeEngine(
     // The whole engine. Silence must not be contingent on bookkeeping
     // being right about which bus a voice went to (INV-TPORT-005).
     NativeSynth?.clearAll();
+    endEngineRun();
   }, []);
 
   const setLevel = useCallback((level: number): void => {
@@ -120,10 +130,23 @@ export function useTakeEngine(
     NativeSynth?.setBusLevel(trackBus('take'), levelRef.current);
   }, []);
 
+  /**
+   * Where the run has reached, asked of the engine (INV-TPORT-010).
+   *
+   * The anchor is the fallback, not the answer: it remembers when the
+   * run began and works out the rest, which is right until the engine
+   * is late or was suspended. A binary too old to be asked keeps the
+   * behaviour it always had (INV-TPORT-014).
+   */
+  const reachedMs = useCallback((): number => {
+    const run = engineRun();
+    return run == null ? anchor.reachedMs() : run.positionMs;
+  }, [anchor]);
+
   return {
     start,
     silence,
-    reachedMs: anchor.reachedMs,
+    reachedMs,
     durationMs: () => durationRef.current,
     elapsedMs: anchor.elapsedMs,
     setLevel

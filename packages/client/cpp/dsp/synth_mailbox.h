@@ -31,7 +31,11 @@ struct SynthCommand {
     ClearBus,
     ClearAll,
     SetSample,
-    SetBusWave
+    SetBusWave,
+    /// A run beginning or ending. Time passing, not a sound
+    /// (INV-TPORT-013).
+    StartTransport,
+    StopTransport
   };
   Kind kind = Kind::ClearAll;
   Bus bus = Bus::Melody;      ///< SetBusLevel / ClearBus

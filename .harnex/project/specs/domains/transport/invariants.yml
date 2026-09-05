@@ -117,3 +117,81 @@ invariants:
       here can run a worklet. Three terms of arithmetic called from an
       animated style exited the app natively the instant a note was
       opened (INV-NOTES-207).
+
+  - id: INV-TPORT-010
+    description: The engine owns the position; nothing above it infers one
+    severity: critical
+    check: >
+      Where the run has reached is read from the engine, in samples on
+      its own clock, and never computed from a wall clock or a start
+      time remembered elsewhere. Verified by asserting the position
+      advances with rendered blocks and stops advancing when the engine
+      does.
+
+      Professional audio puts the transport in the engine and lets the
+      interface read it — a host hands a plugin its position, it does
+      not ask the plugin to guess. This inferred one: a start moment was
+      remembered in JavaScript and elapsed time computed against the
+      audio clock, which is right until the engine is late, suspended,
+      or short of a block. Then the app's idea of where it was drifted
+      from where it was, and every symptom of that reads as the app
+      lying about what is happening.
+
+  - id: INV-TPORT-011
+    description: The engine says when a run ended; nothing predicts it
+    severity: critical
+    check: >
+      A run that reaches its end marks itself stopped and counts the
+      ending, and the app learns of it by reading. Verified by
+      rendering past the end and asserting the report says stopped.
+
+      There was a timer. A take's length was measured at decode, a
+      timeout was set for it, and the transport called itself stopped
+      when the timeout fired — "the engine has no way to say a voice
+      ended" was written in the source as an explanation. A transport
+      that predicts the end is one that is wrong whenever the
+      prediction is, and it cannot be right about a run that failed
+      early.
+
+  - id: INV-TPORT-012
+    description: What the engine reports is read whole or not at all
+    severity: high
+    check: >
+      Position, running and generation are published together and read
+      as one consistent snapshot; a reader never sees the position from
+      one block beside the running flag from another. Verified by the
+      report's sequence guard.
+
+      Fields read one at a time tear. A position taken from the block
+      before a stop, beside a flag taken from the block after it,
+      describes a moment that never happened — and a display drawn from
+      it is wrong in a way nothing can reproduce.
+
+  - id: INV-TPORT-013
+    description: Muting is not stopping
+    severity: high
+    check: >
+      The transport runs whether or not any particular voice is
+      audible. Turning a track off sets a bus level and changes nothing
+      about the run. Verified by asserting the position advances with
+      the take's bus silent.
+
+      Conflating them is why a second running-state existed for the
+      case where the take was muted: the transport had been defined as
+      "the take is sounding" rather than "time is passing". No mixing
+      desk works that way, and the state that came of it was a state
+      machine kept in parallel with the real one.
+
+  - id: INV-TPORT-014
+    description: A newer bundle on an older binary asks and falls back
+    severity: critical
+    check: >
+      Where the engine cannot report a transport, the app uses what it
+      can compute and says nothing is wrong. Verified by asserting the
+      transport works against an engine with no report at all.
+
+      A bundle can be newer than the binary running it. Reading a
+      method that is not there is a crash on somebody's phone, and the
+      whole point of shipping JavaScript over the air is that it
+      arrives before the binary does (INV-PITCH-020).
+

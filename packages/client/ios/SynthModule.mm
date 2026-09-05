@@ -120,4 +120,16 @@ RCT_EXPORT_MODULE(NativeSynth)
   [_engine clearAll];
 }
 
+- (void)startTransport:(double)fromMs startMs:(double)startMs endMs:(double)endMs {
+  [_engine startTransportFromMs:fromMs startMs:startMs endMs:endMs];
+}
+
+- (void)stopTransport {
+  [_engine stopTransport];
+}
+
+- (NSDictionary *)transportReport {
+  return [_engine transportReport];
+}
+
 @end

@@ -51,6 +51,16 @@ bool postBusLevel(SynthMailbox& mailbox, double busIndex, double level);
 /// sine — a wrong timbre beats a crash on the audio path, and a sine is what
 /// every bus sounded like before any of them could be told otherwise.
 bool postBusWave(SynthMailbox& mailbox, double busIndex, double wave);
+/// Begin a run: time passes from `fromMs` of the material, starting at
+/// `startMs` on the engine clock, until `endMs`. Separate from scheduling
+/// the audio, because a run is time passing and a voice is a sound
+/// (INV-TPORT-013).
+bool postStartTransport(SynthMailbox& mailbox, double fromMs, double startMs,
+                        double endMs, double sampleRateHz);
+
+/// End the run now. The position stays where it reached.
+bool postStopTransport(SynthMailbox& mailbox);
+
 bool postClearBus(SynthMailbox& mailbox, double busIndex);
 bool postClearAll(SynthMailbox& mailbox);
 

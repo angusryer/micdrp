@@ -121,6 +121,51 @@ void Synth::clearBus(Bus bus) {
   }
 }
 
+void Synth::startTransport(std::int64_t startSample, std::int64_t offsetSamples,
+                           std::int64_t endSample) {
+  // Replaces whatever was running. Two runs at once is not a thing a
+  // transport can mean, and joining them would be inventing one.
+  runStart_ = startSample;
+  runOffset_ = offsetSamples;
+  runEnd_ = endSample;
+  runPosition_ = offsetSamples;
+  runRunning_ = true;
+  runGeneration_ += 1;
+  publishRun();
+}
+
+void Synth::stopTransport() {
+  runRunning_ = false;
+  publishRun();
+}
+
+void Synth::publishRun() {
+  // Odd while writing, even when settled. A reader that sees an odd
+  // count, or a different one either side of its read, tries again.
+  const std::uint32_t begin = reportSeq_.load(std::memory_order_relaxed);
+  reportSeq_.store(begin + 1, std::memory_order_release);
+  std::atomic_thread_fence(std::memory_order_release);
+  reportSeq_.store(begin + 2, std::memory_order_release);
+}
+
+TransportReport Synth::report() const {
+  TransportReport out;
+  for (;;) {
+    const std::uint32_t before = reportSeq_.load(std::memory_order_acquire);
+    if (before % 2 != 0) {
+      continue;  // a write is in flight
+    }
+    out.positionSamples = runPosition_;
+    out.running = runRunning_;
+    out.generation = runGeneration_;
+    out.ended = runEnded_;
+    std::atomic_thread_fence(std::memory_order_acquire);
+    if (reportSeq_.load(std::memory_order_relaxed) == before) {
+      return out;
+    }
+  }
+}
+
 void Synth::clearAll() {
   pending_.clear();
   nextPending_ = 0;
@@ -226,6 +271,20 @@ void Synth::render(float* out, std::size_t frames) {
   }
 
   now_ = blockEnd;
+
+  // Where the run reached, worked out from the engine's own clock rather
+  // than from a wall clock anywhere else (INV-TPORT-010). A run that has
+  // passed its end says so itself, so nothing has to predict it
+  // (INV-TPORT-011).
+  if (runRunning_) {
+    runPosition_ = runOffset_ + (blockEnd - runStart_);
+    if (blockEnd >= runEnd_) {
+      runPosition_ = runOffset_ + (runEnd_ - runStart_);
+      runRunning_ = false;
+      runEnded_ += 1;
+    }
+    publishRun();
+  }
 
   // Notes fully consumed are dropped in one go rather than erased one at a
   // time, so scheduling stays cheap over a long session.

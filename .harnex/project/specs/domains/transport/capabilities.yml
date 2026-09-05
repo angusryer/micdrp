@@ -77,3 +77,43 @@ capabilities:
       - unsubscribing stops it being called at all
       - nothing published to a subscriber changes while a take plays
         (INV-NOTES-206)
+
+  - name: transport.report
+    description: >
+      Read what the engine is doing: where the run has reached, whether
+      it is running, and which run it is.
+
+      Read rather than pushed. The audio thread publishes a snapshot as
+      it renders and never waits for anyone; whatever wants to know
+      asks, at whatever rate suits it. That is the shape professional
+      audio uses and the reason it can draw a playhead at sixty frames
+      a second without troubling the engine sixty times.
+    actor: system
+    implemented_by: packages/client/cpp/dsp/synth.cpp
+    parameters:
+      required: []
+    preconditions: []
+    postconditions:
+      - the position is in samples on the engine's own clock
+      - position, running and generation are consistent with each other
+        (INV-TPORT-012)
+      - a run that reached its end reports stopped without being told
+        (INV-TPORT-011)
+      - reading never blocks the audio thread and never allocates
+
+  - name: transport.run
+    description: >
+      Tell the engine a run has begun, from a moment, until a moment.
+
+      Separate from scheduling a voice. A run is time passing; a voice
+      is a sound. Muting the take must not stop the clock
+      (INV-TPORT-013).
+    actor: system
+    implemented_by: packages/client/cpp/dsp/synth.cpp
+    parameters:
+      required: [startSample, offsetSamples, endSample]
+    preconditions: []
+    postconditions:
+      - the position advances with rendered blocks from the offset given
+      - the run ends itself at the end given, and says so
+      - starting a run replaces the one before it rather than joining it

@@ -41,6 +41,13 @@ std::size_t SynthMailbox::drain(Synth& synth) {
       case SynthCommand::Kind::ClearAll:
         synth.clearAll();
         break;
+      case SynthCommand::Kind::StartTransport:
+        synth.startTransport(c.note.startSample, c.note.sourceFrame,
+                             c.note.endSample);
+        break;
+      case SynthCommand::Kind::StopTransport:
+        synth.stopTransport();
+        break;
     }
     tail = (tail + 1) % kSlots;
     ++applied;

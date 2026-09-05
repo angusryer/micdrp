@@ -88,6 +88,23 @@ export interface Spec extends TurboModule {
   /** Silence one bus: pending notes dropped, sounding voices released. */
   clearBus(bus: Double): void;
   clearAll(): void;
+  /**
+   * Begin a run: time passing from `fromMs` of the material, at
+   * `startMs` on the engine clock, until `endMs` (INV-TPORT-013).
+   *
+   * Separate from scheduling the audio, because a run is time passing
+   * and a voice is a sound. Muting a track must not stop the clock.
+   */
+  startTransport(fromMs: Double, startMs: Double, endMs: Double): void;
+  stopTransport(): void;
+  /**
+   * What the engine is doing, read as one consistent snapshot
+   * (INV-TPORT-012).
+   *
+   * Absent on a binary older than this bundle, which is why everything
+   * reading it asks first (INV-TPORT-014).
+   */
+  transportReport(): { positionMs: Double; running: boolean; generation: Double; ended: Double };
 }
 
 /**

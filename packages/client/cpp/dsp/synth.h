@@ -29,6 +29,7 @@
 #ifndef MICDRP_DSP_SYNTH_H
 #define MICDRP_DSP_SYNTH_H
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -118,6 +119,28 @@ struct ScheduledNote {
 /// How many notes may sound at once before the oldest is stolen.
 inline constexpr std::size_t kMaxVoices = 32;
 
+/**
+ * What the engine is doing, for anyone who wants to know (INV-TPORT-010).
+ *
+ * Read rather than pushed. The audio thread publishes this as it renders
+ * and never waits for a reader; whatever wants it asks, at whatever rate
+ * suits it. That is how a playhead is drawn sixty times a second without
+ * troubling the engine sixty times.
+ *
+ * A run is time passing, not a sound. Muting a track sets a bus level
+ * and changes nothing here (INV-TPORT-013).
+ */
+struct TransportReport {
+  /// Where the run has reached, in samples of the material being played.
+  std::int64_t positionSamples = 0;
+  /// Whether time is passing. False once a run has reached its end.
+  bool running = false;
+  /// Which run this is. Rises on every start, so two can be told apart.
+  std::uint32_t generation = 0;
+  /// Runs that reached their end on their own rather than being stopped.
+  std::uint32_t ended = 0;
+};
+
 class Synth {
  public:
   Synth();
@@ -168,6 +191,29 @@ class Synth {
   /// Where the engine has reached, in samples since configure().
   std::int64_t now() const { return now_; }
 
+  /**
+   * Begin a run: time starts passing from `offsetSamples` of the
+   * material, at `startSample` on the engine's clock, until `endSample`.
+   *
+   * Separate from scheduling the audio. A run that ended is a fact the
+   * engine knows; before this it was a timeout in JavaScript guessing
+   * from a duration measured at decode (INV-TPORT-011).
+   */
+  void startTransport(std::int64_t startSample, std::int64_t offsetSamples,
+                      std::int64_t endSample);
+
+  /// End the run now. The position stays where it reached.
+  void stopTransport();
+
+  /**
+   * A consistent snapshot of the run (INV-TPORT-012).
+   *
+   * Guarded by a sequence rather than read field by field: a position
+   * from the block before a stop, beside a flag from the block after
+   * it, describes a moment that never happened.
+   */
+  TransportReport report() const;
+
   /// Render one block of mono samples. Real-time safe: no allocation, no
   /// locks, no system calls.
   void render(float* out, std::size_t frames);
@@ -205,6 +251,27 @@ class Synth {
 
   double sampleRate_ = 48000.0;
   std::int64_t now_ = 0;
+
+  /**
+   * The run, and the sequence that publishes it (INV-TPORT-012).
+   *
+   * A seqlock: the audio thread raises the counter to an odd number,
+   * writes, and raises it to the next even one. A reader takes the
+   * counter, reads, and takes it again — equal and even means nothing
+   * moved underneath. The writer never blocks, which is the only
+   * property the audio thread actually requires.
+   */
+  mutable std::atomic<std::uint32_t> reportSeq_{0};
+  std::int64_t runStart_ = 0;
+  std::int64_t runOffset_ = 0;
+  std::int64_t runEnd_ = 0;
+  std::int64_t runPosition_ = 0;
+  bool runRunning_ = false;
+  std::uint32_t runGeneration_ = 0;
+  std::uint32_t runEnded_ = 0;
+
+  /// Publish the run under the sequence. Called only from render().
+  void publishRun();
   /// Every bus starts audible; a caller that wants one quiet says so.
   float busLevels_[kMaxBuses] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
                                  1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,

@@ -74,6 +74,19 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)clearBus:(double)bus;
 - (void)clearAll;
 
+/// Begin a run: time passing from `fromMs` of the material, at `startMs`
+/// on the engine clock, until `endMs`. Separate from scheduling the audio
+/// (INV-TPORT-013).
+- (void)startTransportFromMs:(double)fromMs
+                     startMs:(double)startMs
+                       endMs:(double)endMs;
+
+/// End the run now. The position stays where it reached.
+- (void)stopTransport;
+
+/// What the engine is doing, as one consistent snapshot (INV-TPORT-012).
+- (NSDictionary *)transportReport;
+
 @end
 
 NS_ASSUME_NONNULL_END
