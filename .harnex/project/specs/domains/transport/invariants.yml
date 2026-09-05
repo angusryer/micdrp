@@ -498,3 +498,24 @@ invariants:
 
       Elapsed time is also floored at zero, so no discontinuity in any
       clock can move the head backwards again (INV-TPORT-030).
+
+  - id: INV-TPORT-032
+    description: The view is led to the head, never jumped to it
+    severity: high
+    check: >
+      Following moves the view towards where the head should be, forwards
+      only and at a bounded speed. It never moves backwards and never
+      arrives in one frame. Verified by resuming from a moment either
+      side of the middle and asserting the offset is continuous.
+
+      The view was placed by the moment alone, with no memory of where it
+      had been, so pressing play after dragging the head snapped it —
+      from a moment inside the opening seconds, all the way back to the
+      top of the take. A jump is the one thing the eye cannot follow, and
+      the singer had just been looking at that exact place.
+
+      Forwards only is what makes the two cases one rule. With the head
+      behind the middle the view simply holds, and the head walks in to
+      meet it exactly as it does from the start of a take; with the head
+      past the middle the view runs forward faster than the take until it
+      catches up. One line, two behaviours, and neither of them a jump.

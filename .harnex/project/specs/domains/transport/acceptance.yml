@@ -348,3 +348,32 @@ acceptance:
     maps_to:
       capability: transport.observe
       invariants: [INV-TPORT-031, INV-TPORT-030]
+
+  - id: ACC-TPORT-026
+    interface: view
+    title: Resuming behind the middle holds the view still
+    given:
+      - a take paused with the head dragged to before the middle of the view
+    when:
+      - the take is played
+    then:
+      - the view does not move until the head reaches the middle
+      - the head then stays in the middle
+    maps_to:
+      capability: transport.observe
+      invariants: [INV-TPORT-032]
+
+  - id: ACC-TPORT-027
+    interface: view
+    title: Resuming past the middle catches up rather than jumping
+    given:
+      - a take paused with the head dragged to beyond the middle of the view
+    when:
+      - the take is played
+    then:
+      - the view moves forward faster than the take
+      - it never moves more than one window in a second
+      - the head ends in the middle
+    maps_to:
+      capability: transport.observe
+      invariants: [INV-TPORT-032]

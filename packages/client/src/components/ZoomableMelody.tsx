@@ -31,6 +31,7 @@ import { MelodyView } from './MelodyView';
 import type { MelodyGrid, MelodyLayout, MelodyNote } from './melodyLayout';
 import { useMelodyZoom } from './useMelodyZoom';
 import { offsetCentring, offsetShowing, xForMs } from './melodyScale';
+import { ledTowards } from './followView';
 
 export interface ZoomableMelodyProps {
   notes: readonly MelodyNote[];
@@ -193,6 +194,16 @@ export function ZoomableMelody({
    * to move nothing (INV-TPORT-023).
    */
   const canScroll = contentWidth > width;
+  /**
+   * Where the view has been led to, and when it was last moved.
+   *
+   * Held on the UI thread because the leading is per frame: the view is
+   * moved towards where the head should be rather than placed there, so
+   * this frame's answer depends on the last one (INV-TPORT-032).
+   */
+  const ledTo = useSharedValue(0);
+  /** The moment the last frame followed, so this one knows how long it has been. */
+  const ledAtMs = useSharedValue(-1);
   useAnimatedReaction(
     // Null when there is nothing to follow it with, so the reaction does
     // not merely return early — it never runs.
@@ -202,19 +213,42 @@ export function ZoomableMelody({
       if (atMs == null || isHeld.value) {
         return;
       }
-      scrollTo(
-        scroller,
-        offsetCentring(
-          axis.pad + (atMs - axis.t0) * axis.pxPerMs,
-          width,
-          contentWidth
-        ),
-        0,
-        false
+      const wanted = offsetCentring(
+        axis.pad + (atMs - axis.t0) * axis.pxPerMs,
+        width,
+        contentWidth
       );
+      // How long since the last frame, taken from the head itself rather
+      // than from a clock. While a run plays the head advances at real time,
+      // so its own step *is* frame time — and it is the one clock in this
+      // screen already known to be continuous (INV-TPORT-031). Reaching for
+      // another global inside a worklet is how the last four faults started.
+      const since = ledAtMs.value < 0 ? 0 : atMs - ledAtMs.value;
+      ledAtMs.value = atMs;
+      ledTo.value = ledTowards(
+        ledTo.value,
+        wanted,
+        since > 0 ? since : 0,
+        width
+      );
+      scrollTo(scroller, ledTo.value, 0, false);
     },
     [isFollowing, canScroll, followMs, axis, contentWidth, width]
   );
+
+  /**
+   * Start leading from wherever the view actually is.
+   *
+   * Not from zero, and not from where the last run left it: the singer has
+   * been scrolling and dragging since, and leading from a stale offset
+   * would be the jump this exists to remove.
+   */
+  useEffect(() => {
+    if (isFollowing) {
+      ledTo.value = scrollX.current;
+      ledAtMs.value = -1;
+    }
+  }, [isFollowing, ledTo, ledAtMs]);
 
   // Only where the drawing is wider than the window: with the whole take in
   // view there is nothing to bring into it.
