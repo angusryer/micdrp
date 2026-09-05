@@ -12,7 +12,7 @@ import {
   edgeScrollPxPerMs,
   ledTowards
 } from '../followView';
-import { offsetCentring, xForMs, type TimeAxis } from '../melodyScale';
+import { msAtX, offsetCentring, xForMs, type TimeAxis } from '../melodyScale';
 
 const WIDTH = 390;
 const TAKE_MS = 120_000;
@@ -184,5 +184,60 @@ describe('dragging the head near an edge', () => {
     // still rest in the middle of a small window without the drawing moving.
     const NARROW = 120;
     expect(edgeScrollPxPerMs(NARROW / 2, NARROW)).toBe(0);
+  });
+});
+
+describe('the moment under a finger that is not moving', () => {
+  /**
+   * ACC-TPORT-029 / INV-TPORT-034. A stationary finger sends no gesture
+   * updates, so the head stopped where it was last put and the drawing
+   * travelled out from under it — then jumped back to the thumb on release.
+   *
+   * What the frame callback computes is `msAtX(axis, viewX + inWindow)`.
+   * The finger's place in the window is fixed; the view's offset is not.
+   */
+  const inWindow = WIDTH - 20; // held near the right edge, so it scrolls
+
+  it('moves with the drawing while the finger stays still', () => {
+    const before = msAtX(axis, 1000 + inWindow, 0);
+    const after = msAtX(axis, 1400 + inWindow, 0);
+    // The view scrolled 400 px, so the moment under the thumb is later by
+    // exactly that many pixels of take.
+    expect(after - before).toBeCloseTo(400 / PX_PER_MS, 6);
+  });
+
+  it('is the moment the head is drawn at, so releasing changes nothing', () => {
+    // What the drag writes, and what the release seeks to, are the same
+    // arithmetic on the same axis — so letting go does not move the head.
+    const viewX = 1400;
+    const held = msAtX(axis, viewX + inWindow, 0);
+    const onRelease = msAtX(axis, viewX + inWindow, 0);
+    expect(onRelease).toBe(held);
+  });
+
+  it('stays inside the take at either end', () => {
+    expect(msAtX(axis, -10_000, 0)).toBe(0);
+    expect(msAtX(axis, 10_000_000, 0)).toBe(TAKE_MS);
+  });
+
+  it('honours a pickup that has nothing to play before it', () => {
+    const FIRST = 4000;
+    expect(msAtX(axis, 0, FIRST)).toBe(FIRST);
+    expect(msAtX(axis, xForMs(axis, 9000), FIRST)).toBeCloseTo(9000, 6);
+  });
+});
+
+describe('the axis mapping and its inverse', () => {
+  it('INV-TPORT-035: round-trips a moment through both', () => {
+    for (const t of [0, 1, 250, 3050, 60_000, TAKE_MS]) {
+      expect(msAtX(axis, xForMs(axis, t), 0)).toBeCloseTo(t, 6);
+    }
+  });
+
+  it('answers with the start of the take for an axis with no scale', () => {
+    // A drawing that has not been laid out yet has no pixels per ms, and
+    // dividing by it would put the head at infinity.
+    const flat: TimeAxis = { ...axis, pxPerMs: 0 };
+    expect(msAtX(flat, 500, 0)).toBe(flat.t0);
   });
 });

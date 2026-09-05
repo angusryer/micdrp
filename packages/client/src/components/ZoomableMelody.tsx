@@ -31,7 +31,7 @@ import Animated, {
 import { MelodyView } from './MelodyView';
 import type { MelodyGrid, MelodyLayout, MelodyNote } from './melodyLayout';
 import { useMelodyZoom } from './useMelodyZoom';
-import { offsetCentring, offsetShowing, xForMs } from './melodyScale';
+import { msAtX, offsetCentring, offsetShowing, xForMs } from './melodyScale';
 import { edgeScrollPxPerMs, ledTowards } from './followView';
 
 export interface ZoomableMelodyProps {
@@ -291,20 +291,35 @@ export function ZoomableMelody({
 
   useFrameCallback(({ timestamp }) => {
     'worklet';
-    if (dragScreenX.value < 0 || contentWidth <= width) {
+    if (dragScreenX.value < 0) {
       dragAtMs.value = -1;
       return;
     }
     const since = dragAtMs.value < 0 ? 0 : timestamp - dragAtMs.value;
     dragAtMs.value = timestamp;
-    const speed = edgeScrollPxPerMs(dragScreenX.value - windowLeft.value, width);
-    if (speed === 0 || since <= 0) {
-      return;
+    const inWindow = dragScreenX.value - windowLeft.value;
+
+    if (contentWidth > width && since > 0) {
+      const speed = edgeScrollPxPerMs(inWindow, width);
+      if (speed !== 0) {
+        const furthest = contentWidth - width;
+        const next = dragViewX.value + speed * since;
+        dragViewX.value = next < 0 ? 0 : next > furthest ? furthest : next;
+        scrollTo(scroller, dragViewX.value, 0, false);
+      }
     }
-    const furthest = contentWidth - width;
-    const next = dragViewX.value + speed * since;
-    dragViewX.value = next < 0 ? 0 : next > furthest ? furthest : next;
-    scrollTo(scroller, dragViewX.value, 0, false);
+
+    // The head goes where the finger is, every frame — not only when the
+    // finger moves (INV-TPORT-034). A stationary finger sends no updates,
+    // so the head used to stop where it was last put while the drawing
+    // travelled out from under it, then jump back to the thumb on release.
+    //
+    // Safe to write from here because holding the head stops the run
+    // first (INV-TPORT-018), so the run and the finger never write it in
+    // the same frame. One writer at a time (INV-TPORT-001).
+    if (followMs != null && !isFollowing) {
+      followMs.value = msAtX(axis, dragViewX.value + inWindow, layout.firstNoteMs);
+    }
   }, true);
 
   // Only where the drawing is wider than the window: with the whole take in

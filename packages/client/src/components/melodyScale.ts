@@ -50,6 +50,34 @@ export function xForMs(axis: TimeAxis, timeMs: number): number {
   return axis.pad + (timeMs - axis.t0) * axis.pxPerMs;
 }
 
+/**
+ * Which moment sits at a place on the drawing (INV-TPORT-035).
+ *
+ * The inverse of {@link xForMs}, held beside it so the pair cannot drift.
+ * It was written out by hand in the scrubber and about to be written a
+ * third time on the UI thread, and two copies of a mapping put whatever
+ * one of them draws beside whatever the other one touches
+ * (INV-NOTES-034).
+ *
+ * Held inside the take: before `firstNoteMs` is the pickup, which has
+ * nothing to play, and past the end there is nothing left.
+ *
+ * A worklet, because the finger carrying the head is read on the UI
+ * thread every frame (INV-TPORT-009).
+ */
+export function msAtX(
+  axis: TimeAxis,
+  x: number,
+  firstNoteMs = axis.t0
+): number {
+  'worklet';
+  const raw =
+    axis.pxPerMs > 0 ? axis.t0 + (x - axis.pad) / axis.pxPerMs : axis.t0;
+  const last = axis.t0 + axis.span;
+  const floored = raw < firstNoteMs ? firstNoteMs : raw;
+  return floored > last ? last : floored;
+}
+
 /** What the scale needs to know about the caller's request. */
 export interface ScaleRequest {
   /** The viewport, not the drawing: content may be wider. */

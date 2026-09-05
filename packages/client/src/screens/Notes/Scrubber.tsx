@@ -33,7 +33,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { useTheme } from '../../theme';
 import { scrubPlacement } from './scrubPlacement';
-import { type TimeAxis } from '../../components/melodyScale';
+import { msAtX, type TimeAxis } from '../../components/melodyScale';
 
 /** The handle, and the reach around it a thumb actually gets. */
 const HANDLE = 16;
@@ -91,22 +91,12 @@ export function Scrubber({
 }: ScrubberProps): React.JSX.Element | null {
   const { colors } = useTheme();
 
-  const msForX = useCallback(
-    (x: number) =>
-      timeAxis.pxPerMs > 0
-        ? timeAxis.t0 + (x - timeAxis.pad) / timeAxis.pxPerMs
-        : timeAxis.t0,
-    [timeAxis]
-  );
-
-  // Held inside the take. Before the first note is the pickup, which has
-  // nothing to play, and past the last there is nothing left.
+  // The axis owns the mapping and its inverse; this had its own copy of
+  // the arithmetic, which is how a handle comes to be drawn beside the
+  // moment it touches (INV-TPORT-035).
   const msAt = useCallback(
-    (x: number) => {
-      const last = timeAxis.t0 + timeAxis.span;
-      return Math.min(Math.max(msForX(x), firstNoteMs), last);
-    },
-    [msForX, timeAxis, firstNoteMs]
+    (x: number) => msAtX(timeAxis, x, firstNoteMs),
+    [timeAxis, firstNoteMs]
   );
   const seekTo = useCallback((x: number) => onSeek(msAt(x)), [msAt, onSeek]);
 

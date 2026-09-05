@@ -535,3 +535,39 @@ invariants:
       again, and repeating — several gestures to express one intention.
       The drawing is longer than the window by design (INV-NOTES-032), so
       this is the ordinary case rather than the awkward one.
+
+  - id: INV-TPORT-034
+    description: The head stays under the finger holding it
+    severity: high
+    check: >
+      While a finger holds the head and the drawing is carrying it, the
+      head is placed at the moment under that finger every frame, not
+      only when the finger moves. Verified by asserting the moment is
+      read from the finger's place on the screen and the view's offset,
+      rather than from the gesture's last report.
+
+      A stationary finger sends no updates, so the head stopped where it
+      was last put and the drawing travelled out from under it — then
+      jumped back to the thumb on release. Everything about it was
+      correct except what it looked like, which for a handle you are
+      holding is most of what it is.
+
+      Two things could write the head and they are made exclusive rather
+      than merged: the run writes it while playing, the finger writes it
+      while held, and holding it stops the run first (INV-TPORT-018).
+      One writer at a time is the same rule as INV-TPORT-001.
+
+  - id: INV-TPORT-035
+    description: One mapping, and its inverse beside it
+    severity: high
+    check: >
+      Where a moment sits on the drawing and which moment sits at a place
+      on it are one pair of functions on the axis. No caller writes
+      either out by hand. Verified by asserting a round trip through both
+      returns the moment it started from.
+
+      The forward mapping was already shared for this reason
+      (INV-NOTES-034); the inverse was written out again in the scrubber
+      and about to be written a third time on the UI thread. Two copies
+      of a mapping put whatever one of them draws beside whatever the
+      other one touches.

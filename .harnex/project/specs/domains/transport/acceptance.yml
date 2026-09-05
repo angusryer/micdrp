@@ -393,3 +393,18 @@ acceptance:
     maps_to:
       capability: transport.seek
       invariants: [INV-TPORT-033]
+
+  - id: ACC-TPORT-029
+    interface: view
+    title: The head follows a still finger while the drawing scrolls
+    given:
+      - the head held near an edge so the drawing is scrolling
+      - the finger no longer moving
+    when:
+      - the drawing scrolls under it
+    then:
+      - the head stays at the moment under the finger
+      - releasing changes nothing about where the head is
+    maps_to:
+      capability: transport.seek
+      invariants: [INV-TPORT-034, INV-TPORT-033]
