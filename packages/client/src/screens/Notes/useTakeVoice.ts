@@ -1,226 +1,79 @@
 /**
- * The take, sounding through the one engine (INV-NOTES-133).
+ * The take, on the transport (INV-TPORT-001).
  *
- * The recording is decoded once into a slot on the native engine
- * and then scheduled by the same call, on the same clock, at the same bus
- * levels as every synthesized voice. There is no second graph to line up
- * with, so a backdrop and the voice it was read from are in time by
- * construction rather than by correction.
+ * What is left here is a binding: an engine below, a transport over it,
+ * and the `Playback` shape everything above still expects. The state
+ * machine, the cancellation, the refusal reporting and the moment all
+ * moved into `audio/transportStore`, where they can be argued with in a
+ * test rather than on a device.
  *
- * Which also settles what a suspended context used to cost. An engine that is
- * already running owns its output and has nothing to ask the session for, so
- * a take under a live capture is a scheduling question rather than a refusal
- * (INV-NOTES-127, INV-NOTES-128).
+ * This file held all of that, and so did five of its neighbours. Each
+ * read as correct on its own; the fault was that there were six.
  *
- * The decode is the one slow step and it happens once per take rather than
- * once per press, off the main thread.
+ * The recording is still decoded once into a slot on the native engine
+ * and scheduled by the same call, on the same clock, at the same bus
+ * levels as every synthesized voice (INV-NOTES-133) — that part is the
+ * engine's, next door.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import NativeSynth from '../../specs/NativeSynth';
-import { SCHEDULE_LEAD_MS, audioNowMs } from '../../audio/audioClock';
+import { createTransport } from '../../audio/transportStore';
+import type { TransportState } from '../../audio/transportState';
 import { useDrawnPosition, usePlaybackClock } from './usePlaybackClock';
-import { useTakeAnchor } from './useTakeAnchor';
-import { trackBus } from './trackRegistry';
-import { TAKE_SLOT } from './sampleSlots';
-import {
-  noteEngine,
-  noteTransport,
-  noteTransportProblem
-} from './transportTrace';
+import { useTakeEngine } from './useTakeEngine';
 import type { Playback, PlaybackState, UsePlaybackOptions } from './playbackShape';
 
-export function useTakeVoice({
-  resolveAudioUri
-}: UsePlaybackOptions): Playback {
-  const [state, setState] = useState<PlaybackState>('stopped');
-  const [fromMs, setFromMs] = useState(0);
-  const [durationMs, setDurationMs] = useState(0);
-  const positionMs = usePlaybackClock(state === 'playing', fromMs);
-  // The same moment for the drawing, which moves every frame rather than
-  // every render (INV-NOTES-136).
-  const drawnPositionMs = useDrawnPosition(state === 'playing', fromMs);
-  const anchor = useTakeAnchor();
-  const levelRef = useRef(1);
-  /** What is loaded, so the same take is not decoded twice. */
-  const loadedFor = useRef<string | null>(null);
-  const endsAt = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /**
-   * Whether a start is already under way.
-   *
-   * A ref rather than the rendered state: a caller that stops and immediately
-   * starts again — which is what rewinding does — runs both inside one render,
-   * so the second call reads a `state` that still says "playing" and refuses.
-   * The guard is a fact about the machine, not about what has been drawn.
-   */
-  const isStarting = useRef(false);
+/** The transport's words, in the ones this contract still speaks. */
+const asPlaybackState = (state: TransportState): PlaybackState => {
+  if (state === 'playing' || state === 'loading') {
+    return state;
+  }
+  return state === 'failed' ? 'error' : 'stopped';
+};
 
-  const clearEndsAt = useCallback(() => {
-    if (endsAt.current != null) {
-      clearTimeout(endsAt.current);
-      endsAt.current = null;
-    }
-  }, []);
+export function useTakeVoice({ resolveAudioUri }: UsePlaybackOptions): Playback {
+  const engine = useTakeEngine(resolveAudioUri);
+  // Held in a ref so the transport is built once and always reaches the
+  // current engine: rebuilding the transport would drop what it knows.
+  const latest = useRef(engine);
+  latest.current = engine;
 
-  /**
-   * Stop the take sounding, whatever it is sounding on (INV-NOTES-205).
-   *
-   * The whole engine, not the take's bus. Clearing one bus by index works
-   * only while the transport's idea of where the take went matches the
-   * engine's, and when that stopped being true the failure was silent:
-   * pause during the count worked, pause once the audio ran did nothing,
-   * the control correctly showed a pause glyph, and the take carried on
-   * to its end. Every link read as consistent.
-   *
-   * Silence must not be contingent on bookkeeping. The engine has always
-   * been able to clear everything; this asked for less.
-   */
-  const silence = useCallback(() => {
-    clearEndsAt();
-    noteEngine(NativeSynth != null);
-    NativeSynth?.clearAll();
-    noteTransport('silenced');
-  }, [clearEndsAt]);
-
-  /**
-   * Leaving the screen, which is a different act.
-   *
-   * Only this take's bus: unmounting must not silence something another
-   * screen started.
-   */
-  const releaseOwnBus = useCallback(() => {
-    clearEndsAt();
-    NativeSynth?.clearBus(trackBus('take'));
-  }, [clearEndsAt]);
-
-  // A different note means a different take: what is loaded is no longer what
-  // anyone is going to ask for.
-  useEffect(() => {
-    loadedFor.current = null;
-    return () => {
-      releaseOwnBus();
-      NativeSynth?.unloadSample(TAKE_SLOT);
-    };
-  }, [resolveAudioUri, releaseOwnBus]);
-
-  const play = useCallback(
-    async (startAtMs = 0): Promise<void> => {
-      if (isStarting.current) {
-        return;
-      }
-      isStarting.current = true;
-      noteEngine(NativeSynth != null);
-      noteTransport('played');
-      setState('loading');
-      let resolved: string | null = null;
-      try {
-        // Minted now rather than at render: a backend file token is good for
-        // about two minutes (INV-NOTES-014).
-        resolved = await resolveAudioUri();
-        if (resolved == null || NativeSynth == null) {
-          console.warn('[useTakeVoice] no audio URL could be resolved');
-          setState('error');
-          return;
-        }
-        await NativeSynth.start();
-        // Decoded once. A second press of the same take is a schedule and
-        // nothing else, which is what makes it immediate.
-        const takeMs =
-          loadedFor.current === resolved && durationMs > 0
-            ? durationMs
-            : await NativeSynth.loadSample(TAKE_SLOT, resolved);
-        loadedFor.current = resolved;
-        setDurationMs(takeMs);
-
-        const offsetMs = Math.min(Math.max(startAtMs, 0), Math.max(0, takeMs - 1));
-        setFromMs(offsetMs);
-        NativeSynth.setBusLevel(trackBus('take'), levelRef.current);
-        // A moment we choose, on the clock everything else is choosing on.
-        const beginsAtMs = audioNowMs() + SCHEDULE_LEAD_MS;
-        noteTransport('scheduled');
-        NativeSynth.scheduleSamples([
-          {
-            bus: trackBus('take'),
-            slot: TAKE_SLOT,
-            fromMs: offsetMs,
-            startMs: beginsAtMs,
-            endMs: beginsAtMs + (takeMs - offsetMs)
-          }
-        ]);
-        // The engine has no way to say a voice ended, and a transport that
-        // waited for one would sit on pause over silence (INV-NOTES-085).
-        clearEndsAt();
-        endsAt.current = setTimeout(
-          () => setState('stopped'),
-          Math.max(0, takeMs - offsetMs) + SCHEDULE_LEAD_MS
-        );
-        anchor.mark(beginsAtMs - offsetMs);
-        setState('playing');
-      } catch (err) {
-        console.warn('[useTakeVoice] playback failed for', resolved, err);
-        noteTransportProblem(err instanceof Error ? err.message : String(err));
-        setState('error');
-        silence();
-      } finally {
-        isStarting.current = false;
-      }
-    },
-    [anchor, clearEndsAt, durationMs, resolveAudioUri, silence]
+  const transport = useMemo(
+    () =>
+      createTransport({
+        start: (fromMs) => latest.current.start(fromMs),
+        silence: () => latest.current.silence(),
+        reachedMs: () => latest.current.reachedMs()
+      }),
+    []
   );
 
-  const stop = useCallback((): Promise<void> => {
-    silence();
-    isStarting.current = false;
-    setState('stopped');
-    // Nothing to wait for: silencing a bus is a posted command, not a
-    // teardown. The promise is here because the caller's contract has one.
-    return Promise.resolve();
-  }, [silence]);
+  const [snapshot, setSnapshot] = useState(() => transport.snapshot());
+  useEffect(
+    () => transport.subscribe(() => setSnapshot(transport.snapshot())),
+    [transport]
+  );
 
-  /**
-   * Stop sounding without giving the moment back (INV-NOTES-152).
-   *
-   * Both clocks read from `fromMs` while nothing runs, so holding the head
-   * where the take got to is a matter of saying that is where this run now
-   * begins — which is also where the next press picks it up.
-   *
-   * From the anchor rather than the counter: the anchor is the engine's own
-   * clock asked at this instant, and the counter is read to the second
-   * (INV-NOTES-136). A pause half a second from the ear is a rewind.
-   */
-  const pause = useCallback((): Promise<number> => {
-    noteTransport('paused');
-    const reached =
-      state === 'playing'
-        ? Math.min(anchor.reachedMs(), Math.max(0, durationMs))
-        : fromMs;
-    silence();
-    setFromMs(reached);
-    setState('stopped');
-    return Promise.resolve(reached);
-  }, [anchor, durationMs, fromMs, silence, state]);
-
-  /**
-   * How loud the take sits, set on its bus.
-   *
-   * Reaching what is already sounding, and on the same scale as every other
-   * track: the take used to have a gain node of its own, which made balancing
-   * a mix two mixers rather than one (INV-NOTES-133).
-   */
-  const setLevel = useCallback((level: number): void => {
-    levelRef.current = Math.max(0, Math.min(1, level));
-    NativeSynth?.setBusLevel(trackBus('take'), levelRef.current);
-  }, []);
+  const state = asPlaybackState(snapshot.state);
+  const running = state === 'playing';
+  const positionMs = usePlaybackClock(running, snapshot.cueMs);
+  // The same moment, read every frame on the UI thread (INV-NOTES-136).
+  const drawnPositionMs = useDrawnPosition(running, snapshot.cueMs);
 
   return {
     state,
     positionMs,
     drawnPositionMs,
-    elapsedMs: anchor.elapsedMs,
-    durationMs,
-    play,
-    pause,
-    stop,
-    setLevel
+    elapsedMs: engine.elapsedMs,
+    durationMs: engine.durationMs(),
+    setLevel: engine.setLevel,
+    play: (fromMs) => transport.play(fromMs),
+    stop: () => transport.stop(),
+    // Resolves with the moment held, which is where the next press picks
+    // up (INV-NOTES-152). The transport already knows it.
+    pause: async () => {
+      await transport.pause();
+      return transport.snapshot().cueMs;
+    }
   };
 }

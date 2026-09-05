@@ -76,8 +76,10 @@ describe('PlaybackBar', () => {
 
     await waitFor(() => expect(screen.getByText('Playback failed')).toBeTruthy());
     // The cause must reach the log; swallowing it is why this was opaque.
+    // Logged where the failure happens, which is now the engine — the
+    // transport above it carries the same reason to the surface.
     expect(warn).toHaveBeenCalledWith(
-      '[useTakeVoice] playback failed for',
+      '[takeEngine] playback failed for',
       REMOTE,
       expect.any(Error)
     );
