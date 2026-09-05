@@ -20,7 +20,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '../../components/Icon';
 import { PlaybackSheet } from './PlaybackSheet';
 import { useTheme } from '../../theme';
-import { traceLine } from './transportTrace';
+import { noteTransport, traceLine } from './transportTrace';
 import { offeredTracks } from './offeredTracks';
 import { useListening, type UseListening } from './useListening';
 import { useHapticBeat } from './useHapticBeat';
@@ -235,7 +235,13 @@ export function PlaybackBar({
         <PlaybackButton
           state={state}
           onPlay={() => void play()}
-          onPause={() => void pause()}
+          onPause={() => {
+            // Counted here, in the control, before anything else can fail.
+            // The gap between this and `pause` is whether the press even
+            // reached the transport.
+            noteTransport('pressedPause');
+            void pause();
+          }}
         />
 
         {durationLabel != null ? (

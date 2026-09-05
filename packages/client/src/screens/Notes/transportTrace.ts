@@ -16,6 +16,15 @@
  */
 
 export interface TransportTrace {
+  /**
+   * Presses of the pause control, counted in the control itself.
+   *
+   * Separate from `paused` on purpose. A press that never fired and a
+   * press that fired and died on its way to the engine look identical
+   * from a chair, and the gap between these two numbers is exactly which
+   * of those happened.
+   */
+  pressedPause: number;
   /** Presses of play that got as far as calling the engine. */
   played: number;
   /** Presses of pause that got as far as calling the engine. */
@@ -31,6 +40,7 @@ export interface TransportTrace {
 }
 
 const trace: TransportTrace = {
+  pressedPause: 0,
   played: 0,
   paused: 0,
   silenced: 0,
@@ -40,7 +50,7 @@ const trace: TransportTrace = {
 };
 
 export function noteTransport(
-  what: 'played' | 'paused' | 'silenced' | 'scheduled'
+  what: 'pressedPause' | 'played' | 'paused' | 'silenced' | 'scheduled'
 ): void {
   trace[what] += 1;
 }
@@ -63,6 +73,7 @@ export function traceLine(t: TransportTrace = transportTrace()): string {
   const engine = t.hasEngine ? 'engine' : 'NO ENGINE';
   const parts = [
     engine,
+    `press ${t.pressedPause}`,
     `play ${t.played}`,
     `pause ${t.paused}`,
     `silence ${t.silenced}`,
@@ -73,6 +84,7 @@ export function traceLine(t: TransportTrace = transportTrace()): string {
 
 /** Test seam. Never called by app code. */
 export function resetTransportTraceForTests(): void {
+  trace.pressedPause = 0;
   trace.played = 0;
   trace.paused = 0;
   trace.silenced = 0;
