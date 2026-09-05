@@ -293,3 +293,38 @@ invariants:
       what makes it immediate". It was neither, and the re-decode is
       what had a chance to fail at all (INV-TPORT-019).
 
+
+  - id: INV-TPORT-021
+    description: The moment and the frame that dates it are written together
+    severity: critical
+    check: >
+      A reading of the clock and the frame stamp it is measured from are
+      one value, written once. No reader can see one of them updated and
+      the other not. Verified by advancing a frame between a write of
+      each and asserting the drawn position never moves backwards.
+
+      They were two shared values written one after the other from the
+      JS thread. A frame landing between the two computed the new moment
+      plus the time since the *old* stamp — a jump forward of the whole
+      sample interval, and a snap back on the next frame. It read as the
+      playhead jumping a few times a second, and it grew with whatever
+      else was keeping the JS thread busy, which is why it looked like a
+      graph problem.
+
+  - id: INV-TPORT-022
+    description: The drawn head reads the engine's position, not a second clock
+    severity: critical
+    check: >
+      What the head is drawn from is the position the engine reports,
+      sampled and carried between samples by frame time. Where the
+      engine cannot be asked it falls back to what it can compute, and
+      says nothing is wrong (INV-TPORT-014). Verified by asserting the
+      drawn head follows a reported position that does not match
+      elapsed time.
+
+      The head was computed from the audio clock and a start moment
+      remembered in JavaScript. That is the inference INV-TPORT-010
+      exists to forbid, kept alive in one last place because the engine
+      that owns the position has never been built into a binary — so
+      every reading on a device came from the fallback, and the fallback
+      was the only path anyone was actually running.

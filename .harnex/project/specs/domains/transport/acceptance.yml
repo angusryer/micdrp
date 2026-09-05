@@ -210,3 +210,30 @@ acceptance:
     maps_to:
       capability: transport.play
       invariants: [INV-TPORT-020]
+
+  - id: ACC-TPORT-016
+    interface: module
+    title: The head never moves backwards between samples
+    given:
+      - a run whose clock is read every 200 ms
+    when:
+      - a frame is drawn between the reading and the stamp that dates it
+    then:
+      - the drawn position is the reading itself
+      - the drawn position never moves backwards
+    maps_to:
+      capability: transport.observe
+      invariants: [INV-TPORT-021]
+
+  - id: ACC-TPORT-017
+    interface: module
+    title: The head follows the engine rather than elapsed time
+    given:
+      - an engine reporting a position of 12000 ms
+    when:
+      - the head is sampled
+    then:
+      - the drawn position is 12000 ms
+    maps_to:
+      capability: transport.report
+      invariants: [INV-TPORT-022, INV-TPORT-010]

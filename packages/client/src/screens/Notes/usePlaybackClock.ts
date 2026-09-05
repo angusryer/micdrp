@@ -25,6 +25,8 @@ import {
 } from 'react-native-reanimated';
 
 import { audioNowMs } from '../../audio/audioClock';
+import { engineRun } from '../../audio/engineTransport';
+import { drawnAt, readingAt } from './headSample';
 
 /**
  * How often the engine's clock is read, in ms.
@@ -83,43 +85,50 @@ export function useDrawnPosition(
   fromMs = 0
 ): SharedValue<number> {
   const positionMs = useSharedValue(fromMs);
-  /** When the last sample was taken, on the UI thread's own frame clock. */
-  const sampledAtFrameMs = useSharedValue(0);
-  /** And what the engine said at that moment. */
-  const sampledMs = useSharedValue(fromMs);
+  /**
+   * The last reading, and the frame that dates it — one value.
+   *
+   * They were two, written one after the other from the JS thread, and a
+   * frame landing between the writes drew the new moment measured from
+   * the old stamp: a jump forward of the whole interval and a snap back
+   * next frame (INV-TPORT-021).
+   */
+  const sample = useSharedValue(readingAt(fromMs));
 
   useEffect(() => {
     positionMs.value = fromMs;
-    sampledMs.value = fromMs;
-    sampledAtFrameMs.value = 0;
+    sample.value = readingAt(fromMs);
     if (!running) {
       return;
     }
     const startedAt = audioNowMs();
-    const sample = () => {
-      sampledMs.value = fromMs + Math.max(0, audioNowMs() - startedAt);
-      // Cleared rather than set: the frame callback stamps it with its own
-      // clock, which is the only clock the interpolation may use.
-      sampledAtFrameMs.value = 0;
+    const read = () => {
+      // The engine's own position where there is an engine to ask
+      // (INV-TPORT-010, INV-TPORT-022). The computed one is the fallback
+      // for a binary older than this bundle, which is every binary until
+      // the run state is built (INV-TPORT-014).
+      const run = engineRun();
+      sample.value = readingAt(
+        run != null ? run.positionMs : fromMs + Math.max(0, audioNowMs() - startedAt)
+      );
     };
-    sample();
-    const id = setInterval(sample, SAMPLE_MS);
+    read();
+    const id = setInterval(read, SAMPLE_MS);
     return () => clearInterval(id);
-  }, [running, fromMs, positionMs, sampledMs, sampledAtFrameMs]);
+  }, [running, fromMs, positionMs, sample]);
 
   useFrameCallback(({ timeSinceFirstFrame }) => {
     'worklet';
     if (!running) {
       return;
     }
-    if (sampledAtFrameMs.value === 0) {
-      sampledAtFrameMs.value = timeSinceFirstFrame;
+    const held = sample.value;
+    if (held.frameMs < 0) {
+      // Dated by the UI thread's own clock, which is the only clock the
+      // interpolation may use.
+      sample.value = { atMs: held.atMs, frameMs: timeSinceFirstFrame };
     }
-    // Frame time carries it between samples; each sample puts it back where
-    // the engine says it is. Free-running on frame time alone would be a wall
-    // clock again, dressed differently.
-    positionMs.value =
-      sampledMs.value + (timeSinceFirstFrame - sampledAtFrameMs.value);
+    positionMs.value = drawnAt(held, timeSinceFirstFrame);
   }, true);
 
   return positionMs;
