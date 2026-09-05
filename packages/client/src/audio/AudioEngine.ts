@@ -46,10 +46,31 @@ function getNativeModule(): NativeAudioEngineModule | null {
 }
 
 /**
+ * A field the engine may or may not have sent.
+ *
+ * Absent and present-but-not-a-number are the same thing here: a binary
+ * older than the bundle reading it did not measure this, and a frame with
+ * no reading must never be taken for one that read zero (INV-PITCH-020).
+ */
+const optional = (value: unknown): number | undefined =>
+  typeof value === 'number' ? value : undefined;
+
+/**
  * Normalize an arbitrary native event payload into a strict `PitchSample`.
  * Native sends `midi`/`cents` as `null` when unvoiced.
+ *
+ * Every field the engine measures is carried, not the five this used to
+ * list. The engine has been measuring a level for every frame and sending
+ * it across; this dropped it on the way in, so every note was built with
+ * no loudness, every take was measured as unmeasured, and the level match
+ * that starts the tracks where the take sits correctly declined to move
+ * anything (INV-NOTES-141). The spectral fields went the same way, which
+ * is what percussion is read from (INV-PITCH-025).
+ *
+ * Nothing failed. The loss was invisible at the seam and showed up only as
+ * two features that quietly never happened.
  */
-function toPitchSample(raw: unknown): PitchSample {
+export function toPitchSample(raw: unknown): PitchSample {
   const o = (raw ?? {}) as Record<string, unknown>;
   const midi = o.midi;
   const cents = o.cents;
@@ -57,6 +78,11 @@ function toPitchSample(raw: unknown): PitchSample {
     timestampMs: typeof o.timestampMs === 'number' ? o.timestampMs : 0,
     frequencyHz: typeof o.frequencyHz === 'number' ? o.frequencyHz : 0,
     clarity: typeof o.clarity === 'number' ? o.clarity : 0,
+    levelDb: optional(o.levelDb),
+    centroidHz: optional(o.centroidHz),
+    flatness: optional(o.flatness),
+    rolloffHz: optional(o.rolloffHz),
+    fluxDb: optional(o.fluxDb),
     midi: typeof midi === 'number' ? midi : null,
     cents: typeof cents === 'number' ? cents : null
   };

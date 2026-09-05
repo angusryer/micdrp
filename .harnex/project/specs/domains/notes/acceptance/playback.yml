@@ -139,3 +139,16 @@ acceptance:
       capability: notes.play
       invariants: [INV-NOTES-204]
 
+  - id: ACC-NOTES-053
+    interface: module
+    title: A frame keeps the level the engine measured
+    given:
+      - the engine reports a frame at -22 dBFS
+    when:
+      - the frame reaches the reading
+    then:
+      - the frame field levelDb is -22
+    maps_to:
+      capability: pitch.observe_stream
+      invariants: [INV-NOTES-141]
+

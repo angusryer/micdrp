@@ -756,6 +756,20 @@ invariants:
       one, that the ratios between tracks are unchanged, and that a note whose
       loudness was never measured is left alone.
 
+      Dead for as long as it has existed, and silently. The engine
+      measures a level for every frame and reports it, the segmenter
+      builds a note's loudness out of those frames, and the match was
+      written and tested against both — but the function normalising a
+      native frame into a PitchSample listed the fields it wanted and
+      levelDb was not among them. So every frame arrived without a
+      level, every note was measured as unmeasured, and the match
+      correctly declined to move anything. Nothing failed; the whole
+      chain simply resolved to "leave it alone".
+
+      A normaliser that drops a field it does not name is the shape of
+      this: the loss is invisible at the seam and only shows up as a
+      feature that quietly never happens (INV-PITCH-020).
+
       The tracks were balanced at fixed numbers chosen by ear against one
       take. Against a take sung twice as quietly, the same numbers bury it;
       against a loud one they vanish under it. The singer then does by hand,

@@ -228,4 +228,18 @@ then:
     pattern: 'the take never starts'
     mode: extension
     action: notes_assert_take_not_started
+  - id: GX-NOTES-FRAME-LEVEL
+    pattern: 'the engine reports a frame at {value} dBFS'
+    mode: extension
+    action: notes_set_frame_level
+    params: { db: "{value}" }
+  - id: WX-NOTES-FRAME-ARRIVES
+    pattern: 'the frame reaches the reading'
+    mode: extension
+    action: notes_normalise_frame
+  - id: TX-NOTES-FRAME-FIELD
+    pattern: 'the frame field {field} is {value}'
+    mode: extension
+    action: notes_assert_frame_field
+    params: { field: "{field}", value: "{value}" }
 
