@@ -18,7 +18,7 @@
  * stops whatever is sounding — a mix applied halfway would make what is heard
  * depend on when the track was turned.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { type SharedValue } from 'react-native-reanimated';
 
@@ -150,14 +150,17 @@ export function usePlaybackMix({
     if (!levels) {
       return;
     }
-    setTakeLevel(levels.take);
+    // Muting is a level, not a stop (INV-TPORT-013). The take runs
+    // whatever the mix says; turning it off makes it silent and leaves
+    // the transport alone, which is how every mixing desk works.
+    setTakeLevel(mix.take ? levels.take : 0);
     accompaniment?.setLevel?.(levels.chords);
     voice?.setLevel?.(levels.melody);
     count?.setLevel?.(levels.count);
     rhythm?.setLevel?.(levels.rhythm);
     layers?.setLevel?.(levels.layers);
     bass?.setLevel?.(levels.bass);
-  }, [levels, accompaniment, voice, count, rhythm, layers, bass, setTakeLevel]);
+  }, [levels, mix.take, accompaniment, voice, count, rhythm, layers, bass, setTakeLevel]);
 
   // What each track sounds like, told to the engine directly rather than
   // through the players: a timbre belongs to a bus, and a bus is what a track
@@ -175,33 +178,29 @@ export function usePlaybackMix({
     NativeSynth?.setBusWave?.(AUDITION_BUS, waveOf(voices.melody));
   }, [voices]);
 
-  const wantsTake = mix.take;
   const wantsChords = mix.chords;
   const wantsVoice = mix.melody;
 
   // The transport for whatever sounds without a take under it — the chords,
   // the melody, or both. No decode, so nothing to be loading or in error
   // over: it is running or it is not.
-  const [chordsRunning, setChordsRunning] = useState(false);
+
   // Where a press would start from. It is where the take stopped, or wherever
   // the playhead was last put.
   // No cue of its own. The transport below holds the one there is, and
   // a screen keeping a second copy is how a seek came to move one while
   // every display drew the other (INV-TPORT-007).
-  const endTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const clearEndTimer = useCallback(() => {
-    if (endTimer.current) {
-      clearTimeout(endTimer.current);
-      endTimer.current = null;
-    }
-  }, []);
-  useEffect(() => clearEndTimer, [clearEndTimer]);
 
-  const state: PlaybackState = wantsTake
-    ? takeState
-    : chordsRunning
-      ? 'playing'
-      : 'stopped';
+  /**
+   * What the transport is doing. The take's, always (INV-TPORT-013).
+   *
+   * There was a second running-state here for the case where the take
+   * was muted, with an end timer of its own — a state machine kept in
+   * parallel with the real one, because the transport had been defined
+   * as "the take is sounding" rather than "time is passing". It is a
+   * level now, and this is the only answer there is.
+   */
+  const state: PlaybackState = takeState;
 
   // Read through refs so each voice follows the transport and only the
   // transport: re-voicing the chords mid-take (an edit, a re-render) must not
@@ -209,7 +208,6 @@ export function usePlaybackMix({
   // own switch — a choice that drops the take must not re-schedule the
   // backdrop on its way to stopping everything.
   const latest = useLatest(accompaniment);
-  const takeWanted = useLatest(wantsTake);
   const latestVoice = useLatest(voice);
   const latestRhythm = useLatest(rhythm);
   const latestCount = useLatest(count);
@@ -234,7 +232,7 @@ export function usePlaybackMix({
    * without a take has nothing to catch up to and starts at zero.
    */
   useEffect(() => {
-    const at = takeWanted.current ? takeElapsedMs() : 0;
+    const at = takeElapsedMs();
     const running = state === 'playing';
     const voices = [
       [latest.current, wantsChords],
@@ -276,10 +274,8 @@ export function usePlaybackMix({
 
   const stop = useCallback(async (): Promise<void> => {
     run.current += 1;
-    clearEndTimer();
-    setChordsRunning(false);
     await stopTake();
-  }, [clearEndTimer, stopTake]);
+  }, [stopTake]);
 
   /**
    * The same silence, with the moment kept (INV-NOTES-152).
@@ -293,11 +289,9 @@ export function usePlaybackMix({
    */
   const pause = useCallback(async (): Promise<void> => {
     run.current += 1;
-    clearEndTimer();
-    setChordsRunning(false);
     // The moment held is the transport's answer; nothing here records it.
     await pauseTake();
-  }, [clearEndTimer, pauseTake]);
+  }, [pauseTake]);
 
   const play = useCallback(async (
     fromMs = cueMs,
@@ -316,8 +310,6 @@ export function usePlaybackMix({
     const leadInMs =
       wantsCount && !withoutCount ? (latestCount.current?.leadInMs ?? 0) : 0;
     if (leadInMs > 0) {
-      clearEndTimer();
-      setChordsRunning(true);
       latestCount.current?.start(0);
       await new Promise((resolve) => setTimeout(resolve, leadInMs));
       // Stopped, paused, or pressed again while the count ran. Carrying on
@@ -326,37 +318,10 @@ export function usePlaybackMix({
       if (mine !== run.current) {
         return;
       }
-      setChordsRunning(false);
     }
-    if (wantsTake) {
-      await playTake(fromMs);
-      return;
-    }
-    // With the take off, whatever is left is the transport, and it runs for
-    // as long as the longest of them. With everything off there is none, so
-    // the press sounds nothing rather than the track just turned off.
-    const durationMs = Math.max(
-      wantsChords ? (latest.current?.durationMs ?? 0) : 0,
-      wantsVoice ? (latestVoice.current?.durationMs ?? 0) : 0,
-      wantsCount ? (latestCount.current?.durationMs ?? 0) : 0,
-      wantsLayers ? (latestLayers.current?.durationMs ?? 0) : 0,
-      wantsBass ? (latestBass.current?.durationMs ?? 0) : 0
-    );
-    if (durationMs <= 0) {
-      return;
-    }
-    clearEndTimer();
-    setChordsRunning(true);
-    endTimer.current = setTimeout(() => setChordsRunning(false), durationMs);
-  }, [
-    wantsTake,
-    wantsChords,
-    wantsVoice,
-    wantsCount,
-    playTake,
-    clearEndTimer,
-    cueMs
-  ]);
+    // The take carries the transport whether or not it is audible.
+    await playTake(fromMs);
+  }, [wantsCount, playTake, cueMs]);
 
   // A track turned mid-playback stops what is sounding, so the next press is
   // the whole of the mix as it now stands rather than half of two.

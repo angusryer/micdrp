@@ -143,10 +143,20 @@ export function useTakeEngine(
     return run == null ? anchor.reachedMs() : run.positionMs;
   }, [anchor]);
 
+  /**
+   * Whether the engine says this run is over, or undefined where it
+   * cannot say (INV-TPORT-011, INV-TPORT-014).
+   */
+  const hasEnded = useCallback((): boolean | undefined => {
+    const run = engineRun();
+    return run == null ? undefined : !run.running;
+  }, []);
+
   return {
     start,
     silence,
     reachedMs,
+    hasEnded,
     durationMs: () => durationRef.current,
     elapsedMs: anchor.elapsedMs,
     setLevel

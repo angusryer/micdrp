@@ -26,6 +26,9 @@ import {
   type TransportState
 } from './transportState';
 
+/** How often the engine is asked whether the run is over. */
+const WATCH_MS = 100;
+
 /** What a subscriber is told. Never the moment (INV-TPORT-002). */
 export interface TransportSnapshot {
   state: TransportState;
@@ -43,6 +46,16 @@ export interface TransportEngine {
   silence(): void;
   /** Where the engine says the run has reached, in ms. */
   reachedMs(): number;
+  /**
+   * Whether the engine says this run has finished, or undefined where it
+   * cannot say (INV-TPORT-011, INV-TPORT-014).
+   *
+   * Asked rather than predicted. Where the answer is undefined — a
+   * binary older than this bundle — the store falls back to the length
+   * the decode reported, which is what it did before an engine could be
+   * asked at all.
+   */
+  hasEnded?(): boolean | undefined;
 }
 
 export interface Transport {
@@ -71,6 +84,50 @@ export function createTransport(engine: TransportEngine): Transport {
    * stopped, and then started the take anyway.
    */
   let run = 0;
+  /** The fallback end, armed only where the engine cannot say. */
+  let endsAt: ReturnType<typeof setTimeout> | null = null;
+  /** Asking the engine whether the run is over, while one is. */
+  let watching: ReturnType<typeof setInterval> | null = null;
+
+  const stopWatching = (): void => {
+    if (endsAt != null) {
+      clearTimeout(endsAt);
+      endsAt = null;
+    }
+    if (watching != null) {
+      clearInterval(watching);
+      watching = null;
+    }
+  };
+
+  /**
+   * Notice the run ending.
+   *
+   * The engine's word where it has one, and the decoded length where it
+   * has not. A transport that only predicts is wrong whenever the
+   * prediction is, and cannot be right about a run that failed early —
+   * but a bundle newer than its binary has nothing else to go on
+   * (INV-TPORT-011, INV-TPORT-014).
+   */
+  const watchForEnd = (mine: number, lengthMs: number, fromMs: number): void => {
+    stopWatching();
+    const ended = (): void => {
+      if (mine !== run) {
+        return;
+      }
+      stopWatching();
+      publish({ state: 'stopped' });
+    };
+    if (typeof engine.hasEnded === 'function' && engine.hasEnded() !== undefined) {
+      watching = setInterval(() => {
+        if (engine.hasEnded?.() === true) {
+          ended();
+        }
+      }, WATCH_MS);
+      return;
+    }
+    endsAt = setTimeout(ended, Math.max(0, lengthMs - fromMs));
+  };
 
   const publish = (next: Partial<TransportSnapshot>): void => {
     snapshot = { ...snapshot, ...next };
@@ -84,12 +141,14 @@ export function createTransport(engine: TransportEngine): Transport {
       return;
     }
     const mine = (run += 1);
+    stopWatching();
 
     if (kind === 'play') {
       const from = atMs ?? snapshot.cueMs;
       publish({ state: 'loading', problem: null, cueMs: from });
+      let length = 0;
       try {
-        await engine.start(from);
+        length = await engine.start(from);
       } catch (error) {
         // Said out loud. A command the engine would not take must never
         // read as a control that did nothing (INV-TPORT-006).
@@ -106,6 +165,7 @@ export function createTransport(engine: TransportEngine): Transport {
         return;
       }
       publish({ state: 'playing' });
+      watchForEnd(mine, length, from);
       return;
     }
 

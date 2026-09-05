@@ -27,6 +27,7 @@ import { resetSynthDouble, synthDouble as synth } from '../__fixtures__/synthDou
 
 import { backdrop, renderPlaybackBar } from '../__fixtures__/renderPlaybackBar';
 import { TAKE_SLOT } from '../sampleSlots';
+import { trackBus } from '../trackRegistry';
 
 const REMOTE = 'https://micdrp-backend.fly.dev/api/files/notes/abc/a.wav?token=t';
 
@@ -108,7 +109,12 @@ describe('turning the tracks a press sounds', () => {
     expect(chords.start).not.toHaveBeenCalled();
   });
 
-  it('sounds the chords alone without minting or decoding a take', async () => {
+  it('INV-TPORT-013: a muted take is silent, and still carries the run', async () => {
+    // Muting is a level, not a stop. There used to be a second transport
+    // here for this case, with an end timer of its own — a state machine
+    // kept in parallel with the real one, because the transport had been
+    // defined as "the take is sounding" rather than "time is passing".
+    // No mixing desk works that way.
     const chords = backdrop();
     const resolve = jest.fn().mockResolvedValue(REMOTE);
     await renderBar(chords, resolve);
@@ -117,13 +123,12 @@ describe('turning the tracks a press sounds', () => {
     await fireEvent.press(screen.getByLabelText('Play'));
 
     await waitFor(() => expect(chords.start).toHaveBeenCalledTimes(1));
-    // Nothing to catch up to without a take, so they start from the top.
-    expect(chords.start).toHaveBeenCalledWith(0);
-    // A press that plays no take asks the backend for nothing.
-    expect(resolve).not.toHaveBeenCalled();
-    expect(synth.loadSample).not.toHaveBeenCalled();
-    // The chords are the transport now, so the control is the one that stops
-    // them.
+    // The take still runs, so the chords are placed against its clock
+    // rather than started from the top of nothing.
+    expect(chords.start).toHaveBeenCalledWith(expect.any(Number));
+    // Silent, by level. The bus is set to zero rather than the run being
+    // cancelled.
+    expect(synth.setBusLevel).toHaveBeenCalledWith(trackBus('take'), 0);
     expect(screen.getByLabelText('Pause')).toBeTruthy();
   });
 
@@ -170,11 +175,14 @@ describe('turning the tracks a press sounds', () => {
     ).toBe(true);
   });
 
-  it('hands the control back to play when the progression runs out', async () => {
-    const chords = backdrop(40);
+  it('hands the control back to play when the take runs out', async () => {
+    // The take carries the transport, so its end is the run's end. A
+    // backdrop running out is one clip finishing, and no desk stops the
+    // transport for that (INV-TPORT-013).
+    synth.loadSample.mockResolvedValue(40);
+    const chords = backdrop();
     await renderBar(chords, jest.fn().mockResolvedValue(REMOTE));
 
-    await fireEvent.press(track('Take'));
     await fireEvent.press(screen.getByLabelText('Play'));
     await waitFor(() => expect(chords.start).toHaveBeenCalled());
 

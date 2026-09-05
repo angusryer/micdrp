@@ -148,6 +148,57 @@ describe('what a subscriber hears', () => {
   });
 });
 
+describe('noticing the run end', () => {
+  it('INV-TPORT-011: takes the engine word for it', async () => {
+    jest.useFakeTimers();
+    const engine = fakeEngine();
+    let over = false;
+    const t = createTransport({ ...engine, hasEnded: () => over });
+    await t.play();
+    expect(t.snapshot().state).toBe('playing');
+    over = true;
+    jest.advanceTimersByTime(200);
+    expect(t.snapshot().state).toBe('stopped');
+    jest.useRealTimers();
+  });
+
+  it('INV-TPORT-014: falls back to the decoded length where it cannot say', async () => {
+    // A bundle newer than its binary has nothing else to go on. This is
+    // what the transport did before an engine could be asked at all.
+    jest.useFakeTimers();
+    const t = createTransport(fakeEngine());
+    await t.play();
+    expect(t.snapshot().state).toBe('playing');
+    jest.advanceTimersByTime(24999);
+    expect(t.snapshot().state).toBe('playing');
+    jest.advanceTimersByTime(2);
+    expect(t.snapshot().state).toBe('stopped');
+    jest.useRealTimers();
+  });
+
+  it('does not end a run that was replaced by a newer press', async () => {
+    jest.useFakeTimers();
+    const t = createTransport(fakeEngine());
+    await t.play();
+    await t.pause();
+    jest.advanceTimersByTime(60000);
+    // The old run's end must not reach in and stop what is there now.
+    expect(t.snapshot().state).toBe('paused');
+    jest.useRealTimers();
+  });
+
+  it('counts from where the run began, not from the top', async () => {
+    jest.useFakeTimers();
+    const t = createTransport(fakeEngine());
+    await t.play(20000);
+    jest.advanceTimersByTime(4999);
+    expect(t.snapshot().state).toBe('playing');
+    jest.advanceTimersByTime(2);
+    expect(t.snapshot().state).toBe('stopped');
+    jest.useRealTimers();
+  });
+});
+
 describe('a press cancels the press before it', () => {
   it('ACC-TPORT-008: a stop mid-load starts nothing afterwards', async () => {
     // Play once waited out a count-in on a timer nothing could cancel,
