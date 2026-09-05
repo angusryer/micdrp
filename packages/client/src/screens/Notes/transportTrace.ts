@@ -25,6 +25,16 @@ export interface TransportTrace {
    * of those happened.
    */
   pressedPause: number;
+  /**
+   * Touches that landed anywhere on the pause control's view.
+   *
+   * Fires before the press machinery has any say, so it separates "the
+   * touch never reached this view" from "it reached it and the press was
+   * cancelled on the way to firing".
+   */
+  touchedPause: number;
+  /** Touches the press machinery accepted as the start of a press. */
+  pressInPause: number;
   /** Presses of play that got as far as calling the engine. */
   played: number;
   /** Presses of pause that got as far as calling the engine. */
@@ -41,6 +51,8 @@ export interface TransportTrace {
 
 const trace: TransportTrace = {
   pressedPause: 0,
+  touchedPause: 0,
+  pressInPause: 0,
   played: 0,
   paused: 0,
   silenced: 0,
@@ -50,7 +62,14 @@ const trace: TransportTrace = {
 };
 
 export function noteTransport(
-  what: 'pressedPause' | 'played' | 'paused' | 'silenced' | 'scheduled'
+  what:
+    | 'pressedPause'
+    | 'touchedPause'
+    | 'pressInPause'
+    | 'played'
+    | 'paused'
+    | 'silenced'
+    | 'scheduled'
 ): void {
   trace[what] += 1;
 }
@@ -73,6 +92,8 @@ export function traceLine(t: TransportTrace = transportTrace()): string {
   const engine = t.hasEngine ? 'engine' : 'NO ENGINE';
   const parts = [
     engine,
+    `touch ${t.touchedPause}`,
+    `in ${t.pressInPause}`,
     `press ${t.pressedPause}`,
     `play ${t.played}`,
     `pause ${t.paused}`,
@@ -85,6 +106,8 @@ export function traceLine(t: TransportTrace = transportTrace()): string {
 /** Test seam. Never called by app code. */
 export function resetTransportTraceForTests(): void {
   trace.pressedPause = 0;
+  trace.touchedPause = 0;
+  trace.pressInPause = 0;
   trace.played = 0;
   trace.paused = 0;
   trace.silenced = 0;

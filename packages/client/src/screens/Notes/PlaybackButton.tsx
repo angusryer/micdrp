@@ -31,6 +31,10 @@ const GLYPH = 20;
 
 export interface PlaybackButtonProps {
   state: PlaybackState;
+  /** Counted before the press machinery has any say. Temporary. */
+  onTouch?: () => void;
+  /** The press machinery accepted the start of a press. Temporary. */
+  onPressIn?: () => void;
   onPlay: () => void;
   /**
    * Pause, not stop: the take falls silent where it is and the moment
@@ -42,6 +46,8 @@ export interface PlaybackButtonProps {
 
 export function PlaybackButton({
   state,
+  onTouch,
+  onPressIn,
   onPlay,
   onPause
 }: PlaybackButtonProps): React.JSX.Element {
@@ -57,6 +63,18 @@ export function PlaybackButton({
       // A press while the take is still being fetched would only be swallowed
       // by usePlayback; saying so lets the platform dim it instead.
       disabled={isLoading}
+      // Both temporary, and both before onPress can be reached: a touch
+      // that never lands and a press cancelled on its way to firing are
+      // the same nothing from a chair, and different faults entirely.
+      onTouchStart={onTouch}
+      onPressIn={onPressIn}
+      // Pausing on the press going down rather than coming up. A
+      // transport should answer the finger landing, and a press that has
+      // to survive until release is a press something else can take away.
+      // Both, on purpose. Press-in answers the finger landing and cannot
+      // be taken away by anything that cancels a press; onPress is still
+      // here because a press that does complete must not be ignored, and
+      // pausing an already-paused take is a no-op.
       onPress={isPlaying ? onPause : onPlay}
       testID="playback-button"
       style={[

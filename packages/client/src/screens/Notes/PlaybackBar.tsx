@@ -244,11 +244,22 @@ export function PlaybackBar({
             there (INV-NOTES-152). */}
         <PlaybackButton
           state={state}
+          // Temporary, and each before the next can fail: a touch that
+          // never lands, a press that starts, a press that fires.
+          onTouch={() => noteTransport('touchedPause')}
+          onPressIn={() => {
+            noteTransport('pressInPause');
+            if (state !== 'playing') {
+              return;
+            }
+            // Pausing as the finger lands rather than as it lifts. A
+            // transport should answer the press, and a press that has to
+            // survive until release is one something else can take away.
+            noteTransport('pressedPause');
+            void pause();
+          }}
           onPlay={() => void play()}
           onPause={() => {
-            // Counted here, in the control, before anything else can fail.
-            // The gap between this and `pause` is whether the press even
-            // reached the transport.
             noteTransport('pressedPause');
             void pause();
           }}
