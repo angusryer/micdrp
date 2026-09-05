@@ -92,8 +92,12 @@ describe('pausing a take', () => {
 
     // The moment the ear was at, not the top of the take: this is the whole
     // point of stopping mid-take — to look at what is under the head.
-    await waitFor(() => expect(transport.current?.positionMs).toBe(REACHED_MS));
-    expect(transport.current?.drawnPositionMs.value).toBe(REACHED_MS);
+    // On the shared value alone. A ticking number was published here too,
+    // and re-rendering the screen twice a second to carry it is what left a
+    // press of pause with nowhere to be handled (INV-NOTES-206).
+    await waitFor(() =>
+      expect(transport.current?.drawnPositionMs.value).toBe(REACHED_MS)
+    );
   });
 
   it('picks the take up from there on the next press', async () => {

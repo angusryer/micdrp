@@ -1005,3 +1005,57 @@ invariants:
       different act — leaving a screen must not silence anything another
       screen started.
 
+  - id: INV-NOTES-206
+    description: A moving playhead never re-renders the screen it moves across
+    severity: critical
+    check: >
+      Nothing published out of the transport changes while a take plays
+      except the transport's own state. The position reaches every
+      display as a shared value the UI thread advances, never as React
+      state handed upward. Verified by asserting the object handed to
+      the screen is identical across a run of playback.
+
+      The transport published its position into the screen above it
+      twice a second, as a fresh object. So every reading of the clock
+      re-rendered the whole detail screen — the Skia graph, the neck,
+      the chord track — and the render cost more than the interval
+      between readings. The JS thread never went idle, and a press had
+      nowhere to be handled.
+
+      Which is why pause did nothing. The control was correct, the
+      transport was correct, the engine was correct, and the press was
+      never delivered to any of them: the button showed a pause glyph,
+      the take carried on, and stopping it "eventually" was the take
+      ending rather than anything being obeyed. Five fixes went into
+      the audio path for a fault that was never in it.
+
+      A display that moves every frame belongs on the UI thread. A
+      value that costs a render belongs where a render is affordable,
+      and never above a canvas.
+
+  - id: INV-NOTES-207
+    description: Anything the UI thread calls is a worklet, in a module of its own
+    severity: critical
+    check: >
+      An animated style calls nothing but worklets. Placement arithmetic
+      reached from the UI thread lives in its own module with the
+      directive on it — playheadPlacement and scrubPlacement — and never
+      borrows a helper written for the JS thread. Verified by asserting
+      every function an animated style calls carries the directive.
+
+      Moving the scrub handle onto the UI thread called `xForMs` from
+      inside an animated style. It is three terms of arithmetic and it
+      is ordinary JavaScript, so the app crashed natively the instant a
+      note was opened — not an error, not a red screen, a hard exit.
+
+      Nothing catches this. The types are satisfied, the linter is
+      satisfied, and no test in this repo can run a worklet, so the
+      first thing to notice is a device. Which is why the rule is a
+      convention with a shape: a `*Placement` module, pure, with the
+      directive at the top, testable as arithmetic even though the
+      violation it prevents is not testable at all.
+
+      Duplicating a sum is the price. A worklet cannot call across to a
+      plain function, and marking a widely-used helper as a worklet only
+      moves the hazard to whoever unmarks it later.
+

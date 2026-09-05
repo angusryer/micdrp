@@ -178,3 +178,29 @@ acceptance:
       capability: notes.play
       invariants: [INV-NOTES-205]
 
+  - id: ACC-NOTES-056
+    interface: module
+    title: Playing does not churn the screen above the transport
+    given:
+      - a take is playing
+    when:
+      - the clock is read 4 times
+    then:
+      - the published transport is unchanged
+    maps_to:
+      capability: notes.play
+      invariants: [INV-NOTES-206]
+
+  - id: ACC-NOTES-057
+    interface: ui
+    title: Pausing a playing take is obeyed
+    given:
+      - a take is playing
+    when:
+      - the singer presses pause
+    then:
+      - the transport was told to pause
+    maps_to:
+      capability: notes.play
+      invariants: [INV-NOTES-206, INV-NOTES-205]
+
