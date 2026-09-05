@@ -45,3 +45,8 @@ domains:
     priority: medium
     description: Spoken feedback about the app, transcribed and acted on by an agent
       loop that ships JavaScript-only changes over the air
+  transport:
+    path: .harnex/project/specs/domains/transport
+    status: building
+    priority: medium
+    description: 'TODO: fill in during clarify phase.'

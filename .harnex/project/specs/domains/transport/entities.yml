@@ -1,0 +1,103 @@
+# What the transport knows, and in what shape.
+entities:
+  - name: TransportState
+    description: >
+      Where a run has got to, as one word rather than several booleans.
+
+      A state machine because the alternative was three hooks each
+      holding part of the answer: one knew the take was loading, one
+      knew a count was running, one knew whether chords were sounding,
+      and the control asked whichever it happened to have.
+    properties:
+      - name: value
+        type: string
+        required: true
+    states:
+      - name: idle
+        description: Nothing loaded. A press has to load before it sounds.
+      - name: loading
+        description: >
+          Decoding, or resolving where the audio lives. A press here is
+          refused rather than queued: two decodes of one take is the
+          slow path run twice.
+      - name: playing
+        description: Sounding now, and the moment is advancing.
+      - name: paused
+        description: >
+          Silent, holding the moment reached. Distinct from stopped: the
+          next press carries on rather than starting again.
+      - name: stopped
+        description: Silent, and the moment is wherever it was put.
+      - name: failed
+        description: >
+          Something the engine would not do. Carries why. A transport
+          that cannot say this reports silence instead, which reads as a
+          control that does nothing.
+    transitions:
+      - from: idle, stopped, paused
+        to: loading
+        trigger: transport.play
+      - from: loading
+        to: playing
+        trigger: the engine accepted the schedule
+      - from: playing
+        to: paused
+        trigger: transport.pause
+      - from: playing, paused, loading
+        to: stopped
+        trigger: transport.stop
+      - from: loading, playing
+        to: failed
+        trigger: the engine refused, or the audio would not resolve
+
+  - name: Head
+    description: >
+      Where the run has got to, in milliseconds from the start of the
+      take.
+
+      One value, whatever is happening. It used to be two — a position
+      that advanced while playing and a cue a press would start from —
+      and a rewind on a stopped take moved the second while every
+      display drew the first (INV-NOTES-208).
+
+      It lives on the UI thread. Anything that moves every frame has to
+      move without a render, and this moves every frame for the whole
+      length of a take (INV-NOTES-206).
+    properties:
+      - name: ms
+        type: number
+        required: true
+        description: A shared value, read by displays, written by the transport.
+
+  - name: Command
+    description: >
+      What a control sends. Never a state a control sets.
+
+      A control that sets state is a second opinion about what is
+      sounding; a control that sends a command has none. Every one is
+      accepted at any time and answered — including by being refused.
+    properties:
+      - name: kind
+        type: string
+        required: true
+        description: One of play, pause, stop, seek.
+      - name: atMs
+        type: number
+        required: false
+        description: Where to start or move to. Absent means "where the head is".
+
+  - name: Subscription
+    description: >
+      How a display learns that the state changed.
+
+      Changed, not ticked. The transport notifies when what it is doing
+      changes — which is rare — and never when only the moment moved,
+      which is constant. That distinction is the whole performance
+      story: the moment rides the head, and the head is not React.
+    properties:
+      - name: listener
+        type: function
+        required: true
+      - name: unsubscribe
+        type: function
+        required: true

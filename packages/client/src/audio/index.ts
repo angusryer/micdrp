@@ -26,3 +26,23 @@ export type {
 } from './tonePlayer';
 export { createTonePlayer, SynthBus } from './synthPlayer';
 export type { SynthBusValue } from './synthPlayer';
+
+// The transport: one thing that knows what is sounding (INV-TPORT-001).
+// A store with no React in it, and a thin binding over it.
+export {
+  createTransport,
+  type Transport,
+  type TransportEngine,
+  type TransportSnapshot
+} from './transportStore';
+export {
+  accepts,
+  isBusy,
+  isSounding,
+  keepsTheMoment,
+  nextState,
+  type CommandKind,
+  type TransportState
+} from './transportState';
+export { useTransport, type UseTransport } from './useTransport';
+

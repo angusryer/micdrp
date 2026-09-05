@@ -1,0 +1,79 @@
+# Four commands and one subscription. Everything else is somebody's job.
+capabilities:
+  - name: transport.play
+    description: >
+      Sound the take, from where the head is or from a moment given.
+    actor: singer
+    implemented_by: packages/client/src/audio/transport.ts
+    parameters:
+      required: []
+    preconditions:
+      - there is audio to resolve
+    postconditions:
+      - the state becomes loading, then playing once the engine accepts
+      - a press while already loading is refused rather than queued, so
+        one take is never decoded twice
+      - a press that arrives while a run is being cancelled belongs to
+        the newer press; the older one starts nothing
+      - the head advances on the UI thread and notifies nobody
+      - a refusal ends in failed with the reason, never in silence
+
+  - name: transport.pause
+    description: >
+      Fall silent, holding the moment. The next play carries on from it.
+    actor: singer
+    implemented_by: packages/client/src/audio/transport.ts
+    parameters:
+      required: []
+    preconditions: []
+    postconditions:
+      - everything sounding is silenced, not the one bus the transport
+        believed the take was on (INV-NOTES-205)
+      - the head stays where the run reached
+      - pausing what is already silent changes nothing and is not an error
+
+  - name: transport.stop
+    description: >
+      Fall silent and give the moment back to wherever it was put.
+    actor: singer
+    implemented_by: packages/client/src/audio/transport.ts
+    parameters:
+      required: []
+    preconditions: []
+    postconditions:
+      - everything sounding is silenced
+      - a press still waiting on a count-in is cancelled and starts
+        nothing afterwards (INV-NOTES-204)
+
+  - name: transport.seek
+    description: >
+      Put the head somewhere. Decides nothing about sound.
+    actor: singer
+    implemented_by: packages/client/src/audio/transport.ts
+    parameters:
+      required: [atMs]
+    preconditions: []
+    postconditions:
+      - the head moves, and every display follows it at once whether or
+        not anything is sounding (INV-NOTES-208)
+      - seeking while sounding stops first and starts again from there,
+        because this engine begins at a moment rather than jumping to one
+      - seeking while silent sounds nothing
+
+  - name: transport.observe
+    description: >
+      Learn when what the transport is doing changes.
+
+      Changes, not ticks. The moment moves constantly and reaches
+      displays through the head; this fires when the state does, which
+      is rare.
+    actor: system
+    implemented_by: packages/client/src/audio/transport.ts
+    parameters:
+      required: [listener]
+    preconditions: []
+    postconditions:
+      - the listener is called on every state change and on no tick
+      - unsubscribing stops it being called at all
+      - nothing published to a subscriber changes while a take plays
+        (INV-NOTES-206)

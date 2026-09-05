@@ -1,0 +1,119 @@
+# Every one of these is a fault this app actually had. None is a
+# precaution; each is a day already spent.
+invariants:
+  - id: INV-TPORT-001
+    description: One thing knows what is sounding
+    severity: critical
+    check: >
+      Exactly one module starts or stops a sound, and exactly one holds
+      the state and the head. Verified by asserting no other module
+      calls the engine's schedule or clear.
+
+      There were seven, and each read as correct on its own. That is the
+      point: a fault distributed across seven correct-looking places is
+      not findable by reading any of them, and five fixes went into the
+      audio path for a fault that was never in it.
+
+  - id: INV-TPORT-002
+    description: What moves every frame never crosses into React
+    severity: critical
+    check: >
+      The head is a shared value the UI thread advances. Nothing the
+      transport publishes to a subscriber changes while a take runs.
+      Verified by asserting the published object is identical across a
+      run of playback.
+
+      The moment used to tick into the screen above as React state
+      twice a second, re-rendering a Skia canvas that cost more than the
+      interval. The JS thread never went idle, so a press had nowhere to
+      be handled — which presented as pause not working, for hours
+      (INV-NOTES-206).
+
+  - id: INV-TPORT-003
+    description: A control sends a command and holds no opinion
+    severity: critical
+    check: >
+      No control sets transport state. Every control calls a command and
+      renders what it is told. Verified by asserting the controls hold
+      no playback state of their own.
+
+      A control that sets state is a second answer to "what is
+      sounding", and two answers is how a button came to show a pause
+      glyph over a take that had already stopped.
+
+  - id: INV-TPORT-004
+    description: A press is answered as the finger lands
+    severity: high
+    check: >
+      Transport controls act on the press going down, not on release.
+      Verified by asserting a press-in issues the command.
+
+      A press that must survive until release is one that anything
+      cancelling a press can take away, and something was: the trace
+      read two touches, two accepted, one fired. Which of them was lost
+      was never established, and a transport should answer the finger
+      anyway.
+
+  - id: INV-TPORT-005
+    description: Silence is not contingent on bookkeeping
+    severity: critical
+    check: >
+      Stopping silences the engine rather than the one bus the
+      transport believes is sounding. Verified by asserting a stop
+      clears every voice whatever bus each went to.
+
+      Clearing by index worked only while the transport's idea of where
+      a voice went matched the engine's, and when that stopped being
+      true nothing said so (INV-NOTES-205).
+
+  - id: INV-TPORT-006
+    description: A refused command is an error, never silence
+    severity: critical
+    check: >
+      A command the engine will not take ends in failed, carrying why,
+      and the reason reaches the surface. Verified by refusing a
+      schedule and asserting the state and the reason.
+
+      Every fault in this history presented as nothing happening. A
+      transport that cannot say "I was told and it did not work" is one
+      nobody can debug from outside, and outside is where the only
+      person using it stands.
+
+  - id: INV-TPORT-007
+    description: One head, running or waiting
+    severity: high
+    check: >
+      One value carries where the take is, and every display reads it
+      whether or not a sound is running. Verified by seeking a stopped
+      take and asserting what is drawn moves.
+
+      Two values meant two answers: a rewind on a stopped take set the
+      position correctly and left every mark where it was
+      (INV-NOTES-208).
+
+  - id: INV-TPORT-008
+    description: A press cancels the press before it
+    severity: high
+    check: >
+      Anything resuming after an await checks it is still the current
+      press, and stops if it is not. Verified by stopping during a
+      count-in and asserting nothing starts afterwards.
+
+      Play waited out a count on a timer nothing could cancel, so a
+      stop during the count silenced everything, set the state to
+      stopped, and then started the take regardless — leaving a take
+      playing that the transport considered stopped (INV-NOTES-204).
+
+  - id: INV-TPORT-009
+    description: Anything the UI thread runs is a worklet of its own
+    severity: critical
+    check: >
+      Placement arithmetic reached from an animated style lives in its
+      own module with the directive on it, and borrows nothing written
+      for the JS thread. Verified by asserting every function an
+      animated style calls carries it.
+
+      Nothing catches a violation: types pass, lint passes, and no test
+      here can run a worklet. Three terms of arithmetic called from an
+      animated style exited the app natively the instant a note was
+      opened (INV-NOTES-207).

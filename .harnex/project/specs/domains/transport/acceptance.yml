@@ -1,0 +1,125 @@
+# What the transport must do, stated as the failures it came from.
+acceptance:
+  - id: ACC-TPORT-001
+    interface: module
+    title: Playing reaches the engine and says so
+    given:
+      - a take with audio
+    when:
+      - the transport is told to play
+    then:
+      - the transport state is playing
+    maps_to:
+      capability: transport.play
+      invariants: [INV-TPORT-001]
+
+  - id: ACC-TPORT-002
+    interface: module
+    title: A refused schedule fails loudly
+    given:
+      - a take whose audio cannot be resolved
+    when:
+      - the transport is told to play
+    then:
+      - the transport state is failed
+      - the transport reports a reason
+    maps_to:
+      capability: transport.play
+      invariants: [INV-TPORT-006]
+
+  - id: ACC-TPORT-003
+    interface: module
+    title: Pausing silences everything
+    given:
+      - a take is playing
+    when:
+      - the transport is told to pause
+    then:
+      - the engine was silenced entirely
+      - the transport state is paused
+    maps_to:
+      capability: transport.pause
+      invariants: [INV-TPORT-005]
+
+  - id: ACC-TPORT-004
+    interface: module
+    title: Pausing holds the moment for the next press
+    given:
+      - a take is playing
+    when:
+      - the transport is told to pause
+      - the transport is told to play
+    then:
+      - the run started from where it was paused
+    maps_to:
+      capability: transport.pause
+      invariants: [INV-TPORT-007]
+
+  - id: ACC-TPORT-005
+    interface: module
+    title: Seeking a silent take moves the head and sounds nothing
+    given:
+      - a take is stopped at 12000 ms
+    when:
+      - the transport is told to seek to 7000 ms
+    then:
+      - the head is at 7000 ms
+      - the transport state is stopped
+    maps_to:
+      capability: transport.seek
+      invariants: [INV-TPORT-007]
+
+  - id: ACC-TPORT-006
+    interface: module
+    title: Nothing published changes while a take plays
+    given:
+      - a take is playing
+    when:
+      - the clock is read 4 times
+    then:
+      - the published transport is unchanged
+    maps_to:
+      capability: transport.observe
+      invariants: [INV-TPORT-002]
+
+  - id: ACC-TPORT-007
+    interface: module
+    title: A second press while loading is refused, not queued
+    given:
+      - a take with audio
+    when:
+      - the transport is told to play
+      - the transport is told to play
+    then:
+      - the take was decoded 1 time
+    maps_to:
+      capability: transport.play
+      invariants: [INV-TPORT-001]
+
+  - id: ACC-TPORT-008
+    interface: module
+    title: Stopping cancels a press that has not started
+    given:
+      - a take with a count-in in force
+    when:
+      - the transport is told to play
+      - the transport is told to stop before the count ends
+    then:
+      - the take never starts
+    maps_to:
+      capability: transport.stop
+      invariants: [INV-TPORT-008]
+
+  - id: ACC-TPORT-009
+    interface: module
+    title: A subscriber hears a state change and no tick
+    given:
+      - a take is playing
+    when:
+      - the clock is read 4 times
+      - the transport is told to pause
+    then:
+      - the subscriber was told 1 time
+    maps_to:
+      capability: transport.observe
+      invariants: [INV-TPORT-002]

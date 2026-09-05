@@ -1,0 +1,89 @@
+# Transport test grammar. A fake engine, so no case needs a device, a
+# decode, or a sound. One file per domain, 150-line budget (Axiom 3).
+
+given:
+  - id: GX-TPORT-TAKE
+    pattern: 'a take with audio'
+    mode: extension
+    action: tport_set_take
+  - id: GX-TPORT-UNRESOLVABLE
+    pattern: 'a take whose audio cannot be resolved'
+    mode: extension
+    action: tport_set_unresolvable
+  - id: GX-TPORT-PLAYING
+    pattern: 'a take is playing'
+    mode: extension
+    action: tport_set_playing
+  - id: GX-TPORT-STOPPED-AT
+    pattern: 'a take is stopped at {N} ms'
+    mode: extension
+    action: tport_set_stopped_at
+    params: { ms: "{N}" }
+  - id: GX-TPORT-COUNT-IN
+    pattern: 'a take with a count-in in force'
+    mode: extension
+    action: tport_set_count_in
+
+when:
+  - id: WX-TPORT-COMMAND
+    pattern: 'the transport is told to {value}'
+    mode: extension
+    action: tport_command
+    params: { kind: "{value}" }
+    resolution: One of play, pause, stop.
+  - id: WX-TPORT-SEEK
+    pattern: 'the transport is told to seek to {N} ms'
+    mode: extension
+    action: tport_seek
+    params: { ms: "{N}" }
+  - id: WX-TPORT-STOP-DURING-COUNT
+    pattern: 'the transport is told to stop before the count ends'
+    mode: extension
+    action: tport_stop_during_count
+  - id: WX-TPORT-CLOCK
+    pattern: 'the clock is read {N} times'
+    mode: extension
+    action: tport_tick
+    params: { times: "{N}" }
+
+then:
+  - id: TX-TPORT-STATE
+    pattern: 'the transport state is {state}'
+    mode: extension
+    action: tport_assert_state
+    params: { state: "{state}" }
+  - id: TX-TPORT-REASON
+    pattern: 'the transport reports a reason'
+    mode: extension
+    action: tport_assert_reason
+  - id: TX-TPORT-SILENCED
+    pattern: 'the engine was silenced entirely'
+    mode: extension
+    action: tport_assert_silenced
+  - id: TX-TPORT-HEAD
+    pattern: 'the head is at {N} ms'
+    mode: extension
+    action: tport_assert_head
+    params: { ms: "{N}" }
+  - id: TX-TPORT-RESUMED
+    pattern: 'the run started from where it was paused'
+    mode: extension
+    action: tport_assert_resumed
+  - id: TX-TPORT-STABLE
+    pattern: 'the published transport is unchanged'
+    mode: extension
+    action: tport_assert_identity
+  - id: TX-TPORT-DECODES
+    pattern: 'the take was decoded {N} time'
+    mode: extension
+    action: tport_assert_decodes
+    params: { times: "{N}" }
+  - id: TX-TPORT-NOT-STARTED
+    pattern: 'the take never starts'
+    mode: extension
+    action: tport_assert_not_started
+  - id: TX-TPORT-NOTIFIED
+    pattern: 'the subscriber was told {N} time'
+    mode: extension
+    action: tport_assert_notified
+    params: { times: "{N}" }

@@ -1,0 +1,59 @@
+domain:
+  name: transport
+  version: 0.1.0
+  status: specifying
+  owner: human
+
+  description: >
+    One thing that knows what is sounding, and where it has got to.
+
+    Every surface that starts, stops, moves or draws audio goes through
+    it: the take, the voices read out of it, the click, a capture, and
+    every display that follows them. Controls send commands. Displays
+    subscribe. Nothing else may start or stop a sound, and nothing else
+    keeps a second opinion about the moment.
+
+    This exists because the absence of it cost a day. Playback state was
+    spread across seven hooks — the take's machine, the mix over it, the
+    voices, two clocks, an anchor and the haptics — and each read as
+    correct on its own. Pause did nothing for hours: the button was
+    right, the transport was right, the engine was right, and the press
+    was never delivered to any of them, because the position ticked
+    through React state into the screen above and re-rendered a canvas
+    twice a second. Five fixes went into the audio path for a fault that
+    was never in it.
+
+    So the rule that shapes everything here: what moves every frame
+    never crosses into React, and what costs a render never moves every
+    frame. A transport that cannot say what it is doing is a transport
+    nobody can debug, so it says so — a command that did not reach the
+    engine is an error, not silence.
+
+  interfaces:
+    - type: module
+      description: >
+        A store in packages/client/src/audio. Commands in, subscription
+        out. No React in the model; hooks are a thin binding over it.
+
+  boundaries:
+    owns:
+      - What is loaded, what is scheduled, and whether it is running
+      - The moment reached, as one value, running or waiting
+      - play, pause, stop, seek — and what each means
+      - Which surface may start a sound, and the promise that only one does
+      - Reporting a command the engine did not accept
+    does_not_own:
+      - Decoding, scheduling and mixing, which are the engine's
+      - Which voices a take offers, and how they are balanced (notes owns)
+      - Detecting pitch, or the engine's detection settings (pitch owns)
+      - What a take means once it has been read (notes, transcription)
+
+  depends_on:
+    - domain: pitch
+      reason: The engine it commands, and the clock it reads
+    - domain: notes
+      reason: >
+        A take is what it usually plays, and the note's own audio is
+        where a run starts from
+
+  depended_on_by: []
