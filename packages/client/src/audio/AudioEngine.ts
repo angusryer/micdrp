@@ -1,18 +1,21 @@
 /**
- * AudioEngine — the single TS implementation of the {@link AudioEngine} contract.
+ * AudioEngine — the one way into detection, and the only caller of the
+ * native module that does it (INV-PITCH-029).
  *
- * Tier selection (see docs/NATIVE_BUILD_PLAN.md §0):
- *   • Tier 1 (canonical): the AudioEngineModule TurboModule is present — the
- *     C++ DSP core runs on the real-time audio thread and pushes throttled
- *     `PitchSample` events over the codegen event emitters. PCM never reaches
- *     JS.
- *   • Tier 2 (fallback): no native module — drive a `react-native-audio-api`
- *     AudioWorklet (src/audio/worklet/pitchProcessor.ts) that runs the pure-TS
- *     `logic` detector on the audio worklet runtime and posts `PitchSample`s.
+ * The C++ core runs on the real-time audio thread and pushes throttled
+ * `PitchSample` frames over the codegen event emitters. PCM never reaches
+ * JS.
  *
- * Screens import ONLY this wrapper (via the barrel), never the native module or
- * the worklet directly. Exposes both a named singleton `audioEngine` and a
- * default export.
+ * There was a second tier: the same algorithm again as pure TypeScript in
+ * an audio worklet, taken whenever the native module was absent. Two
+ * implementations of the one thing this app is for meant no measurement
+ * and no fix applied to the app as a whole — whichever tier the build
+ * selected is what ran, and the fallback was the one nobody measured. It
+ * is gone, and an absent engine is now said out loud (INV-PITCH-029).
+ *
+ * Screens import ONLY this wrapper (via the barrel), never the native
+ * module. Exposes both a named singleton `audioEngine` and a default
+ * export.
  */
 
 import NativeAudioEngine from '../specs/NativeAudioEngine';
@@ -26,7 +29,6 @@ import {
   PitchSample,
   RecordingHandle
 } from './contract';
-import { createWorkletPitchEngine, WorkletPitchEngine } from './worklet/pitchProcessor';
 import { ensureDirs, recordingsDir } from '../data/files';
 import {
   PLAYABLE_AUDIO_EXTENSIONS,
@@ -38,12 +40,19 @@ type PitchListener = (sample: PitchSample) => void;
 type StateListener = (state: EngineState) => void;
 
 /**
- * Resolve the TurboModule, or null when it is absent (a stripped build, or
- * Jest). Absence is not an error — it is what selects the Tier 2 fallback.
+ * Resolve the TurboModule, or null where there is none — a stripped build,
+ * or Jest.
+ *
+ * Null at import rather than a throw: `getEnforcing` fails at module scope,
+ * before any caller can catch it, which takes the app down instead of the
+ * one feature. Absence is reported at the call instead, by `engine()`.
  */
 function getNativeModule(): NativeAudioEngineModule | null {
   return NativeAudioEngine ?? null;
 }
+
+/** What a caller is told when there is no engine to do the work. */
+const NO_ENGINE = 'the native audio engine is not in this build';
 
 /**
  * A field the engine may or may not have sent.
@@ -97,43 +106,39 @@ class AudioEngineImpl implements AudioEngineContract {
   private readonly pitchListeners = new Set<PitchListener>();
   private readonly stateListeners = new Set<StateListener>();
 
-  // Tier-1 native subscriptions (lazily attached while listeners exist).
-  // Codegen event emitters hand back an EventSubscription.
+  // Native subscriptions, attached lazily while listeners exist. Codegen
+  // event emitters hand back an EventSubscription.
   private nativePitchSub: { remove(): void } | null = null;
   private nativeStateSub: { remove(): void } | null = null;
-
-  // Tier-2 worklet engine (lazily created).
-  private worklet: WorkletPitchEngine | null = null;
-  private workletForwarderAttached = false;
 
   constructor() {
     this.native = getNativeModule();
   }
 
-  /** True when the canonical C++ native module is available. */
+  /** True when the C++ engine is available. There is no other way to run. */
   get isNative(): boolean {
     return this.native != null;
   }
 
-  /** Which tier is active: 1 = native C++, 2 = audio-api worklet fallback. */
-  get tier(): 1 | 2 {
-    return this.isNative ? 1 : 2;
+  /**
+   * The engine, or a thrown reason. Every operation that needs it goes
+   * through here, so "there is no engine" is said once and said loudly
+   * (INV-PITCH-029, INV-TPORT-006).
+   */
+  private engine(): NativeAudioEngineModule {
+    if (this.native == null) {
+      throw new Error(NO_ENGINE);
+    }
+    return this.native;
   }
 
   async configure(config: Partial<EngineConfig>): Promise<void> {
     this.config = { ...this.config, ...config };
-    if (this.native) {
-      await this.native.configure(config);
-    } else if (this.worklet) {
-      this.worklet.configure(this.config);
-    }
+    await this.native?.configure(config);
   }
 
   async requestPermission(): Promise<boolean> {
-    if (this.native) {
-      return this.native.requestPermission();
-    }
-    return this.ensureWorklet().requestPermission();
+    return this.engine().requestPermission();
   }
 
   /**
@@ -141,18 +146,13 @@ class AudioEngineImpl implements AudioEngineContract {
    * sung against the take (INV-NOTES-087).
    */
   async start(overdub = false): Promise<void> {
-    if (this.native) {
-      this.attachNative();
-      // The capture directory is owned by files.ts and handed to native, so a
-      // capture lands somewhere durable rather than in a temporary directory
-      // the system may reclaim while the note still points at it.
-      await ensureDirs();
-      await this.native.start(recordingsDir(), overdub);
-      return;
-    }
-    const w = this.ensureWorklet();
-    this.setState('recording');
-    await w.start();
+    const native = this.engine();
+    this.attachNative();
+    // The capture directory is owned by files.ts and handed to native, so a
+    // capture lands somewhere durable rather than in a temporary directory
+    // the system may reclaim while the note still points at it.
+    await ensureDirs();
+    await native.start(recordingsDir(), overdub);
   }
 
   /**
@@ -167,8 +167,8 @@ class AudioEngineImpl implements AudioEngineContract {
     try {
       return (await this.native?.roundTripLatencyMs()) ?? 0;
     } catch {
-      // The worklet tier has no session to ask, and a session that refuses is
-      // the same answer as not having one.
+      // A session that refuses to say is the same answer as not having one,
+      // and 0 already means "do not correct".
       return 0;
     }
   }
@@ -181,9 +181,10 @@ class AudioEngineImpl implements AudioEngineContract {
    * what carries an improved engine back to takes recorded before it existed
    * (INV-NOTES-116).
    *
-   * Empty where there is no engine to read with — the worklet tier has no
-   * file decoder — and empty rather than throwing, so a caller can offer the
-   * re-read and simply find there is nothing new to say.
+   * Empty rather than throwing, so a caller can offer the re-read and
+   * simply find there is nothing new to say. This one is a re-reading of
+   * something already captured, not a capture — nothing is lost by it
+   * declining, which is why it is the one operation that stays quiet.
    */
   async analyzeFile(uri: string): Promise<PitchSample[]> {
     if (!this.native) {
@@ -197,24 +198,16 @@ class AudioEngineImpl implements AudioEngineContract {
   }
 
   async stop(): Promise<RecordingHandle> {
-    if (this.native) {
-      const handle = await this.native.stop();
-      // Native already emits 'idle' via the state channel; mirror locally so a
-      // caller without a state listener still sees a consistent value.
-      this.state = 'idle';
-      return this.normalizeHandle(handle);
-    }
-    const w = this.ensureWorklet();
-    this.setState('analyzing');
-    const handle = await w.stop();
-    this.setState('idle');
+    const handle = await this.engine().stop();
+    // Native already emits 'idle' via the state channel; mirror locally so a
+    // caller without a state listener still sees a consistent value.
+    this.state = 'idle';
     return this.normalizeHandle(handle);
   }
 
   onPitch(cb: PitchListener): () => void {
     this.pitchListeners.add(cb);
     this.attachNative();
-    this.attachWorklet();
     return () => {
       this.pitchListeners.delete(cb);
       this.maybeDetach();
@@ -244,9 +237,9 @@ class AudioEngineImpl implements AudioEngineContract {
   }
 
   /**
-   * Adapt a handle from either tier into the strict contract shape. The
-   * codegen type marks midi/cents optional; the contract requires them present
-   * and nullable, and toPitchSample is what reconciles the two.
+   * Adapt the engine's handle into the strict contract shape. The codegen
+   * type marks midi/cents optional; the contract requires them present and
+   * nullable, and toPitchSample is what reconciles the two.
    */
   private normalizeHandle(handle: {
     id: string;
@@ -289,23 +282,6 @@ class AudioEngineImpl implements AudioEngineContract {
     }
   }
 
-  private ensureWorklet(): WorkletPitchEngine {
-    if (this.worklet == null) {
-      this.worklet = createWorkletPitchEngine(this.config);
-    }
-    return this.worklet;
-  }
-
-  private attachWorklet(): void {
-    if (this.native || this.workletForwarderAttached) {
-      return;
-    }
-    const w = this.ensureWorklet();
-    // A single forwarder fans out to every JS subscriber; never registered twice.
-    w.onPitch((raw) => this.emitPitch(toPitchSample(raw)));
-    this.workletForwarderAttached = true;
-  }
-
   private maybeDetach(): void {
     if (this.pitchListeners.size > 0 || this.stateListeners.size > 0) {
       return;
@@ -314,8 +290,6 @@ class AudioEngineImpl implements AudioEngineContract {
     this.nativePitchSub = null;
     this.nativeStateSub?.remove();
     this.nativeStateSub = null;
-    this.worklet?.detach();
-    this.workletForwarderAttached = false;
   }
 }
 

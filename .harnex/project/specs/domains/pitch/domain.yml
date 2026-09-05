@@ -12,11 +12,12 @@ domain:
     octave blips, and the frequency-to-note arithmetic every other
     domain reads notes through.
 
-    Detection runs in one of two tiers behind a single TS contract.
-    Tier 1 is the C++ core on the real-time audio thread; Tier 2 is
-    the same algorithm as pure TS inside an audio worklet. PCM never
-    crosses to the JS thread in either tier — only analysed frames do,
-    throttled to a display rate.
+    Detection runs in exactly one place: the C++ core on the
+    real-time audio thread. There was a second implementation — the
+    same algorithm as pure TS in an audio worklet — carried as a
+    fallback for builds without the native module. It is gone
+    (INV-PITCH-029). PCM never crosses to the JS thread; only
+    analysed frames do, throttled to a display rate.
 
   interfaces:
     - type: module
@@ -33,7 +34,6 @@ domain:
   boundaries:
     owns:
       - Microphone permission request and capture lifecycle
-      - Tier selection between the native C++ engine and the worklet fallback
       - The engine configuration surface (frame size, hop, frequency bounds,
         clarity threshold, emit rate)
       - MPM/NSDF fundamental-frequency detection over a PCM frame

@@ -83,8 +83,7 @@ describe('AudioEngine (Tier 1 — native present)', () => {
     expect(audioEngine).toBe(namedEngine);
   });
 
-  it('selects Tier 1 when the native module is present', () => {
-    expect(audioEngine.tier).toBe(1);
+  it('runs on the engine, which is the only thing it runs on', () => {
     expect(audioEngine.isNative).toBe(true);
   });
 

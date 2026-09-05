@@ -1,10 +1,11 @@
 /**
- * Unit tests for the useAudioEngine hook AND the Tier-2 worklet fallback.
+ * The hook, and what happens with no engine underneath it.
  *
- * Here `react-native` is mocked WITHOUT an AudioEngineModule, so the engine
- * singleton selects Tier 2 (the audio-api worklet path). We assert tier
- * selection, that the pure-`logic` frame analysis is wired correctly, and that
- * the hook subscribes/cleans up on unmount. No device required.
+ * `react-native` is mocked WITHOUT an AudioEngineModule, which used to
+ * select a second implementation of the detector written in TypeScript.
+ * There is no second implementation now (INV-PITCH-029), so the same
+ * condition has to produce a refusal that says why — the thing a fallback
+ * is very good at hiding.
  *
  * The hook is exercised through a tiny harness component rendered with
  * `react-test-renderer` (a declared devDependency), avoiding any extra
@@ -15,64 +16,36 @@
 import { harnessElement } from '../../testing/harness';
 import TestRenderer, { act } from 'react-test-renderer';
 
-// ---- react-native mock WITHOUT the native audio module (forces Tier 2) ----
-// Absent TurboModule => Tier 2. The spec module resolves to null when the
-// native binary carries no such module, which is exactly this case.
+// ---- react-native mock WITHOUT the native audio module ----
+// The spec module resolves to null when the binary carries no such module.
 jest.mock('../../specs/NativeAudioEngine', () => ({
   __esModule: true,
   default: null
 }));
 
 import audioEngine from '../AudioEngine';
-import { analyzeFrame } from '../worklet/pitchProcessor';
-import { DEFAULT_ENGINE_CONFIG, EngineState, PitchSample } from '../contract';
+import { PitchSample } from '../contract';
 import { useAudioEngine, UseAudioEngine } from '../useAudioEngine';
 
-describe('AudioEngine (Tier 2 — native absent)', () => {
-  it('falls back to the worklet tier when no native module is registered', () => {
-    expect(audioEngine.tier).toBe(2);
+describe('with no engine in the build', () => {
+  it('ACC-PITCH-023: refuses a capture, naming what is missing', async () => {
+    // This used to quietly start a second detector written in TypeScript.
+    // A capture that runs on something other than the engine is one whose
+    // results nobody measured (INV-PITCH-029).
     expect(audioEngine.isNative).toBe(false);
+    await expect(audioEngine.start()).rejects.toThrow(/native audio engine/i);
   });
 
-  it('drives coarse state transitions through start/stop on the fallback', async () => {
-    const states: EngineState[] = [];
-    const off = audioEngine.onState((s) => states.push(s));
-    await audioEngine.start();
-    const handle = await audioEngine.stop();
-    off();
-    expect(states).toContain('recording');
-    expect(states).toContain('idle');
-    expect(handle.sampleRateHz).toBe(DEFAULT_ENGINE_CONFIG.sampleRateHz);
-    expect(Array.isArray(handle.samples)).toBe(true);
-  });
-});
-
-describe('analyzeFrame (Tier-2 logic wiring)', () => {
-  function sine(freq: number, sampleRate: number, n: number): Float32Array {
-    const out = new Float32Array(n);
-    for (let i = 0; i < n; i++) {
-      out[i] = Math.sin((2 * Math.PI * freq * i) / sampleRate);
-    }
-    return out;
-  }
-
-  it('detects a clean 440Hz tone as MIDI 69 (A4)', () => {
-    const sr = 44100;
-    const frame = sine(440, sr, 2048);
-    const sample = analyzeFrame(frame, sr, 100, DEFAULT_ENGINE_CONFIG);
-    expect(sample.timestampMs).toBe(100);
-    expect(sample.midi).toBe(69);
-    expect(Math.abs(sample.frequencyHz - 440)).toBeLessThan(2);
-    expect(sample.clarity).toBeGreaterThan(0.9);
+  it('says the same of a permission it cannot ask for', async () => {
+    await expect(audioEngine.requestPermission()).rejects.toThrow(
+      /native audio engine/i
+    );
   });
 
-  it('reports an unvoiced frame (null midi/cents) for silence', () => {
-    const sr = 44100;
-    const frame = new Float32Array(2048); // all zeros
-    const sample = analyzeFrame(frame, sr, 0, DEFAULT_ENGINE_CONFIG);
-    expect(sample.midi).toBeNull();
-    expect(sample.cents).toBeNull();
-    expect(sample.frequencyHz).toBe(0);
+  it('stays quiet only for re-reading, where nothing is lost', async () => {
+    // A re-read of something already captured can decline and leave the
+    // note exactly as it was; a capture cannot (INV-NOTES-116).
+    await expect(audioEngine.analyzeFile('file:///take.wav')).resolves.toEqual([]);
   });
 });
 

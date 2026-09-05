@@ -209,3 +209,26 @@ invariants:
       question worth arguing about; that the same audio answers it twice
       is not.
 
+
+  - id: INV-PITCH-029
+    description: One implementation of anything that touches audio
+    severity: critical
+    check: >
+      Detection, synthesis and playback each exist once, in C++. No
+      TypeScript alternative stands behind them, and the native module
+      being absent is an error said out loud rather than a quieter path
+      taken. Verified by asserting no second detector or player is
+      reachable from the app.
+
+      There were two detectors — the C++ core and the same algorithm
+      again in TypeScript — and two players, the engine and a second
+      one over an AudioContext. Every one of them was correct on its
+      own. What they cost was that no measurement, no fix and no
+      regression applied to the app as a whole: the tier that ran was
+      whichever the build happened to select, and the fallback path was
+      the one nobody was measuring.
+
+      The reason they existed was real and is answered elsewhere: a
+      bundle can reach a binary that predates it, and a fallback kept
+      that from being a crash. The gate belongs on what is served, not
+      on a second copy of the engine (INV-UPD-*, `--min-build`).

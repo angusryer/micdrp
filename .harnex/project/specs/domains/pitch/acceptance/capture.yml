@@ -113,18 +113,18 @@ acceptance:
 
   - id: ACC-PITCH-023
     interface: events
-    title: The worklet tier satisfies the same contract as the native tier
+    title: A capture with no engine to run it fails out loud
     given:
-      - a capture engine on the worklet tier with permission granted
+      - a build with no native engine
       - a capture session is idle
     when:
       - the singer calls pitch.start_capture
     then:
-      - no delivered frame carries raw audio samples
-      - frames reach subscribers at no more than 60 per second
+      - the call fails with a reason naming the missing engine
+      - no second detector runs in its place
     maps_to:
       capability: pitch.start_capture
-      invariants: [INV-PITCH-001, INV-PITCH-009]
+      invariants: [INV-PITCH-029, INV-PITCH-001]
 
   - id: ACC-PITCH-024
     interface: internal
