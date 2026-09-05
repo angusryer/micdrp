@@ -182,3 +182,31 @@ acceptance:
     maps_to:
       capability: transport.seek
       invariants: [INV-TPORT-018]
+
+  - id: ACC-TPORT-014
+    interface: module
+    title: A take that will not decode fails loudly
+    given:
+      - a take whose audio resolves but will not decode
+    when:
+      - the transport is told to play
+    then:
+      - the transport state is failed
+      - the transport reports a reason
+      - nothing is scheduled on the engine
+    maps_to:
+      capability: transport.play
+      invariants: [INV-TPORT-019, INV-TPORT-006]
+
+  - id: ACC-TPORT-015
+    interface: module
+    title: Resuming a paused take does not decode it again
+    given:
+      - a take that has been played and paused
+    when:
+      - the transport is told to play
+    then:
+      - the take was decoded 1 time
+    maps_to:
+      capability: transport.play
+      invariants: [INV-TPORT-020]

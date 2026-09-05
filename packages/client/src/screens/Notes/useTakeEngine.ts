@@ -26,6 +26,16 @@ import { useTakeAnchor } from './useTakeAnchor';
 import { trackBus } from './trackRegistry';
 import { TAKE_SLOT } from './sampleSlots';
 
+/**
+ * Which take an address is for, without the credential on the end.
+ *
+ * A backend file token is minted per press and good for about two
+ * minutes (INV-NOTES-014), so the query string differs every time while
+ * the recording it points at does not. The path is the take
+ * (INV-TPORT-020).
+ */
+const takeIdentity = (url: string): string => url.split('?')[0] ?? url;
+
 export interface TakeEngine extends TransportEngine {
   /** How long the take runs, once it has been decoded at least once. */
   durationMs: () => number;
@@ -63,13 +73,23 @@ export function useTakeEngine(
       fromMs: number
     ): Promise<number> => {
       await synth.start();
-      // Decoded once. A second press of the same take is a schedule and
-      // nothing else, which is what makes it immediate.
+      // Decoded once per take. Not per address: the address carries a
+      // credential minted fresh on every press, so comparing the whole
+      // of it never matched and every resume re-fetched and re-decoded
+      // the recording (INV-TPORT-020, INV-NOTES-014).
+      const take = takeIdentity(resolved);
       const takeMs =
-        loadedFor.current === resolved && durationRef.current > 0
+        loadedFor.current === take && durationRef.current > 0
           ? durationRef.current
           : await synth.loadSample(TAKE_SLOT, resolved);
-      loadedFor.current = resolved;
+      // -1 is what the native store returns when the decode fails. Used
+      // as a length it schedules a clip ending before it begins and a
+      // run whose end has already passed — a spinner, a flicker, and the
+      // play glyph back with no sound and no reason (INV-TPORT-019).
+      if (!(takeMs > 0)) {
+        throw new Error('this take could not be decoded');
+      }
+      loadedFor.current = take;
       durationRef.current = takeMs;
 
       const offsetMs = Math.min(Math.max(fromMs, 0), Math.max(0, takeMs - 1));

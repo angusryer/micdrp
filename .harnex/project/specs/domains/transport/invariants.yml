@@ -257,3 +257,39 @@ invariants:
       fixing them alone would leave a scrub that hammers the backend
       for a token per frame.
 
+  - id: INV-TPORT-019
+    description: A length the engine could not give is a failure, not a duration
+    severity: critical
+    check: >
+      Every number the engine hands back is checked against what it
+      means before it is used as one. A decode that did not happen ends
+      in failed with a reason (INV-TPORT-006), never in a run.
+      Verified by refusing a decode and asserting the state and reason.
+
+      `loadSample` returns -1 when the decode fails — its documented
+      failure value — and that was consumed as the take's length. The
+      arithmetic that followed did not error: the offset clamped to 0,
+      the clip was scheduled with an end one millisecond before its
+      start, and the run's fallback end fired at once. So a press gave
+      a spinner, a flicker of the graph as following turned on and off,
+      the play glyph back, and no sound and no reason anywhere. A
+      failure that presents as a control that did nothing is the exact
+      shape this whole domain was built after.
+
+  - id: INV-TPORT-020
+    description: A take is decoded once per take, not once per token
+    severity: high
+    check: >
+      What is already decoded is recognised across presses. The address
+      a take is fetched from carries a credential that changes every
+      time it is minted, so the decision cannot be made on the whole
+      address. Verified by asserting a pause and a resume decode once.
+
+      The cache compared the full signed URL, and a backend file token
+      is good for about two minutes and freshly minted per press
+      (INV-NOTES-014) — so it never matched, and every resume
+      re-fetched and re-decoded the whole recording. The comment beside
+      it said a second press was "a schedule and nothing else, which is
+      what makes it immediate". It was neither, and the re-decode is
+      what had a chance to fail at all (INV-TPORT-019).
+

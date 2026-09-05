@@ -20,6 +20,11 @@ capabilities:
         whether or not anyone is still watching (INV-TPORT-015)
       - the head advances on the UI thread and notifies nobody
       - a refusal ends in failed with the reason, never in silence
+      - a length the engine could not give is a failure and not a
+        duration; a decode that did not happen never becomes a run
+        (INV-TPORT-019)
+      - the take is decoded once per take rather than once per signed
+        address, so a resume schedules and nothing more (INV-TPORT-020)
 
   - name: transport.pause
     description: >
