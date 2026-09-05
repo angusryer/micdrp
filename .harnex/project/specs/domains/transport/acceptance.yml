@@ -321,3 +321,17 @@ acceptance:
     maps_to:
       capability: transport.observe
       invariants: [INV-TPORT-029, INV-TPORT-030]
+
+  - id: ACC-TPORT-024
+    interface: module
+    title: A large disagreement still never reverses the head
+    given:
+      - a head drawn a full second ahead of what the engine reports
+    when:
+      - the reading is folded in and frames are drawn
+    then:
+      - the head never moves backwards
+      - the head converges on the engine's position
+    maps_to:
+      capability: transport.observe
+      invariants: [INV-TPORT-030, INV-TPORT-029]

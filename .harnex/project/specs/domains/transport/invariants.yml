@@ -453,11 +453,21 @@ invariants:
 
   - id: INV-TPORT-030
     description: The head does not move backwards while a run goes forwards
-    severity: high
+    severity: critical
     check: >
       While a run is playing, the drawn position never decreases between
-      frames. Verified by driving a sequence of late and early readings
-      and asserting the drawn value is monotonic.
+      frames, for any size of disagreement with the engine. Correcting
+      spends a bounded fraction of real time, so the head runs slow or
+      fast while converging and never reverses. Verified with errors far
+      larger than the sampling interval, in both directions.
+
+      Paying an error off over a fixed window makes the rate
+      `1 - error/window`, which is negative for any error larger than
+      the window — so a big disagreement came out as the head sliding
+      smoothly backwards. The first test of this used an error exactly
+      equal to the window, which is the single value where the rate is
+      zero rather than negative, and passed on a `>=`. A property tested
+      at its boundary is a property not tested.
 
       A playhead that goes backwards during forward playback is telling
       the singer something untrue about their take, and it is the shape

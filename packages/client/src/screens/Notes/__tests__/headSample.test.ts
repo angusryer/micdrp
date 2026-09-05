@@ -21,7 +21,16 @@
  * function it is rather than through a renderer that cannot run one
  * (INV-TPORT-009).
  */
-import { CORRECT_MS, drawnAt, firstSample, fold } from '../headSample';
+import { CORRECT_MS, MAX_SLEW, drawnAt, firstSample, fold } from '../headSample';
+
+/** Every frame of a correction, so a property is checked between them too. */
+const frames = (from: number, toMs: number): number[] => {
+  const out: number[] = [];
+  for (let f = from; f <= toMs; f += 16) {
+    out.push(f);
+  }
+  return out;
+};
 
 describe('before anything has been read', () => {
   it('draws at the moment it was given, whatever the frame clock says', () => {
@@ -41,21 +50,57 @@ describe('a reading that is behind the head', () => {
     expect(drawnAt(folded, 5000)).toBe(12200);
   });
 
-  it('has paid the difference off one interval later', () => {
+  it('has paid the difference off once its window has passed', () => {
     const folded = fold(reading, 12200, 5000);
-    // 200 ms of frame time later the head is where the engine said it was,
-    // plus the 200 ms that have since passed — the error is gone.
-    expect(drawnAt(folded, 5000 + CORRECT_MS)).toBeCloseTo(12000 + CORRECT_MS, 6);
+    // The window, not the sampling interval: correcting 200 ms at half of
+    // real time takes 400 ms, which is what keeps the head going forwards
+    // the whole way (INV-TPORT-030). Then the error is gone and the head
+    // is where the engine said, plus the time since.
+    const settled = 5000 + folded.windowMs;
+    expect(drawnAt(folded, settled)).toBeCloseTo(12000 + folded.windowMs, 6);
   });
 
   it('INV-TPORT-030: never moves backwards while paying it off', () => {
     const folded = fold(reading, 12200, 5000);
     let last = -Infinity;
-    for (let f = 5000; f <= 5000 + CORRECT_MS * 2; f += 16) {
+    for (const f of frames(5000, 5000 + CORRECT_MS * 2)) {
       const drawn = drawnAt(folded, f);
       expect(drawn).toBeGreaterThanOrEqual(last);
       last = drawn;
     }
+  });
+});
+
+describe('a disagreement far larger than the sampling interval', () => {
+  // The case that produced the smooth backwards slide. Paying a one-second
+  // error off over a fixed 200 ms window means moving at 1 - 1000/200, which
+  // is minus four: the head glides backwards at four times real time.
+  //
+  // The first test of this used an error of exactly CORRECT_MS — the single
+  // value where that rate is zero rather than negative — and passed on a
+  // `>=`. A property tested at its boundary is a property not tested.
+  const folded = fold({ atMs: 12000, seq: 9 }, 13000, 5000);
+
+  it('ACC-TPORT-024: still never moves the head backwards', () => {
+    let last = -Infinity;
+    for (const f of frames(5000, 5000 + 4000)) {
+      const drawn = drawnAt(folded, f);
+      expect(drawn).toBeGreaterThanOrEqual(last);
+      last = drawn;
+    }
+  });
+
+  it('spends no more than half of real time correcting', () => {
+    const a = drawnAt(folded, 5000);
+    const b = drawnAt(folded, 5000 + 1000);
+    // A thousand milliseconds of frame time advanced the head by at least
+    // half that, so the head runs slow rather than stopping or reversing.
+    expect(b - a).toBeGreaterThanOrEqual(1000 * (1 - MAX_SLEW) - 1);
+  });
+
+  it('and still arrives on the engine, just later', () => {
+    const settled = 5000 + 1000 / MAX_SLEW;
+    expect(drawnAt(folded, settled)).toBeCloseTo(12000 + 1000 / MAX_SLEW, 6);
   });
 });
 
