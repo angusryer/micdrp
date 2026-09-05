@@ -107,6 +107,8 @@ export interface PlaybackBarProps {
      * (INV-NOTES-206).
      */
     drawnPositionMs: SharedValue<number>;
+    /** Where a press would start from, for a stopped head to be drawn. */
+    cueMs: number;
     /**
      * Whether a sound is actually running. A beat tapped against a stopped
      * take has no moment to be at (INV-NOTES-130).

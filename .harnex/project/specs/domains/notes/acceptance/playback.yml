@@ -204,3 +204,16 @@ acceptance:
       capability: notes.play
       invariants: [INV-NOTES-206, INV-NOTES-205]
 
+  - id: ACC-NOTES-058
+    interface: ui
+    title: Rewinding a stopped take moves the head that is drawn
+    given:
+      - a take is stopped at 12000 ms
+    when:
+      - the singer rewinds
+    then:
+      - the drawn head is at 7000 ms
+    maps_to:
+      capability: notes.play
+      invariants: [INV-NOTES-208]
+

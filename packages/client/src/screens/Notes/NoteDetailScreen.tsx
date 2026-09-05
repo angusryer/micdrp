@@ -89,6 +89,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
    */
   const [transport, setTransport] = useState<{
     drawnPositionMs: SharedValue<number>;
+    cueMs: number;
     isPlaying: boolean;
     seek: (ms: number) => void;
     play: () => void;

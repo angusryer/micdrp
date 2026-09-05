@@ -1059,3 +1059,20 @@ invariants:
       plain function, and marking a widely-used helper as a worklet only
       moves the hazard to whoever unmarks it later.
 
+  - id: INV-NOTES-208
+    description: The head shown is the head, playing or not
+    severity: major
+    check: >
+      One value carries where the take is, and it follows the moment
+      whether a take is running or waiting. Moving the head while
+      stopped — a rewind, a drag of the scrubber — moves what is drawn.
+      Verified by seeking a stopped take and asserting the drawn head
+      moves with it.
+
+      Two values meant two answers. The drawn head followed where the
+      last run of playback began, and the moment a press would start
+      from was a separate number the transport kept to itself, so a
+      rewind on a stopped take set the position correctly and left the
+      handle where it was. It was right about the take and silent about
+      it, which is the worst of both.
+

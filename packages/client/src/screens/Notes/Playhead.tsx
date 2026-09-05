@@ -30,6 +30,15 @@ import { useTheme } from '../../theme';
 export interface PlayheadProps {
   /** Where the take is now, in ms, read every frame. */
   positionMs: SharedValue<number>;
+  /**
+   * Where a press would start from, used while nothing is running.
+   *
+   * The shared value follows where the last run of playback began, so on
+   * its own the head stayed put after a rewind or a drag on a stopped
+   * take (INV-NOTES-208).
+   */
+  cueMs: number;
+  isPlaying: boolean;
   timeAxis: TimeAxis;
   contentWidth: number;
   height: number;
@@ -37,6 +46,8 @@ export interface PlayheadProps {
 
 export function Playhead({
   positionMs,
+  cueMs,
+  isPlaying,
   timeAxis,
   contentWidth,
   height
@@ -46,7 +57,8 @@ export function Playhead({
   // Placed on the UI thread, every frame, without a render.
   const head = useAnimatedStyle(() => {
     'worklet';
-    const { opacity, translateX } = headPlacement(timeAxis, positionMs.value);
+    const at = isPlaying ? positionMs.value : cueMs;
+    const { opacity, translateX } = headPlacement(timeAxis, at);
     return { opacity, transform: [{ translateX }] };
   }, [timeAxis]);
 

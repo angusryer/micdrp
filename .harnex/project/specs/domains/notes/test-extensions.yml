@@ -267,4 +267,18 @@ then:
     pattern: 'the transport was told to pause'
     mode: extension
     action: notes_assert_pause_called
+  - id: GX-NOTES-STOPPED-AT
+    pattern: 'a take is stopped at {N} ms'
+    mode: extension
+    action: notes_set_stopped_at
+    params: { ms: "{N}" }
+  - id: WX-NOTES-REWINDS
+    pattern: 'the singer rewinds'
+    mode: extension
+    action: notes_rewind
+  - id: TX-NOTES-DRAWN-HEAD
+    pattern: 'the drawn head is at {N} ms'
+    mode: extension
+    action: notes_assert_drawn_head
+    params: { ms: "{N}" }
 
