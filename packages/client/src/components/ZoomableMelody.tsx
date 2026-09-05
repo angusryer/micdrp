@@ -184,8 +184,19 @@ export function ZoomableMelody({
    */
   const axis = layout.timeAxis;
   const contentWidth = layout.contentWidth;
+  /**
+   * Whether there is anywhere for the view to go.
+   *
+   * With the whole take in view the drawing cannot scroll, and following
+   * it means issuing a native scroll command every frame to the offset
+   * it is already at — sixty a second, for the entire length of a take,
+   * to move nothing (INV-TPORT-023).
+   */
+  const canScroll = contentWidth > width;
   useAnimatedReaction(
-    () => (isFollowing && followMs ? followMs.value : null),
+    // Null when there is nothing to follow it with, so the reaction does
+    // not merely return early — it never runs.
+    () => (isFollowing && canScroll && followMs ? followMs.value : null),
     (atMs) => {
       'worklet';
       if (atMs == null || isHeld.value) {
@@ -202,7 +213,7 @@ export function ZoomableMelody({
         false
       );
     },
-    [isFollowing, followMs, axis, contentWidth, width]
+    [isFollowing, canScroll, followMs, axis, contentWidth, width]
   );
 
   // Only where the drawing is wider than the window: with the whole take in

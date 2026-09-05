@@ -328,3 +328,20 @@ invariants:
       that owns the position has never been built into a binary — so
       every reading on a device came from the fallback, and the fallback
       was the only path anyone was actually running.
+
+  - id: INV-TPORT-023
+    description: Following a head never scrolls a view that cannot scroll
+    severity: high
+    check: >
+      The view follows the head only where the drawing is wider than the
+      window. With the whole take in view there is nowhere to go, and
+      the reaction that would follow it never runs. Verified by
+      asserting the centring offset is the current one whenever the
+      content fits, and that following is off in that case.
+
+      Zoomed out far enough that the take fits, the follow issued a
+      native scroll command every frame to the offset it was already at
+      — sixty a second for the length of a take, to move nothing. Found
+      while looking for why a press of pause was not answered in exactly
+      that configuration and answered in every other. Whether it is that
+      cause is not established; that it is work done to no effect is.

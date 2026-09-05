@@ -43,3 +43,23 @@ describe('holding the playhead in the middle', () => {
     );
   });
 });
+
+/**
+ * ACC-TPORT-018 / INV-TPORT-023 — a drawing that fits is not followed.
+ *
+ * Zoomed out far enough that the take fits the window, every offset this
+ * can return is the one the view is already at. Following it meant a
+ * native scroll command every frame, for the length of a take, to move
+ * nothing — which is why the caller asks whether there is anywhere to go
+ * before it asks where.
+ */
+describe('a drawing no wider than its window', () => {
+  it('has one offset, whatever moment is asked for', () => {
+    const VIEWPORT = 390;
+    for (const content of [0, 100, VIEWPORT - 1, VIEWPORT]) {
+      for (const x of [0, 50, 200, 5000]) {
+        expect(offsetCentring(x, VIEWPORT, content)).toBe(0);
+      }
+    }
+  });
+});

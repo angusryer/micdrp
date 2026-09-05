@@ -237,3 +237,16 @@ acceptance:
     maps_to:
       capability: transport.report
       invariants: [INV-TPORT-022, INV-TPORT-010]
+
+  - id: ACC-TPORT-018
+    interface: view
+    title: A take that fits the window is not followed
+    given:
+      - a drawing no wider than the window it is in
+    when:
+      - the take plays
+    then:
+      - the view issues no scroll
+    maps_to:
+      capability: transport.observe
+      invariants: [INV-TPORT-023]
