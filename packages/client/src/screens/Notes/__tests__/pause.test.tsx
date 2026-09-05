@@ -123,7 +123,8 @@ describe('pausing a take', () => {
     await fireEvent.press(screen.getByLabelText('Pause'));
 
     await waitFor(() => expect(chords.stop).toHaveBeenCalled());
-    expect(synth.clearBus).toHaveBeenCalled();
+    // The whole engine, so a pause cannot miss a voice (INV-NOTES-205).
+    expect(synth.clearAll).toHaveBeenCalled();
   });
 
   it('starts every track together again from the moment it held', async () => {

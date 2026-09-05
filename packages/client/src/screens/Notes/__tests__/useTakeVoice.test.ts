@@ -98,7 +98,12 @@ describe('playing a take through the engine', () => {
     expect(synth.setBusLevel).toHaveBeenCalledWith(TAKE_BUS, 0.4);
   });
 
-  it('stops by silencing its bus', async () => {
+  it('INV-NOTES-205: stops by silencing the engine, not one bus', async () => {
+    // Clearing the take's bus by index worked only while the transport's
+    // idea of where the take was sounding matched the engine's. When that
+    // stopped being true, pause did nothing and the take ran to its end
+    // while the control correctly showed a pause glyph. Silence must not
+    // be contingent on that bookkeeping.
     const { result } = await renderHook(() => useTakeVoice({ resolveAudioUri: uri }));
 
     await act(async () => {
@@ -108,7 +113,22 @@ describe('playing a take through the engine', () => {
       await result.current.stop();
     });
 
-    expect(synth.clearBus).toHaveBeenCalledWith(TAKE_BUS);
+    expect(synth.clearAll).toHaveBeenCalled();
+    expect(result.current.state).toBe('stopped');
+  });
+
+  it('pauses by silencing the engine too', async () => {
+    const { result } = await renderHook(() => useTakeVoice({ resolveAudioUri: uri }));
+
+    await act(async () => {
+      await result.current.play();
+    });
+    synth.clearAll.mockClear();
+    await act(async () => {
+      await result.current.pause();
+    });
+
+    expect(synth.clearAll).toHaveBeenCalled();
     expect(result.current.state).toBe('stopped');
   });
 
@@ -138,6 +158,9 @@ describe('playing a take through the engine', () => {
       await unmount();
     });
 
+    // Leaving a screen is a different act from stopping: it must not
+    // silence something another screen started, so this clears only the
+    // take's own bus (INV-NOTES-205).
     expect(synth.clearBus).toHaveBeenCalledWith(TAKE_BUS);
     expect(synth.unloadSample).toHaveBeenCalledWith(0);
   });

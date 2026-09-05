@@ -242,4 +242,16 @@ then:
     mode: extension
     action: notes_assert_frame_field
     params: { field: "{field}", value: "{value}" }
+  - id: GX-NOTES-TAKE-PLAYING
+    pattern: 'a take is playing'
+    mode: extension
+    action: notes_set_take_playing
+  - id: WX-NOTES-PAUSES
+    pattern: 'the singer pauses'
+    mode: extension
+    action: notes_pause
+  - id: TX-NOTES-SILENCED
+    pattern: 'the engine was silenced entirely'
+    mode: extension
+    action: notes_assert_engine_cleared
 

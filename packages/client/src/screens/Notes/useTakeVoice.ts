@@ -57,7 +57,31 @@ export function useTakeVoice({
     }
   }, []);
 
+  /**
+   * Stop the take sounding, whatever it is sounding on (INV-NOTES-205).
+   *
+   * The whole engine, not the take's bus. Clearing one bus by index works
+   * only while the transport's idea of where the take went matches the
+   * engine's, and when that stopped being true the failure was silent:
+   * pause during the count worked, pause once the audio ran did nothing,
+   * the control correctly showed a pause glyph, and the take carried on
+   * to its end. Every link read as consistent.
+   *
+   * Silence must not be contingent on bookkeeping. The engine has always
+   * been able to clear everything; this asked for less.
+   */
   const silence = useCallback(() => {
+    clearEndsAt();
+    NativeSynth?.clearAll();
+  }, [clearEndsAt]);
+
+  /**
+   * Leaving the screen, which is a different act.
+   *
+   * Only this take's bus: unmounting must not silence something another
+   * screen started.
+   */
+  const releaseOwnBus = useCallback(() => {
     clearEndsAt();
     NativeSynth?.clearBus(trackBus('take'));
   }, [clearEndsAt]);
@@ -67,10 +91,10 @@ export function useTakeVoice({
   useEffect(() => {
     loadedFor.current = null;
     return () => {
-      silence();
+      releaseOwnBus();
       NativeSynth?.unloadSample(TAKE_SLOT);
     };
-  }, [resolveAudioUri, silence]);
+  }, [resolveAudioUri, releaseOwnBus]);
 
   const play = useCallback(
     async (startAtMs = 0): Promise<void> => {

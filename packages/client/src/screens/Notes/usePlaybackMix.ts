@@ -98,7 +98,7 @@ export interface MixedPlayback {
    */
   drawnPositionMs: SharedValue<number>;
   /** Start at a moment in the take. Omitted, from the beginning. */
-  play(fromMs?: number): Promise<void>;
+  play(fromMs?: number, withoutCount?: boolean): Promise<void>;
   /** Stop, then resume this many ms earlier — never before the start. */
   rewind(byMs?: number): Promise<void>;
   /**
@@ -295,12 +295,22 @@ export function usePlaybackMix({
     }
   }, [clearEndTimer, pauseTake, takeWanted]);
 
-  const play = useCallback(async (fromMs = cueMs): Promise<void> => {
+  const play = useCallback(async (
+    fromMs = cueMs,
+    /**
+     * Skip the count. A rewind is carrying on listening from a moment
+     * further back, and counting somebody in again each time they go back
+     * to hear a phrase turns one press into several seconds of waiting —
+     * which is what made rewinding feel like it had done nothing.
+     */
+    withoutCount = false
+  ): Promise<void> => {
     const mine = (run.current += 1);
     // The count starts now; everything else waits for it to finish. Timed
     // rather than sample-accurate on purpose — a count is a scaffold to come
     // in on, not part of the recording.
-    const leadInMs = wantsCount ? (latestCount.current?.leadInMs ?? 0) : 0;
+    const leadInMs =
+      wantsCount && !withoutCount ? (latestCount.current?.leadInMs ?? 0) : 0;
     if (leadInMs > 0) {
       clearEndTimer();
       setChordsRunning(true);
@@ -384,7 +394,7 @@ export function usePlaybackMix({
       // stopping and starting again.
       await stop();
       setCueMs(to);
-      await play(to);
+      await play(to, true);
     },
     [state, takeElapsedMs, cueMs, stop, play]
   );

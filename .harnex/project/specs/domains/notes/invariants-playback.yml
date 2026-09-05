@@ -979,3 +979,29 @@ invariants:
       resumes after an await checks that the run it belongs to is still
       the current one, the way the tone player already does.
 
+  - id: INV-NOTES-205
+    description: Pausing silences everything, not the bus it believes is sounding
+    severity: critical
+    check: >
+      Pause and stop silence the whole engine rather than clearing the
+      one bus the transport thinks the take is on. Verified by asserting
+      a pause clears every voice, whatever bus each was scheduled to.
+
+      Pausing cleared the take's bus by index, so it worked only while
+      the transport's idea of where the take was sounding matched the
+      engine's. Reported from a device: pause during the count-in worked
+      — nothing had started — and pause once the audio ran did nothing
+      at all, with the take carrying on to its end while the control
+      correctly showed a pause glyph and the state correctly read
+      playing. Every link was read and each was consistent; the fault
+      never surfaced as an error anywhere.
+
+      So the primitive is wrong rather than any one link. "Stop" means
+      silence, and silence must not be contingent on bookkeeping being
+      right about which of sixteen buses a voice went to. The engine has
+      always been able to clear them all; the transport asked for less.
+
+      Cleanup on unmount still clears only the take's bus. That is a
+      different act — leaving a screen must not silence anything another
+      screen started.
+

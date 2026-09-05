@@ -152,3 +152,29 @@ acceptance:
       capability: pitch.observe_stream
       invariants: [INV-NOTES-141]
 
+  - id: ACC-NOTES-054
+    interface: module
+    title: Pausing a sounding take silences it
+    given:
+      - a take is playing
+    when:
+      - the singer pauses
+    then:
+      - the engine was silenced entirely
+    maps_to:
+      capability: notes.play
+      invariants: [INV-NOTES-205]
+
+  - id: ACC-NOTES-055
+    interface: module
+    title: Stopping a sounding take silences it
+    given:
+      - a take is playing
+    when:
+      - the singer presses stop
+    then:
+      - the engine was silenced entirely
+    maps_to:
+      capability: notes.play
+      invariants: [INV-NOTES-205]
+
