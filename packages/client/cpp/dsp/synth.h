@@ -159,7 +159,7 @@ struct ScheduledNote {
  * `MAX_BUS_LEVEL` in packages/client/src/audio/engineBus.ts says the same
  * number to the callers; a level past this is held here regardless.
  */
-inline constexpr float kMaxBusLevel = 4.0f;
+inline constexpr float kMaxBusLevel = 8.0f;
 
 /// How many notes may sound at once before the oldest is stolen.
 inline constexpr std::size_t kMaxVoices = 32;

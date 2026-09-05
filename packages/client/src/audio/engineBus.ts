@@ -21,13 +21,17 @@ import NativeSynth from '../specs/NativeSynth';
 /**
  * The most a bus may be turned up, as a multiple of the audio on it.
  *
+
  * Above one on purpose: a take is a recording, so at a level of one it is
  * already as loud as it was sung and a quiet one could never be brought up
- * to sit with the tracks read from it (INV-NOTES-141). Mirrors
- * `kMaxBusLevel` in cpp/dsp/synth.h, which holds anything past it anyway —
- * stated here so a caller is not silently clamped on the way down.
+ * to sit with the tracks read from it (INV-NOTES-141). Eight because a real
+ * phone take measured -47 dB, which needs forty times to reach the voice
+ * reference — four was chosen by reasoning and was not close.
+ *
+ * Mirrors `kMaxBusLevel` in cpp/dsp/synth.h, which holds anything past it
+ * anyway — stated here so a caller is not silently clamped on the way down.
  */
-export const MAX_BUS_LEVEL = 4;
+export const MAX_BUS_LEVEL = 8;
 
 /** Whether there is an engine to talk to at all. */
 export const hasEngine = (): boolean => NativeSynth != null;

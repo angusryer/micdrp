@@ -45,11 +45,30 @@ describe('moving the tracks to meet it', () => {
     expect(matchGain(null)).toBe(1);
   });
 
-  it('quietens them for a quiet take and lifts them for a loud one', () => {
-    const quiet = matchGain(-30);
-    const loud = matchGain(-6);
-    expect(quiet).toBeLessThan(1);
-    expect(loud).toBeGreaterThan(quiet);
+  it('leaves them alone for a take the lift can rescue on its own', () => {
+    // -30 dB is within reach of the make-up gain, so the take comes up to
+    // the reference and the tracks have nothing to do. This asserted the
+    // tracks moved down, which was the whole match when it could only push
+    // from one side (INV-NOTES-141).
+    expect(matchGain(-30)).toBeCloseTo(1, 6);
+  });
+
+  it('still quietens them for a take too quiet for the lift alone', () => {
+    // Past about -33 dB the lift is spent, so the tracks come the rest of
+    // the way down — and further down the quieter the take was.
+    expect(matchGain(-40)).toBeLessThan(1);
+    expect(matchGain(-40)).toBeLessThan(matchGain(-36));
+  });
+
+  it('stops lowering them once one odd take would silence them', () => {
+    // Below about -45 dB both halves are spent. The tracks hold at the
+    // floor rather than disappearing, and the take carries what is left of
+    // the difference — which is why a very quiet take still sounds quiet.
+    expect(matchGain(-60)).toBe(matchGain(-50));
+  });
+
+  it('lifts them for a take louder than the reference', () => {
+    expect(matchGain(-6)).toBeGreaterThan(1);
   });
 
   it('puts a take at the voice peak exactly level with it', () => {
@@ -125,7 +144,11 @@ describe('a take quieter than the reference', () => {
   });
 
   it('is bounded, because make-up gain raises the room with the voice', () => {
-    expect(takeGain(-120)).toBeLessThanOrEqual(4);
+    // Eight, not four. Four was chosen by reasoning about what seemed safe
+    // and did not move a real take audibly: a phone take measured -47 dB,
+    // which needs forty times to reach the reference.
+    expect(takeGain(-120)).toBeLessThanOrEqual(8);
+    expect(takeGain(-120)).toBe(8);
   });
 
   it('does not spend the same difference twice', () => {

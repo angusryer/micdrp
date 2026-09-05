@@ -15,7 +15,13 @@
 import { useCallback, useEffect, useRef } from 'react';
 
 import { SCHEDULE_LEAD_MS, audioNowMs } from '../../audio/audioClock';
-import { clearAll, clearBus, hasEngine, setBusLevel } from '../../audio/engineBus';
+import {
+  MAX_BUS_LEVEL,
+  clearAll,
+  clearBus,
+  hasEngine,
+  setBusLevel
+} from '../../audio/engineBus';
 import {
   loadSample,
   scheduleSamples,
@@ -141,7 +147,12 @@ export function useTakeEngine(
   }, []);
 
   const setLevel = useCallback((level: number): void => {
-    levelRef.current = Math.max(0, Math.min(1, level));
+    // Up to the bus ceiling, not to one. A take is a recording: at a level
+    // of one it is already as loud as it was sung, and the make-up gain
+    // that lets a quiet take sit with the tracks read from it arrives
+    // through here (INV-NOTES-141). Clamping to one threw it away before
+    // it reached either ceiling raised to let it through.
+    levelRef.current = Math.max(0, Math.min(MAX_BUS_LEVEL, level));
     setBusLevel(trackBus('take'), levelRef.current);
   }, []);
 

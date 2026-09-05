@@ -35,10 +35,13 @@ const MAX_GAIN = 2;
  * The most a take may be lifted, as a multiple of what was recorded.
  *
  * Make-up gain on a quiet recording raises the room with it, so this is
- * about how much noise is worth accepting to hear the singing. Mirrors
- * `kMaxBusLevel` in cpp/dsp/synth.h, which holds anything past it anyway.
+ * about how much noise is worth accepting to hear the singing. Eight
+ * because a real take measured -47 dB, which needs forty times to reach
+ * the reference: four was chosen by reasoning about what seemed safe and
+ * did not move a real take audibly. Mirrors `kMaxBusLevel` in
+ * cpp/dsp/synth.h, which holds anything past it anyway.
  */
-const MAX_TAKE_GAIN = 4;
+const MAX_TAKE_GAIN = 8;
 
 /**
  * How loud the sung notes were, in dBFS, or null when nothing measured them.
