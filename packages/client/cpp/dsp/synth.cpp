@@ -156,6 +156,7 @@ TransportReport Synth::report() const {
       continue;  // a write is in flight
     }
     out.positionSamples = runPosition_;
+    out.underruns = streamUnderruns_.load(std::memory_order_relaxed);
     out.running = runRunning_;
     out.generation = runGeneration_;
     out.ended = runEnded_;
@@ -218,7 +219,13 @@ void Synth::admit(std::int64_t blockStart, std::int64_t blockEnd) {
     const SampleData resident = sample(note.sampleSlot);
     v->source = resident.frames;
     v->sourceCount = resident.frameCount;
+    v->stream = resident.stream;
     v->sourcePos = note.sourceFrame > 0 ? note.sourceFrame : 0;
+    // Tell the reader where this run starts, so it refills from there
+    // rather than from wherever the last one left the window.
+    if (v->stream != nullptr) {
+      v->stream->beginAt(v->sourcePos);
+    }
     ++nextPending_;
   }
 }
@@ -252,10 +259,24 @@ void Synth::render(float* out, std::size_t frames) {
       if (v.isSample) {
         // Past its own end is silence rather than a wrap: a take that ran out
         // has nothing more to say, and looping it would say something else.
-        if (v.source != nullptr &&
-            v.sourcePos < static_cast<std::int64_t>(v.sourceCount)) {
-          mix += static_cast<float>(v.source[v.sourcePos]) * kInt16ToFloat *
-                 level * kSamplePeak;
+        // A streamed frame the reader has not reached is silence too, and is
+        // counted rather than waited for (INV-TPORT-028).
+        std::int16_t frame = 0;
+        bool have = false;
+        if (v.stream != nullptr) {
+          have = v.stream->read(v.sourcePos, frame);
+        } else if (v.source != nullptr &&
+                   v.sourcePos < static_cast<std::int64_t>(v.sourceCount)) {
+          frame = v.source[v.sourcePos];
+          have = true;
+        }
+        if (have) {
+          mix += static_cast<float>(frame) * kInt16ToFloat * level *
+                 kSamplePeak;
+        } else if (v.stream != nullptr &&
+                   v.sourcePos < v.stream->frameCount()) {
+          // Inside the recording and not there yet: the reader is behind.
+          streamUnderruns_.fetch_add(1, std::memory_order_relaxed);
         }
         ++v.sourcePos;
         continue;

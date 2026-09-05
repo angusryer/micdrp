@@ -40,7 +40,11 @@ describe('asking the engine where it is', () => {
       positionMs: 8400,
       running: true,
       generation: 3,
-      ended: 0
+      ended: 0,
+      // A binary that reports a run but not its underruns has not measured
+      // them, and unmeasured reads as none rather than as unknown here —
+      // the count only ever rises, so zero is the honest floor.
+      underruns: 0
     });
   });
 

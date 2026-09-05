@@ -237,7 +237,8 @@ constexpr double kRenderSampleRate = 48000.0;
     @"positionMs": @(r.positionSamples / kRenderSampleRate * 1000.0),
     @"running": @(r.running),
     @"generation": @(r.generation),
-    @"ended": @(r.ended)
+    @"ended": @(r.ended),
+    @"underruns": @(r.underruns)
   };
 }
 

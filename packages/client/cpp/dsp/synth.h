@@ -32,6 +32,8 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+
+#include "sample_stream.h"
 #include <vector>
 
 #include "wave.h"
@@ -102,7 +104,25 @@ inline constexpr float kInt16ToFloat = 1.0f / 32768.0f;
 struct SampleData {
   const std::int16_t* frames = nullptr;
   std::size_t frameCount = 0;
+  /**
+   * Where the frames come from instead, for a take too long to hold
+   * (INV-TPORT-028).
+   *
+   * Set, `frames` is unused and every frame is read through the window a
+   * reader thread keeps ahead of the playhead. Not owned here either.
+   */
+  SampleStream* stream = nullptr;
 };
+
+/**
+ * How long a take may be and still be held whole, in seconds.
+ *
+ * Sixteen-bit mono at 48 kHz is 96 KB a second, so this is about 28 MB for
+ * the take — and there are eight slots, a take and the layers over it. Above
+ * it the take is streamed instead, which costs a window and a thread rather
+ * than the whole recording (INV-TPORT-028).
+ */
+inline constexpr double kResidentMaxSeconds = 300.0;
 
 /**
  * One sound to make: a tone or a passage of recorded audio, on a bus,
@@ -141,6 +161,8 @@ inline constexpr std::size_t kMaxVoices = 32;
  * and changes nothing here (INV-TPORT-013).
  */
 struct TransportReport {
+  /// Frames a streamed take could not supply in time (INV-TPORT-028).
+  std::int64_t underruns = 0;
   /// Where the run has reached, in samples of the material being played.
   std::int64_t positionSamples = 0;
   /// Whether time is passing. False once a run has reached its end.
@@ -253,7 +275,18 @@ class Synth {
     const std::int16_t* source = nullptr;
     std::size_t sourceCount = 0;
     std::int64_t sourcePos = 0;
+    /// Bound at admission like `source`, and for the same reason.
+    SampleStream* stream = nullptr;
   };
+
+  /**
+   * Frames a streamed take could not supply in time (INV-TPORT-028).
+   *
+   * Counted here rather than summed across the slots when asked: `report()`
+   * runs on another thread, and walking `samples_` from it would race the
+   * audio thread replacing what a slot holds.
+   */
+  std::atomic<std::int64_t> streamUnderruns_{0};
 
   /// Start any scheduled note whose moment has come.
   void admit(std::int64_t blockStart, std::int64_t blockEnd);

@@ -39,11 +39,11 @@ bool postScheduleSample(SynthMailbox& mailbox, double busIndex, double slot,
                         double fromMs, double startMs, double endMs,
                         double sampleRateHz);
 
-/// Hand the audio thread a block of audio to hold, or clear the slot with a
-/// null one. The frames must outlive every voice that may read them, which
-/// is the caller's promise to keep — see SampleData.
-bool postSetSample(SynthMailbox& mailbox, double slot,
-                   const std::int16_t* frames, std::size_t frameCount);
+/// Hand the audio thread what a slot holds — resident frames or a window
+/// onto a file — or clear it with a default-constructed one. Whatever it
+/// points at must outlive every voice that may read it, which is the
+/// caller's promise to keep. See SampleData.
+bool postSetSample(SynthMailbox& mailbox, double slot, const SampleData& audio);
 
 bool postBusLevel(SynthMailbox& mailbox, double busIndex, double level);
 

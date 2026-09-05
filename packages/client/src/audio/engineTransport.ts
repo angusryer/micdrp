@@ -27,6 +27,13 @@ export interface EngineRun {
   generation: number;
   /** Runs that ended on their own rather than being stopped. */
   ended: number;
+  /**
+   * Frames a streamed take could not supply in time (INV-TPORT-028).
+   *
+   * Rendered as silence. Counted because an underrun nobody counts is a
+   * glitch nobody can reproduce.
+   */
+  underruns: number;
 }
 
 /** Whether this binary can be asked at all. */
@@ -53,7 +60,8 @@ export function engineRun(): EngineRun | null {
       positionMs: typeof raw.positionMs === 'number' ? raw.positionMs : 0,
       running: raw.running === true,
       generation: typeof raw.generation === 'number' ? raw.generation : 0,
-      ended: typeof raw.ended === 'number' ? raw.ended : 0
+      ended: typeof raw.ended === 'number' ? raw.ended : 0,
+      underruns: typeof raw.underruns === 'number' ? raw.underruns : 0
     };
   } catch {
     // A binary that has the name but not the behaviour. Treated as one

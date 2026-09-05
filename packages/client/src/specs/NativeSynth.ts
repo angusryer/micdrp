@@ -104,7 +104,21 @@ export interface Spec extends TurboModule {
    * Absent on a binary older than this bundle, which is why everything
    * reading it asks first (INV-TPORT-014).
    */
-  transportReport(): { positionMs: Double; running: boolean; generation: Double; ended: Double };
+  transportReport(): {
+    positionMs: Double;
+    running: boolean;
+    generation: Double;
+    ended: Double;
+    /**
+     * Frames a streamed take could not supply in time (INV-TPORT-028).
+     *
+     * Nonzero means the reader thread fell behind the playhead and that
+     * many frames were rendered as silence. Nothing recovers from it
+     * automatically; it is here because an underrun that nobody counts is
+     * a glitch nobody can reproduce.
+     */
+    underruns: Double;
+  };
 }
 
 /**
