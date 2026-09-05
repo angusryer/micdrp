@@ -15,9 +15,20 @@
  * the ends of the take — there is nothing to hear beyond them, and a handle
  * that travels into the pickup would claim a moment the recording does not
  * have.
+ *
+ * The moment arrives as a shared value the UI thread advances, not as a
+ * number (INV-NOTES-206). It used to be React state read twice a second,
+ * which meant every reading of the clock re-rendered the whole screen —
+ * the graph, the neck, the chord track — and the render cost more than the
+ * interval between readings, so the JS thread never went idle and a press
+ * of pause had nowhere to be handled.
  */
 import React, { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  type SharedValue
+} from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { useTheme } from '../../theme';
@@ -28,8 +39,14 @@ const HANDLE = 16;
 const REACH = 34;
 
 export interface ScrubberProps {
-  /** Where the take is now, in ms. */
-  positionMs: number;
+  /**
+   * Where the take is now, on the UI thread.
+   *
+   * A shared value rather than a number: this moves continuously while a
+   * take runs, and anything moving continuously above a canvas has to
+   * move without a render (INV-NOTES-206).
+   */
+  positionMs: SharedValue<number>;
   timeAxis: TimeAxis;
   contentWidth: number;
   height: number;
@@ -85,10 +102,23 @@ export function Scrubber({
 
   const gesture = Gesture.Race(drag, tap);
 
-  const x = xForMs(
-    timeAxis,
-    Math.min(Math.max(positionMs, firstNoteMs), timeAxis.t0 + timeAxis.span)
-  );
+  // Both marks are placed on the UI thread from the same value, so the
+  // handle and the line under it can never disagree about the moment.
+  const lastMs = timeAxis.t0 + timeAxis.span;
+  const trailStyle = useAnimatedStyle(() => ({
+    left: xForMs(
+      timeAxis,
+      Math.min(Math.max(positionMs.value, firstNoteMs), lastMs)
+    )
+  }));
+  const handleStyle = useAnimatedStyle(() => ({
+    left:
+      xForMs(
+        timeAxis,
+        Math.min(Math.max(positionMs.value, firstNoteMs), lastMs)
+      ) -
+      HANDLE / 2
+  }));
 
   return (
     <View
@@ -97,24 +127,25 @@ export function Scrubber({
     >
       {/* A short stem under the handle, pointing at the graph below the
           band, so the moment is readable without covering the notes. */}
-      <View
+      <Animated.View
         pointerEvents="none"
         style={[
           styles.trail,
-          { left: x, height, backgroundColor: colors.primary500 }
+          { height, backgroundColor: colors.primary500 },
+          trailStyle
         ]}
       />
       <GestureDetector gesture={gesture}>
         <View style={[styles.reach, { width: contentWidth, height: REACH }]}>
-          <View
+          <Animated.View
             testID="scrub-handle"
             style={[
               styles.handle,
               {
-                left: x - HANDLE / 2,
                 backgroundColor: colors.primary500,
                 borderColor: colors.neutral50
-              }
+              },
+              handleStyle
             ]}
           />
         </View>
