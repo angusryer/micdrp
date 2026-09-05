@@ -20,6 +20,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '../../components/Icon';
 import { PlaybackSheet } from './PlaybackSheet';
 import { useTheme } from '../../theme';
+import { traceLine } from './transportTrace';
 import { offeredTracks } from './offeredTracks';
 import { useListening, type UseListening } from './useListening';
 import { useHapticBeat } from './useHapticBeat';
@@ -251,6 +252,19 @@ export function PlaybackBar({
 
       </View>
 
+      {/* Temporary, and here on purpose. Four attempts at one bug failed
+          because nothing could say from the outside whether a press
+          reached the engine — a press that never arrived and a press that
+          arrived and was ignored look identical from a chair. This counts
+          what the transport actually did. It comes out once the fault is
+          understood. */}
+      <Text
+        testID="transport-trace"
+        style={[styles.trace, { color: colors.gray300 }]}
+      >
+        {`${state}  ${Math.round(positionMs)}ms  ${traceLine()}`}
+      </Text>
+
       <PlaybackSheet
         isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}
@@ -304,6 +318,7 @@ export default PlaybackBar;
 
 const styles = StyleSheet.create({
   rewind: { padding: 4, marginRight: 4 },
+  trace: { fontSize: 10, paddingHorizontal: 12, paddingBottom: 4 },
   details: { padding: 6 },
   stack: { gap: 8 },
   container: {

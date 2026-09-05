@@ -23,6 +23,11 @@ import { useDrawnPosition, usePlaybackClock } from './usePlaybackClock';
 import { useTakeAnchor } from './useTakeAnchor';
 import { trackBus } from './trackRegistry';
 import { TAKE_SLOT } from './sampleSlots';
+import {
+  noteEngine,
+  noteTransport,
+  noteTransportProblem
+} from './transportTrace';
 import type { Playback, PlaybackState, UsePlaybackOptions } from './playbackShape';
 
 export function useTakeVoice({
@@ -72,7 +77,9 @@ export function useTakeVoice({
    */
   const silence = useCallback(() => {
     clearEndsAt();
+    noteEngine(NativeSynth != null);
     NativeSynth?.clearAll();
+    noteTransport('silenced');
   }, [clearEndsAt]);
 
   /**
@@ -102,6 +109,8 @@ export function useTakeVoice({
         return;
       }
       isStarting.current = true;
+      noteEngine(NativeSynth != null);
+      noteTransport('played');
       setState('loading');
       let resolved: string | null = null;
       try {
@@ -128,6 +137,7 @@ export function useTakeVoice({
         NativeSynth.setBusLevel(trackBus('take'), levelRef.current);
         // A moment we choose, on the clock everything else is choosing on.
         const beginsAtMs = audioNowMs() + SCHEDULE_LEAD_MS;
+        noteTransport('scheduled');
         NativeSynth.scheduleSamples([
           {
             bus: trackBus('take'),
@@ -148,6 +158,7 @@ export function useTakeVoice({
         setState('playing');
       } catch (err) {
         console.warn('[useTakeVoice] playback failed for', resolved, err);
+        noteTransportProblem(err instanceof Error ? err.message : String(err));
         setState('error');
         silence();
       } finally {
@@ -178,6 +189,7 @@ export function useTakeVoice({
    * (INV-NOTES-136). A pause half a second from the ear is a rewind.
    */
   const pause = useCallback((): Promise<number> => {
+    noteTransport('paused');
     const reached =
       state === 'playing'
         ? Math.min(anchor.reachedMs(), Math.max(0, durationMs))
