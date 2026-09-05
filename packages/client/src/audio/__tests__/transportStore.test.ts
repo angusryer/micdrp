@@ -211,3 +211,117 @@ describe('a press cancels the press before it', () => {
     expect(t.snapshot().state).toBe('stopped');
   });
 });
+
+/**
+ * A decode held open, so the window a command lands in is a place a test
+ * can stand rather than a race on a device.
+ *
+ * `scheduled` is what the native engine would be sounding: a start that
+ * lands puts one there whether or not anyone is still waiting for it,
+ * and only a silence takes it away.
+ */
+function heldEngine(): TransportEngine & {
+  starts: number[];
+  scheduled: number;
+  land: () => void;
+} {
+  const waiting: Array<() => void> = [];
+  const engine = {
+    starts: [] as number[],
+    scheduled: 0,
+    start(fromMs: number) {
+      engine.starts.push(fromMs);
+      return new Promise<number>((resolve) => {
+        waiting.push(() => {
+          engine.scheduled += 1;
+          resolve(25000);
+        });
+      });
+    },
+    silence() {
+      engine.scheduled = 0;
+    },
+    reachedMs: () => 0,
+    /** Let the oldest outstanding decode finish. */
+    land: () => waiting.shift()?.()
+  };
+  return engine;
+}
+
+/** Enough turns of the microtask queue for a settled chain to unwind. */
+const settle = async (): Promise<void> => {
+  for (let i = 0; i < 8; i += 1) {
+    await Promise.resolve();
+  }
+};
+
+describe('a cancelled press takes its sound back', () => {
+  it('ACC-TPORT-011: silences a start that lands after it was superseded', async () => {
+    // The check on the run counter stopped the *state* being wrong and
+    // did nothing about the audio the abandoned start had scheduled, so
+    // the take went on playing under a transport that called itself
+    // stopped (INV-TPORT-015).
+    const engine = heldEngine();
+    const t = createTransport(engine);
+    void t.play();
+    await t.stop();
+    engine.land();
+    await settle();
+    expect(t.snapshot().state).toBe('stopped');
+    expect(engine.scheduled).toBe(0);
+  });
+
+  it('INV-TPORT-015: decodes one at a time, so the older never lands last', async () => {
+    const engine = heldEngine();
+    const t = createTransport(engine);
+    void t.play();
+    void t.seek(7000);
+    await settle();
+    // The second start is not even asked for until the first is answered.
+    expect(engine.starts).toEqual([0]);
+    engine.land();
+    await settle();
+    expect(engine.starts).toEqual([0, 7000]);
+  });
+});
+
+describe('a load nobody is waiting on any more', () => {
+  it('ACC-TPORT-010: a seek mid-load starts again from the new moment', async () => {
+    // Seek asked only whether the take was *playing*, so a seek arriving
+    // mid-load moved the head, silenced the engine and left the state at
+    // loading with nothing left to resolve it. The spinner never stopped
+    // — not when the seek finished, not when the take ran out
+    // (INV-TPORT-016).
+    const engine = heldEngine();
+    const t = createTransport(engine);
+    void t.play();
+    engine.land();
+    await settle();
+    expect(t.snapshot().state).toBe('playing');
+
+    void t.seek(7000);
+    await settle();
+    void t.seek(9000);
+    await settle();
+    // Both abandoned decodes land, as they do on a device.
+    engine.land();
+    await settle();
+    engine.land();
+    await settle();
+
+    expect(t.snapshot().state).toBe('playing');
+    expect(t.snapshot().cueMs).toBe(9000);
+    expect(engine.scheduled).toBe(1);
+  });
+
+  it('INV-TPORT-016: a pause mid-load stops rather than spinning', async () => {
+    const engine = heldEngine();
+    const t = createTransport(engine);
+    void t.play();
+    await t.pause();
+    engine.land();
+    await settle();
+    expect(t.snapshot().state).toBe('stopped');
+    expect(engine.scheduled).toBe(0);
+  });
+});

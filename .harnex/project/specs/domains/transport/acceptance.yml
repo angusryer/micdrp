@@ -123,3 +123,62 @@ acceptance:
     maps_to:
       capability: transport.observe
       invariants: [INV-TPORT-002]
+
+  - id: ACC-TPORT-010
+    interface: module
+    title: A seek arriving mid-load starts again rather than stranding
+    given:
+      - a take is playing
+      - a seek whose decode has not resolved
+    when:
+      - the transport is told to seek to 9000 ms
+      - the outstanding decode resolves
+    then:
+      - the transport state is playing
+      - the head is at 9000 ms
+    maps_to:
+      capability: transport.seek
+      invariants: [INV-TPORT-016]
+
+  - id: ACC-TPORT-011
+    interface: module
+    title: A superseded start is silenced once it lands
+    given:
+      - a take whose decode has not resolved
+    when:
+      - the transport is told to stop
+      - the outstanding decode resolves
+    then:
+      - the transport state is stopped
+      - nothing is scheduled on the engine
+    maps_to:
+      capability: transport.stop
+      invariants: [INV-TPORT-015]
+
+  - id: ACC-TPORT-012
+    interface: module
+    title: The transport built by the hook can be asked whether a run ended
+    given:
+      - an engine that reports when a run has ended
+    when:
+      - the take is played through to its end
+    then:
+      - the transport state is stopped without any timer firing
+    maps_to:
+      capability: transport.observe
+      invariants: [INV-TPORT-011, INV-TPORT-017]
+
+  - id: ACC-TPORT-013
+    interface: view
+    title: Dragging the scrubber decodes the take once
+    given:
+      - a take is playing
+    when:
+      - the scrubber is dragged across 20 updates and released
+    then:
+      - one file token is minted for the whole drag
+      - the take is scheduled 1 time
+      - the take is sounding again from where the finger let go
+    maps_to:
+      capability: transport.seek
+      invariants: [INV-TPORT-018]

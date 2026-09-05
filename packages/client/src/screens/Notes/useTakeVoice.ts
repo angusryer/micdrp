@@ -38,12 +38,23 @@ export function useTakeVoice({ resolveAudioUri }: UsePlaybackOptions): Playback 
   const latest = useRef(engine);
   latest.current = engine;
 
+  /**
+   * The whole engine, forwarded (INV-TPORT-017).
+   *
+   * Every method by hand, not three of them. This listed `start`,
+   * `silence` and `reachedMs`; `hasEnded` arrived on the engine a
+   * commit later and never reached the store, so the engine-owned end
+   * detection of INV-TPORT-011 was dead in the app and only the
+   * fallback timer ever ran. Nothing failed — the subset type-checks,
+   * because that method is optional by design (INV-TPORT-014).
+   */
   const transport = useMemo(
     () =>
       createTransport({
         start: (fromMs) => latest.current.start(fromMs),
         silence: () => latest.current.silence(),
-        reachedMs: () => latest.current.reachedMs()
+        reachedMs: () => latest.current.reachedMs(),
+        hasEnded: () => latest.current.hasEnded?.()
       }),
     []
   );

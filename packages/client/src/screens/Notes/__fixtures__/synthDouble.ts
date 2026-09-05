@@ -16,7 +16,17 @@ export const synthDouble: Record<string, jest.Mock> = {
   loadSample: jest.fn(),
   unloadSample: jest.fn(),
   clearBus: jest.fn(),
-  clearAll: jest.fn()
+  clearAll: jest.fn(),
+  /**
+   * What the engine says it is doing (INV-TPORT-010).
+   *
+   * Present but answering nothing by default, which is a binary too old
+   * to be asked — the fallback every other suite here was written
+   * against (INV-TPORT-014). A test that wants the engine's word says so.
+   */
+  transportReport: jest.fn(),
+  startTransport: jest.fn(),
+  stopTransport: jest.fn()
 };
 
 /**

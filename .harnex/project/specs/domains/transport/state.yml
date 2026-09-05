@@ -1,8 +1,17 @@
 # Domain Development State — overwrite each meaningful change
-updated_at: "2026-09-05T02:50:17Z"
-updated_by: harnex-new-feature
-phase: specifying
+updated_at: "2026-09-05T00:00:00Z"
+updated_by: agent
+phase: building
 phase_detail: >
-  Domain scaffolded. Awaiting clarify dialogue between
-  human and agent. See tmp/clarify-transport.md.
+  Store, state machine and run-end watch are in place and under test
+  without a renderer. Latest work is the scrub fault the maintainer hit
+  on device: a seek arriving mid-load stranded the transport at loading
+  (INV-TPORT-016), the abandoned decode went on sounding (INV-TPORT-015),
+  the scrubber sent one seek per pan frame (INV-TPORT-018), and the hook
+  never forwarded `hasEnded`, so the engine-owned end detection was dead
+  in the app (INV-TPORT-017). All four are fixed and covered by tests
+  that fail against the previous code.
+
+  Open: domain.yml still reads `specifying` while src/ exists and the
+  harness runs against it. A human call, not an agent's.
 blockers: []

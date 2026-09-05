@@ -195,3 +195,65 @@ invariants:
       whole point of shipping JavaScript over the air is that it
       arrives before the binary does (INV-PITCH-020).
 
+  - id: INV-TPORT-015
+    description: A cancelled run takes its sound back with it
+    severity: critical
+    check: >
+      A start already on its way when a newer command supersedes it
+      still reaches the engine and still schedules audio. The transport
+      waits for it to land and then silences it, so no run nobody is
+      watching is left sounding. Verified by superseding a start that
+      has not resolved and asserting nothing is scheduled afterwards.
+
+      Checking the run counter after the await and returning was enough
+      to stop the *state* being wrong and did nothing about the sound:
+      the take went on playing under a transport that had already
+      called itself stopped. Cancelling a press is not the same act as
+      taking back what the press already did.
+
+  - id: INV-TPORT-016
+    description: Loading is a promise, and a cancelled load must be released
+    severity: critical
+    check: >
+      No command leaves the transport in loading unless a start is
+      actually on its way. A command that supersedes a load either
+      starts a run of its own or moves the state off loading. Verified
+      by seeking mid-load and asserting the state is never loading once
+      everything has settled.
+
+      Seek only asked whether the take was *playing*, so a seek
+      arriving mid-load moved the head, silenced the engine, and left
+      the state at loading with nothing left to resolve it. The spinner
+      never stopped — not when the seek finished, not when the take ran
+      out — and the abandoned decode went on sounding underneath it.
+
+  - id: INV-TPORT-017
+    description: The binding hands over the engine, not a copy of three of it
+    severity: high
+    check: >
+      What the store is given is the engine itself, forwarded whole. No
+      call site lists the methods by hand. Verified by asserting the
+      transport built by the hook can answer everything the engine can.
+
+      `useTakeVoice` hand-copied `start`, `silence` and `reachedMs`
+      onto an adapter. `hasEnded` was added to the engine one commit
+      later and never reached the store, so the engine-owned end
+      detection of INV-TPORT-011 was dead in the app and only the
+      fallback timer ever ran. Nothing failed: the subset type-checked,
+      because the missing method is optional by design (INV-TPORT-014).
+
+  - id: INV-TPORT-018
+    description: A drag moves the head; the release restarts the take
+    severity: critical
+    check: >
+      A continuous gesture issues at most one transport command per
+      gesture, not one per frame. Verified by asserting a pan of many
+      updates decodes the take once.
+
+      The scrubber sent a seek on every pan update. Playing, each of
+      those was a full stop, mint a file token, decode and reschedule —
+      sixty times a second, each one superseding the last. That is the
+      storm INV-TPORT-015 and INV-TPORT-016 were found underneath, and
+      fixing them alone would leave a scrub that hammers the backend
+      for a token per frame.
+

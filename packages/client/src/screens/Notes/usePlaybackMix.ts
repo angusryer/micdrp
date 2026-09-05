@@ -117,6 +117,17 @@ export interface MixedPlayback {
    * (INV-NOTES-091).
    */
   cueTo: (ms: number) => void;
+  /**
+   * Take hold of the head for a continuous gesture (INV-TPORT-018).
+   *
+   * Anything sounding stops, and is remembered so the release can carry
+   * on from wherever the head was let go. Without this a drag is a seek
+   * per frame, and playing, each of those is a full stop, a file token
+   * minted, a decode and a reschedule — sixty times a second.
+   */
+  grabHead(): void;
+  /** Put the head down at a moment, and carry on if it was sounding. */
+  dropHead(ms: number): void;
   stop(): Promise<void>;
 }
 
@@ -381,6 +392,43 @@ export function usePlaybackMix({
     [seekTake]
   );
 
+  /**
+   * Whether the gesture holding the head interrupted something sounding.
+   *
+   * A ref because the gesture reads it between renders, and because it
+   * is an answer about the press rather than anything drawn.
+   */
+  const heldSounding = useRef(false);
+
+  const grabHead = useCallback((): void => {
+    // Loading counts: a start is on its way, and the drag is cancelling
+    // it (INV-TPORT-016).
+    heldSounding.current = state === 'playing' || state === 'loading';
+    if (heldSounding.current) {
+      void stop();
+    }
+  }, [state, stop]);
+
+  const dropHead = useCallback(
+    (ms: number): void => {
+      const at = Math.max(0, ms);
+      const carryOn = heldSounding.current;
+      heldSounding.current = false;
+      if (!carryOn) {
+        void seekTake(at);
+        return;
+      }
+      // Without the count. A scrub is carrying on listening from a moment
+      // you picked, and counting somebody in each time turns one gesture
+      // into several seconds of waiting.
+      void (async () => {
+        await seekTake(at);
+        await play(at, true);
+      })();
+    },
+    [seekTake, play]
+  );
+
   return {
     state,
     play,
@@ -389,7 +437,9 @@ export function usePlaybackMix({
     rewind,
     positionMs: state === 'playing' ? positionMs : cueMs,
     drawnPositionMs,
-    cueTo
+    cueTo,
+    grabHead,
+    dropHead
   };
 }
 

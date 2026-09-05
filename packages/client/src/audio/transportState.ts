@@ -69,8 +69,14 @@ export function nextState(
       return 'loading';
     case 'pause':
       // Pausing something that never started is stopping it: there is no
-      // moment to hold, and calling it paused would promise one.
-      return state === 'playing' ? 'paused' : state;
+      // moment to hold, and calling it paused would promise one. A take
+      // still loading has not started either, and leaving it at loading
+      // would be a spinner with nothing left to resolve it
+      // (INV-TPORT-016).
+      if (state === 'playing') {
+        return 'paused';
+      }
+      return state === 'loading' ? 'stopped' : state;
     case 'stop':
       return 'stopped';
     case 'seek':

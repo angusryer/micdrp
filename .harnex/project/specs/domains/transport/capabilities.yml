@@ -15,6 +15,9 @@ capabilities:
         one take is never decoded twice
       - a press that arrives while a run is being cancelled belongs to
         the newer press; the older one starts nothing
+      - a start already on its way when a newer command supersedes it
+        is waited for and then silenced, because it schedules audio
+        whether or not anyone is still watching (INV-TPORT-015)
       - the head advances on the UI thread and notifies nobody
       - a refusal ends in failed with the reason, never in silence
 
@@ -58,7 +61,13 @@ capabilities:
         not anything is sounding (INV-NOTES-208)
       - seeking while sounding stops first and starts again from there,
         because this engine begins at a moment rather than jumping to one
+      - a take still loading counts as sounding, so the load is
+        cancelled and a run begins from the new moment and nothing is
+        left at loading with no start on its way (INV-TPORT-016)
       - seeking while silent sounds nothing
+      - a continuous gesture seeks once, on release, with the head
+        following the finger meanwhile. Restarting the take per frame
+        would mint a file token and decode per frame (INV-TPORT-018)
 
   - name: transport.observe
     description: >

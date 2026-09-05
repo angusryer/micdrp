@@ -112,6 +112,14 @@ export interface PlaybackBarProps {
      */
     isPlaying: boolean;
     seek: (ms: number) => void;
+    /**
+     * Taking hold of the head and putting it down again (INV-TPORT-018).
+     *
+     * A continuous gesture sends these two rather than a seek per frame,
+     * so a drag is one transport command instead of sixty a second.
+     */
+    grabHead: () => void;
+    dropHead: (ms: number) => void;
     /** Start the take, so a layer can be sung against it (INT-NOTES-025). */
     play: () => void;
     stop: () => void;
@@ -177,7 +185,18 @@ export function PlaybackBar({
     () => withOnlyAvailable(mix, offered),
     [mix, offered]
   );
-  const { state, play, pause, stop, rewind, positionMs, drawnPositionMs, cueTo } =
+  const {
+    state,
+    play,
+    pause,
+    stop,
+    rewind,
+    positionMs,
+    drawnPositionMs,
+    cueTo,
+    grabHead,
+    dropHead
+  } =
     usePlaybackMix({
       resolveAudioUri,
       mix: sounding,
@@ -211,6 +230,8 @@ export function PlaybackBar({
         isPlaying: state === 'playing',
         // Moving the head, not a transport command (INV-NOTES-091).
         seek: cueTo,
+        grabHead,
+        dropHead,
         play: () => void play(),
         stop: () => void stop()
       }),
@@ -220,7 +241,7 @@ export function PlaybackBar({
     // so the JS thread never went idle and a press had nowhere to be
     // handled (INV-NOTES-206). The moment reaches the displays as a shared
     // value the UI thread advances instead.
-    [onTransport, drawnPositionMs, state, cueTo, play, stop]
+    [onTransport, drawnPositionMs, state, cueTo, grabHead, dropHead, play, stop]
   );
 
   return (

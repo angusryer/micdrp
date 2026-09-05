@@ -91,6 +91,9 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
     drawnPositionMs: SharedValue<number>;
     isPlaying: boolean;
     seek: (ms: number) => void;
+    /** A drag takes hold of the head and puts it down (INV-TPORT-018). */
+    grabHead: () => void;
+    dropHead: (ms: number) => void;
     play: () => void;
     stop: () => void;
   } | null>(null);

@@ -61,7 +61,13 @@ describe('where a command leaves it', () => {
     expect(nextState('playing', 'pause')).toBe('paused');
     // There is no moment to hold, and calling it paused would promise one.
     expect(nextState('stopped', 'pause')).toBe('stopped');
-    expect(nextState('loading', 'pause')).toBe('loading');
+  });
+
+  it('INV-TPORT-016: stops a take still loading rather than holding it there', () => {
+    // This said 'loading', which is a promise that a run is on its way —
+    // and pausing is what cancels the run. The state was left spinning
+    // with nothing left to resolve it.
+    expect(nextState('loading', 'pause')).toBe('stopped');
   });
 
   it('stops from anywhere', () => {

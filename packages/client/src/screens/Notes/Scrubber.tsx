@@ -23,7 +23,7 @@
  * interval between readings, so the JS thread never went idle and a press
  * of pause had nowhere to be handled.
  */
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -55,6 +55,19 @@ export interface ScrubberProps {
   firstNoteMs: number;
   /** Take the transport to a moment, in ms. */
   onSeek: (ms: number) => void;
+  /**
+   * A hand has taken hold of the head (INV-TPORT-018).
+   *
+   * Anything sounding stops for the duration of the drag, so the seeks
+   * that follow move a head rather than restarting a take. This used to
+   * send a seek on every pan update, and playing, each one was a stop, a
+   * file token minted, a decode and a reschedule — sixty times a second,
+   * each superseding the last, which left the control spinning over a
+   * take that went on playing underneath it.
+   */
+  onGrab?: () => void;
+  /** The hand has let go here. What was sounding carries on from it. */
+  onRelease?: (ms: number) => void;
 }
 
 export function Scrubber({
@@ -63,7 +76,9 @@ export function Scrubber({
   contentWidth,
   height,
   firstNoteMs,
-  onSeek
+  onSeek,
+  onGrab,
+  onRelease
 }: ScrubberProps): React.JSX.Element | null {
   const { colors } = useTheme();
 
@@ -77,20 +92,50 @@ export function Scrubber({
 
   // Held inside the take. Before the first note is the pickup, which has
   // nothing to play, and past the last there is nothing left.
-  const seekTo = useCallback(
+  const msAt = useCallback(
     (x: number) => {
       const last = timeAxis.t0 + timeAxis.span;
-      onSeek(Math.min(Math.max(msForX(x), firstNoteMs), last));
+      return Math.min(Math.max(msForX(x), firstNoteMs), last);
     },
-    [msForX, onSeek, timeAxis, firstNoteMs]
+    [msForX, timeAxis, firstNoteMs]
+  );
+  const seekTo = useCallback((x: number) => onSeek(msAt(x)), [msAt, onSeek]);
+
+  /** Whether this gesture is the one holding the head. */
+  const grabbed = useRef(false);
+  const release = useCallback(
+    (x: number) => {
+      if (!grabbed.current) {
+        return;
+      }
+      grabbed.current = false;
+      (onRelease ?? onSeek)(msAt(x));
+    },
+    [msAt, onRelease, onSeek]
   );
 
   // Everything here is ordinary code, so the gesture runs on the JavaScript
   // side: calling it from the UI thread is a hard crash (INV-NOTES-042).
+  //
+  // One transport command for the whole drag, not one per update
+  // (INV-TPORT-018): the grab stops what was sounding, so every seek in
+  // between moves a head and decodes nothing, and the release puts it
+  // down and carries on from there.
+  //
+  // On activation rather than on touch-down, so a tap never takes hold of
+  // something it will not put back: a tap is answered by the tap gesture,
+  // and a head grabbed by a press that then loses the race would leave
+  // the take stopped with nothing left to resume it.
   const drag = Gesture.Pan()
     .withTestId('scrub')
+    .onStart(() => {
+      grabbed.current = true;
+      onGrab?.();
+    })
     .onUpdate((e) => seekTo(e.x))
-    .onEnd((e) => seekTo(e.x))
+    .onEnd((e) => release(e.x))
+    // A drag the system takes away has still let go of the head.
+    .onFinalize((e) => release(e.x))
     .runOnJS(true);
 
   // A tap puts the head where you tapped. A pan never fires for a touch that

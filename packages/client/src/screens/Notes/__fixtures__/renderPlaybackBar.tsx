@@ -42,7 +42,13 @@ export const renderPlaybackBar = async (
   resolveAudioUri: () => Promise<string | null>,
   accompaniment?: ReturnType<typeof backdrop>,
   voice?: ReturnType<typeof backdrop>,
-  bass?: ReturnType<typeof backdrop>
+  bass?: ReturnType<typeof backdrop>,
+  /**
+   * Anything else the bar takes. `onTransport` above all: it is how the
+   * graph reaches the transport, so a suite about a gesture on the graph
+   * has to come in the same way (INV-TPORT-018).
+   */
+  extra?: Partial<React.ComponentProps<typeof PlaybackBar>>
 ) => {
   const rendered = await waitFor(() =>
     render(
@@ -59,6 +65,7 @@ export const renderPlaybackBar = async (
             // button this component no longer has (INV-NOTES-142).
             isOptionsOpen
             onOptionsOpen={() => undefined}
+            {...extra}
           />
         </ThemeProvider>
         </I18nProvider>

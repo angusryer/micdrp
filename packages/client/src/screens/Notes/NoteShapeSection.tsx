@@ -91,6 +91,12 @@ export interface NoteShapeSectionProps {
      */
     drawnPositionMs: SharedValue<number>;
     seek: (ms: number) => void;
+    /**
+     * Taking hold of the head for a drag and putting it down again
+     * (INV-TPORT-018). A gesture sends these rather than a seek a frame.
+     */
+    grabHead?: () => void;
+    dropHead?: (ms: number) => void;
     /** Whether the take is sounding, so the view follows only then. */
     isPlaying?: boolean;
     play?: () => void;
@@ -266,6 +272,8 @@ export function NoteShapeSection({
                   height={SCRUB_BAND_HEIGHT}
                   firstNoteMs={firstNoteMs}
                   onSeek={transport.seek}
+                  onGrab={transport.grabHead}
+                  onRelease={transport.dropHead}
                 />
               ) : null
             }
