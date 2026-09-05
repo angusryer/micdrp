@@ -16,8 +16,13 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import type { NoteLayerDto } from 'shared';
 
-import NativeSynth from '../../specs/NativeSynth';
 import { SCHEDULE_LEAD_MS, audioNowMs } from '../../audio/audioClock';
+import { clearBus, hasEngine, setBusLevel } from '../../audio/engineBus';
+import {
+  loadSample,
+  scheduleSamples,
+  unloadSample
+} from '../../audio/engineSamples';
 import { notesRepo } from '../../data/notesRepo';
 import { trackBus } from './trackRegistry';
 import { MAX_LAYER_VOICES, layerSlot } from './sampleSlots';
@@ -82,10 +87,9 @@ export function useLayerVoices(
   // Loaded when the note is opened rather than when play is pressed: the
   // decode is the one slow step, and a press should be a schedule.
   useEffect(() => {
-    if (noteId == null || NativeSynth == null) {
+    if (noteId == null || !hasEngine()) {
       return;
     }
-    const engine = NativeSynth;
     const held = loaded.current;
     for (const { layer, slot } of audible) {
       if (held.get(slot) === layer.id) {
@@ -94,7 +98,7 @@ export function useLayerVoices(
       held.set(slot, layer.id);
       void notesRepo
         .audioUrlFor(noteId, layer.audioPath)
-        .then((url) => (url == null ? null : engine.loadSample(slot, url)))
+        .then((url) => (url == null ? null : loadSample(slot, url)))
         .catch((err) => {
           console.warn('[useLayerVoices] could not load a layer', layer.id, err);
           held.delete(slot);
@@ -105,7 +109,7 @@ export function useLayerVoices(
     for (const slot of [...held.keys()]) {
       if (!audible.some((one) => one.slot === slot)) {
         held.delete(slot);
-        engine.unloadSample(slot);
+        unloadSample(slot);
       }
     }
   }, [audible, noteId]);
@@ -113,21 +117,21 @@ export function useLayerVoices(
   useEffect(
     () => () => {
       for (const slot of [...loaded.current.keys()]) {
-        NativeSynth?.unloadSample(slot);
+        unloadSample(slot);
       }
       loaded.current.clear();
-      NativeSynth?.clearBus(trackBus('layers'));
+      clearBus(trackBus('layers'));
     },
     []
   );
 
   const start = useCallback(
     (offsetMs = 0) => {
-      if (NativeSynth == null || audible.length === 0) {
+      if (audible.length === 0) {
         return;
       }
       const beginsAtMs = audioNowMs() + SCHEDULE_LEAD_MS;
-      NativeSynth.scheduleSamples(
+      scheduleSamples(
         audible.map(({ layer, slot }) => ({
           bus: trackBus('layers'),
           slot,
@@ -144,11 +148,11 @@ export function useLayerVoices(
   );
 
   const stop = useCallback(() => {
-    NativeSynth?.clearBus(trackBus('layers'));
+    clearBus(trackBus('layers'));
   }, []);
 
   const setLevel = useCallback((level: number) => {
-    NativeSynth?.setBusLevel(trackBus('layers'), level);
+    setBusLevel(trackBus('layers'), level);
   }, []);
 
   return {

@@ -24,7 +24,7 @@ import { type SharedValue } from 'react-native-reanimated';
 
 import { usePlayback, type PlaybackState } from './usePlayback';
 import { useLatest } from './useLatest';
-import NativeSynth from '../../specs/NativeSynth';
+import { setBusWave } from '../../audio/engineBus';
 import { waveOf } from '../../audio/voices';
 import { AUDITION_BUS } from '../../audio/synthPlayer';
 import { trackBus } from './trackRegistry';
@@ -181,12 +181,12 @@ export function usePlaybackMix({
       return;
     }
     for (const track of TRACK_ORDER) {
-      NativeSynth?.setBusWave?.(trackBus(track), waveOf(voices[track]));
+      setBusWave(trackBus(track), waveOf(voices[track]));
     }
     // The bus that answers "what is this note" speaks in the melody's voice
     // (INV-NOTES-175). It was whatever the engine starts with, so checking a
     // note and hearing it play compared two different sounds.
-    NativeSynth?.setBusWave?.(AUDITION_BUS, waveOf(voices.melody));
+    setBusWave(AUDITION_BUS, waveOf(voices.melody));
   }, [voices]);
 
   const wantsChords = mix.chords;

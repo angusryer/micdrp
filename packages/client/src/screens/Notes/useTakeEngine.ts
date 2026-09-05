@@ -14,8 +14,14 @@
  */
 import { useCallback, useEffect, useRef } from 'react';
 
-import NativeSynth from '../../specs/NativeSynth';
 import { SCHEDULE_LEAD_MS, audioNowMs } from '../../audio/audioClock';
+import { clearAll, clearBus, hasEngine, setBusLevel } from '../../audio/engineBus';
+import {
+  loadSample,
+  scheduleSamples,
+  startEngine,
+  unloadSample
+} from '../../audio/engineSamples';
 import type { TransportEngine } from '../../audio/transportStore';
 import {
   beginEngineRun,
@@ -60,19 +66,15 @@ export function useTakeEngine(
     return () => {
       // Only this take's bus. Leaving a screen is not stopping, and must
       // not silence what another screen started (INV-NOTES-205).
-      NativeSynth?.clearBus(trackBus('take'));
-      NativeSynth?.unloadSample(TAKE_SLOT);
+      clearBus(trackBus('take'));
+      unloadSample(TAKE_SLOT);
     };
   }, [resolveAudioUri]);
 
   /** The native work, once the audio has an address and an engine exists. */
   const schedule = useCallback(
-    async (
-      synth: NonNullable<typeof NativeSynth>,
-      resolved: string,
-      fromMs: number
-    ): Promise<number> => {
-      await synth.start();
+    async (resolved: string, fromMs: number): Promise<number> => {
+      await startEngine();
       // Decoded once per take. Not per address: the address carries a
       // credential minted fresh on every press, so comparing the whole
       // of it never matched and every resume re-fetched and re-decoded
@@ -81,22 +83,15 @@ export function useTakeEngine(
       const takeMs =
         loadedFor.current === take && durationRef.current > 0
           ? durationRef.current
-          : await synth.loadSample(TAKE_SLOT, resolved);
-      // -1 is what the native store returns when the decode fails. Used
-      // as a length it schedules a clip ending before it begins and a
-      // run whose end has already passed — a spinner, a flicker, and the
-      // play glyph back with no sound and no reason (INV-TPORT-019).
-      if (!(takeMs > 0)) {
-        throw new Error('this take could not be decoded');
-      }
+          : await loadSample(TAKE_SLOT, resolved);
       loadedFor.current = take;
       durationRef.current = takeMs;
 
       const offsetMs = Math.min(Math.max(fromMs, 0), Math.max(0, takeMs - 1));
-      synth.setBusLevel(trackBus('take'), levelRef.current);
+      setBusLevel(trackBus('take'), levelRef.current);
       // A moment we choose, on the clock everything else is choosing on.
       const beginsAtMs = audioNowMs() + SCHEDULE_LEAD_MS;
-      synth.scheduleSamples([
+      scheduleSamples([
         {
           bus: trackBus('take'),
           slot: TAKE_SLOT,
@@ -120,13 +115,13 @@ export function useTakeEngine(
       // Minted now rather than at render: a backend file token is good
       // for about two minutes (INV-NOTES-014).
       const resolved = await resolveAudioUri();
-      if (resolved == null || NativeSynth == null) {
+      if (resolved == null || !hasEngine()) {
         // Thrown, not swallowed. A command the engine will not take must
         // never read as a control that did nothing (INV-TPORT-006).
         throw new Error('no audio could be resolved for this take');
       }
       try {
-        return await schedule(NativeSynth, resolved, fromMs);
+        return await schedule(resolved, fromMs);
       } catch (error) {
         // Said as well as thrown. The transport carries the reason to the
         // surface; this puts the cause and the address it failed on in
@@ -141,13 +136,13 @@ export function useTakeEngine(
   const silence = useCallback(() => {
     // The whole engine. Silence must not be contingent on bookkeeping
     // being right about which bus a voice went to (INV-TPORT-005).
-    NativeSynth?.clearAll();
+    clearAll();
     endEngineRun();
   }, []);
 
   const setLevel = useCallback((level: number): void => {
     levelRef.current = Math.max(0, Math.min(1, level));
-    NativeSynth?.setBusLevel(trackBus('take'), levelRef.current);
+    setBusLevel(trackBus('take'), levelRef.current);
   }, []);
 
   /**

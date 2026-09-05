@@ -11,6 +11,16 @@ export const synthDouble: Record<string, jest.Mock> = {
   stop: jest.fn(),
   nowMs: jest.fn(),
   setBusLevel: jest.fn(),
+  /**
+   * Missing from this double until the call site stopped invoking it
+   * optionally.
+   *
+   * `NativeSynth?.setBusWave?.(...)` skips a method that is not there, so
+   * every suite using this double had been running with bus timbre
+   * silently never applied — and passing. Optional calls hide gaps in the
+   * thing that is supposed to prove the code works.
+   */
+  setBusWave: jest.fn(),
   schedule: jest.fn(),
   scheduleSamples: jest.fn(),
   loadSample: jest.fn(),

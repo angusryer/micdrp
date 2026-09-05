@@ -345,3 +345,38 @@ invariants:
       while looking for why a press of pause was not answered in exactly
       that configuration and answered in every other. Whether it is that
       cause is not established; that it is work done to no effect is.
+
+  - id: INV-TPORT-024
+    description: Only the audio layer speaks to the audio engine
+    severity: critical
+    check: >
+      `NativeSynth` is imported by modules under `src/audio/` and nowhere
+      else. A screen asks for a track to be quieter or a take to sound; it
+      does not invoke a TurboModule method. Verified by asserting no
+      module outside that directory imports the spec.
+
+      Six modules reached it directly, three of them UI hooks in
+      `screens/Notes/` calling `clearBus`, `clearAll`, `setBusLevel`,
+      `setBusWave`, `unloadSample` and `scheduleSamples`. Each read as
+      reasonable alone. Together they meant "what silenced the take?" had
+      six possible answers, which is the same shape as INV-TPORT-001 and
+      cost the same days.
+
+      The analysis side had always been the other way — one module owns
+      `NativeAudioEngine`, everything else speaks the app's contract — and
+      it has never produced a fault of this kind.
+
+  - id: INV-TPORT-025
+    description: A method is called, not called optionally
+    severity: high
+    check: >
+      Calls across the native boundary invoke the method directly once the
+      module is known to be present. `module?.method?.()` is not a safety
+      measure, it is a silent skip. Verified by test doubles carrying every
+      method the spec declares.
+
+      `setBusWave` was invoked optionally and was absent from the shared
+      test double. Every suite using that double ran with bus timbre never
+      applied, and every one of them passed. An optional call cannot fail,
+      so it cannot be caught being wrong — including by the tests meant to
+      prove the code works.

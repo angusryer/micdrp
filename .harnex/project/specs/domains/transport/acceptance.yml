@@ -250,3 +250,16 @@ acceptance:
     maps_to:
       capability: transport.observe
       invariants: [INV-TPORT-023]
+
+  - id: ACC-TPORT-019
+    interface: module
+    title: No screen imports the audio engine
+    given:
+      - the client source tree
+    when:
+      - imports of the native synth spec are collected
+    then:
+      - every importing module is under src/audio
+    maps_to:
+      capability: transport.play
+      invariants: [INV-TPORT-024]
