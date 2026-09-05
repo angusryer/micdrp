@@ -263,7 +263,7 @@ export function NoteShapeSection({
             // Marked, not hidden: they were sung (INV-NOTES-113).
             countedNotes={detail.countedNotes}
             headerHeight={SCRUB_BAND_HEIGHT}
-            header={({ contentWidth, timeAxis, firstNoteMs }) =>
+            header={({ contentWidth, timeAxis, firstNoteMs, onHeadDrag }) =>
               transport != null ? (
                 <Scrubber
                   positionMs={transport.drawnPositionMs}
@@ -274,6 +274,7 @@ export function NoteShapeSection({
                   onSeek={transport.seek}
                   onGrab={transport.grabHead}
                   onRelease={transport.dropHead}
+                  onDrag={onHeadDrag}
                 />
               ) : null
             }

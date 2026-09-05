@@ -68,6 +68,14 @@ export interface ScrubberProps {
   onGrab?: () => void;
   /** The hand has let go here. What was sounding carries on from it. */
   onRelease?: (ms: number) => void;
+  /**
+   * Where the finger is while it holds the head (INV-TPORT-033).
+   *
+   * Both coordinates, because the drawing moves under a still finger once
+   * it starts carrying it: the one on the drawing goes stale, the one on
+   * the screen does not. Null when the hand lets go.
+   */
+  onDrag?: (at: { contentX: number; screenX: number } | null) => void;
 }
 
 export function Scrubber({
@@ -78,7 +86,8 @@ export function Scrubber({
   firstNoteMs,
   onSeek,
   onGrab,
-  onRelease
+  onRelease,
+  onDrag
 }: ScrubberProps): React.JSX.Element | null {
   const { colors } = useTheme();
 
@@ -109,9 +118,10 @@ export function Scrubber({
         return;
       }
       grabbed.current = false;
+      onDrag?.(null);
       (onRelease ?? onSeek)(msAt(x));
     },
-    [msAt, onRelease, onSeek]
+    [msAt, onDrag, onRelease, onSeek]
   );
 
   // Everything here is ordinary code, so the gesture runs on the JavaScript
@@ -128,11 +138,15 @@ export function Scrubber({
   // the take stopped with nothing left to resume it.
   const drag = Gesture.Pan()
     .withTestId('scrub')
-    .onStart(() => {
+    .onStart((e) => {
       grabbed.current = true;
       onGrab?.();
+      onDrag?.({ contentX: e.x, screenX: e.absoluteX });
     })
-    .onUpdate((e) => seekTo(e.x))
+    .onUpdate((e) => {
+      onDrag?.({ contentX: e.x, screenX: e.absoluteX });
+      seekTo(e.x);
+    })
     .onEnd((e) => release(e.x))
     // A drag the system takes away has still let go of the head.
     .onFinalize((e) => release(e.x))

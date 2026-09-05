@@ -519,3 +519,19 @@ invariants:
       meet it exactly as it does from the start of a take; with the head
       past the middle the view runs forward faster than the take until it
       catches up. One line, two behaviours, and neither of them a jump.
+
+  - id: INV-TPORT-033
+    description: A drag near the edge carries the view with it
+    severity: high
+    check: >
+      While the head is held, a finger inside a margin of either edge of
+      the window scrolls the view that way, faster the closer it gets.
+      Away from the edges the view does not move. Verified by asserting
+      the speed is zero outside the margin, rises towards the edge, and
+      is signed by which edge is near.
+
+      Placing the head anywhere outside the current window meant dragging
+      the head, letting go, scrolling the drawing, taking hold of the head
+      again, and repeating — several gestures to express one intention.
+      The drawing is longer than the window by design (INV-NOTES-032), so
+      this is the ordinary case rather than the awkward one.

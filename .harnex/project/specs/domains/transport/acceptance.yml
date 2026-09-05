@@ -377,3 +377,19 @@ acceptance:
     maps_to:
       capability: transport.observe
       invariants: [INV-TPORT-032]
+
+  - id: ACC-TPORT-028
+    interface: view
+    title: Dragging the head to the edge scrolls the drawing
+    given:
+      - a take drawn wider than its window
+      - the head held by a finger
+    when:
+      - the finger comes within the margin of an edge
+    then:
+      - the view scrolls towards that edge
+      - it scrolls faster the closer the finger gets
+      - it does not scroll while the finger is away from both edges
+    maps_to:
+      capability: transport.seek
+      invariants: [INV-TPORT-033]

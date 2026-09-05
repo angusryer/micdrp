@@ -5,7 +5,13 @@
  * following did before this existed. The two read together: that file says
  * where the view wants to be, this one says how it is allowed to get there.
  */
-import { CATCH_UP_PER_SECOND, ledTowards } from '../followView';
+import {
+  CATCH_UP_PER_SECOND,
+  EDGE_PER_SECOND,
+  EDGE_PX,
+  edgeScrollPxPerMs,
+  ledTowards
+} from '../followView';
 import { offsetCentring, xForMs, type TimeAxis } from '../melodyScale';
 
 const WIDTH = 390;
@@ -131,5 +137,52 @@ describe('what following did before, where it was already right', () => {
       expect(offset).toBeGreaterThanOrEqual(last);
       last = offset;
     }
+  });
+});
+
+describe('dragging the head near an edge', () => {
+  /**
+   * ACC-TPORT-028 / INV-TPORT-033. Placing the head outside the window used
+   * to mean dragging it, letting go, scrolling the drawing, taking hold
+   * again, and repeating — several gestures for one intention.
+   */
+  it('does not scroll while the finger is away from both edges', () => {
+    for (const x of [WIDTH / 2, WIDTH / 3, WIDTH * 0.6, EDGE_PX + 1]) {
+      expect(edgeScrollPxPerMs(x, WIDTH)).toBe(0);
+    }
+  });
+
+  it('scrolls left near the left edge and right near the right', () => {
+    expect(edgeScrollPxPerMs(2, WIDTH)).toBeLessThan(0);
+    expect(edgeScrollPxPerMs(WIDTH - 2, WIDTH)).toBeGreaterThan(0);
+  });
+
+  it('scrolls faster the closer the finger gets', () => {
+    let last = 0;
+    for (const x of [EDGE_PX - 1, EDGE_PX / 2, 4, 0]) {
+      const speed = Math.abs(edgeScrollPxPerMs(x, WIDTH));
+      expect(speed).toBeGreaterThanOrEqual(last);
+      last = speed;
+    }
+  });
+
+  it('eases in from nothing rather than stepping', () => {
+    // Just inside the band is almost still, so crossing the line does not
+    // make the drawing leap.
+    expect(Math.abs(edgeScrollPxPerMs(EDGE_PX - 0.5, WIDTH))).toBeLessThan(0.01);
+  });
+
+  it('never exceeds its stated speed', () => {
+    const cap = (WIDTH * EDGE_PER_SECOND) / 1000;
+    for (let x = -20; x <= WIDTH + 20; x += 1) {
+      expect(Math.abs(edgeScrollPxPerMs(x, WIDTH))).toBeLessThanOrEqual(cap + 1e-9);
+    }
+  });
+
+  it('keeps a usable middle even in a narrow window', () => {
+    // The band never eats more than a third of each side, so a thumb can
+    // still rest in the middle of a small window without the drawing moving.
+    const NARROW = 120;
+    expect(edgeScrollPxPerMs(NARROW / 2, NARROW)).toBe(0);
   });
 });

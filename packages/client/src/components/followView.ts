@@ -52,3 +52,50 @@ export function ledTowards(
   const next = current + step;
   return next > wanted ? wanted : next;
 }
+
+/**
+ * How wide the band at each edge is, in px.
+ *
+ * About a thumb. Wide enough to reach without aiming, narrow enough that
+ * the middle of the window — where the head is usually placed — is still
+ * somewhere a finger can rest without the drawing sliding away.
+ */
+export const EDGE_PX = 56;
+
+/**
+ * The fastest an edge drag scrolls, as a fraction of the window per second.
+ *
+ * At the very edge. It eases in from nothing at the inner boundary of the
+ * band, so the drawing starts moving gently rather than leaping the moment
+ * a finger crosses a line.
+ */
+export const EDGE_PER_SECOND = 1.2;
+
+/**
+ * How fast the view should scroll for a finger at `x` in the window.
+ *
+ * Positive to the right, negative to the left, zero away from both edges.
+ * In px per millisecond, so a caller multiplies by frame time.
+ *
+ * Placing the head outside the window used to mean dragging it, letting
+ * go, scrolling the drawing, taking hold again, and repeating — several
+ * gestures for one intention (INV-TPORT-033).
+ */
+export function edgeScrollPxPerMs(x: number, viewportWidth: number): number {
+  'worklet';
+  const third = viewportWidth / 3;
+  const band = EDGE_PX < third ? EDGE_PX : third;
+  const full = (viewportWidth * EDGE_PER_SECOND) / 1000;
+  if (x < band) {
+    // Eased by how far into the band the finger is, so crossing the line
+    // is not a step change in speed.
+    const into = (band - x) / band;
+    return -full * (into > 1 ? 1 : into);
+  }
+  const fromRight = viewportWidth - x;
+  if (fromRight < band) {
+    const into = (band - fromRight) / band;
+    return full * (into > 1 ? 1 : into);
+  }
+  return 0;
+}

@@ -23,6 +23,7 @@ import Animated, {
   scrollTo,
   useAnimatedRef,
   useAnimatedReaction,
+  useFrameCallback,
   useSharedValue,
   type SharedValue
 } from 'react-native-reanimated';
@@ -31,7 +32,7 @@ import { MelodyView } from './MelodyView';
 import type { MelodyGrid, MelodyLayout, MelodyNote } from './melodyLayout';
 import { useMelodyZoom } from './useMelodyZoom';
 import { offsetCentring, offsetShowing, xForMs } from './melodyScale';
-import { ledTowards } from './followView';
+import { edgeScrollPxPerMs, ledTowards } from './followView';
 
 export interface ZoomableMelodyProps {
   notes: readonly MelodyNote[];
@@ -58,6 +59,13 @@ export interface ZoomableMelodyProps {
     contentWidth: number;
     timeAxis: MelodyLayout['timeAxis'];
     firstNoteMs: number;
+    /**
+     * Say where a finger holding the head is, so the drawing can carry it
+     * (INV-TPORT-033). Both coordinates: the one on the drawing, and the
+     * one on the screen, which is the only one that stays true while the
+     * drawing moves underneath. Null when the hand lets go.
+     */
+    onHeadDrag: (at: { contentX: number; screenX: number } | null) => void;
   }) => React.ReactNode;
   headerHeight?: number;
   /**
@@ -250,6 +258,55 @@ export function ZoomableMelody({
     }
   }, [isFollowing, ledTo, ledAtMs]);
 
+  /**
+   * Where a finger holding the head is, in the window, and where the view is
+   * while it carries it (INV-TPORT-033).
+   *
+   * `dragScreenX` is negative when no hand is on the head. The mapping from
+   * screen to window is worked out once, at the moment the head is taken
+   * hold of, from the two coordinates the gesture already reports — the
+   * drawing moves under a still finger, so its own x goes stale, and the
+   * screen one does not.
+   */
+  const dragScreenX = useSharedValue(-1);
+  const windowLeft = useSharedValue(0);
+  const dragViewX = useSharedValue(0);
+  const dragAtMs = useSharedValue(-1);
+
+  const onHeadDrag = useCallback(
+    (at: { contentX: number; screenX: number } | null) => {
+      if (at == null) {
+        dragScreenX.value = -1;
+        return;
+      }
+      if (dragScreenX.value < 0) {
+        dragViewX.value = scrollX.current;
+        dragAtMs.value = -1;
+        windowLeft.value = at.screenX - (at.contentX - scrollX.current);
+      }
+      dragScreenX.value = at.screenX;
+    },
+    [dragScreenX, windowLeft, dragViewX, dragAtMs]
+  );
+
+  useFrameCallback(({ timestamp }) => {
+    'worklet';
+    if (dragScreenX.value < 0 || contentWidth <= width) {
+      dragAtMs.value = -1;
+      return;
+    }
+    const since = dragAtMs.value < 0 ? 0 : timestamp - dragAtMs.value;
+    dragAtMs.value = timestamp;
+    const speed = edgeScrollPxPerMs(dragScreenX.value - windowLeft.value, width);
+    if (speed === 0 || since <= 0) {
+      return;
+    }
+    const furthest = contentWidth - width;
+    const next = dragViewX.value + speed * since;
+    dragViewX.value = next < 0 ? 0 : next > furthest ? furthest : next;
+    scrollTo(scroller, dragViewX.value, 0, false);
+  }, true);
+
   // Only where the drawing is wider than the window: with the whole take in
   // view there is nothing to bring into it.
   const bringIntoView = useCallback(
@@ -313,7 +370,8 @@ export function ZoomableMelody({
             {header({
               contentWidth: layout.contentWidth,
               timeAxis: layout.timeAxis,
-              firstNoteMs: layout.firstNoteMs
+              firstNoteMs: layout.firstNoteMs,
+              onHeadDrag
             })}
           </View>
         ) : null}
