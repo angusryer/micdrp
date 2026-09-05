@@ -428,3 +428,38 @@ invariants:
       unbounded stall, which is the exact thing the lock-free command
       ring exists to avoid. Memory-mapping a take reads as the simple
       answer and is the one shape that cannot be made real-time safe.
+
+  - id: INV-TPORT-029
+    description: A late reading is converged on, never jumped to
+    severity: critical
+    check: >
+      When a reading of the engine's position arrives, the drawn head
+      does not move to it. The difference is folded in as an error and
+      paid off over the sampling interval, so the head is continuous and
+      still ends up where the engine says. Verified by asserting a
+      reading behind the drawn position moves the head by nothing that
+      frame, and by the full error one interval later.
+
+      The reading is always behind. It is taken on the JS thread, so by
+      the time it reaches the UI thread it is stale by a render block
+      plus whatever that thread was busy with — while frame time has
+      carried the head forward at exactly the right rate. Snapping to it
+      made the head flick backwards and climb again, five times a
+      second, and made the lag of the JS thread visible as a defect in
+      the drawing.
+
+      No transport draws a playhead this way. A late reading is a
+      correction to apply, not a position to obey.
+
+  - id: INV-TPORT-030
+    description: The head does not move backwards while a run goes forwards
+    severity: high
+    check: >
+      While a run is playing, the drawn position never decreases between
+      frames. Verified by driving a sequence of late and early readings
+      and asserting the drawn value is monotonic.
+
+      A playhead that goes backwards during forward playback is telling
+      the singer something untrue about their take, and it is the shape
+      every fault in this history took: the drawing disagreeing with the
+      sound and the drawing being believed.

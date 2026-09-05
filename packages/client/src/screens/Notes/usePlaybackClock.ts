@@ -26,7 +26,12 @@ import {
 
 import { audioNowMs } from '../../audio/audioClock';
 import { engineRun } from '../../audio/engineTransport';
-import { drawnAt, readingAt } from './headSample';
+import {
+  drawnAt,
+  firstSample,
+  fold,
+  type HeadReading
+} from './headSample';
 
 /**
  * How often the engine's clock is read, in ms.
@@ -86,49 +91,62 @@ export function useDrawnPosition(
 ): SharedValue<number> {
   const positionMs = useSharedValue(fromMs);
   /**
-   * The last reading, and the frame that dates it — one value.
+   * What the JS thread has read, and which reading it is.
    *
-   * They were two, written one after the other from the JS thread, and a
-   * frame landing between the writes drew the new moment measured from
-   * the old stamp: a jump forward of the whole interval and a snap back
-   * next frame (INV-TPORT-021).
+   * One value, written once: as two they tore, and a frame landing between
+   * the writes drew the new moment against the old stamp (INV-TPORT-021).
    */
-  const sample = useSharedValue(readingAt(fromMs));
+  const reading = useSharedValue<HeadReading>({ atMs: fromMs, seq: 0 });
+  /**
+   * What the UI thread is drawing from.
+   *
+   * Owned entirely over there, because folding a reading in needs the
+   * position as it is at that frame — a number the JS thread does not have
+   * and would be stale by the time it did (INV-TPORT-029).
+   */
+  const sample = useSharedValue(firstSample(fromMs));
 
   useEffect(() => {
     positionMs.value = fromMs;
-    sample.value = readingAt(fromMs);
+    reading.value = { atMs: fromMs, seq: 0 };
+    sample.value = firstSample(fromMs);
     if (!running) {
       return;
     }
     const startedAt = audioNowMs();
+    let seq = 0;
     const read = () => {
       // The engine's own position where there is an engine to ask
       // (INV-TPORT-010, INV-TPORT-022). The computed one is the fallback
-      // for a binary older than this bundle, which is every binary until
-      // the run state is built (INV-TPORT-014).
+      // for a binary that cannot report a run at all (INV-TPORT-014).
       const run = engineRun();
-      sample.value = readingAt(
-        run != null ? run.positionMs : fromMs + Math.max(0, audioNowMs() - startedAt)
-      );
+      seq += 1;
+      reading.value = {
+        atMs:
+          run != null
+            ? run.positionMs
+            : fromMs + Math.max(0, audioNowMs() - startedAt),
+        seq
+      };
     };
     read();
     const id = setInterval(read, SAMPLE_MS);
     return () => clearInterval(id);
-  }, [running, fromMs, positionMs, sample]);
+  }, [running, fromMs, positionMs, reading, sample]);
 
   useFrameCallback(({ timeSinceFirstFrame }) => {
     'worklet';
     if (!running) {
       return;
     }
-    const held = sample.value;
-    if (held.frameMs < 0) {
-      // Dated by the UI thread's own clock, which is the only clock the
-      // interpolation may use.
-      sample.value = { atMs: held.atMs, frameMs: timeSinceFirstFrame };
+    const latest = reading.value;
+    if (latest.seq !== sample.value.seq) {
+      // Folded in against where the head is right now, so this frame draws
+      // exactly where the last one did and the gap closes over the interval
+      // that follows (INV-TPORT-029, INV-TPORT-030).
+      sample.value = fold(latest, positionMs.value, timeSinceFirstFrame);
     }
-    positionMs.value = drawnAt(held, timeSinceFirstFrame);
+    positionMs.value = drawnAt(sample.value, timeSinceFirstFrame);
   }, true);
 
   return positionMs;

@@ -305,3 +305,19 @@ acceptance:
     maps_to:
       capability: transport.play
       invariants: [INV-TPORT-028]
+
+  - id: ACC-TPORT-023
+    interface: module
+    title: A reading behind the head is paid off, not jumped to
+    given:
+      - a head drawn at 12200 ms
+      - a reading from the engine of 12000 ms
+    when:
+      - the reading is folded in
+    then:
+      - the head is still at 12200 ms that frame
+      - the head is at the engine's position one interval later
+      - the head never moves backwards in between
+    maps_to:
+      capability: transport.observe
+      invariants: [INV-TPORT-029, INV-TPORT-030]
