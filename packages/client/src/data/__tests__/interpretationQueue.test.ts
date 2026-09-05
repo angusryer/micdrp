@@ -69,14 +69,17 @@ describe('keeping what a person decided', () => {
   });
 
   it('does not drop a change made while the save was in flight', async () => {
-    let release: (() => void) | null = null;
+    let release: () => void = () => undefined;
     mockSave.mockImplementation(
-      () => new Promise<void>((resolve) => (release = resolve))
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        })
     );
     queueInterpretations('note-1', reading('a'));
     const flushing = flushInterpretations();
     queueInterpretations('note-1', reading('b'));
-    release?.();
+    release();
     await flushing;
     // 'b' arrived after 'a' was sent and before it was answered. Clearing
     // the queue on the strength of 'a' would lose it silently.

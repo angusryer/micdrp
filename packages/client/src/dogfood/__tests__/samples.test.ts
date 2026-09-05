@@ -2,6 +2,8 @@
  * Handing a take over: what travels with it, and what it costs to change
  * your mind. INV-DOG-031 through INV-DOG-037.
  */
+import type { NoteEventDto } from 'shared';
+
 import { shareTake } from '../samples';
 import { flushShares } from '../sampleUpload';
 import { withdrawTake } from '../sampleRecord';
@@ -45,8 +47,18 @@ jest.mock('../config', () => ({
 }));
 jest.mock('../origin', () => ({ runningBundleId: () => null }));
 
-const heard = [{ midi: 60, startMs: 0, endMs: 500, cents: 4 }];
-const corrected = [{ midi: 62, startMs: 0, endMs: 500, cents: 4 }];
+const note = (midi: number): NoteEventDto => ({
+  midi,
+  startMs: 0,
+  endMs: 500,
+  durationMs: 500,
+  cents: 4,
+  clarity: 0.9,
+  loudnessDb: -22
+});
+
+const heard = [note(60)];
+const corrected = [note(62)];
 
 const take = {
   noteId: 'note-1',

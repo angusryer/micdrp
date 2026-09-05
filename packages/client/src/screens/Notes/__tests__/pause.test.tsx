@@ -46,8 +46,12 @@ const scheduledFrom = (): number[] =>
     ([samples]) => samples[0].fromMs
   );
 
+/**
+ * What the bar reports upward. One head and no ticking number: a number
+ * that changes while a take runs re-renders the screen above this one
+ * (INV-TPORT-002).
+ */
 interface Transport {
-  positionMs: number;
   drawnPositionMs: SharedValue<number>;
 }
 

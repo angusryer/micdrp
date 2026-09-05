@@ -57,7 +57,9 @@ export function takeSummary(
   smoothed: readonly PitchFrame[]
 ): TakeSummary {
   const hasNotes = notes.length > 0;
-  const score = scorePitch(smoothed, selfTargets(notes));
+  // Copied because scorePitch takes a mutable array; the caller's frames
+  // are not ours to hand on.
+  const score = scorePitch([...smoothed], selfTargets(notes));
 
   const key = detectKey(notes);
   const keyLabel =

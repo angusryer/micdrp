@@ -544,7 +544,25 @@ export function useNoteDetail(id: string) {
     if (!outcome.ok || note == null) {
       return outcome.ok ? null : outcome.because;
     }
-    cacheReading(note.id, outcome.reading);
+    // The cache keeps an absent value as undefined and the reading keeps
+    // it as null. Both mean "nothing measured it"; only one of them fits
+    // in a NoteMeta, so they are translated here rather than blurred.
+    const measured = outcome.reading.summary;
+    cacheReading(note.id, {
+      ...outcome.reading,
+      summary:
+        measured == null
+          ? undefined
+          : {
+              ...measured,
+              key: measured.key ?? undefined,
+              tempoBpm: measured.tempoBpm ?? undefined,
+              inTuneRatio: measured.inTuneRatio ?? undefined,
+              meanCentsError: measured.meanCentsError ?? undefined,
+              rangeLowMidi: measured.rangeLowMidi ?? undefined,
+              rangeHighMidi: measured.rangeHighMidi ?? undefined
+            }
+    });
     await notesRepo.saveReading(note.id, outcome.reading);
     setReadingAt((was) => was + 1);
     return null;
@@ -718,7 +736,10 @@ export function useNoteDetail(id: string) {
      * The slowest and fastest the pulse ran, where it moved. One number
      * for a take that breathes is a claim nobody made (INV-NOTES-201).
      */
-    tappedRange: tapped == null ? null : [tapped.slowestBpm, tapped.fastestBpm],
+    tappedRange:
+      tapped == null
+        ? null
+        : ([tapped.slowestBpm, tapped.fastestBpm] as const),
     /** Gaps that look like a missed tap. Pointed at, never filled. */
     suspectGaps: timeline?.suspectGaps ?? [],
     /** The bars counted between marked downbeats (INV-NOTES-199). */

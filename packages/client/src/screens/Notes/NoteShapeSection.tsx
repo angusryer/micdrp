@@ -84,8 +84,11 @@ export interface NoteShapeSectionProps {
   /** Open the note's readings and analysis, from above the drawing. */
   onDetails?: () => void;
   transport?: {
-    positionMs: number;
-    /** The same moment, read every frame, for the drawn head (INV-NOTES-136). */
+    /**
+     * The moment, read every frame on the UI thread. The only shape it
+     * comes in: a number that ticks used to be here too, and publishing
+     * it re-rendered this whole screen twice a second (INV-TPORT-002).
+     */
     drawnPositionMs: SharedValue<number>;
     seek: (ms: number) => void;
     /** Whether the take is sounding, so the view follows only then. */
