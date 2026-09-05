@@ -22,7 +22,18 @@ export * from './percussion';
 export * from './readTake';
 export * from './tappedBeats';
 export * from './beatGrid';
-export * from './beatTimeline';
+export {
+  beatIntervals,
+  beatToMs,
+  countedBars,
+  countedMetre,
+  msToBeat,
+  tappedTempo,
+  timelineFromGrid,
+  timelineFromTaps,
+  type BeatTimeline,
+  type CountedBar
+} from './beatTimeline';
 export * from './quantizeToTimeline';
 export * from './levelMatch';
 export * from './snapToGrid';
