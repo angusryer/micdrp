@@ -66,6 +66,17 @@ export interface InterpretationDto {
    */
   beats?: TappedBeatDto[];
   /**
+   * Which beats of the bar those taps were meant for (INV-NOTES-209).
+   *
+   * Tapping every beat to establish a tempo is most of a performance spent
+   * on bookkeeping, so a take assumes the backbeat and is told otherwise
+   * afterwards. A sentence the singer says about their own take, which is
+   * why it lives with the edits and not with the reading — and why absent
+   * means nobody has said, so the grid stays exactly as it was
+   * (INV-NOTES-161).
+   */
+  tapPattern?: { beats: number[]; beatsPerBar: number };
+  /**
    * That somebody asked for the harmony, and what read it (INV-NOTES-171).
    *
    * Absent means nobody has asked, and a note nobody has asked shows no
@@ -117,6 +128,45 @@ function isNoteEdit(value: unknown): value is NoteEditDto {
  * screen: someone's note opening at all matters more than one bad record, and
  * the alternative is a take nobody can look at (INV-NOTES-022).
  */
+/** A tap that says where it was and whether it starts a bar. */
+function isTappedBeat(raw: unknown): raw is TappedBeatDto {
+  const v = raw as TappedBeatDto | null;
+  return (
+    v != null &&
+    typeof v.atMs === 'number' &&
+    typeof v.tappedAtMs === 'number' &&
+    typeof v.isDownbeat === 'boolean'
+  );
+}
+
+/** Which beats of the bar the taps were meant for (INV-NOTES-209). */
+function isTapPattern(
+  raw: unknown
+): raw is { beats: number[]; beatsPerBar: number } {
+  const v = raw as { beats?: unknown; beatsPerBar?: unknown } | null;
+  return (
+    v != null &&
+    Array.isArray(v.beats) &&
+    v.beats.length > 0 &&
+    v.beats.every((b) => Number.isInteger(b) && (b as number) >= 1) &&
+    typeof v.beatsPerBar === 'number' &&
+    Number.isInteger(v.beatsPerBar) &&
+    v.beatsPerBar > 0
+  );
+}
+
+/** That somebody asked for the harmony, and what read it. */
+function isHarmonyAsk(
+  raw: unknown
+): raw is { askedAtMs: number; analysisVersion: number } {
+  const v = raw as { askedAtMs?: unknown; analysisVersion?: unknown } | null;
+  return (
+    v != null &&
+    typeof v.askedAtMs === 'number' &&
+    typeof v.analysisVersion === 'number'
+  );
+}
+
 export function parseInterpretations(raw: unknown): InterpretationDto[] {
   if (!Array.isArray(raw)) {
     return [];
@@ -136,7 +186,18 @@ export function parseInterpretations(raw: unknown): InterpretationDto[] {
       ...(Array.isArray(v.barLines)
         ? { barLines: v.barLines.filter((n) => Number.isInteger(n) && n >= 0) }
         : {}),
-      ...(Array.isArray(v.notes) ? { notes: v.notes.filter(isNoteEdit) } : {})
+      ...(Array.isArray(v.notes) ? { notes: v.notes.filter(isNoteEdit) } : {}),
+      // Everything below is a decision a person made about their own take,
+      // and every one of them was being dropped here. The parser listed
+      // the fields it carried, so each one added since was silently left
+      // behind: the tempo somebody set, the beat they tapped in, what
+      // those taps were for, and that they had asked for the harmony at
+      // all. A person tapping a beat that does not survive being read back
+      // is the app forgetting what it was told (INV-NOTES-130).
+      ...(typeof v.bpm === 'number' && v.bpm > 0 ? { bpm: v.bpm } : {}),
+      ...(Array.isArray(v.beats) ? { beats: v.beats.filter(isTappedBeat) } : {}),
+      ...(isTapPattern(v.tapPattern) ? { tapPattern: v.tapPattern } : {}),
+      ...(isHarmonyAsk(v.harmony) ? { harmony: v.harmony } : {})
     });
   }
   return out;

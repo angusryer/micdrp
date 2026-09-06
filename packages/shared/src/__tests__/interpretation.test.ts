@@ -35,6 +35,21 @@ describe('parseInterpretations', () => {
     expect(parseInterpretations([{ name: 'x' }, reading()])).toHaveLength(1);
   });
 
+  it('keeps the decisions that are not chords', () => {
+    // Everything a person stated about their own take, and every one of
+    // them was being dropped on the way in — the tempo they set, the beat
+    // they tapped, and that they had asked for the harmony at all. The
+    // parser listed the fields it carried, so each one added since was
+    // silently left behind (INV-NOTES-130, INV-NOTES-123, INV-NOTES-171).
+    const stated = reading({
+      bpm: 96,
+      beats: [{ atMs: 500, tappedAtMs: 500, isDownbeat: true }],
+      tapPattern: { beats: [2, 4], beatsPerBar: 4 },
+      harmony: { askedAtMs: 1234, analysisVersion: 3 }
+    });
+    expect(parseInterpretations([stated])).toEqual([stated]);
+  });
+
   it('drops a chord edit with an impossible root', () => {
     const parsed = parseInterpretations([
       reading({ chords: [{ atMs: 0, rootPc: 99, quality: 'min' }] })
