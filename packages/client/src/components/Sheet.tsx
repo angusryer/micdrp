@@ -27,6 +27,22 @@ import { useTheme } from '../theme';
 /** How tall a sheet may be: a fraction of the screen, or what it needs. */
 export type SheetDetent = number | 'auto';
 
+/**
+ * Where a sheet opened by choosing something on the graph stops
+ * (INV-NOTES-078).
+ *
+ * Part way, and dragged higher only if someone wants it there. Undimmed is
+ * not enough on its own: a sheet sized to its own content rises as far as
+ * that content asks for, and a tall one covers the graph as completely as a
+ * dimmed one would — the background is live and there is nothing left of it
+ * to see. The change being made is on the graph, which is the reason the
+ * sheet was opened.
+ *
+ * One decision in one place, so the fifth such sheet cannot be written with
+ * a different answer.
+ */
+export const OVER_THE_GRAPH: SheetDetent[] = [0.4, 0.9];
+
 export interface SheetProps {
   /** Its native name, which is also how a test tells one sheet from another. */
   name: string;

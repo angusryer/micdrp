@@ -22,7 +22,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Sheet } from '../../components/Sheet';
+import { OVER_THE_GRAPH, Sheet } from '../../components/Sheet';
 import { ShareTakeSection } from '../../dogfood/ShareTakeSection';
 
 import { useTheme } from '../../theme';
@@ -82,7 +82,7 @@ export function NoteDetailsPage({
       // Two fifths to open at, most of the screen to drag to. Not 'auto':
       // what is in here is nearly a screenful, so fitting the content would
       // put it back where it started.
-      detents={[0.4, 0.9]}
+      detents={OVER_THE_GRAPH}
       // The graph behind it is the thing being watched while these are
       // turned. Dimming it would hide the very change being looked for.
       isDimmed={false}

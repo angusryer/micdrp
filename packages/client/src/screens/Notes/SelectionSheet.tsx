@@ -18,7 +18,7 @@
 import React from 'react';
 
 import type { Chosen } from '../../components/graphSelection';
-import { Sheet } from '../../components/Sheet';
+import { OVER_THE_GRAPH, Sheet } from '../../components/Sheet';
 import { useTheme } from '../../theme';
 import { SelectionBody } from './SelectionBody';
 import type { useNoteDetail } from './useNoteDetail';
@@ -51,7 +51,11 @@ export function SelectionSheet({
       // disagree about whether anything is chosen.
       onClose={() => onSelect([])}
       // The graph stays live behind it, which is the whole point
-      // (INV-NOTES-078).
+      // (INV-NOTES-078) — and stays *visible*, which undimmed does not give
+      // you on its own: sized to its content this rose as far as the content
+      // asked for, and a tall selection covered the graph as completely as
+      // dimming it would have.
+      detents={OVER_THE_GRAPH}
       isDimmed={false}
       onCover={onCover}
       background={colors.neutral50}

@@ -52,6 +52,14 @@ invariants:
       never both — and movement is the one that has to be watched while it
       happens.
 
+      Undimmed is not enough on its own. A sheet sized to its own content
+      rises as far as that content asks for, and a tall one covers the
+      graph as completely as a dimmed one would — the background is live
+      and there is nothing left of it to see. Anything opened by choosing
+      something on the graph opens part way and is dragged higher only if
+      someone wants it there. It is one decision, held in one place, so
+      the fifth such sheet cannot be written with a different answer.
+
   - id: INV-NOTES-082
     description: Every control sits in the card of the thing it controls
     severity: major

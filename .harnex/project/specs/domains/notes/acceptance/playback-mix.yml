@@ -139,3 +139,17 @@ acceptance:
     maps_to:
       capability: notes.set_playback_mix
       invariants: [INV-NOTES-175, INV-NOTES-144]
+
+  - id: ACC-NOTES-221
+    interface: ui
+    title: A sheet opened from the graph leaves the graph in view
+    given:
+      - a signed-in singer S viewing a note with a melody
+    when:
+      - singer S taps a sung note on the graph
+    then:
+      - the note field selectionSheetOpensPartWay is true
+      - the note field graphRemainsVisible is true
+    maps_to:
+      capability: notes.set_playback_mix
+      invariants: [INV-NOTES-078]
