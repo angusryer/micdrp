@@ -153,3 +153,31 @@ acceptance:
     maps_to:
       capability: notes.set_playback_mix
       invariants: [INV-NOTES-078]
+
+  - id: ACC-NOTES-222
+    interface: module
+    title: The same taps read differently under a different pattern
+    given:
+      - a take tapped evenly four times
+    when:
+      - the pattern is beats two and four of four
+      - and then every beat of four
+    then:
+      - the second tempo is half the first
+      - the downbeat moves with it
+    maps_to:
+      capability: notes.set_playback_mix
+      invariants: [INV-NOTES-209]
+
+  - id: ACC-NOTES-223
+    interface: ui
+    title: A take with no stated pattern keeps the grid it had
+    given:
+      - a signed-in singer S with a note recorded before patterns existed
+    when:
+      - singer S opens the note
+    then:
+      - the note field gridUnchanged is true
+    maps_to:
+      capability: notes.set_playback_mix
+      invariants: [INV-NOTES-209, INV-NOTES-161]

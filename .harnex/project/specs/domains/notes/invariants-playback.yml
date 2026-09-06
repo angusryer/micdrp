@@ -915,7 +915,7 @@ invariants:
       the drawing and the transport must read the same one.
 
   - id: INV-NOTES-161
-    description: A tapped beat is a mark, and changes nothing but itself
+    description: Narrowed — a tapped beat concludes nothing on its own
     severity: major
     check: >
       Tapping lays a mark at the moment the finger landed and does nothing
@@ -1096,3 +1096,28 @@ invariants:
       handle where it was. It was right about the take and silent about
       it, which is the worst of both.
 
+
+  - id: INV-NOTES-209
+    description: Taps mean what the singer says they mean
+    severity: major
+    check: >
+      A take carries which beats of the bar its taps were meant for. The
+      grid follows from the taps and that statement together, and from
+      nothing else: no pattern is guessed from the taps, and changing the
+      statement is the only thing that moves the grid. A take with no
+      statement keeps the grid it had. Verified by asserting the same
+      taps give a different tempo under a different pattern, and that a
+      take with no pattern is untouched.
+
+      This narrows INV-NOTES-161 rather than reversing it. That invariant
+      was written after a grid fitted to a handful of taps moved the bar
+      lines and re-cut the harmony of a take somebody was reading — every
+      step defensible, the whole a surprise. The lesson was that the app
+      must not draw conclusions from marks, and it holds: nothing here is
+      concluded. What changed is that the singer can now say what the
+      marks were for, and be believed.
+
+      Tapping every beat of a song to establish its tempo is most of a
+      performance spent on bookkeeping. Two and four is what gets tapped,
+      so it is what a take assumes, and a take that was tapped some other
+      way is told so afterwards rather than guessed at.
