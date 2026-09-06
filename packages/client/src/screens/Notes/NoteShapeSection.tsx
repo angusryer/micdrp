@@ -19,7 +19,7 @@ import React, {
 } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { octaveLabel } from 'logic';
+import { octaveLabel, pickupEndsAtMs } from 'logic';
 
 import { GraphLayers } from './GraphLayers';
 import { RhythmBand, rhythmBandHeight } from '../../components/RhythmBand';
@@ -202,6 +202,19 @@ export function NoteShapeSection({
   // was sung. This is the only sign of it, and only while it is not zero
   // (INV-NOTES-058).
   const shifted = octaveLabel(octaves);
+  /**
+   * Where the pickup ends, which is where the music proper begins
+   * (INV-NOTES-210).
+   *
+   * The first bar line. It was the first note, so moving that note later
+   * grew the pickup under it and put the moment it had started at out of
+   * the head's reach — an edit to one note quietly redefining where the
+   * music began.
+   */
+  const pickupEndsMs = useMemo(
+    () => pickupEndsAtMs(gridForView ?? detail.grid, detail.bars.layout.lines),
+    [gridForView, detail.grid, detail.bars.layout.lines]
+  );
   // The rail takes its room out of the drawing rather than out of the page:
   // the graph still reaches both edges of the card, and the strip is part of
   // the graph rather than something beside it (INV-NOTES-142).
@@ -260,17 +273,24 @@ export function NoteShapeSection({
             // The whole recording, so a take that ran on after the last
             // note is not drawn as one that stopped there (INV-NOTES-108).
             toMs={detail.note?.durationMs}
+            // Where the music proper begins, from the bars rather than from
+            // wherever the first note happens to start (INV-NOTES-210).
+            pickupEndsMs={pickupEndsMs}
             // Marked, not hidden: they were sung (INV-NOTES-113).
             countedNotes={detail.countedNotes}
             headerHeight={SCRUB_BAND_HEIGHT}
-            header={({ contentWidth, timeAxis, firstNoteMs, onHeadDrag }) =>
+            header={({ contentWidth, timeAxis, onHeadDrag }) =>
               transport != null ? (
                 <Scrubber
                   positionMs={transport.drawnPositionMs}
                   timeAxis={timeAxis}
                   contentWidth={contentWidth}
                   height={SCRUB_BAND_HEIGHT}
-                  firstNoteMs={firstNoteMs}
+                  // The whole recording, pickup included. The head used to
+                  // stop at the first note, so moving that note later put
+                  // the moment it had started at out of reach — a pickup is
+                  // take that was sung, not a margin (INV-NOTES-210).
+                  firstNoteMs={0}
                   onSeek={transport.seek}
                   onGrab={transport.grabHead}
                   onRelease={transport.dropHead}

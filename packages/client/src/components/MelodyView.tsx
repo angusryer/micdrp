@@ -48,6 +48,15 @@ export interface MelodyViewProps {
    */
   grid?: MelodyGrid;
   /**
+   * Where the pickup ends, in ms (INV-NOTES-210).
+   *
+   * The first bar line — a fact about the arrangement. Absent, the first
+   * note stands in for it, which is what this used to be: the pickup was
+   * everything before that note, so moving it later grew the pickup under
+   * it and silently redefined where the music began.
+   */
+  pickupEndsMs?: number;
+  /**
    * Pixels per beat. Given, a beat is that wide wherever it falls and the
    * drawing runs past `width` for a caller to scroll (INV-NOTES-032).
    * Omitted, the whole take is fitted to `width`, which is what a thumbnail
@@ -88,7 +97,8 @@ export function MelodyView({
   toMs,
   countedNotes = 0,
   underlay,
-  underlayColor
+  underlayColor,
+  pickupEndsMs
 }: MelodyViewProps): React.JSX.Element {
   const { colors } = useTheme();
   const barColor = color ?? colors.primary500;
@@ -125,7 +135,7 @@ export function MelodyView({
     const path = Skia.Path.Make();
     let any = false;
     if (axis.t0 < layout.firstNoteMs) {
-      writePickupHatch(path, 0, xForMs(axis, layout.firstNoteMs), height);
+      writePickupHatch(path, 0, xForMs(axis, pickupEndsMs ?? layout.firstNoteMs), height);
       any = true;
     }
     const end = axis.t0 + axis.span;

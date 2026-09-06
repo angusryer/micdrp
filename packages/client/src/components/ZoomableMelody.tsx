@@ -47,6 +47,12 @@ export interface ZoomableMelodyProps {
   underlayColor?: string;
   /** Where the recording began, when earlier than the first sung note. */
   fromMs?: number;
+  /**
+   * Where the pickup ends, in ms — the first bar line (INV-NOTES-210).
+   *
+   * A fact about the arrangement, so editing a note leaves it alone.
+   */
+  pickupEndsMs?: number;
   /** Where the recording ended, when later than the last note (INV-NOTES-108). */
   toMs?: number;
   /** How many opening notes were counting rather than singing. */
@@ -143,6 +149,7 @@ export function ZoomableMelody({
   underlayColor,
   fromMs,
   toMs,
+  pickupEndsMs,
   countedNotes,
   header,
   headerHeight = 0,
@@ -409,6 +416,7 @@ export function ZoomableMelody({
             countedNotes={countedNotes}
             underlay={underlay}
             underlayColor={underlayColor}
+            pickupEndsMs={pickupEndsMs}
           />
           {children?.({
             contentWidth: layout.contentWidth,

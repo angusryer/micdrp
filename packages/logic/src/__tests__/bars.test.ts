@@ -7,6 +7,7 @@
  * replaces guessing harder with letting someone say.
  */
 import {
+  pickupEndsAtMs,
   proposeBars,
   readBars,
   stepAtMs,
@@ -147,5 +148,32 @@ describe('stepAtMs', () => {
 
   it('never goes below the start of the take', () => {
     expect(stepAtMs(-999, 0, 500, 4)).toBe(0);
+  });
+});
+
+describe('where the pickup ends (INV-NOTES-210)', () => {
+  const grid = { bpm: 120, offsetMs: 0, stepsPerBeat: 4 };
+
+  it('is the first bar line, wherever the notes happen to sit', () => {
+    // Half a bar of pickup at 120bpm in 4/4: 8 steps of 125ms.
+    expect(pickupEndsAtMs(grid, [8, 24, 40])).toBeCloseTo(1000, 6);
+  });
+
+  it('is nothing at all for a take that opens on a downbeat', () => {
+    expect(pickupEndsAtMs(grid, [0, 16, 32])).toBe(0);
+    expect(pickupEndsAtMs(grid, [])).toBe(0);
+  });
+
+  it('moves with the bar line, which is the only thing that may move it', () => {
+    expect(pickupEndsAtMs(grid, [4])).toBeCloseTo(500, 6);
+    expect(pickupEndsAtMs(grid, [12])).toBeCloseTo(1500, 6);
+  });
+
+  it('counts from where the grid starts, not from zero', () => {
+    expect(pickupEndsAtMs({ ...grid, offsetMs: 300 }, [8])).toBeCloseTo(1300, 6);
+  });
+
+  it('says nothing for a grid with no tempo', () => {
+    expect(pickupEndsAtMs({ ...grid, bpm: 0 }, [8])).toBe(0);
   });
 });

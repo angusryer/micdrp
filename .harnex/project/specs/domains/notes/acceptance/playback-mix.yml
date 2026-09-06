@@ -196,3 +196,17 @@ acceptance:
     maps_to:
       capability: notes.set_playback_mix
       invariants: [INV-NOTES-209, INV-NOTES-161]
+
+  - id: ACC-NOTES-225
+    interface: ui
+    title: Moving the first note leaves the pickup where it was
+    given:
+      - a signed-in singer S with a note whose take has a pickup
+    when:
+      - singer S moves the first note later
+    then:
+      - the note field pickupEndsAtMs is unchanged
+      - the note field headReachesStartOfTake is true
+    maps_to:
+      capability: notes.set_playback_mix
+      invariants: [INV-NOTES-210, INV-NOTES-174]

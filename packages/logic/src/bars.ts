@@ -113,3 +113,28 @@ export function readBars(layout: BarLayout, totalSteps: number): Bar[] {
   }
   return bars;
 }
+
+/**
+ * Where the pickup ends, in ms — which is where the music proper begins
+ * (INV-NOTES-210).
+ *
+ * The first bar line, and nothing to do with where the first note happens to
+ * start. The pickup used to be everything before that note, so moving it
+ * later grew the pickup under it and silently redefined where the music
+ * began; a note is a thing inside an arrangement, and moving one says
+ * nothing about where the bars are.
+ *
+ * Zero where the take opens on a downbeat, which is a take with no pickup
+ * rather than a pickup of no length — callers that draw one draw nothing.
+ */
+export function pickupEndsAtMs(
+  grid: { bpm: number; offsetMs: number; stepsPerBeat: number },
+  lines: readonly number[]
+): number {
+  const first = lines.length > 0 ? lines[0] : 0;
+  if (!(grid.bpm > 0) || !(grid.stepsPerBeat > 0) || first <= 0) {
+    return 0;
+  }
+  const stepMs = 60000 / grid.bpm / grid.stepsPerBeat;
+  return Math.max(0, grid.offsetMs + first * stepMs);
+}

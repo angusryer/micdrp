@@ -1123,3 +1123,28 @@ invariants:
       the app concluding anything — until it is set, the take has no
       pattern and the grid is untouched. The difference between offering
       and asserting is the whole of what INV-NOTES-161 was written about.
+
+  - id: INV-NOTES-210
+    description: The pickup is a region of the arrangement, not a gap before a note
+    severity: major
+    check: >
+      What is drawn and treated as the pickup runs from the start of the
+      take to the first bar line. It does not follow the first note:
+      moving that note, or shortening it, leaves the pickup exactly where
+      it was. The whole recording is reachable, pickup included, because
+      the pickup is take that was sung and not a margin. Verified by
+      asserting the drawn pickup and the head's range are unchanged by an
+      edit to the first note.
+
+      The pickup was everything before the first note. So moving the
+      first note later grew the pickup under it, and the head could no
+      longer reach the moment the note used to start at — an edit to one
+      note silently redefined where the music began and what could be
+      listened to.
+
+      Where the music begins is a fact about the arrangement, which is
+      already stated: the bars say it, and the first bar line is exactly
+      the boundary. A note is a thing inside that arrangement and moving
+      one says nothing about where the bars are — the same reasoning as
+      INV-NOTES-174, that correcting a note must not move the bar lines
+      out from under the person correcting it.
