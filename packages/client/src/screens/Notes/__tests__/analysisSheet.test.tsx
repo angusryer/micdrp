@@ -26,6 +26,12 @@ const fakeDetail = () =>
     grid: { bpm: 120, beatsPerBar: 4, stepsPerBeat: 4, offsetMs: 0 },
     hasGrid: true,
     chords: { slots: [] },
+    // The pickup is set from here now, so the page asks the bars for it.
+    bars: {
+      pickup: 0,
+      setPickup: jest.fn(),
+      layout: { lines: [0, 16], stepsPerBeat: 4, isCompound: false }
+    },
     bpm: 120,
     readBpm: 120,
     isBpmByHand: false,

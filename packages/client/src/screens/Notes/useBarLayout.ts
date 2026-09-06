@@ -11,8 +11,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   addBarLine,
   moveBarLine,
+  pickupSteps,
   proposeBars,
   removeBarLine,
+  withPickup,
   type BarLayout,
   type MusicalGrid
 } from 'logic';
@@ -24,6 +26,16 @@ export interface BarArrangement {
   move: (lineIndex: number, toStep: number) => void;
   split: (atStep: number) => void;
   merge: (lineIndex: number) => void;
+  /**
+   * How long the pickup runs, in steps, and saying how long it should be
+   * (INV-NOTES-211).
+   *
+   * Saying it shifts every line by the same amount, so the bars keep the
+   * lengths they had — which `move` cannot do, because it holds a line
+   * between its neighbours and resizes the first bar instead.
+   */
+  pickup: number;
+  setPickup: (toSteps: number) => void;
   /** True once a person has arranged the bars themselves. */
   isArranged: boolean;
 }
@@ -110,6 +122,11 @@ export function useBarLayout(
       [applied, layout]
     ),
     split: useCallback((atStep) => applied(addBarLine(layout, atStep)), [applied, layout]),
+    pickup: pickupSteps(layout),
+    setPickup: useCallback(
+      (toSteps: number) => applied(withPickup(layout, toSteps, totalSteps)),
+      [applied, layout, totalSteps]
+    ),
     merge: useCallback(
       (lineIndex) => applied(removeBarLine(layout, lineIndex)),
       [applied, layout]

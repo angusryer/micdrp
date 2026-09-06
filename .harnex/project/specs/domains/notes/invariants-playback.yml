@@ -1148,3 +1148,25 @@ invariants:
       one says nothing about where the bars are — the same reasoning as
       INV-NOTES-174, that correcting a note must not move the bar lines
       out from under the person correcting it.
+
+  - id: INV-NOTES-211
+    description: A pickup has a length, said in beats
+    severity: major
+    check: >
+      How long the pickup runs can be said outright, in beats, and saying
+      it moves every bar line by the same amount — the bars keep the
+      lengths they had and the whole arrangement shifts. Verified by
+      asserting that setting a pickup preserves every bar's length, that
+      setting it to nothing puts the first line on the take's start, and
+      that lines pushed past the end of the take are dropped rather than
+      kept beyond it.
+
+      The pickup could only be changed by dragging the first bar line,
+      which moves one line against its neighbours: it resized the first
+      bar instead of shifting the music, so the only way to say "this
+      take has a two-beat pickup" was to drag every line in turn and hope
+      they stayed even.
+
+      Shifting rather than resizing is what makes it one statement. A
+      pickup is how far into a bar the singing started, and the bars
+      after it are unchanged by that — they were always going to be bars.

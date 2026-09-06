@@ -210,3 +210,17 @@ acceptance:
     maps_to:
       capability: notes.set_playback_mix
       invariants: [INV-NOTES-210, INV-NOTES-174]
+
+  - id: ACC-NOTES-226
+    interface: ui
+    title: A pickup can be set in beats
+    given:
+      - a signed-in singer S with a note whose take opens on a downbeat
+    when:
+      - singer S sets the pickup to two beats
+    then:
+      - the note field pickupBeats is 2
+      - the note field barLengthsUnchanged is true
+    maps_to:
+      capability: notes.set_playback_mix
+      invariants: [INV-NOTES-211, INV-NOTES-210]

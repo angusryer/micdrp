@@ -34,6 +34,7 @@ import { RereadCard } from './RereadCard';
 import { TuningPanel } from './TuningPanel';
 import { TempoRow } from './TempoRow';
 import { TapPatternRow } from './TapPatternRow';
+import { PickupRow } from './PickupRow';
 import type { useNoteDetail } from './useNoteDetail';
 
 /**
@@ -153,6 +154,18 @@ export function NoteDetailsPage({
             tappedBpm={detail.tappedBpm}
             tappedRange={detail.tappedRange}
             onSet={detail.setBpm}
+          />
+
+          {/* How far into a bar the singing started. Beside the tap pattern
+              because they are the same kind of sentence: both say where the
+              bar sits, and neither is a reading of the take
+              (INV-NOTES-211). */}
+          <PickupRow
+            beats={Math.round(detail.bars.pickup / detail.grid.stepsPerBeat)}
+            beatsPerBar={detail.grid.beatsPerBar}
+            onSet={(beats) =>
+              detail.bars.setPickup(beats * detail.grid.stepsPerBeat)
+            }
           />
 
           {/* Beside the tempo because it is one: this is how the taps become

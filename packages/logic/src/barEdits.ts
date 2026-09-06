@@ -102,3 +102,48 @@ export function stepAtMs(
   const stepMs = beatMs / stepsPerBeat;
   return Math.max(0, Math.round((ms - offsetMs) / stepMs));
 }
+
+/**
+ * How long the pickup runs, in steps — the first bar line (INV-NOTES-211).
+ *
+ * Zero for a take that opens on a downbeat, which has no pickup rather than
+ * one of no length.
+ */
+export function pickupSteps(layout: BarLayout): number {
+  return layout.lines.length > 0 ? Math.max(0, layout.lines[0]) : 0;
+}
+
+/**
+ * Say how long the pickup is, and move the music to suit (INV-NOTES-211).
+ *
+ * Every line shifts by the same amount, so the bars keep the lengths they
+ * had and the whole arrangement moves. `moveBarLine` cannot do this: it
+ * holds a line between its neighbours, which resizes the first bar instead
+ * of shifting the music — so the only way to say "this take has a two-beat
+ * pickup" was to drag every line in turn and hope they stayed even.
+ *
+ * A pickup is how far into a bar the singing started. The bars after it are
+ * unchanged by that; they were always going to be bars.
+ *
+ * Lines pushed past the end of the take are dropped rather than kept beyond
+ * it, and a shift that would leave nothing is refused.
+ */
+export function withPickup(
+  layout: BarLayout,
+  toSteps: number,
+  totalSteps: number
+): BarLayout {
+  const lines = tidy(layout.lines);
+  if (lines.length === 0 || toSteps < 0) {
+    return layout;
+  }
+  const shift = Math.round(toSteps) - lines[0];
+  if (shift === 0) {
+    return layout;
+  }
+  const moved = lines
+    .map((step) => step + shift)
+    .filter((step) => step >= 0 && step < totalSteps);
+  // A take still has to have somewhere its bars begin.
+  return moved.length > 0 ? { ...layout, lines: moved } : layout;
+}

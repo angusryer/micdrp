@@ -10,7 +10,9 @@ import {
   moveBarLine,
   readBars,
   removeBarLine,
-  type BarLayout
+  type BarLayout,
+  pickupSteps,
+  withPickup
 } from '../index';
 
 const SIMPLE = { stepsPerBeat: 4, isCompound: false };
@@ -142,5 +144,58 @@ describe('INV-TRANS-014: any sequence of edits leaves a usable arrangement', () 
       }
       expect(expected).toBe(64);
     }
+  });
+});
+
+describe('saying how long the pickup is (INV-NOTES-211)', () => {
+  /**
+   * ACC-NOTES-226. The pickup could only be changed by dragging the first
+   * bar line, which holds that line between its neighbours — so it resized
+   * the first bar instead of shifting the music, and saying "this take has a
+   * two-beat pickup" meant dragging every line in turn and hoping they
+   * stayed even.
+   */
+  const layout: BarLayout = {
+    lines: [0, 16, 32, 48],
+    stepsPerBeat: 4,
+    isCompound: false
+  };
+  const TOTAL = 64;
+
+  /** How long each bar runs, which a pickup change must not touch. */
+  const lengths = (of: BarLayout): number[] =>
+    of.lines.slice(1).map((step, i) => step - of.lines[i]);
+
+  it('ACC-NOTES-226: shifts every line by the same amount', () => {
+    const withTwo = withPickup(layout, 8, TOTAL);
+    expect(withTwo.lines).toEqual([8, 24, 40, 56]);
+  });
+
+  it('leaves every bar the length it was', () => {
+    expect(lengths(withPickup(layout, 8, TOTAL))).toEqual(lengths(layout));
+  });
+
+  it('reads back the pickup it was given', () => {
+    expect(pickupSteps(withPickup(layout, 8, TOTAL))).toBe(8);
+    expect(pickupSteps(layout)).toBe(0);
+  });
+
+  it('takes the pickup away again', () => {
+    const withTwo = withPickup(layout, 8, TOTAL);
+    expect(withPickup(withTwo, 0, TOTAL).lines).toEqual(layout.lines);
+  });
+
+  it('drops the lines a shift pushes past the end of the take', () => {
+    // Shifted far enough that the last bar no longer starts inside the take.
+    const late = withPickup(layout, 12, 56);
+    expect(late.lines).toEqual([12, 28, 44]);
+  });
+
+  it('refuses a shift that would leave no bars at all', () => {
+    expect(withPickup(layout, 60, 8)).toEqual(layout);
+  });
+
+  it('refuses a pickup before the start of the take', () => {
+    expect(withPickup(layout, -4, TOTAL)).toEqual(layout);
   });
 });
