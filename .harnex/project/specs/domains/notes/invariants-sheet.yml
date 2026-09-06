@@ -155,3 +155,24 @@ invariants:
 
       Drawn from the same icon set as the card, so the guide cannot come
       to describe an icon the card no longer has.
+
+  - id: INV-NOTES-214
+    description: A dimmed sheet is offered one height
+    severity: major
+    check: >
+      A sheet that dims what is behind it declares a single detent. The
+      background's scale-and-fade is then driven by the drag, as it is
+      everywhere else on the phone. Verified by asserting no dimmed sheet
+      offers more than one height.
+
+      The options sheet offered two — its content height and nine tenths
+      of the screen. The background went to a scaled-back state and stayed
+      there, frozen part-way and ignoring the grab handle, until the sheet
+      was dismissed outright. The glyph guide, dimmed and offering one
+      height, animates correctly, and the two sheets that offer two
+      heights are undimmed and so have no background transition to get
+      wrong. One height and dimming, or several heights and none.
+
+      A sheet that has to be draggable to be usable is one whose contents
+      want scrolling instead, which is a different fix to a different
+      problem (INV-NOTES-194).

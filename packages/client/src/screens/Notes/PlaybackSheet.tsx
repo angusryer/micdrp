@@ -40,7 +40,17 @@ export function PlaybackSheet({
       name="playback-options"
       isOpen={isOpen}
       onClose={onClose}
-      detents={['auto', 0.9]}
+      // One height, because this one dims what is behind it
+      // (INV-NOTES-214). Offering two left the background scaled back and
+      // frozen part-way, ignoring the grab handle until the sheet was
+      // dismissed outright — the glyph guide dims and offers one height and
+      // animates correctly, and the sheets that offer two are undimmed and
+      // so have no background transition to get wrong.
+      detents={['auto']}
+      // Which means a long list of tracks scrolls rather than being dragged
+      // taller. Off by default, and that default is why the analysis sheet
+      // could not be scrolled (INV-NOTES-194).
+      isScrolling
       background={colors.neutral50}
     >
       <View style={styles.body}>
