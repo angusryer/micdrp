@@ -892,16 +892,21 @@ invariants:
       moved and a press there silences and starts from the top next time.
 
   - id: INV-NOTES-160
-    description: Rewind moves the playhead and decides nothing about sound
+    description: Rewind goes to the beginning and decides nothing about sound
     severity: major
     check: >
-      Rewind moves the head back from where the head actually is — where the
-      take has reached while it is sounding, and where a press would start it
-      when it is not. A take that was playing goes on playing from the new
-      moment; a take that was stopped stays stopped. Never before the
-      beginning. Verified by asserting a rewind while stopped moves the head
-      and sounds nothing, that a rewind while playing keeps playing, and that
-      a rewind from near the start lands at zero rather than below it.
+      Rewind puts the head at the start of the take. A take that was
+      playing goes on playing, from there; a take that was stopped stays
+      stopped. The view goes with it, so the beginning is what is on
+      screen. Verified by asserting a rewind while stopped moves the head
+      to zero and sounds nothing, that a rewind while playing keeps
+      playing from zero, and that the view shows the start afterwards.
+
+      It used to go back a fixed five seconds, which is a different act:
+      five seconds is where you go to hear a phrase again, and there is
+      already a gesture for that in dragging the head. What the control
+      was wanted for was the beginning, and going there in five-second
+      steps from two minutes in is not a control, it is a chore.
 
       It always started the take, so the only way to move the head backwards
       was to begin listening. Going back to look at something is not the same
@@ -1170,3 +1175,20 @@ invariants:
       Shifting rather than resizing is what makes it one statement. A
       pickup is how far into a bar the singing started, and the bars
       after it are unchanged by that — they were always going to be bars.
+
+  - id: INV-NOTES-212
+    description: The view never leaves the head off screen
+    severity: major
+    check: >
+      Following leads the view forwards gently, but a head outside the
+      window is fetched to at once. Verified by asserting a head located
+      behind the view puts the view where the head is on the next frame.
+
+      Leading forwards only is right for the drift of playback and wrong
+      for a locate: sent back to the beginning, the view held where it
+      was and waited for the take to catch up, so the control that goes
+      to the start showed everywhere except the start.
+
+      Off screen rather than a distance: a threshold in milliseconds
+      would have to be guessed, and whether the head can be seen is the
+      question actually being asked.

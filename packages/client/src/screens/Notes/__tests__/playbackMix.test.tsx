@@ -261,7 +261,7 @@ describe('the bass read from a take (INV-NOTES-135)', () => {
 describe('going back over a passage (INV-NOTES-160)', () => {
   beforeEach(resetSynthDouble);
 
-  const rewind = () => screen.getByLabelText('Go back five seconds');
+  const rewind = () => screen.getByLabelText('Back to the beginning');
 
   it('moves the head without starting anything', async () => {
     // It used to start the take whatever state it was in, so the only way to
@@ -287,7 +287,7 @@ describe('going back over a passage (INV-NOTES-160)', () => {
     await waitFor(() => expect(synth.scheduleSamples).toHaveBeenCalled());
   });
 
-  it('never goes back past the beginning', async () => {
+  it('lands on the beginning, however far in the take had reached', async () => {
     await renderPlaybackBar(jest.fn().mockResolvedValue(REMOTE), backdrop());
 
     await fireEvent.press(rewind());

@@ -228,11 +228,8 @@ export function ZoomableMelody({
       if (atMs == null || isHeld.value) {
         return;
       }
-      const wanted = offsetCentring(
-        axis.pad + (atMs - axis.t0) * axis.pxPerMs,
-        width,
-        contentWidth
-      );
+      const headX = axis.pad + (atMs - axis.t0) * axis.pxPerMs;
+      const wanted = offsetCentring(headX, width, contentWidth);
       // How long since the last frame, taken from the head itself rather
       // than from a clock. While a run plays the head advances at real time,
       // so its own step *is* frame time — and it is the one clock in this
@@ -244,7 +241,8 @@ export function ZoomableMelody({
         ledTo.value,
         wanted,
         since > 0 ? since : 0,
-        width
+        width,
+        headX
       );
       scrollTo(scroller, ledTo.value, 0, false);
     },

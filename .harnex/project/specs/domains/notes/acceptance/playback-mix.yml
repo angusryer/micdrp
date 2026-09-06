@@ -224,3 +224,18 @@ acceptance:
     maps_to:
       capability: notes.set_playback_mix
       invariants: [INV-NOTES-211, INV-NOTES-210]
+
+  - id: ACC-NOTES-227
+    interface: ui
+    title: Rewind during playback plays from the beginning
+    given:
+      - a signed-in singer S with a note playing a minute in
+    when:
+      - singer S presses rewind
+    then:
+      - the note field headAtMs is 0
+      - the note field isPlaying is true
+      - the note field viewShowsStart is true
+    maps_to:
+      capability: notes.set_playback_mix
+      invariants: [INV-NOTES-160, INV-NOTES-212]

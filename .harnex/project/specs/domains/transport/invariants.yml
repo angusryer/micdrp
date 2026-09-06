@@ -571,3 +571,32 @@ invariants:
       and about to be written a third time on the UI thread. Two copies
       of a mapping put whatever one of them draws beside whatever the
       other one touches.
+
+  - id: INV-TPORT-036
+    description: Everything sounding holds the engine open
+    severity: critical
+    check: >
+      Anything that can sound holds the engine for as long as it may need
+      it, and the engine is torn down only when nothing does. Verified by
+      asserting that stopping one voice while a take is loaded leaves the
+      engine running.
+
+      The tone players counted holders and the last one out stopped the
+      engine. The take went through a different door and never counted —
+      so muting the transcription, the only holder, tore the engine down
+      underneath a take that was playing through it.
+
+  - id: INV-TPORT-037
+    description: A cold start makes everything loaded loaded no longer
+    severity: critical
+    check: >
+      Stopping the engine frees every resident slot, so nothing may go on
+      believing its audio is loaded across a restart. Whatever caches
+      that checks the engine is the same one it loaded into. Verified by
+      asserting a take reloads after the engine has been restarted.
+
+      The take remembered which recording was in its slot and skipped the
+      decode when it matched. The engine's teardown released the slot and
+      told nobody, so every press afterwards scheduled a slot holding
+      nothing — silence that survived every attempt to fix it from the
+      outside, because the cache was certain and wrong.

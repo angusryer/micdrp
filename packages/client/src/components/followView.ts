@@ -39,9 +39,26 @@ export function ledTowards(
   current: number,
   wanted: number,
   elapsedMs: number,
-  viewportWidth: number
+  viewportWidth: number,
+  /**
+   * Where the head is on the drawing, when the caller knows (INV-NOTES-212).
+   *
+   * A head outside the window is fetched to at once. Leading forwards only
+   * is right for the drift of playback and wrong for a locate: sent back to
+   * the beginning, the view held where it was and waited for the take to
+   * catch up, so the control that goes to the start showed everywhere
+   * except the start.
+   *
+   * Off screen rather than a distance — a threshold in milliseconds would
+   * have to be guessed, and whether the head can be seen is the question
+   * actually being asked.
+   */
+  headX?: number
 ): number {
   'worklet';
+  if (headX != null && (headX < current || headX > current + viewportWidth)) {
+    return wanted;
+  }
   if (wanted <= current) {
     // Behind the middle. Holding still is not doing nothing: as the take
     // runs on, `wanted` rises to meet `current`, and the head reaches the

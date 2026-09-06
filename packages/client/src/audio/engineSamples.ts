@@ -10,6 +10,7 @@
  * UI hooks holding their own idea of what was loaded where.
  */
 import NativeSynth from '../specs/NativeSynth';
+import { acquireEngine, engineGeneration, releaseEngine } from './synthPlayer';
 
 /** A passage of a loaded take to sound, on a bus, between two moments. */
 export interface SamplePlacement {
@@ -22,10 +23,24 @@ export interface SamplePlacement {
   endMs: number;
 }
 
-/** Bring the engine up. Idempotent while running. */
+/**
+ * Bring the engine up and hold it open (INV-TPORT-036).
+ *
+ * Through the same counter every other voice uses. Starting it directly is
+ * what left the take uncounted, so the last tone player to stop tore the
+ * engine down underneath it.
+ */
 export async function startEngine(): Promise<void> {
-  await NativeSynth?.start();
+  await acquireEngine();
 }
+
+/** Let the engine go. It stops once nothing at all is holding it. */
+export function stopHoldingEngine(): void {
+  releaseEngine();
+}
+
+/** Which run of the engine is current (INV-TPORT-037). */
+export { engineGeneration };
 
 /**
  * Decode a take into a slot, resolving with its length in ms.

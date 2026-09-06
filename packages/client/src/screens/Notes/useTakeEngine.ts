@@ -23,9 +23,11 @@ import {
   setBusLevel
 } from '../../audio/engineBus';
 import {
+  engineGeneration,
   loadSample,
   scheduleSamples,
   startEngine,
+  stopHoldingEngine,
   unloadSample
 } from '../../audio/engineSamples';
 import type { TransportEngine } from '../../audio/transportStore';
@@ -64,6 +66,15 @@ export function useTakeEngine(
   const durationRef = useRef(0);
   /** What is loaded, so the same take is not decoded twice. */
   const loadedFor = useRef<string | null>(null);
+  /**
+   * Which run of the engine that was loaded into (INV-TPORT-037).
+   *
+   * Stopping the engine frees every slot. Without this the cache went on
+   * being certain the take was resident across a restart, and every press
+   * scheduled a slot the engine had given back — silence that survived
+   * every attempt to fix it from outside.
+   */
+  const loadedOn = useRef(0);
 
   // A different take means a different recording: what is loaded is no
   // longer what anyone is going to ask for.
@@ -74,6 +85,13 @@ export function useTakeEngine(
       // not silence what another screen started (INV-NOTES-205).
       clearBus(trackBus('take'));
       unloadSample(TAKE_SLOT);
+      // And let the engine go, having held it open while this take was
+      // loaded into it (INV-TPORT-036). Only if it was ever held: a take
+      // nobody played never took one.
+      if (loadedOn.current !== 0) {
+        stopHoldingEngine();
+        loadedOn.current = 0;
+      }
     };
   }, [resolveAudioUri]);
 
@@ -81,6 +99,12 @@ export function useTakeEngine(
   const schedule = useCallback(
     async (resolved: string, fromMs: number): Promise<number> => {
       await startEngine();
+      // A restart freed every slot, so whatever was loaded is not loaded.
+      if (loadedOn.current !== engineGeneration()) {
+        loadedFor.current = null;
+        durationRef.current = 0;
+        loadedOn.current = engineGeneration();
+      }
       // Decoded once per take. Not per address: the address carries a
       // credential minted fresh on every press, so comparing the whole
       // of it never matched and every resume re-fetched and re-decoded

@@ -13,7 +13,7 @@
 import { renderHook } from '@testing-library/react-native';
 
 import { usePlaybackClock } from '../usePlaybackClock';
-import { REWIND_MS } from '../usePlaybackMix';
+import { REWIND_TO_MS } from '../usePlaybackMix';
 
 describe('the counter after a rewind', () => {
   it('reads from where playback began, not from zero', async () => {
@@ -31,17 +31,17 @@ describe('the counter after a rewind', () => {
     expect(result.current).toBe(8_000);
   });
 
-  it('goes back about a phrase, not to the start', () => {
-    // Long enough to re-hear a sung phrase, short enough that a second press
-    // is cheaper than starting over.
-    expect(REWIND_MS).toBeGreaterThanOrEqual(3000);
-    expect(REWIND_MS).toBeLessThanOrEqual(10000);
+  it('goes to the start, wherever the take had reached', () => {
+    // It went back a fixed five seconds, which is a different act: five
+    // seconds is where you go to hear a phrase again, and dragging the head
+    // already does that. Getting to the beginning in five-second steps from
+    // two minutes in is a chore rather than a control (INV-NOTES-160).
+    expect(REWIND_TO_MS).toBe(0);
   });
 
-  it('never asks for a moment before the take began', () => {
-    const at = (positionMs: number) => Math.max(0, positionMs - REWIND_MS);
-    expect(at(0)).toBe(0);
-    expect(at(REWIND_MS - 1)).toBe(0);
-    expect(at(REWIND_MS + 2000)).toBe(2000);
+  it('names a moment inside the take, never before it', () => {
+    const at = (toMs: number) => Math.max(0, toMs);
+    expect(at(REWIND_TO_MS)).toBe(0);
+    expect(at(-2000)).toBe(0);
   });
 });

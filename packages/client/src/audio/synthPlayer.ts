@@ -54,19 +54,45 @@ const REFERENCE_PEAK_GAIN = 0.2;
 /** Scheduled this far past the clock read, so the first note is not already late. */
 const LEAD_MS = 50;
 
-/** Players currently holding the engine; the last one out stops it. */
+/**
+ * Everything currently holding the engine open; the last one out stops it
+ * (INV-TPORT-036).
+ *
+ * Everything that can sound has to be counted here. The tone players were,
+ * and the take was not — it went through a different door — so muting the
+ * transcription, the only holder, tore the engine down underneath a take
+ * that was playing through it.
+ */
 let holders = 0;
 let startPromise: Promise<void> | null = null;
 
-function acquireEngine(): Promise<void> {
+/**
+ * Which run of the engine this is, so a cache can tell whether the slot it
+ * loaded into still exists (INV-TPORT-037).
+ *
+ * Stopping the engine frees every resident slot. Whoever remembers what
+ * they loaded has to check this, or they go on believing audio is there
+ * that the engine gave back.
+ */
+let generation = 0;
+
+/** Which run of the engine is current. */
+export function engineGeneration(): number {
+  return generation;
+}
+
+/** Hold the engine open, starting it where nothing else has. */
+export function acquireEngine(): Promise<void> {
   holders += 1;
   if (!startPromise) {
+    generation += 1;
     startPromise = NativeSynth ? NativeSynth.start() : Promise.resolve();
   }
   return startPromise;
 }
 
-function releaseEngine(): void {
+/** Let it go. The engine stops once nothing at all is holding it. */
+export function releaseEngine(): void {
   holders -= 1;
   if (holders <= 0) {
     holders = 0;

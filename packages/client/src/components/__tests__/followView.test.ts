@@ -241,3 +241,43 @@ describe('the axis mapping and its inverse', () => {
     expect(msAtX(flat, 500, 0)).toBe(flat.t0);
   });
 });
+
+describe('a head sent somewhere the view is not (INV-NOTES-212)', () => {
+  /**
+   * ACC-NOTES-227. Leading forwards only is right for the drift of playback
+   * and wrong for a locate. Sent back to the beginning, the view held where
+   * it was and waited for the take to catch up — so the control that goes to
+   * the start showed everywhere except the start.
+   */
+  const viewing = wantedAt(60_000);
+
+  it('fetches the view to a head behind it, at once', () => {
+    // Rewind: the head is at zero and the view is a minute in.
+    const headX = xForMs(axis, 0);
+    expect(ledTowards(viewing, wantedAt(0), FRAME_MS, WIDTH, headX)).toBe(
+      wantedAt(0)
+    );
+  });
+
+  it('fetches the view to a head far ahead of it too', () => {
+    const headX = xForMs(axis, 110_000);
+    expect(ledTowards(0, wantedAt(110_000), FRAME_MS, WIDTH, headX)).toBe(
+      wantedAt(110_000)
+    );
+  });
+
+  it('still leads gently while the head is on screen', () => {
+    // Just past the middle: visible, so this is drift and not a locate.
+    const onScreen = viewing + WIDTH * 0.75;
+    const led = ledTowards(viewing, viewing + 400, FRAME_MS, WIDTH, onScreen);
+    expect(led).toBeGreaterThan(viewing);
+    expect(led).toBeLessThan(viewing + 400);
+  });
+
+  it('still holds for a head behind the middle but in view', () => {
+    const onScreen = viewing + WIDTH * 0.25;
+    expect(ledTowards(viewing, viewing - 500, FRAME_MS, WIDTH, onScreen)).toBe(
+      viewing
+    );
+  });
+});

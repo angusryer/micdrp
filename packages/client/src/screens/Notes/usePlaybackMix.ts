@@ -36,8 +36,16 @@ import {
   type TrackVoices
 } from './playbackTracks';
 
-/** How far back a press of rewind goes. About one phrase of a sung idea. */
-export const REWIND_MS = 5000;
+/**
+ * Where a press of rewind goes: the beginning.
+ *
+ * It used to go back a fixed five seconds, which is a different act — five
+ * seconds is where you go to hear a phrase again, and dragging the head
+ * already does that. What the control was wanted for was the start, and
+ * getting there in five-second steps from two minutes in is a chore rather
+ * than a control (INV-NOTES-160).
+ */
+export const REWIND_TO_MS = 0;
 
 export type { PlaybackMix };
 
@@ -109,8 +117,11 @@ export interface MixedPlayback {
   drawnPositionMs: SharedValue<number>;
   /** Start at a moment in the take. Omitted, from the beginning. */
   play(fromMs?: number, withoutCount?: boolean): Promise<void>;
-  /** Stop, then resume this many ms earlier — never before the start. */
-  rewind(byMs?: number): Promise<void>;
+  /**
+   * Go to the beginning of the take, and decide nothing about sound
+   * (INV-NOTES-160). Playing, it goes on playing from there.
+   */
+  rewind(toMs?: number): Promise<void>;
   /**
    * Fall silent and leave the head where the take reached, so the moment
    * stopped on stays there to be read and the next press carries on from it
@@ -388,10 +399,9 @@ export function usePlaybackMix({
    * head the singer was looking at.
    */
   const rewind = useCallback(
-    async (byMs = REWIND_MS): Promise<void> => {
+    async (toMs = 0): Promise<void> => {
       const isPlaying = state === 'playing';
-      const from = isPlaying ? takeElapsedMs() : cueMs;
-      const to = Math.max(0, from - byMs);
+      const to = Math.max(0, toMs);
       if (!isPlaying) {
         await seekTake(to);
         return;
@@ -403,7 +413,7 @@ export function usePlaybackMix({
       await seekTake(to);
       await play(to, true);
     },
-    [state, takeElapsedMs, cueMs, seekTake, stop, play]
+    [state, seekTake, stop, play]
   );
 
   // Playing, it is where the take has reached; stopped, it is where a press

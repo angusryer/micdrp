@@ -408,3 +408,25 @@ acceptance:
     maps_to:
       capability: transport.seek
       invariants: [INV-TPORT-034, INV-TPORT-033]
+
+  - id: ACC-TPORT-030
+    interface: module
+    title: Muting a voice does not stop the engine under a take
+    given:
+      - a take loaded and a synthesized voice sounding
+    when:
+      - the voice is stopped
+    then:
+      - the engine is not stopped
+      - the take still sounds
+
+  - id: ACC-TPORT-031
+    interface: module
+    title: A restarted engine reloads the take
+    given:
+      - a take loaded into a slot
+    when:
+      - the engine is stopped and started again
+      - the take is played
+    then:
+      - the take is decoded again rather than assumed resident

@@ -262,7 +262,7 @@ export function PlaybackBar({
             (INT-NOTES-020). */}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back five seconds"
+          accessibilityLabel="Back to the beginning"
           onPress={() => void rewind()}
           hitSlop={8}
           style={({ pressed }) => [styles.rewind, { opacity: pressed ? 0.5 : 1 }]}
