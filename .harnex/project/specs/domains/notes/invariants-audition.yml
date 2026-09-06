@@ -21,6 +21,13 @@ invariants:
       track's voice is chosen (INV-NOTES-144). Checking a note in one timbre
       and hearing it play in another compares two different sounds.
 
+      Its loudness is the melody track's too, for the same reason and by
+      the same rule. It sat at full while the track it stands for was
+      balanced against the take, so a note tapped to check it arrived at a
+      different loudness from the same note in playback — and after the
+      take's level was matched, loud enough to startle. What the sheet
+      says about the transcription is what a tapped note sounds like.
+
   - id: INV-NOTES-176
     description: A pitch changed is a pitch heard
     severity: major

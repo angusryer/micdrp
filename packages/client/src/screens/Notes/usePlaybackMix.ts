@@ -24,7 +24,7 @@ import { type SharedValue } from 'react-native-reanimated';
 
 import { usePlayback, type PlaybackState } from './usePlayback';
 import { useLatest } from './useLatest';
-import { setBusWave } from '../../audio/engineBus';
+import { setBusLevel, setBusWave } from '../../audio/engineBus';
 import { waveOf } from '../../audio/voices';
 import { AUDITION_BUS } from '../../audio/synthPlayer';
 import { trackBus } from './trackRegistry';
@@ -178,6 +178,11 @@ export function usePlaybackMix({
     setTakeLevel(mix.take ? levels.take * takeMakeUp : 0);
     accompaniment?.setLevel?.(levels.chords);
     voice?.setLevel?.(levels.melody);
+    // And a tapped note is that track, heard on its own — so it is that
+    // track's loudness as well as its timbre (INV-NOTES-175). It sat at
+    // full while the transcription was balanced against the take, which
+    // after the take's level was matched is loud enough to startle.
+    setBusLevel(AUDITION_BUS, levels.melody);
     count?.setLevel?.(levels.count);
     rhythm?.setLevel?.(levels.rhythm);
     layers?.setLevel?.(levels.layers);
