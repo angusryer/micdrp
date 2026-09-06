@@ -41,7 +41,18 @@ const MAX_GAIN = 2;
  * did not move a real take audibly. Mirrors `kMaxBusLevel` in
  * cpp/dsp/synth.h, which holds anything past it anyway.
  */
-const MAX_TAKE_GAIN = 8;
+const MAX_TAKE_GAIN = 32;
+
+/**
+ * How close the loudest note may come to full scale after the lift.
+ *
+ * Well short of one, because the loudest *note* is an average over its
+ * frames and the samples inside it peak higher — and because a take is
+ * sung, not mastered, so the next one may be louder than this one at the
+ * same setting. This is what keeps a lift measured for a whisper from
+ * being explosive when the singing arrives (INV-NOTES-141).
+ */
+const PEAK_CEILING = 0.7;
 
 /**
  * How loud the sung notes were, in dBFS, or null when nothing measured them.
@@ -86,12 +97,48 @@ function amplitudeOf(loudnessDb: number | null): number | null {
  * of room against a genuinely quiet take, and left the accompaniment above
  * the singing (INV-NOTES-141).
  */
-export function takeGain(loudnessDb: number | null): number {
+export function takeGain(
+  loudnessDb: number | null,
+  /**
+   * The loudest note in the take, when it is known.
+   *
+   * Given, the lift is held to whatever keeps that note under the
+   * ceiling: a take whose median is quiet but which has one loud phrase
+   * in it must not be lifted by what the median alone asks for. Omitted,
+   * only the median is used, which is what a caller with no peak to
+   * offer had before.
+   */
+  peakDb: number | null = null
+): number {
   const amplitude = amplitudeOf(loudnessDb);
   if (amplitude == null) {
     return 1;
   }
-  return Math.min(MAX_TAKE_GAIN, Math.max(1, VOICE_PEAK / amplitude));
+  const wanted = VOICE_PEAK / amplitude;
+  const peak = amplitudeOf(peakDb);
+  const headroom = peak == null ? wanted : PEAK_CEILING / peak;
+  const held = wanted < headroom ? wanted : headroom;
+  return Math.min(MAX_TAKE_GAIN, Math.max(1, held));
+}
+
+/**
+ * The loudest note in the take, in dBFS, or null when nothing measured one.
+ *
+ * The loudest rather than the median, because this answers a different
+ * question: not how loud the singing was, but how much room is left above
+ * it (INV-NOTES-141).
+ */
+export function peakLoudnessDb(
+  melody: readonly { loudnessDb?: number | null }[]
+): number | null {
+  let loudest: number | null = null;
+  for (const note of melody) {
+    const db = note.loudnessDb;
+    if (db != null && db > SILENT_DB && (loudest == null || db > loudest)) {
+      loudest = db;
+    }
+  }
+  return loudest;
 }
 
 /**
@@ -103,12 +150,15 @@ export function takeGain(loudnessDb: number | null): number {
  * difference. Bounded, because a take recorded at arm's length across a
  * room should quieten the accompaniment and not silence it.
  */
-export function matchGain(loudnessDb: number | null): number {
+export function matchGain(
+  loudnessDb: number | null,
+  peakDb: number | null = null
+): number {
   const amplitude = amplitudeOf(loudnessDb);
   if (amplitude == null) {
     return 1;
   }
-  const lifted = amplitude * takeGain(loudnessDb);
+  const lifted = amplitude * takeGain(loudnessDb, peakDb);
   return Math.min(MAX_GAIN, Math.max(MIN_GAIN, lifted / VOICE_PEAK));
 }
 
@@ -121,9 +171,10 @@ export function matchGain(loudnessDb: number | null): number {
 export function matchedLevels<T extends string>(
   defaults: Readonly<Record<T, number>>,
   loudnessDb: number | null,
-  isRecording: (track: T) => boolean
+  isRecording: (track: T) => boolean,
+  peakDb: number | null = null
 ): Record<T, number> {
-  const gain = matchGain(loudnessDb);
+  const gain = matchGain(loudnessDb, peakDb);
   const out = {} as Record<T, number>;
   for (const track of Object.keys(defaults) as T[]) {
     out[track] = isRecording(track)

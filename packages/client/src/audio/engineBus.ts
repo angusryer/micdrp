@@ -31,7 +31,7 @@ import NativeSynth from '../specs/NativeSynth';
  * Mirrors `kMaxBusLevel` in cpp/dsp/synth.h, which holds anything past it
  * anyway — stated here so a caller is not silently clamped on the way down.
  */
-export const MAX_BUS_LEVEL = 8;
+export const MAX_BUS_LEVEL = 32;
 
 /** Whether there is an engine to talk to at all. */
 export const hasEngine = (): boolean => NativeSynth != null;

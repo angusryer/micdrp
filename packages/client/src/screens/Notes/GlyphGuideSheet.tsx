@@ -72,16 +72,24 @@ export interface GlyphGuideSheetProps {
   measured?: { sungDb: number | null; takeMakeUp: number };
 }
 
-/** How loud the take was sung, in the words a person would use. */
+/**
+ * How loud the take was sung, what is being done about it, and where that
+ * leaves it.
+ *
+ * All three, because each answers a different question and only the last
+ * one is what you actually hear. A lift of four times says nothing on its
+ * own about whether the result sits with the tracks.
+ */
 function sungLine(measured: { sungDb: number | null; takeMakeUp: number }): string {
   if (measured.sungDb == null) {
     return 'Nothing measured how loud this take was sung, so the other tracks start where they always do. Reading the take again measures it.';
   }
-  const lift =
-    measured.takeMakeUp > 1.05
-      ? ` It is being brought up ${measured.takeMakeUp.toFixed(1)}× to sit with the tracks read from it.`
-      : ' It is loud enough to sit with the tracks read from it as recorded.';
-  return `Sung at ${measured.sungDb.toFixed(1)} dB.${lift}`;
+  if (measured.takeMakeUp <= 1.05) {
+    return `Sung at ${measured.sungDb.toFixed(1)} dB, which is loud enough to sit with the tracks read from it as recorded.`;
+  }
+  // Gain in dB is 20·log10 of the multiplier, added to where it started.
+  const afterDb = measured.sungDb + 20 * Math.log10(measured.takeMakeUp);
+  return `Sung at ${measured.sungDb.toFixed(1)} dB, brought up ${measured.takeMakeUp.toFixed(1)}× to ${afterDb.toFixed(1)} dB, so it sits with the tracks read from it.`;
 }
 
 export function GlyphGuideSheet({

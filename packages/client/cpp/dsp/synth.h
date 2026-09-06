@@ -152,14 +152,15 @@ struct ScheduledNote {
  * Above one on purpose. A take is a recording: at a level of one it is
  * already as loud as it was sung, so a quiet take could never be brought
  * up to sit with the synthesized tracks and the match could only push
- * them down towards it (INV-NOTES-141). Bounded, because make-up gain on
- * a quiet recording raises its noise with it, and the mix is clamped per
- * sample anyway so the ceiling is about taste rather than safety.
+ * them down towards it (INV-NOTES-141). What actually holds a lift down
+ * is the take's own loudest note, worked out where the match is; this is
+ * only the far end of what the engine will carry, and the mix is clamped
+ * per sample anyway so it is about taste rather than safety.
  *
  * `MAX_BUS_LEVEL` in packages/client/src/audio/engineBus.ts says the same
  * number to the callers; a level past this is held here regardless.
  */
-inline constexpr float kMaxBusLevel = 8.0f;
+inline constexpr float kMaxBusLevel = 32.0f;
 
 /// How many notes may sound at once before the oldest is stolen.
 inline constexpr std::size_t kMaxVoices = 32;

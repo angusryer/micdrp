@@ -111,3 +111,17 @@ acceptance:
     maps_to:
       capability: notes.set_playback_mix
       invariants: [INV-NOTES-141]
+
+  - id: ACC-NOTES-219
+    interface: module
+    title: A loud take is not lifted into the ceiling
+    given:
+      - a take whose median note is quiet but whose loudest note is near full
+    when:
+      - the take's make-up gain is worked out
+    then:
+      - the loudest note stays below the ceiling
+      - the gain is smaller than the median alone would ask for
+    maps_to:
+      capability: notes.set_playback_mix
+      invariants: [INV-NOTES-141]

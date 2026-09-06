@@ -23,6 +23,7 @@ import {
   ANALYSIS_VERSION,
   isStale,
   matchedLevels,
+  peakLoudnessDb,
   takeGain,
   snapNotes,
   sungLoudnessDb,
@@ -353,14 +354,17 @@ export function useNoteDetail(id: string) {
    * it, and against a loud one they vanish under it (INV-NOTES-141).
    */
   const sungDb = useMemo(() => sungLoudnessDb(heard), [heard]);
+  /** The loudest note, so the lift never drives it into the ceiling. */
+  const peakDb = useMemo(() => peakLoudnessDb(heard), [heard]);
   const startLevels = useMemo(
     () =>
       matchedLevels(
         DEFAULT_LEVELS,
         sungDb,
-        (track) => trackSpec(track).role === 'recording'
+        (track) => trackSpec(track).role === 'recording',
+        peakDb
       ),
-    [sungDb]
+    [sungDb, peakDb]
   );
   /**
    * How much the take itself is lifted to sit with the tracks read from it
@@ -371,7 +375,7 @@ export function useNoteDetail(id: string) {
    * take quieter than its floor it ran out of room and left them above the
    * singing.
    */
-  const takeMakeUp = useMemo(() => takeGain(sungDb), [sungDb]);
+  const takeMakeUp = useMemo(() => takeGain(sungDb, peakDb), [sungDb, peakDb]);
   const listening = useListening(note?.id ?? null, startLevels);
   const { chordOctaves, setChordOctaves } = listening;
   const floorMidi = HEADPHONE_FLOOR_MIDI + 12 * chordOctaves;

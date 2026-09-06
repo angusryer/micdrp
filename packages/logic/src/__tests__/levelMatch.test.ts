@@ -9,6 +9,7 @@
 import {
   matchGain,
   matchedLevels,
+  peakLoudnessDb,
   sungLoudnessDb,
   takeGain,
   VOICE_PEAK
@@ -53,18 +54,25 @@ describe('moving the tracks to meet it', () => {
     expect(matchGain(-30)).toBeCloseTo(1, 6);
   });
 
+  it('leaves them alone wherever the lift can do the whole job', () => {
+    // -40 dB is within the lift's reach, so the take comes up to the
+    // reference on its own and the tracks stay at their defaults — which is
+    // what keeps the sliders sitting somewhere a person would recognise.
+    expect(matchGain(-40)).toBeCloseTo(1, 6);
+  });
+
   it('still quietens them for a take too quiet for the lift alone', () => {
-    // Past about -33 dB the lift is spent, so the tracks come the rest of
-    // the way down — and further down the quieter the take was.
-    expect(matchGain(-40)).toBeLessThan(1);
-    expect(matchGain(-40)).toBeLessThan(matchGain(-36));
+    // Past the lift's reach the tracks come the rest of the way down, and
+    // further down the quieter the take was.
+    expect(matchGain(-55)).toBeLessThan(1);
+    expect(matchGain(-55)).toBeLessThan(matchGain(-50));
   });
 
   it('stops lowering them once one odd take would silence them', () => {
-    // Below about -45 dB both halves are spent. The tracks hold at the
-    // floor rather than disappearing, and the take carries what is left of
-    // the difference — which is why a very quiet take still sounds quiet.
-    expect(matchGain(-60)).toBe(matchGain(-50));
+    // Far enough down, both halves are spent. The tracks hold at the floor
+    // rather than disappearing, and the take carries what is left of the
+    // difference — which is why a very quiet take still sounds quiet.
+    expect(matchGain(-70)).toBe(matchGain(-65));
   });
 
   it('lifts them for a take louder than the reference', () => {
@@ -144,11 +152,12 @@ describe('a take quieter than the reference', () => {
   });
 
   it('is bounded, because make-up gain raises the room with the voice', () => {
-    // Eight, not four. Four was chosen by reasoning about what seemed safe
-    // and did not move a real take audibly: a phone take measured -47 dB,
-    // which needs forty times to reach the reference.
-    expect(takeGain(-120)).toBeLessThanOrEqual(8);
-    expect(takeGain(-120)).toBe(8);
+    // Four, then eight, were each picked by reasoning about what seemed a
+    // safe amount of make-up gain, against no measurement of what a take
+    // actually is — and a real one measured -47 dB, needing forty times.
+    // The far end is generous now because what holds a lift down is the
+    // take's own loudest note, tested above.
+    expect(takeGain(-120)).toBe(32);
   });
 
   it('does not spend the same difference twice', () => {
@@ -157,5 +166,56 @@ describe('a take quieter than the reference', () => {
     const rescued = 20 * Math.log10(VOICE_PEAK / 2);
     expect(takeGain(rescued)).toBeCloseTo(2, 6);
     expect(matchGain(rescued)).toBeCloseTo(1, 6);
+  });
+});
+
+describe('a take with one loud phrase in it', () => {
+  /**
+   * ACC-NOTES-219 / INV-NOTES-141. What the lift may be is bounded by the
+   * take's own loudest note rather than by a number chosen in advance. A
+   * whispered take and a sung one need wildly different amounts, and the
+   * first number picked by reasoning about what seemed safe was an order of
+   * magnitude under what a real take needed.
+   */
+  const QUIET_MEDIAN = -47.3; // a real take, measured
+  const LOUD_PEAK = -6;
+
+  it('ACC-NOTES-219: is held down by its loudest note', () => {
+    const bounded = takeGain(QUIET_MEDIAN, LOUD_PEAK);
+    const unbounded = takeGain(QUIET_MEDIAN);
+    expect(bounded).toBeLessThan(unbounded);
+  });
+
+  it('leaves the loudest note short of the ceiling', () => {
+    const gain = takeGain(QUIET_MEDIAN, LOUD_PEAK);
+    const loudest = Math.pow(10, LOUD_PEAK / 20) * gain;
+    expect(loudest).toBeLessThanOrEqual(1);
+  });
+
+  it('still lifts a take whose loud notes leave room', () => {
+    // Median and peak both quiet: nothing is near the ceiling, so the lift
+    // is whatever brings the singing up.
+    expect(takeGain(QUIET_MEDIAN, -35)).toBeGreaterThan(4);
+  });
+
+  it('barely touches a take already sung at the reference', () => {
+    const db = 20 * Math.log10(VOICE_PEAK);
+    expect(takeGain(db, db)).toBeCloseTo(1, 6);
+  });
+
+  it('never turns a take down, however loud it was', () => {
+    expect(takeGain(-3, -1)).toBe(1);
+  });
+
+  it('reads the loudest note out of the take', () => {
+    expect(
+      peakLoudnessDb([
+        { loudnessDb: -40 },
+        { loudnessDb: -12 },
+        { loudnessDb: null },
+        { loudnessDb: -70 }
+      ])
+    ).toBe(-12);
+    expect(peakLoudnessDb([{ loudnessDb: null }])).toBeNull();
   });
 });
