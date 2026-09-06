@@ -915,7 +915,7 @@ invariants:
       the drawing and the transport must read the same one.
 
   - id: INV-NOTES-161
-    description: Narrowed — a tapped beat concludes nothing on its own
+    description: A tapped beat is a mark, and changes nothing but itself
     severity: major
     check: >
       Tapping lays a mark at the moment the finger landed and does nothing
@@ -1101,23 +1101,25 @@ invariants:
     description: Taps mean what the singer says they mean
     severity: major
     check: >
-      A take carries which beats of the bar its taps were meant for. The
-      grid follows from the taps and that statement together, and from
-      nothing else: no pattern is guessed from the taps, and changing the
-      statement is the only thing that moves the grid. A take with no
-      statement keeps the grid it had. Verified by asserting the same
-      taps give a different tempo under a different pattern, and that a
-      take with no pattern is untouched.
-
-      This narrows INV-NOTES-161 rather than reversing it. That invariant
-      was written after a grid fitted to a handful of taps moved the bar
-      lines and re-cut the harmony of a take somebody was reading — every
-      step defensible, the whole a surprise. The lesson was that the app
-      must not draw conclusions from marks, and it holds: nothing here is
-      concluded. What changed is that the singer can now say what the
-      marks were for, and be believed.
+      A take may carry which beats of the bar its taps were meant for, and
+      carries none until somebody says. Tapping states nothing: the marks
+      are laid where the finger landed and the grid does not move, which
+      is INV-NOTES-161 and stays true. Afterwards the singer may say what
+      the taps were for, and the grid then follows from the taps and that
+      sentence together — and from nothing else. The sentence can be taken
+      back, and the grid returns to what it was. Verified by asserting the
+      same taps give a different tempo under a different pattern, that a
+      take with no pattern is untouched, and that unsaying it restores the
+      grid.
 
       Tapping every beat of a song to establish its tempo is most of a
-      performance spent on bookkeeping. Two and four is what gets tapped,
-      so it is what a take assumes, and a take that was tapped some other
-      way is told so afterwards rather than guessed at.
+      performance spent on bookkeeping, and while you are singing you do
+      not yet know whether you will tap every beat or only the backbeat.
+      So the tap costs nothing and means nothing, and the meaning is
+      supplied later by the only person who knows it.
+
+      Nothing is guessed. Two and four is what the picker opens on because
+      it is what gets tapped most, but a picker opening somewhere is not
+      the app concluding anything — until it is set, the take has no
+      pattern and the grid is untouched. The difference between offering
+      and asserting is the whole of what INV-NOTES-161 was written about.

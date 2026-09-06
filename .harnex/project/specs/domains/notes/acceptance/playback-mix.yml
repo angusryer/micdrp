@@ -171,12 +171,27 @@ acceptance:
 
   - id: ACC-NOTES-223
     interface: ui
-    title: A take with no stated pattern keeps the grid it had
+    title: A take says nothing about its taps until somebody does
     given:
-      - a signed-in singer S with a note recorded before patterns existed
+      - a signed-in singer S with a freshly recorded note that was tapped
     when:
       - singer S opens the note
     then:
+      - the note field tapPatternSet is false
+      - the note field gridUnchanged is true
+    maps_to:
+      capability: notes.set_playback_mix
+      invariants: [INV-NOTES-209, INV-NOTES-161]
+
+  - id: ACC-NOTES-224
+    interface: ui
+    title: Taking the pattern back restores the grid
+    given:
+      - a signed-in singer S with a note whose taps were said to be two and four
+    when:
+      - singer S unsets the pattern
+    then:
+      - the note field tapPatternSet is false
       - the note field gridUnchanged is true
     maps_to:
       capability: notes.set_playback_mix

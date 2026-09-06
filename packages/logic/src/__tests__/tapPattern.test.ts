@@ -2,15 +2,17 @@
  * ACC-NOTES-222 / INV-NOTES-209 — taps mean what the singer says they mean.
  *
  * Tapping every beat to establish a tempo is most of a performance spent on
- * bookkeeping. What gets tapped is two and four, so that is what a take
- * assumes, and a take tapped some other way is told so afterwards.
+ * bookkeeping — and mid-song you do not yet know whether you will tap every
+ * beat or only the backbeat. So the tap means nothing and the meaning comes
+ * afterwards. A take carries no pattern until somebody sets one, which is
+ * what keeps INV-NOTES-161 true.
  *
  * The point these pin down is that the taps alone say nothing about rate:
  * the same four evenly spaced taps are 120 read as every beat and 240 read
  * as the backbeat, and only the singer knows which. Nothing here guesses.
  */
 import {
-  DEFAULT_TAP_PATTERN,
+  SUGGESTED_TAP_PATTERN,
   TAP_PATTERNS,
   beatPositions,
   isUsablePattern,
@@ -30,9 +32,11 @@ const tapsEvery = (everyMs: number, count: number, fromMs = 1000): TappedBeat[] 
 const EVERY = { beats: [1, 2, 3, 4], beatsPerBar: 4 };
 const BACKBEAT = { beats: [2, 4], beatsPerBar: 4 };
 
-describe('what a take assumes', () => {
+describe('where the picker opens', () => {
   it('is the backbeat, which is what a hand does on its own', () => {
-    expect(samePattern(DEFAULT_TAP_PATTERN, BACKBEAT)).toBe(true);
+    // Where it opens, not what the take assumes: until somebody sets one,
+    // a take carries no pattern at all (INV-NOTES-161).
+    expect(samePattern(SUGGESTED_TAP_PATTERN, BACKBEAT)).toBe(true);
   });
 
   it('offers every pattern it offers as a usable one', () => {

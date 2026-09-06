@@ -68,11 +68,11 @@ export interface InterpretationDto {
   /**
    * Which beats of the bar those taps were meant for (INV-NOTES-209).
    *
-   * Tapping every beat to establish a tempo is most of a performance spent
-   * on bookkeeping, so a take assumes the backbeat and is told otherwise
-   * afterwards. A sentence the singer says about their own take, which is
-   * why it lives with the edits and not with the reading — and why absent
-   * means nobody has said, so the grid stays exactly as it was
+   * While you are singing you do not yet know whether you will tap every
+   * beat or only the backbeat, so the tap means nothing and the meaning is
+   * supplied afterwards. A sentence the singer says about their own take,
+   * which is why it lives with the edits and not with the reading — and why
+   * absent means nobody has said, so the grid stays exactly as it was
    * (INV-NOTES-161).
    */
   tapPattern?: { beats: number[]; beatsPerBar: number };

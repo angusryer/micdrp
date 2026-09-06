@@ -2,16 +2,17 @@
  * What the taps were for (INV-NOTES-209).
  *
  * Tapping every beat of a song to establish its tempo is most of a
- * performance spent on bookkeeping. What actually gets tapped is two and
- * four, so that is what a take assumes — and a take tapped some other way is
- * told so afterwards rather than guessed at.
+ * performance spent on bookkeeping — and while you are singing you do not yet
+ * know whether you will tap every beat or only the backbeat. So the tap costs
+ * nothing and means nothing, and the meaning is supplied afterwards by the
+ * only person who knows it.
  *
- * This narrows INV-NOTES-161 rather than reversing it. That invariant was
- * written after a grid fitted to a handful of taps moved the bar lines and
- * re-cut the harmony of a take somebody was reading. The lesson was that the
- * app must not draw conclusions from marks, and it holds: nothing is
- * concluded here. The pattern is a sentence the singer says about their own
- * take, and the grid follows from the taps and that sentence together.
+ * INV-NOTES-161 stays true and is not narrowed. Tapping still states nothing:
+ * a take carries no pattern until somebody sets one, and the grid does not
+ * move. That invariant was written after a grid fitted to a handful of taps
+ * re-cut the harmony of a take somebody was reading, and the lesson — the app
+ * must not draw conclusions from marks — is untouched here. A sentence the
+ * singer says about their own take is not a conclusion the app drew.
  */
 import type { TappedBeat } from './tappedBeats';
 
@@ -24,12 +25,18 @@ export interface TapPattern {
 }
 
 /**
- * What a take assumes until somebody says otherwise.
+ * Where the picker opens, which is not what the take assumes.
  *
  * Two and four of four: the backbeat, which is what a hand does on its own
- * while the other half of you is singing.
+ * while the other half of you is singing, and so the one worth offering
+ * first. A take assumes nothing — until this is set it carries no pattern
+ * and its grid is untouched. Offering is not asserting, and the difference
+ * between them is the whole of what INV-NOTES-161 was written about.
  */
-export const DEFAULT_TAP_PATTERN: TapPattern = { beats: [2, 4], beatsPerBar: 4 };
+export const SUGGESTED_TAP_PATTERN: TapPattern = {
+  beats: [2, 4],
+  beatsPerBar: 4
+};
 
 /** The patterns worth offering, in the order they are worth trying. */
 export const TAP_PATTERNS: readonly TapPattern[] = [
