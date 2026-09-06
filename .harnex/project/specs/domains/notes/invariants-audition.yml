@@ -386,3 +386,23 @@ invariants:
       purpose: it is held at two fifths so the graph stays visible behind it,
       and a scroll that closed the sheet over the graph would undo the reason
       it opens there (INV-NOTES-180).
+
+  - id: INV-NOTES-213
+    description: A note is asked about by touching it, not by finding it in a list
+    severity: major
+    check: >
+      Everything the analysis sheet's list of notes said about a note —
+      its name, when it starts, how long it lasts and how far off it was
+      — is said by choosing that note on the graph, along with how loud
+      it was and whether it was read or moved by hand. Verified by
+      asserting the description of a chosen note carries each of those.
+
+      The list was a second way to ask the same question, and the worse
+      one: it named a note by its number in a column, while the graph
+      names it by where it is in the music. Reading down forty rows to
+      find the note you are looking at is work the picture had already
+      done.
+
+      What was below the list is what the sheet is for — the tempo, the
+      pickup, the beat that was tapped. Those were under a column long
+      enough to need scrolling past.

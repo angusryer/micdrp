@@ -28,7 +28,6 @@ import { ShareTakeSection } from '../../dogfood/ShareTakeSection';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { ExportSheet } from '../Results/ExportSheet';
-import { NoteList } from '../Results/NoteList';
 import { NoteStats } from './NoteStats';
 import { RereadCard } from './RereadCard';
 import { TuningPanel } from './TuningPanel';
@@ -140,10 +139,10 @@ export function NoteDetailsPage({
             chordCount={detail.chords.slots.length}
           />
 
-          <Text style={[styles.section, { color: colors.gray500 }]}>
-            {t('notes.notesTapToHear')}
-          </Text>
-          <NoteList notes={melody} onPressNote={detail.playNote} />
+          {/* A note is asked about by touching it on the graph, which says
+              everything the column here said and more — how loud it was, and
+              whether it was read or moved by hand (INV-NOTES-213). What is
+              below was under forty rows of it. */}
 
           {/* Every other reading here can be corrected; the one everything
               else is measured against could not (INV-NOTES-123). */}

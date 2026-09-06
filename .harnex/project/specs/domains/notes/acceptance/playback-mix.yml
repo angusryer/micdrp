@@ -239,3 +239,19 @@ acceptance:
     maps_to:
       capability: notes.set_playback_mix
       invariants: [INV-NOTES-160, INV-NOTES-212]
+
+  - id: ACC-NOTES-228
+    interface: ui
+    title: Choosing a note says everything the list said
+    given:
+      - a signed-in singer S viewing a note with a melody
+    when:
+      - singer S taps a sung note on the graph
+    then:
+      - the note field selectionCarriesName is true
+      - the note field selectionCarriesStart is true
+      - the note field selectionCarriesLength is true
+      - the note field selectionCarriesTuning is true
+    maps_to:
+      capability: notes.set_playback_mix
+      invariants: [INV-NOTES-213, INV-NOTES-175]
