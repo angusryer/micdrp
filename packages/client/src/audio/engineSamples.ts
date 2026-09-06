@@ -52,11 +52,11 @@ export { engineGeneration };
  */
 export async function loadSample(slot: number, path: string): Promise<number> {
   if (NativeSynth == null) {
-    throw new Error('the native audio engine is not in this build');
+    throw new Error('There is no audio engine in this build.');
   }
   const lengthMs = await NativeSynth.loadSample(slot, path);
   if (!(lengthMs > 0)) {
-    throw new Error('this take could not be decoded');
+    throw new Error('This take\u2019s audio could not be read.');
   }
   return lengthMs;
 }

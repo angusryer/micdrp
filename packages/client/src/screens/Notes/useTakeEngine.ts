@@ -14,6 +14,8 @@
  */
 import { useCallback, useEffect, useRef } from 'react';
 
+import { audioExtensionOf, isPlayableAudioPath } from 'shared';
+
 import { SCHEDULE_LEAD_MS, audioNowMs } from '../../audio/audioClock';
 import {
   MAX_BUS_LEVEL,
@@ -148,7 +150,11 @@ export function useTakeEngine(
       if (resolved == null || !hasEngine()) {
         // Thrown, not swallowed. A command the engine will not take must
         // never read as a control that did nothing (INV-TPORT-006).
-        throw new Error('no audio could be resolved for this take');
+        throw new Error(
+          hasEngine()
+            ? 'This take has no audio on this device, and none could be fetched.'
+            : 'There is no audio engine in this build.'
+        );
       }
       try {
         return await schedule(resolved, fromMs);
@@ -157,7 +163,14 @@ export function useTakeEngine(
         // surface; this puts the cause and the address it failed on in
         // the log, which is what a device can be asked for.
         console.warn('[takeEngine] playback failed for', resolved, error);
-        throw error;
+        // Named, because "could not be read" and "was recorded as something
+        // this cannot open" are different problems (INV-PITCH-012).
+        const format = audioExtensionOf(resolved);
+        throw new Error(
+          format && !isPlayableAudioPath(resolved)
+            ? `This take was recorded as ${format.toUpperCase()}, which playback cannot open.`
+            : 'This take\u2019s audio could not be read.'
+        );
       }
     },
     [schedule, resolveAudioUri]

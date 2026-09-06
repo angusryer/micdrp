@@ -21,6 +21,14 @@ export interface UsePlaybackOptions {
 export interface Playback {
   state: PlaybackState;
   /**
+   * Why the last command failed, or null (INV-TPORT-006).
+   *
+   * Carried all the way out. The transport recorded it and the screen
+   * printed "Playback failed", so a take whose audio was never uploaded
+   * and one that will not decode looked identical.
+   */
+  problem: string | null;
+  /**
    * The same moment as `positionMs`, read every frame on the UI thread
    * (INV-NOTES-136). For the drawn playhead, which has to move smoothly; the
    * number above it is read to the second and costs a render.

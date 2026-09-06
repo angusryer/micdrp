@@ -79,6 +79,13 @@ invariants:
       nobody can debug from outside, and outside is where the only
       person using it stands.
 
+      The reason has to reach the surface, not merely be carried. The
+      transport recorded why and the screen printed "Playback failed",
+      so a take whose audio was never uploaded and a take whose audio
+      will not decode looked identical — two different problems with two
+      different remedies, shown as one dead end. That is the same fault
+      this invariant is named after, one layer further out.
+
   - id: INV-TPORT-007
     description: One head, running or waiting
     severity: high

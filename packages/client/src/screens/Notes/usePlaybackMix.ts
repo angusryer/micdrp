@@ -109,6 +109,8 @@ export interface UsePlaybackMixOptions {
 
 export interface MixedPlayback {
   state: PlaybackState;
+  /** Why the last press failed, or null (INV-TPORT-006). */
+  problem: string | null;
   /**
    * The same moment as `positionMs`, read every frame on the UI thread
    * (INV-NOTES-136). For the drawn playhead, which has to move smoothly; the
@@ -167,6 +169,7 @@ export function usePlaybackMix({
 }: UsePlaybackMixOptions): MixedPlayback {
   const {
     state: takeState,
+    problem,
     elapsedMs: takeElapsedMs,
     positionMs,
     drawnPositionMs,
@@ -468,6 +471,7 @@ export function usePlaybackMix({
 
   return {
     state,
+    problem,
     play,
     pause,
     stop,

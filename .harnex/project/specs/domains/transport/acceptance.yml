@@ -430,3 +430,17 @@ acceptance:
       - the take is played
     then:
       - the take is decoded again rather than assumed resident
+
+  - id: ACC-TPORT-032
+    interface: view
+    title: A take that will not play says why
+    given:
+      - a take whose audio cannot be resolved
+    when:
+      - the singer presses play
+    then:
+      - the reason the transport recorded is shown
+      - it is not merely that playback failed
+    maps_to:
+      capability: transport.play
+      invariants: [INV-TPORT-006]

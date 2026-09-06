@@ -196,6 +196,7 @@ export function PlaybackBar({
   );
   const {
     state,
+    problem,
     play,
     pause,
     stop,
@@ -294,8 +295,11 @@ export function PlaybackBar({
         ) : null}
 
         {state === 'error' ? (
+          // What went wrong, not that something did. A take whose audio was
+          // never uploaded and one that will not decode are two different
+          // problems with two different remedies (INV-TPORT-006).
           <Text style={[styles.error, { color: colors.error }]}>
-            Playback failed
+            {problem ?? 'Playback failed'}
           </Text>
         ) : null}
 

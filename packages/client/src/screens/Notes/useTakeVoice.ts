@@ -97,6 +97,7 @@ export function useTakeVoice({ resolveAudioUri }: UsePlaybackOptions): Playback 
 
   return {
     state,
+    problem: snapshot.problem,
     positionMs,
     drawnPositionMs,
     elapsedMs: engine.elapsedMs,

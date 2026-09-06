@@ -74,10 +74,16 @@ describe('PlaybackBar', () => {
     await renderBar(REMOTE);
     await fireEvent.press(screen.getByLabelText('Play'));
 
-    await waitFor(() => expect(screen.getByText('Playback failed')).toBeTruthy());
-    // The cause must reach the log; swallowing it is why this was opaque.
-    // Logged where the failure happens, which is now the engine — the
-    // transport above it carries the same reason to the surface.
+    // The reason, not that something went wrong. A take whose audio was
+    // never uploaded and one that will not decode are two different
+    // problems with two different remedies, and "Playback failed" showed
+    // them as one dead end (INV-TPORT-006).
+    await waitFor(() =>
+      expect(screen.getByText(/could not be read/)).toBeTruthy()
+    );
+    // The cause must reach the log too; swallowing it is why this was
+    // opaque. Logged where the failure happens, which is the engine — the
+    // transport above it carries the reason to the surface.
     expect(warn).toHaveBeenCalledWith(
       '[takeEngine] playback failed for',
       REMOTE,
@@ -123,6 +129,36 @@ describe('PlaybackBar accompaniment', () => {
 
     await waitFor(() => expect(chords.stop).toHaveBeenCalled());
     expect(chords.start).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});
+
+describe('ACC-TPORT-032: what a take that will not play says', () => {
+  it('says the audio is not here, when that is what happened', async () => {
+    // Nothing to resolve: the take has no audio on this device and none
+    // could be fetched — a different problem from one that will not decode,
+    // and a different remedy (INV-TPORT-006).
+    await renderPlaybackBar(jest.fn().mockResolvedValue(null));
+    await fireEvent.press(screen.getByLabelText('Play'));
+
+    await waitFor(() =>
+      expect(screen.getByText(/no audio on this device/)).toBeTruthy()
+    );
+  });
+
+  it('names the format, where the take was recorded as one it cannot open', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    synth.loadSample.mockResolvedValue(-1);
+
+    await renderPlaybackBar(
+      jest.fn().mockResolvedValue('https://micdrp.test/notes/a/take.ogg')
+    );
+    await fireEvent.press(screen.getByLabelText('Play'));
+
+    // "Could not be read" and "was recorded as something this cannot open"
+    // are different answers, and only one of them tells you what to do
+    // (INV-PITCH-012).
+    await waitFor(() => expect(screen.getByText(/OGG/)).toBeTruthy());
     warn.mockRestore();
   });
 });
