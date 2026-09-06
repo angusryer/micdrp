@@ -25,6 +25,7 @@ import {
   matchedLevels,
   peakLoudnessDb,
   takeGain,
+  tempoFromPattern,
   snapNotes,
   sungLoudnessDb,
   addTap,
@@ -228,15 +229,40 @@ export function useNoteDetail(id: string) {
    *
    * A tempo set by hand stands in front of whatever was read from the take;
    * the reading is left as it was, so the estimate is always there to go back
-   * to (INV-NOTES-123). Tapped beats do not appear here at all: they are
-   * marks on the recording, not a claim about its metre (INV-NOTES-161).
+   * to (INV-NOTES-123).
+   *
+   * Tapped beats still say nothing on their own (INV-NOTES-161). They speak
+   * only through a pattern somebody set — which beats of the bar they were
+   * meant for — and a take carries none until then, so this is the grid it
+   * had (INV-NOTES-209). Unsaying it brings that grid back, because nothing
+   * was overwritten to get here.
+   *
+   * Three answers, most recent claim first: a tempo typed by hand, then the
+   * taps read through a pattern, then the reading. A hand-set tempo outranks
+   * a pattern because it says the one thing directly rather than by
+   * implication.
    */
+  const patterned = useMemo(() => {
+    const pattern = interpretation.savedTapPattern;
+    return pattern == null
+      ? null
+      : tempoFromPattern(interpretation.savedBeats, pattern);
+  }, [interpretation.savedTapPattern, interpretation.savedBeats]);
+
   const grid = useMemo(() => {
     if (interpretation.savedBpm != null && interpretation.savedBpm > 0) {
       return { ...quantized.grid, bpm: interpretation.savedBpm };
     }
+    if (patterned != null) {
+      return {
+        ...quantized.grid,
+        bpm: patterned.bpm,
+        offsetMs: patterned.offsetMs,
+        beatsPerBar: patterned.beatsPerBar
+      };
+    }
     return quantized.grid;
-  }, [quantized.grid, interpretation.savedBpm]);
+  }, [quantized.grid, interpretation.savedBpm, patterned]);
   const hasGrid = grid.bpm > 0 && melody.length > 1;
 
   /**
@@ -744,6 +770,13 @@ export function useNoteDetail(id: string) {
     /** The tempo in use, and how to set it by hand (INV-NOTES-123). */
     bpm: grid.bpm,
     isBpmByHand: interpretation.savedBpm != null,
+    /** What the taps were said to be for, or undefined if nobody has said. */
+    tapPattern: interpretation.savedTapPattern,
+    setTapPattern: interpretation.updateTapPattern,
+    /** What the taps say through that pattern, or null where they say nothing. */
+    patternedTempo: patterned,
+    /** How many taps there are to read a pattern through. */
+    tapCount: interpretation.savedBeats.length,
     /**
      * What the tapped beats imply, or null. Offered by the tempo row and
      * applied only when pressed — the taps stay marks until then

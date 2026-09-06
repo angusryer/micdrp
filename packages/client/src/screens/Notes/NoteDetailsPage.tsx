@@ -33,6 +33,7 @@ import { NoteStats } from './NoteStats';
 import { RereadCard } from './RereadCard';
 import { TuningPanel } from './TuningPanel';
 import { TempoRow } from './TempoRow';
+import { TapPatternRow } from './TapPatternRow';
 import type { useNoteDetail } from './useNoteDetail';
 
 /**
@@ -152,6 +153,15 @@ export function NoteDetailsPage({
             tappedBpm={detail.tappedBpm}
             tappedRange={detail.tappedRange}
             onSet={detail.setBpm}
+          />
+
+          {/* Beside the tempo because it is one: this is how the taps become
+              a tempo at all (INV-NOTES-209). */}
+          <TapPatternRow
+            pattern={detail.tapPattern}
+            tapCount={detail.tapCount}
+            bpm={detail.patternedTempo?.bpm ?? null}
+            onSet={detail.setTapPattern}
           />
 
           {/* Last, because it replaces everything above it (INV-NOTES-116). */}

@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { activeInterpretation, type InterpretationDto } from 'shared';
-import type { ChordSlotEdit, NoteEdit, TappedBeat } from 'logic';
+import type { ChordSlotEdit, NoteEdit, TapPattern, TappedBeat } from 'logic';
 
 import {
   flushInterpretations,
@@ -39,6 +39,8 @@ export interface Interpretation {
   savedBpm: number | undefined;
   /** The beat, tapped in against the take (INV-NOTES-130). */
   savedBeats: readonly TappedBeat[];
+  /** Which beats of the bar those taps were for, or undefined if nobody said. */
+  savedTapPattern: TapPattern | undefined;
   /** Whether somebody has asked for the harmony (INV-NOTES-171). */
   hasHarmony: boolean;
   /** Pitches corrected where the detector heard wrongly. */
@@ -51,6 +53,8 @@ export interface Interpretation {
   updateBpm: (bpm: number | undefined) => void;
   /** Replace the tapped beats. */
   updateBeats: (beats: readonly TappedBeat[]) => void;
+  /** Say what the taps were for, or take it back (INV-NOTES-209). */
+  updateTapPattern: (pattern: TapPattern | undefined) => void;
   /**
    * Ask for the harmony, or ask again once the take has more to go on.
    *
@@ -80,6 +84,9 @@ export function useInterpretation(
     active.barLines
   );
   const [savedBpm, setSavedBpm] = useState<number | undefined>(active.bpm);
+  const [savedTapPattern, setSavedTapPattern] = useState<TapPattern | undefined>(
+    active.tapPattern
+  );
   const [savedBeats, setSavedBeats] = useState<readonly TappedBeat[]>(
     () => active.beats ?? []
   );
@@ -108,11 +115,21 @@ export function useInterpretation(
     notes?: NoteEdit[];
     bpm?: number;
     beats?: TappedBeat[];
+    // The stored shape, which is mutable: a pattern is a sentence written
+    // down, and `TapPattern` is how the code reads it back.
+    tapPattern?: { beats: number[]; beatsPerBar: number };
     harmony?: { askedAtMs: number; analysisVersion: number };
   }>({
     chords: active.chords as ChordSlotEdit[],
     ...(active.barLines ? { barLines: [...active.barLines] } : {}),
     ...(active.notes ? { notes: [...active.notes] } : {}),
+    // Seeded from what was read, not left out. This listed some of the
+    // fields and not others, so a note opened with a tempo or a tapped
+    // beat lost it the moment anything else was edited — the same
+    // hand-kept list that was dropping them at the parser.
+    ...(active.bpm != null ? { bpm: active.bpm } : {}),
+    ...(active.beats ? { beats: [...active.beats] } : {}),
+    ...(active.tapPattern ? { tapPattern: { ...active.tapPattern } } : {}),
     ...(active.harmony ? { harmony: { ...active.harmony } } : {})
   });
 
@@ -210,11 +227,33 @@ export function useInterpretation(
     [schedule]
   );
 
+  /**
+   * Say what the taps were for, or take it back (INV-NOTES-209).
+   *
+   * Undefined is a real answer and the one a take starts at: the marks stay
+   * marks and the grid is untouched, which is INV-NOTES-161.
+   */
+  const updateTapPattern = useCallback(
+    (tapPattern: TapPattern | undefined) => {
+      setSavedTapPattern(tapPattern);
+      latest.current = {
+        ...latest.current,
+        tapPattern:
+          tapPattern == null
+            ? undefined
+            : { beats: [...tapPattern.beats], beatsPerBar: tapPattern.beatsPerBar }
+      };
+      schedule();
+    },
+    [schedule]
+  );
+
   return {
     savedEdits,
     savedBarLines,
     savedBpm,
     savedBeats,
+    savedTapPattern,
     hasHarmony,
     savedNoteEdits,
     update,
@@ -222,6 +261,7 @@ export function useInterpretation(
     updateBarLines,
     updateBpm,
     updateBeats,
+    updateTapPattern,
     updateNotes,
     failed
   };
