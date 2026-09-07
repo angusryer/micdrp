@@ -18,11 +18,20 @@ import { I18nProvider } from '../../../i18n';
 import { ThemeProvider } from '../../../theme';
 import { RereadCard } from '../RereadCard';
 
-const show = (isStale: boolean, onReread = jest.fn().mockResolvedValue(true)) =>
+const show = (
+  isStale: boolean,
+  onReread = jest.fn().mockResolvedValue(true),
+  undo?: { canUndo: boolean; onUndo: jest.Mock }
+) =>
   render(
     <I18nProvider>
       <ThemeProvider>
-        <RereadCard isStale={isStale} onReread={onReread} />
+        <RereadCard
+          isStale={isStale}
+          onReread={onReread}
+          canUndo={undo?.canUndo}
+          onUndo={undo?.onUndo}
+        />
       </ThemeProvider>
     </I18nProvider>
   );
@@ -78,5 +87,49 @@ describe('reading a take again', () => {
       await fireEvent.press(screen.getByLabelText('Read this take again'));
     });
     expect(screen.queryByText(/could not be opened/)).not.toBeNull();
+  });
+});
+
+/**
+ * ACC-NOTES-229 / INV-NOTES-215 — and it can be undone.
+ *
+ * Every threshold the reader uses is stored once for the app rather than per
+ * take, so an old quiet recording gets read with a tuning arrived at against
+ * a recent close-sung one. Whether the new reading is better is a judgement
+ * only the person who sang it can make, and until now the press was one-way.
+ */
+describe('putting the previous reading back', () => {
+  const undo = (canUndo: boolean) => ({
+    canUndo,
+    onUndo: jest.fn().mockResolvedValue(undefined)
+  });
+
+  it('is not offered on a take that has not been read again', async () => {
+    await show(true, jest.fn().mockResolvedValue(true), undo(false));
+    expect(screen.queryByTestId('undo-reread')).toBeNull();
+  });
+
+  it('ACC-NOTES-229: is offered once a reading has been kept', async () => {
+    await show(true, jest.fn().mockResolvedValue(true), undo(true));
+    expect(screen.queryByTestId('undo-reread')).not.toBeNull();
+  });
+
+  it('says the previous reading is kept, before the press', async () => {
+    // Otherwise the warning above it reads as final, and a person who would
+    // have tried reading again does not.
+    await show(true, jest.fn().mockResolvedValue(true), undo(true));
+    expect(screen.queryByText(/you can put it back/)).not.toBeNull();
+  });
+
+  it('puts it back when pressed', async () => {
+    const back = undo(true);
+    await show(true, jest.fn().mockResolvedValue(true), back);
+
+    await act(async () => {
+      await fireEvent.press(
+        screen.getByLabelText('Put the previous reading back')
+      );
+    });
+    expect(back.onUndo).toHaveBeenCalled();
   });
 });

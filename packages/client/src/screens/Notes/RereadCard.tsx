@@ -29,11 +29,24 @@ export interface RereadCardProps {
    * (INV-NOTES-184).
    */
   onReread: () => Promise<string | null>;
+  /**
+   * Whether the reading this take had before can be put back
+   * (INV-NOTES-215).
+   *
+   * Every threshold the reader uses is set once for the app rather than per
+   * take, so a tuning arrived at against a recent take is what an old one
+   * gets read with — and whether that is better is a judgement only the
+   * person who sang it can make.
+   */
+  canUndo?: boolean;
+  onUndo?: () => Promise<void>;
 }
 
 export function RereadCard({
   isStale,
-  onReread
+  onReread,
+  canUndo = false,
+  onUndo
 }: RereadCardProps): React.JSX.Element | null {
   const { colors } = useTheme();
   const [isReading, setIsReading] = useState(false);
@@ -68,6 +81,12 @@ export function RereadCard({
         are kept and re-applied, but any that belonged to a note the app no
         longer hears will be lost.
       </Text>
+      {canUndo ? (
+        <Text style={[styles.body, { color: colors.gray300 }]}>
+          The reading this take had before is kept, so you can put it back if
+          you prefer it.
+        </Text>
+      ) : null}
       {failed ? (
         <Text style={[styles.warning, { color: colors.error }]}>
           The recording could not be opened, so nothing was changed.
@@ -95,6 +114,25 @@ export function RereadCard({
           </Text>
         )}
       </Pressable>
+      {canUndo && onUndo != null ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Put the previous reading back"
+          testID="undo-reread"
+          onPress={() => void onUndo()}
+          style={({ pressed }) => [
+            styles.button,
+            {
+              borderColor: colors.gray300,
+              backgroundColor: pressed ? colors.neutral300 : 'transparent'
+            }
+          ]}
+        >
+          <Text style={[styles.buttonText, { color: colors.gray500 }]}>
+            Put the previous reading back
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

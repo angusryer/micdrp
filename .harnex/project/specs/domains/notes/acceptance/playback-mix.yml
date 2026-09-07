@@ -255,3 +255,17 @@ acceptance:
     maps_to:
       capability: notes.set_playback_mix
       invariants: [INV-NOTES-213, INV-NOTES-175]
+
+  - id: ACC-NOTES-229
+    interface: ui
+    title: A reading can be put back after reading again
+    given:
+      - a signed-in singer S with a note read once
+    when:
+      - singer S reads the take again and does not like it
+      - singer S puts the previous reading back
+    then:
+      - the note field melodyMatchesPrevious is true
+    maps_to:
+      capability: notes.reread_take
+      invariants: [INV-NOTES-215, INV-NOTES-116]

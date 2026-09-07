@@ -177,7 +177,12 @@ export function NoteDetailsPage({
           />
 
           {/* Last, because it replaces everything above it (INV-NOTES-116). */}
-          <RereadCard isStale={detail.isStale} onReread={detail.reread} />
+          <RereadCard
+            isStale={detail.isStale}
+            onReread={detail.reread}
+            canUndo={detail.canUndoReread}
+            onUndo={detail.undoReread}
+          />
 
           <ExportSheet midiUri={detail.midiUri} title={note.title} />
         </View>

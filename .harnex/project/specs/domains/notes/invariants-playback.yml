@@ -1192,3 +1192,24 @@ invariants:
       Off screen rather than a distance: a threshold in milliseconds
       would have to be guessed, and whether the head can be seen is the
       question actually being asked.
+
+  - id: INV-NOTES-215
+    description: Reading a take again can be undone
+    severity: critical
+    check: >
+      The reading a take had before it was read again is kept, and can be
+      put back. Verified by asserting the previous melody is restored
+      exactly, and that a take never read again has nothing to put back.
+
+      Reading again overwrote the melody, the hits and the summary with
+      no way to return. Every threshold the reader uses is set once for
+      the app rather than per take, so a tuning arrived at against a
+      recent close-sung take is what an old quiet one gets read with —
+      and the result can be worse in a way nothing warns about, because
+      "better" is a judgement only the person who sang it can make.
+
+      Offering an irreversible action on the one part of a note that
+      cannot be recomputed from anything else is the shape of this whole
+      domain's worst faults. The audio can be read again; a reading
+      somebody had accepted, and the edits anchored into it, cannot be
+      got back by any amount of re-reading.

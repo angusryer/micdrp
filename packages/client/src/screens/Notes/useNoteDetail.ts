@@ -52,6 +52,11 @@ import {
 import { cacheReading, cachedNotes } from '../../data/notesSync';
 import { hasTakeAudio } from '../../data/takeAudio';
 import { rereadTake } from '../../analysis/reread';
+import {
+  forgetKeptReading,
+  keepReading,
+  keptReading
+} from '../../analysis/keptReading';
 import { notesRepo } from '../../data/notesRepo';
 import { useBarLayout } from './useBarLayout';
 import { useChordTrack } from './useChordTrack';
@@ -84,6 +89,13 @@ export function useNoteDetail(id: string) {
   // Bumped when the take is re-read, so the whole page recomputes from the
   // new reading rather than from the one it opened with (INV-NOTES-116).
   const [readingAt, setReadingAt] = useState(0);
+  /**
+   * Whether there is a reading to put back (INV-NOTES-215).
+   *
+   * Seeded from what is kept on the device, so the way back survives
+   * closing the note rather than lasting only as long as the screen.
+   */
+  const [canUndoReread, setCanUndoReread] = useState(false);
   const note = useMemo(
     () => cachedNotes().find((n) => n.id === id),
     [id, readingAt]
@@ -567,6 +579,36 @@ export function useNoteDetail(id: string) {
    * against whatever is read now, and an edit whose note is gone simply finds
    * nothing, which is what the warning says (INV-NOTES-116).
    */
+  /**
+   * Put the previous reading back (INV-NOTES-215).
+   *
+   * Null where there is nothing to put back, which is every take that has
+   * not been read again on this device.
+   */
+  const undoReread = useCallback(async () => {
+    if (note == null) {
+      return;
+    }
+    const kept = keptReading(note.id);
+    if (kept == null) {
+      return;
+    }
+    await notesRepo.saveReading(note.id, {
+      melody: kept.melody as never,
+      hits: kept.hits as never,
+      analysisVersion: kept.analysisVersion
+    });
+    forgetKeptReading(note.id);
+    setCanUndoReread(false);
+    setReadingAt((was) => was + 1);
+  }, [note]);
+
+  // The way back survives closing the note, so whether there is one is read
+  // rather than remembered only for as long as the screen lives.
+  useEffect(() => {
+    setCanUndoReread(note?.id != null && keptReading(note.id) != null);
+  }, [note?.id, readingAt]);
+
   const reread = useCallback(async () => {
     // Whichever copy exists, by the same rule everything else that reads or
     // sounds the take already uses (INV-NOTES-183). This used to ask for the
@@ -589,6 +631,17 @@ export function useNoteDetail(id: string) {
     // The cache keeps an absent value as undefined and the reading keeps
     // it as null. Both mean "nothing measured it"; only one of them fits
     // in a NoteMeta, so they are translated here rather than blurred.
+    // Kept before anything is overwritten (INV-NOTES-215). Every threshold
+    // the reader uses is set once for the app rather than per take, so a
+    // tuning arrived at against a recent take is what an old one gets read
+    // with — and whether that is better is a judgement only the person who
+    // sang it can make.
+    keepReading(note.id, {
+      melody: note.melody ?? [],
+      hits: note.hits ?? [],
+      analysisVersion: note.analysisVersion ?? 0
+    });
+    setCanUndoReread(true);
     const measured = outcome.reading.summary;
     cacheReading(note.id, {
       ...outcome.reading,
@@ -770,6 +823,9 @@ export function useNoteDetail(id: string) {
     /** The tempo in use, and how to set it by hand (INV-NOTES-123). */
     bpm: grid.bpm,
     isBpmByHand: interpretation.savedBpm != null,
+    /** Whether the previous reading can be put back (INV-NOTES-215). */
+    canUndoReread,
+    undoReread,
     /** What the taps were said to be for, or undefined if nobody has said. */
     tapPattern: interpretation.savedTapPattern,
     setTapPattern: interpretation.updateTapPattern,
