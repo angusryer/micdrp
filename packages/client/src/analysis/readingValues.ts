@@ -65,17 +65,26 @@ export function resetKnobs(): void {
  * Built here rather than written out again, so adding a knob is one entry and
  * not two — a second list would drift the moment either was edited.
  */
-export function readingOptions(): {
+export function readingOptions(readWith?: Record<string, number>): {
   smooth: Record<string, number>;
   segment: Record<string, number>;
   bends: Record<string, number>;
   percussion: Record<string, number>;
   minArticulationMs: number;
 } {
+  // A take's own settings win over the app-wide ones where it has them, and
+  // fall through where it does not — which is every knob of a take read
+  // before it carried any (INV-NOTES-216).
+  const valueOf = (knob: ReadingKnob): number => {
+    const mine = readWith?.[`${knob.group}.${knob.key}`];
+    return typeof mine === 'number' && Number.isFinite(mine)
+      ? clamp(knob, mine)
+      : knobValue(knob);
+  };
   const of = (group: KnobGroup): Record<string, number> => {
     const out: Record<string, number> = {};
     for (const knob of READING_KNOBS.filter((k) => k.group === group)) {
-      out[knob.key] = knobValue(knob);
+      out[knob.key] = valueOf(knob);
     }
     return out;
   };
@@ -85,6 +94,6 @@ export function readingOptions(): {
     segment: of('segment'),
     bends: of('bends'),
     percussion: of('percussion'),
-    minArticulationMs: top ? knobValue(top) : READ_DEFAULTS.minArticulationMs
+    minArticulationMs: top ? valueOf(top) : READ_DEFAULTS.minArticulationMs
   };
 }

@@ -22,6 +22,11 @@ import { flushInterpretations, renameQueued } from './interpretationQueue';
 import { notesRepo } from './notesRepo';
 import { dtoToMeta } from './notesSync';
 import { dropNote, pendingNotes, putNote } from './notesLocal';
+import {
+  resetTakeKnobs,
+  restoreReadWith,
+  takeReadWith
+} from '../analysis/takeKnobs';
 import type { NoteMeta } from './notesCache';
 
 /** What a pending note's create needs, read back off what was kept. */
@@ -33,6 +38,8 @@ function inputFor(note: NoteMeta): CreateNoteInput {
     melody: note.melody,
     hits: note.hits ?? [],
     analysisVersion: note.analysisVersion,
+    // What it was read with travels with the reading (INV-NOTES-216).
+    readWith: note.readWith,
     noteCount: note.noteCount,
     key: note.key,
     tempoBpm: note.tempoBpm,
@@ -79,6 +86,10 @@ export async function flushPending(): Promise<number> {
         // old one is dropped: a crash between the two leaves a duplicate,
         // which is visible and fixable, rather than nothing, which is not.
         putNote({ ...dtoToMeta(dto), localAudioUri: uri, pendingSync: false });
+        // The settings follow the take to its new id, and the old key goes
+        // with the old id rather than being left behind (INV-NOTES-216).
+        restoreReadWith(dto.id, takeReadWith(note.id));
+        resetTakeKnobs(note.id);
         dropNote(note.id);
         sent += 1;
       } catch {

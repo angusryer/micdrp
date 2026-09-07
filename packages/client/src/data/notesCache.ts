@@ -68,6 +68,13 @@ export interface NoteMeta {
   melody: NoteEventDto[];
   /** The struck sounds. Absent on a take read before they were sought. */
   hits?: HitDto[];
+  /**
+   * The thresholds this reading was made with (INV-NOTES-216).
+   *
+   * Absent on a take read before they were stored, which means the app-wide
+   * numbers were in force — because they were.
+   */
+  readWith?: Record<string, number>;
   /** Which reading produced them. Absent means the oldest one. */
   analysisVersion?: number;
   key?: string;

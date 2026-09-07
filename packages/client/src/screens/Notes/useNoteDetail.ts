@@ -53,6 +53,12 @@ import { cacheReading, cachedNotes } from '../../data/notesSync';
 import { hasTakeAudio } from '../../data/takeAudio';
 import { rereadTake } from '../../analysis/reread';
 import {
+  restoreReadWith,
+  seedReadWith,
+  stampReadWith,
+  takeReadWith
+} from '../../analysis/takeKnobs';
+import {
   forgetKeptReading,
   keepReading,
   keptReading
@@ -596,8 +602,14 @@ export function useNoteDetail(id: string) {
     await notesRepo.saveReading(note.id, {
       melody: kept.melody as never,
       hits: kept.hits as never,
-      analysisVersion: kept.analysisVersion
+      analysisVersion: kept.analysisVersion,
+      readWith: kept.readWith
     });
+    // The settings go back with it, or the take is stamped with numbers
+    // that did not produce what it now holds (INV-NOTES-216).
+    if (kept.readWith != null) {
+      restoreReadWith(note.id, kept.readWith);
+    }
     forgetKeptReading(note.id);
     setCanUndoReread(false);
     setReadingAt((was) => was + 1);
@@ -609,6 +621,16 @@ export function useNoteDetail(id: string) {
     setCanUndoReread(note?.id != null && keptReading(note.id) != null);
   }, [note?.id, readingAt]);
 
+  // Take the settings the note arrived carrying, where this device has none
+  // — which is every take after a reinstall, and a reinstall is exactly when
+  // a library gets read again (INV-NOTES-216). Never overwrites: what is on
+  // the device is the working copy.
+  useEffect(() => {
+    if (note?.id != null && note.readWith != null) {
+      seedReadWith(note.id, note.readWith);
+    }
+  }, [note?.id, note?.readWith]);
+
   const reread = useCallback(async () => {
     // Whichever copy exists, by the same rule everything else that reads or
     // sounds the take already uses (INV-NOTES-183). This used to ask for the
@@ -616,13 +638,20 @@ export function useNoteDetail(id: string) {
     // one on the device — so every take not yet uploaded refused to be read
     // again, and said nothing about it.
     const uri = hasTakeAudio(note) ? await resolveAudio() : null;
-    let outcome = await rereadTake(uri);
+    // This take's own thresholds, not whatever the app is set to now
+    // (INV-NOTES-216). Empty on one read before it carried any, which falls
+    // through to the app-wide values — there is nothing better to fall back
+    // to — and is stamped below so it is loose exactly once.
+    const readWith = note == null ? {} : takeReadWith(note.id);
+    let outcome = await rereadTake(uri, 'mixed', readWith);
     // A local copy that is no longer there — which is every take after a
     // reinstall — falls back to the uploaded one rather than failing
     // (INV-NOTES-185).
     if (!outcome.ok && note?.audioPath != null && note.localAudioUri != null) {
       outcome = await rereadTake(
-        await notesRepo.audioUrlFor(id, note.audioPath)
+        await notesRepo.audioUrlFor(id, note.audioPath),
+        'mixed',
+        readWith
       );
     }
     if (!outcome.ok || note == null) {
@@ -639,7 +668,8 @@ export function useNoteDetail(id: string) {
     keepReading(note.id, {
       melody: note.melody ?? [],
       hits: note.hits ?? [],
-      analysisVersion: note.analysisVersion ?? 0
+      analysisVersion: note.analysisVersion ?? 0,
+      readWith
     });
     setCanUndoReread(true);
     const measured = outcome.reading.summary;
@@ -658,7 +688,10 @@ export function useNoteDetail(id: string) {
               rangeHighMidi: measured.rangeHighMidi ?? undefined
             }
     });
-    await notesRepo.saveReading(note.id, outcome.reading);
+    await notesRepo.saveReading(note.id, {
+      ...outcome.reading,
+      readWith: stampReadWith(note.id)
+    });
     setReadingAt((was) => was + 1);
     return null;
   }, [id, note, resolveAudio]);

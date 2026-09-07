@@ -130,6 +130,7 @@ export function NoteDetailsPage({
             }}
             isReading={isTuning}
             problem={problem}
+            noteId={detail.note?.id ?? null}
           />
 
           <NoteStats

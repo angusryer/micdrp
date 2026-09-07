@@ -85,6 +85,9 @@ export function keepLocally(
     melody: input.melody,
     hits: input.hits ?? [],
     analysisVersion: input.analysisVersion,
+    // What that reading was made with, so reading it again matches it
+    // rather than whatever the app is set to by then (INV-NOTES-216).
+    readWith: input.readWith,
     key: input.key ?? undefined,
     tempoBpm: input.tempoBpm ?? undefined,
     inTuneRatio: input.inTuneRatio ?? undefined,

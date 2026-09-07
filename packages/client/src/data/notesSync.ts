@@ -38,6 +38,9 @@ export function dtoToMeta(dto: NoteDto): NoteMeta {
     melody: dto.melody,
     hits: dto.hits ?? [],
     analysisVersion: dto.analysisVersion,
+    // What that reading was made with, so reading it again matches it
+    // (INV-NOTES-216).
+    readWith: dto.readWith,
     layers: dto.layers ?? [],
     interpretations: dto.interpretations,
     key: dto.key ?? undefined,

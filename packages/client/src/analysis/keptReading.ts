@@ -20,6 +20,15 @@ export interface KeptReading {
   hits: readonly unknown[];
   analysisVersion: number;
   summary?: Record<string, unknown>;
+  /**
+   * The thresholds that reading was made with (INV-NOTES-216).
+   *
+   * Kept with it, because putting a reading back without the settings that
+   * produced it leaves a take stamped with numbers that did not make what
+   * it now holds — and the next reading would silently disagree with the
+   * one on screen.
+   */
+  readWith?: Record<string, number>;
 }
 
 const keyFor = (noteId: string) => `notes.${noteId}.previousReading`;

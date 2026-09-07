@@ -17,6 +17,7 @@ import { type SharedValue } from 'react-native-reanimated';
 import { addTap, type TappedBeat } from 'logic';
 
 import { analyzeCapture } from '../../analysis/note';
+import { stampReadWith } from '../../analysis/takeKnobs';
 import { keepLocally, localNoteId, putNote } from '../../data/notesLocal';
 import { flushPending } from '../../data/notesQueue';
 import { firstInterpretation } from './capturedBeats';
@@ -106,13 +107,23 @@ export function useNoteCapture(onSaved?: () => void): UseNoteCaptureValue {
         // Kept here, now, before anything is sent. What was sung is a fact
         // the moment it was sung; where it ends up stored is a detail that
         // can be retried (INV-NOTES-139).
+        // Stamped before the note is kept, so what it was read with is part
+        // of the first write rather than a correction to it (INV-NOTES-216).
+        // On the note as well as on the device, because the device copy is
+        // keyed by an id that changes when the note reaches the server.
+        const noteId = localNoteId(at, String(handle.durationMs ?? 0));
         const note = keepLocally(
-          { title: title?.trim() || defaultTitle(new Date()), ...noteInput },
+          {
+            title: title?.trim() || defaultTitle(new Date()),
+            ...noteInput,
+            readWith: stampReadWith(noteId)
+          },
           handle.uri,
-          localNoteId(at, String(handle.durationMs ?? 0))
+          noteId
         );
         // What was tapped while singing is the note's beats, so opening it
-        // shows them where they were put (INV-NOTES-137).
+        // shows them where they were put (INV-NOTES-137). Nothing tapped is
+        // no reading, which is not the same as an empty one.
         if (beats.current.length > 0) {
           putNote({
             ...note,

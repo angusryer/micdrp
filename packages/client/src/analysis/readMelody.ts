@@ -23,7 +23,12 @@ export interface Melody {
 }
 
 /**
- * Read frames as notes, with every knob as it is currently set.
+ * Read frames as notes, with the settings this take is read with.
+ *
+ * `readWith` is the take's own, where it has any: a recording is read again
+ * with the thresholds it was read with before, not with whatever the app
+ * happens to be set to now (INV-NOTES-216). Absent means the app-wide
+ * values, which is right for a take being read for the first time.
  *
  * Re-centring is part of reading rather than something a caller adds
  * afterwards: a take sitting near a semitone boundary otherwise splits one
@@ -34,9 +39,10 @@ export interface Melody {
  */
 export function readMelody(
   frames: readonly PitchFrame[],
-  role: TakeRole = 'mixed'
+  role: TakeRole = 'mixed',
+  readWith?: Record<string, number>
 ): Melody {
-  const { notes, hits } = readTake(frames, role, readingOptions());
+  const { notes, hits } = readTake(frames, role, readingOptions(readWith));
   // Only notes have a centre — a struck sound has no pitch to recentre.
   return { notes: recentreNotes(notes).notes, hits };
 }

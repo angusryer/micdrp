@@ -1213,3 +1213,45 @@ invariants:
       domain's worst faults. The audio can be read again; a reading
       somebody had accepted, and the edits anchored into it, cannot be
       got back by any amount of re-reading.
+
+  - id: INV-NOTES-216
+    description: A take is read with the settings it was read with before
+    severity: critical
+    check: >
+      A take stores the reading settings it was last read with, and reading
+      it again uses those rather than whatever the app is set to now.
+      Verified by reading a take with one set of thresholds, changing the
+      app-wide ones, reading it again, and asserting the take's own values
+      were the ones in force.
+
+      Every threshold lived once for the whole app. So a recording made in
+      August was re-read with a tuning arrived at in September against a
+      different take, sung differently, at a different distance from the
+      microphone — and came back as a different melody, with nothing
+      anywhere to say that it had been read under settings never chosen for
+      it. The person is told the engine improved; what actually changed was
+      a number they moved while looking at something else.
+
+      A take carries its own settings from the moment it is read. The
+      app-wide values are what a NEW take starts from, not what every old
+      one is retroactively subject to. Changing them must not reach
+      backwards into a library of readings somebody has already accepted.
+
+      Takes read before this existed have no stored settings and fall back
+      to the app-wide ones — there is nothing better to fall back to — but
+      they are stamped on the next reading, so a take is loose exactly once.
+
+  - id: INV-NOTES-217
+    description: Tuning beside a take changes that take, and says so
+    severity: high
+    check: >
+      The tuning panel shown beside a take writes to that take's settings,
+      not to the app-wide ones, and names which take it is tuning. The same
+      panel on the account screen writes the app-wide values and says those
+      are where new takes start. Verified by asserting a knob turned beside
+      one take leaves both the app-wide value and a second take unmoved.
+
+      A control that silently means something different depending on where
+      it is drawn is worse than two controls. The panel exists to be turned
+      while listening to one take; that is the scope it should have, and
+      the scope it should say it has.

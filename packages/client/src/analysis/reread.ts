@@ -32,6 +32,14 @@ export interface Reread {
    * rather than as a leftover (INV-NOTES-195).
    */
   summary: TakeSummary;
+  /**
+   * The thresholds this reading was made with (INV-NOTES-216).
+   *
+   * Stored with the melody, so the next reading of this take matches this
+   * one rather than whatever the app is set to by then. A reading whose
+   * settings are not written down is a measurement with no units.
+   */
+  readWith: Record<string, number>;
 }
 
 /**
@@ -56,7 +64,8 @@ export type RereadResult =
  */
 export async function rereadTake(
   audioUri: string | null,
-  role: TakeRole = 'mixed'
+  role: TakeRole = 'mixed',
+  readWith: Record<string, number> = {}
 ): Promise<RereadResult> {
   if (audioUri == null || audioUri.length === 0) {
     return { ok: false, because: 'no-recording' };
@@ -78,14 +87,14 @@ export async function rereadTake(
   if (samples.length === 0) {
     return { ok: false, because: 'unreadable' };
   }
-  // The one reader, with every threshold as it is currently set
-  // (INV-PITCH-028, INV-NOTES-172).
-  const { notes, hits } = readMelody(samples, role);
+  // The one reader, with this take's own thresholds where it has them
+  // (INV-PITCH-028, INV-NOTES-216).
+  const { notes, hits } = readMelody(samples, role, readWith);
   // Smoothed the same way the reader smoothed it, so the intonation measure
   // is taken against the trace the notes actually came from.
   const summary = takeSummary(
     notes,
-    smoothPitch([...samples], readingOptions().smooth)
+    smoothPitch([...samples], readingOptions(readWith).smooth)
   );
   // The DTOs mirror the logic types field-for-field on purpose, so this is a
   // rename rather than a conversion (see shared/dto/note).
@@ -95,7 +104,8 @@ export async function rereadTake(
       melody: notes,
       hits,
       analysisVersion: ANALYSIS_VERSION,
-      summary
+      summary,
+      readWith
     }
   };
 }

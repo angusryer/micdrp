@@ -8,9 +8,19 @@
  */
 const mockStore = new Map<string, unknown>();
 
+// The whole of what the store offers, not the two calls this file happened
+// to need first: a double that silently lacks a method turns a real call
+// into a TypeError swallowed by whatever catch it lands in, which is how
+// this one presented — a sync that reported nothing sent.
 jest.mock('../store', () => ({
   setJSON: (key: string, value: unknown) => mockStore.set(key, value),
-  getJSON: (key: string) => mockStore.get(key)
+  getJSON: (key: string) => mockStore.get(key),
+  getString: (key: string) => mockStore.get(key) as string | undefined,
+  setString: (key: string, value: string) => mockStore.set(key, value),
+  remove: (key: string) => void mockStore.delete(key),
+  has: (key: string) => mockStore.has(key),
+  getAllKeys: () => [...mockStore.keys()],
+  clearAll: () => mockStore.clear()
 }));
 
 jest.mock('../notesCache', () => ({
@@ -71,6 +81,21 @@ describe('sending what is waiting', () => {
     expect(pendingCount()).toBe(0);
     const index = mockStore.get('notes.index') as Record<string, unknown>;
     expect(Object.keys(index)).toEqual(['server-1']);
+  });
+
+  it('moves the take\u2019s reading settings to the id the server gave it', async () => {
+    // The settings are keyed by note id and the id changes on upload, so
+    // without this a take loses what it was read with at exactly the moment
+    // it becomes the copy everything else reads (INV-NOTES-216).
+    keepLocally(input, 'file:///take.wav', 'local-1');
+    mockStore.set('notes.local-1.readWith', { 'segment.pitchHoldMs': 123 });
+    mockCreate.mockResolvedValue({ id: 'server-1' });
+
+    await flushPending();
+    expect(mockStore.get('notes.server-1.readWith')).toEqual({
+      'segment.pitchHoldMs': 123
+    });
+    expect(mockStore.has('notes.local-1.readWith')).toBe(false);
   });
 
   it('keeps the local audio after the upload, as the faster thing to read', async () => {

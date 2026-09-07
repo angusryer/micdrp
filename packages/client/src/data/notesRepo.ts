@@ -19,6 +19,7 @@ import {
   appError,
   audioExtensionOf,
   parseInterpretations,
+  parseReadWith,
   parseLayers,
   readMelody
 } from 'shared';
@@ -95,6 +96,9 @@ function rowToDto(row: NoteRow): NoteDto {
     noteCount: row.note_count,
     rangeLowMidi: row.range_low_midi,
     rangeHighMidi: row.range_high_midi,
+    // The settings this reading was made with, so reading it again matches
+    // it rather than whatever the app is set to by then (INV-NOTES-216).
+    readWith: parseReadWith(extra(row).read_with_json),
     interpretations: parseInterpretations(row.interpretations_json),
     layers: parseLayers((row as { layers_json?: unknown }).layers_json)
   };
@@ -154,6 +158,8 @@ export const notesRepo = {
     form.append('melody_json', JSON.stringify(input.melody));
     form.append('hits_json', JSON.stringify(input.hits ?? []));
     form.append('analysis_version', String(input.analysisVersion ?? 1));
+    // What it was read with, so reading it again matches (INV-NOTES-216).
+    form.append('read_with_json', JSON.stringify(input.readWith ?? {}));
     form.append('note_count', String(input.noteCount));
     if (input.key != null) form.append('key', input.key);
     if (input.tempoBpm != null) form.append('tempo_bpm', String(input.tempoBpm));
@@ -276,6 +282,8 @@ export const notesRepo = {
       melody: readonly NoteEventDto[];
       hits: readonly HitDto[];
       analysisVersion: number;
+      /** What it was read with, stamped beside what was read. */
+      readWith?: Record<string, number>;
       summary?: {
         key: string | null;
         tempoBpm: number | null;
@@ -292,6 +300,7 @@ export const notesRepo = {
         melody_json: reading.melody,
         hits_json: reading.hits,
         analysis_version: reading.analysisVersion,
+        ...(reading.readWith ? { read_with_json: reading.readWith } : {}),
         note_count: reading.melody.length,
         ...(summary
           ? {

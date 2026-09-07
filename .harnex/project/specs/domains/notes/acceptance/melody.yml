@@ -33,3 +33,20 @@ acceptance:
       capability: notes.play_melody
       invariants: [INV-NOTES-067]
       interaction: INT-NOTES-019
+
+  - id: ACC-NOTES-230
+    title: A take is read again with its own settings, not today's
+    given: A take read in August, and thresholds changed since
+    when: The take is read again
+    then: >
+      The settings stored on the take are the ones in force, and the
+      app-wide values do not reach it (INV-NOTES-216).
+
+  - id: ACC-NOTES-231
+    title: Tuning beside a take does not move the app or the library
+    given: The tuning panel open beside one take
+    when: A knob is turned
+    then: >
+      That take's stored settings change; the app-wide value and every
+      other take are left as they were (INV-NOTES-217).
+

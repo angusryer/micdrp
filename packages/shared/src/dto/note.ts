@@ -152,6 +152,11 @@ export interface NoteDto {
    * a note recorded before layers existed, which is not an error.
    */
   layers: NoteLayerDto[];
+  /**
+   * The thresholds this reading was made with, empty on a take read before
+   * they were stored (INV-NOTES-216).
+   */
+  readWith?: Record<string, number>;
 }
 
 /** Fields supplied by the client when creating a note. */
@@ -169,6 +174,8 @@ export interface CreateNoteInput {
   rangeHighMidi?: number | null;
   hits?: HitDto[];
   analysisVersion?: number;
+  /** The thresholds this reading was made with (INV-NOTES-216). */
+  readWith?: Record<string, number>;
 }
 
 /**
@@ -201,6 +208,31 @@ export function parseLayers(raw: unknown): NoteLayerDto[] {
       alignedByMs: typeof v.alignedByMs === 'number' ? v.alignedByMs : 0,
       isMuted: v.isMuted === true
     });
+  }
+  return out;
+}
+
+/**
+ * The thresholds a stored reading was made with (INV-NOTES-216).
+ *
+ * Flat, keyed `group.key`, so a knob added or taken out of the reader later
+ * leaves an old stamp readable rather than malformed. Anything that is not
+ * a finite number is dropped: a settings map is used to reproduce a reading,
+ * and a value that cannot be one would quietly change the result it claims
+ * to explain.
+ *
+ * Empty on every take read before this was stored, which is not an error —
+ * it means the app-wide numbers were in force, because they were.
+ */
+export function parseReadWith(raw: unknown): Record<string, number> {
+  if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) {
+    return {};
+  }
+  const out: Record<string, number> = {};
+  for (const [name, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      out[name] = value;
+    }
   }
   return out;
 }
