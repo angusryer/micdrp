@@ -12,7 +12,7 @@
  * is watching bar lines move is a keyboard covering the thing being tuned.
  */
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import {
   MAX_BEATS_PER_BAR,
@@ -23,6 +23,7 @@ import {
 } from 'logic';
 
 import { useTheme } from '../../theme';
+import { CountStepper } from './CountStepper';
 import { TogglePill } from './TogglePill';
 
 export interface TapPatternEditorProps {
@@ -40,44 +41,20 @@ export function TapPatternEditor({
   const { colors } = useTheme();
   const { beatsPerBar } = pattern;
 
-  const step = (by: number) => {
-    const next = beatsPerBar + by;
-    if (next < MIN_BEATS_PER_BAR || next > MAX_BEATS_PER_BAR) {
-      return;
-    }
-    onSet(withBeatsPerBar(pattern, next));
-  };
-
   return (
     <View style={styles.wrap}>
-      <View style={styles.counter}>
-        <Text style={[styles.label, { color: colors.gray500 }]}>
-          Beats in a bar
-        </Text>
-        <View style={styles.stepper}>
-          <StepButton
-            label="−"
-            accessibilityLabel="One fewer beat in a bar"
-            testID="beats-per-bar-down"
-            isDisabled={isDisabled || beatsPerBar <= MIN_BEATS_PER_BAR}
-            onPress={() => step(-1)}
-          />
-          <Text
-            testID="beats-per-bar"
-            accessibilityLabel={`${beatsPerBar} beats in a bar`}
-            style={[styles.count, { color: colors.typography }]}
-          >
-            {beatsPerBar}
-          </Text>
-          <StepButton
-            label="+"
-            accessibilityLabel="One more beat in a bar"
-            testID="beats-per-bar-up"
-            isDisabled={isDisabled || beatsPerBar >= MAX_BEATS_PER_BAR}
-            onPress={() => step(1)}
-          />
-        </View>
-      </View>
+      <CountStepper
+        label="Beats in a bar"
+        value={beatsPerBar}
+        min={MIN_BEATS_PER_BAR}
+        max={MAX_BEATS_PER_BAR}
+        describe={(n) => `${n} beats in a bar`}
+        downLabel="One fewer beat in a bar"
+        upLabel="One more beat in a bar"
+        testID="beats-per-bar"
+        isDisabled={isDisabled}
+        onSet={(n) => onSet(withBeatsPerBar(pattern, n))}
+      />
 
       <Text style={[styles.label, { color: colors.gray500 }]}>
         Beats you tapped
@@ -100,62 +77,10 @@ export function TapPatternEditor({
   );
 }
 
-/** One end of the stepper. Its own component so the two cannot drift. */
-function StepButton({
-  label,
-  accessibilityLabel,
-  testID,
-  isDisabled,
-  onPress
-}: {
-  label: string;
-  accessibilityLabel: string;
-  testID: string;
-  isDisabled: boolean;
-  onPress: () => void;
-}): React.JSX.Element {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled: isDisabled }}
-      testID={testID}
-      disabled={isDisabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.step,
-        {
-          borderColor: colors.neutral500,
-          backgroundColor: pressed ? colors.neutral300 : 'transparent',
-          opacity: isDisabled ? 0.4 : 1
-        }
-      ]}
-    >
-      <Text style={[styles.stepText, { color: colors.typography }]}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 export default TapPatternEditor;
 
 const styles = StyleSheet.create({
   wrap: { gap: 8, paddingTop: 4 },
-  counter: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   label: { fontSize: 13 },
-  stepper: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  step: {
-    borderWidth: 1,
-    borderRadius: 999,
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  stepText: { fontSize: 18, fontWeight: '600', lineHeight: 22 },
-  // Fixed width so the row does not jump as the count changes shape.
-  count: { fontSize: 17, fontWeight: '700', minWidth: 24, textAlign: 'center' },
   beats: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }
 });

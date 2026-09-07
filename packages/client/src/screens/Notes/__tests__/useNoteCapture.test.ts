@@ -37,6 +37,12 @@ jest.mock('../../../data/notesLocal', () => ({
   localNoteId: () => 'local-1'
 }));
 
+const mockQueueInterpretations = jest.fn();
+jest.mock('../../../data/interpretationQueue', () => ({
+  queueInterpretations: (...args: unknown[]) =>
+    mockQueueInterpretations(...args)
+}));
+
 const mockFlush = jest.fn();
 jest.mock('../../../data/notesQueue', () => ({
   flushPending: () => mockFlush()
@@ -127,6 +133,25 @@ describe('keeping what was tapped', () => {
     expect(written.interpretations[0].beats?.[0].atMs).toBe(750);
   });
 
+  it('queues it, so the taps are not left only on this device', async () => {
+    // The create carries no interpretations, so nothing else would ever
+    // send them and a reinstall would lose what was tapped (INV-NOTES-220).
+    const { result } = await renderHook(() => useNoteCapture());
+    await act(async () => {
+      result.current.tapBeat();
+    });
+    await act(async () => {
+      await result.current.stopAndSave('A tune');
+    });
+
+    await waitFor(() => expect(mockQueueInterpretations).toHaveBeenCalled());
+    const [, queued] = mockQueueInterpretations.mock.calls[0] as [
+      string,
+      { beats?: unknown[] }[]
+    ];
+    expect(queued[0].beats).toHaveLength(1);
+  });
+
   it('writes no reading at all when nothing was tapped', async () => {
     // A note nobody tapped has no decision recorded about it, and an empty
     // reading is not the same as no reading.
@@ -137,6 +162,7 @@ describe('keeping what was tapped', () => {
 
     expect(mockKeepLocally).toHaveBeenCalled();
     expect(mockPutNote).not.toHaveBeenCalled();
+    expect(mockQueueInterpretations).not.toHaveBeenCalled();
   });
 });
 

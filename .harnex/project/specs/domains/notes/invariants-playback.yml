@@ -1292,3 +1292,27 @@ invariants:
       as no tempo at all — the taps are silently unusable while the control
       still shows a pattern set. Saying nothing is a real answer and has its
       own control; it must not also be reachable by accident.
+
+  - id: INV-NOTES-220
+    description: A decision made before a take uploads survives the upload
+    severity: critical
+    check: >
+      Replacing a local take with the record the server returns keeps
+      anything the server was never told about. Verified by keeping a take
+      with tapped beats, uploading it, and asserting the beats are still on
+      the cached note afterwards — and that they are queued to reach the
+      server rather than living only on the device.
+
+      The beats tapped while singing are put on the note at capture
+      (INV-NOTES-137), and the create does not carry them. So the server's
+      answer had none, and writing that answer over the local note threw
+      away the only copy. Nothing failed and nothing was reported: the take
+      uploaded successfully and a decision the singer had made disappeared
+      with it.
+
+      It showed as the tap-pattern control vanishing. That control is
+      hidden on a take with nothing tapped — a question with no answer —
+      so a take whose taps had been silently dropped looked like a take
+      nobody had tapped. The symptom was in one screen; the fault is that
+      a sync treated the server as authoritative about a fact the server
+      had never been given.

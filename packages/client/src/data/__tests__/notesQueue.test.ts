@@ -36,11 +36,18 @@ jest.mock('../notesRepo', () => ({
   notesRepo: { create: (...args: unknown[]) => mockCreate(...args) }
 }));
 
+// Faithful about interpretations, because that is what these tests turn on:
+// the real mapping copies whatever the server returned, which for a note the
+// server has never been told about is nothing.
 jest.mock('../notesSync', () => ({
-  dtoToMeta: (dto: { id: string }) => ({ ...dto, createdAtMs: 1 })
+  dtoToMeta: (dto: { id: string; interpretations?: unknown[] }) => ({
+    ...dto,
+    createdAtMs: 1,
+    interpretations: dto.interpretations ?? []
+  })
 }));
 
-import { keepLocally, pendingNotes } from '../notesLocal';
+import { keepLocally, pendingNotes, putNote } from '../notesLocal';
 import { flushPending, pendingCount } from '../notesQueue';
 
 const input = {
@@ -81,6 +88,39 @@ describe('sending what is waiting', () => {
     expect(pendingCount()).toBe(0);
     const index = mockStore.get('notes.index') as Record<string, unknown>;
     expect(Object.keys(index)).toEqual(['server-1']);
+  });
+
+  it('keeps a decision made before the upload, which the server was never told', async () => {
+    // The taps are put on the note at capture (INV-NOTES-137) and the create
+    // does not carry them, so the server's answer has none. Replacing the
+    // local note with that answer wholesale threw away the only copy — and
+    // the tap-pattern control, which is hidden on a take with no taps,
+    // vanished the first time the note was reopened after it synced.
+    const note = keepLocally(input, 'file:///take.wav', 'local-1');
+    putNote({
+      ...note,
+      interpretations: [
+        {
+          id: 'sung-1',
+          name: 'As sung',
+          createdAtMs: 1,
+          isFrozen: false,
+          chords: [],
+          beats: [
+            { atMs: 500, tappedAtMs: 500, isDownbeat: false },
+            { atMs: 1000, tappedAtMs: 1000, isDownbeat: false }
+          ]
+        }
+      ]
+    });
+    mockCreate.mockResolvedValue({ id: 'server-1' });
+
+    await flushPending();
+    const index = mockStore.get('notes.index') as Record<
+      string,
+      { interpretations?: { beats?: { atMs: number }[] }[] }
+    >;
+    expect(index['server-1'].interpretations?.[0].beats).toHaveLength(2);
   });
 
   it('moves the take\u2019s reading settings to the id the server gave it', async () => {

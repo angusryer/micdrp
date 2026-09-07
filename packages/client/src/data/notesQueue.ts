@@ -50,6 +50,29 @@ function inputFor(note: NoteMeta): CreateNoteInput {
   };
 }
 
+/**
+ * What the server's answer cannot know, and so must not overwrite.
+ *
+ * The server is authoritative about a note it has been told about. It has
+ * been told the melody, the audio and the reading; it has NOT been told
+ * anything a person decided while the take was still local, because the
+ * create carries none of it. On those, silence from the server means
+ * "never asked", not "none" (INV-NOTES-220).
+ */
+function keptFromLocal(
+  local: NoteMeta,
+  fromServer: NoteMeta
+): Partial<NoteMeta> {
+  const kept: Partial<NoteMeta> = {};
+  if (
+    (fromServer.interpretations?.length ?? 0) === 0 &&
+    (local.interpretations?.length ?? 0) > 0
+  ) {
+    kept.interpretations = local.interpretations;
+  }
+  return kept;
+}
+
 /** Nothing runs twice at once; a second call while one is in flight waits. */
 let inFlight: Promise<number> | null = null;
 
@@ -85,7 +108,17 @@ export async function flushPending(): Promise<number> {
         // The server named it, so the local id retires. Written before the
         // old one is dropped: a crash between the two leaves a duplicate,
         // which is visible and fixable, rather than nothing, which is not.
-        putNote({ ...dtoToMeta(dto), localAudioUri: uri, pendingSync: false });
+        //
+        // Anything the server was never told stays (INV-NOTES-220). The
+        // create does not carry interpretations, so the answer has none —
+        // and writing that over the local note threw away the beats tapped
+        // while singing, silently, on a successful upload.
+        putNote({
+          ...dtoToMeta(dto),
+          ...keptFromLocal(note, dtoToMeta(dto)),
+          localAudioUri: uri,
+          pendingSync: false
+        });
         // The settings follow the take to its new id, and the old key goes
         // with the old id rather than being left behind (INV-NOTES-216).
         restoreReadWith(dto.id, takeReadWith(note.id));

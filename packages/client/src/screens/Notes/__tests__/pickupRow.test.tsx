@@ -36,15 +36,19 @@ describe('a take that opens on a downbeat', () => {
   it('says so, rather than calling it a pickup of no length', async () => {
     await show({ beats: 0 });
     expect(screen.getByText(/opens on a downbeat/)).toBeTruthy();
-    expect(screen.getByTestId('pickup-0').props.accessibilityState).toMatchObject(
-      { selected: true }
-    );
+    expect(screen.getByTestId('pickup-beats')).toHaveTextContent('0');
   });
 
-  it('ACC-NOTES-226: takes a pickup of two beats', async () => {
-    const onSet = await show({ beats: 0 });
-    void fireEvent.press(screen.getByTestId('pickup-2'));
+  it('ACC-NOTES-226: lengthens the pickup a beat at a time', async () => {
+    const onSet = await show({ beats: 1 });
+    void fireEvent.press(screen.getByTestId('pickup-beats-up'));
     expect(onSet).toHaveBeenCalledWith(2);
+  });
+
+  it('will not go below no pickup at all', async () => {
+    const onSet = await show({ beats: 0 });
+    void fireEvent.press(screen.getByTestId('pickup-beats-down'));
+    expect(onSet).not.toHaveBeenCalled();
   });
 });
 
@@ -54,30 +58,39 @@ describe('a take with a pickup', () => {
     expect(screen.getByText(/starts 2 beats before the first full bar/)).toBeTruthy();
   });
 
-  it('can be taken back to a downbeat', async () => {
-    const onSet = await show({ beats: 2 });
-    void fireEvent.press(screen.getByTestId('pickup-0'));
+  it('can be taken back towards a downbeat', async () => {
+    const onSet = await show({ beats: 1 });
+    void fireEvent.press(screen.getByTestId('pickup-beats-down'));
     expect(onSet).toHaveBeenCalledWith(0);
+  });
+
+  it('says what the number means, not just the number', async () => {
+    await show({ beats: 2 });
+    expect(screen.queryByLabelText('A pickup of 2 beats')).not.toBeNull();
   });
 });
 
 describe('what a pickup may be', () => {
   it('is less than a bar, because a whole bar is an earlier downbeat', async () => {
-    await show({ beatsPerBar: 4 });
-    expect(screen.getByTestId('pickup-3')).toBeTruthy();
-    expect(screen.queryByTestId('pickup-4')).toBeNull();
+    const onSet = await show({ beats: 3, beatsPerBar: 4 });
+    void fireEvent.press(screen.getByTestId('pickup-beats-up'));
+    expect(onSet).not.toHaveBeenCalled();
   });
 
   it('follows the bar it is a part of', async () => {
-    await show({ beatsPerBar: 3 });
-    expect(screen.getByTestId('pickup-2')).toBeTruthy();
-    expect(screen.queryByTestId('pickup-3')).toBeNull();
+    const onSet = await show({ beats: 2, beatsPerBar: 3 });
+    void fireEvent.press(screen.getByTestId('pickup-beats-up'));
+    expect(onSet).not.toHaveBeenCalled();
+
+    const longer = await show({ beats: 2, beatsPerBar: 6 });
+    void fireEvent.press(screen.getByTestId('pickup-beats-up'));
+    expect(longer).toHaveBeenCalledWith(3);
   });
 
   it('is not asked about at all where a bar holds one beat', async () => {
     await show({ beatsPerBar: 1 });
     // A bar of one beat cannot have a note before its own downbeat.
-    expect(screen.queryByTestId('pickup-0')).toBeNull();
+    expect(screen.queryByTestId('pickup-beats')).toBeNull();
   });
 });
 

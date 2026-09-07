@@ -10,12 +10,17 @@
  * say where the bar sits, and neither is a reading of the take. In the sheet
  * that opens part way over the graph, so the bar lines can be watched moving
  * as it changes (INV-NOTES-078).
+ *
+ * Counted with the same stepper the bar length uses, rather than one pill per
+ * possible answer. It is a quantity, not a set of alternatives — and the row
+ * of pills grew with the bar, so a six-beat bar spent a line of the sheet on
+ * numbers to scan for the one already chosen.
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../theme';
-import { TogglePill } from './TogglePill';
+import { CountStepper } from './CountStepper';
 
 export interface PickupRowProps {
   /** How long the pickup runs, in beats. */
@@ -46,10 +51,6 @@ export function PickupRow({
     return null;
   }
 
-  // A pickup is less than a bar: a whole bar before the first downbeat is
-  // just an earlier downbeat.
-  const choices = Array.from({ length: beatsPerBar }, (_, i) => i);
-
   return (
     <View style={styles.row}>
       <Text style={[styles.title, { color: colors.typography }]}>Pickup</Text>
@@ -58,23 +59,19 @@ export function PickupRow({
           ? `The singing starts ${pickupLabel(beats).toLowerCase()} before the first full bar.`
           : 'The take opens on a downbeat.'}
       </Text>
-      <View style={styles.pills}>
-        {choices.map((choice) => (
-          <TogglePill
-            key={choice}
-            label={pickupLabel(choice)}
-            accessibilityLabel={
-              choice === 0
-                ? 'The take opens on a downbeat'
-                : `A pickup of ${pickupLabel(choice).toLowerCase()}`
-            }
-            isOn={beats === choice}
-            role="radio"
-            testID={`pickup-${choice}`}
-            onPress={() => onSet(choice)}
-          />
-        ))}
-      </View>
+      <CountStepper
+        label="Beats before the first bar"
+        value={beats}
+        min={0}
+        // A pickup is less than a bar: a whole bar before the first downbeat
+        // is just an earlier downbeat.
+        max={beatsPerBar - 1}
+        describe={(n) => (n === 0 ? 'No pickup' : `A pickup of ${pickupLabel(n).toLowerCase()}`)}
+        downLabel="A shorter pickup"
+        upLabel="A longer pickup"
+        testID="pickup-beats"
+        onSet={onSet}
+      />
     </View>
   );
 }
@@ -85,5 +82,4 @@ const styles = StyleSheet.create({
   row: { gap: 8 },
   title: { fontSize: 16, fontWeight: '600' },
   hint: { fontSize: 13, lineHeight: 18 },
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }
 });

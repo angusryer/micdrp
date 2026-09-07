@@ -19,6 +19,7 @@ import { addTap, type TappedBeat } from 'logic';
 import { analyzeCapture } from '../../analysis/note';
 import { stampReadWith } from '../../analysis/takeKnobs';
 import { keepLocally, localNoteId, putNote } from '../../data/notesLocal';
+import { queueInterpretations } from '../../data/interpretationQueue';
 import { flushPending } from '../../data/notesQueue';
 import { firstInterpretation } from './capturedBeats';
 import {
@@ -125,10 +126,12 @@ export function useNoteCapture(onSaved?: () => void): UseNoteCaptureValue {
         // shows them where they were put (INV-NOTES-137). Nothing tapped is
         // no reading, which is not the same as an empty one.
         if (beats.current.length > 0) {
-          putNote({
-            ...note,
-            interpretations: [firstInterpretation(beats.current, at)]
-          });
+          const sung = firstInterpretation(beats.current, at);
+          putNote({ ...note, interpretations: [sung] });
+          // And queued, or the taps would live only on this device: the
+          // create carries no interpretations, so nothing else would ever
+          // send them (INV-NOTES-220).
+          queueInterpretations(note.id, [sung]);
         }
         setSaveStatus('saved');
         onSaved?.();

@@ -286,3 +286,11 @@ acceptance:
       Beat 5 is dropped and 1 and 3 stay, rather than leaving a pattern the
       bar cannot hold (INV-NOTES-219).
 
+  - id: ACC-NOTES-234
+    title: Taps survive the take being uploaded
+    given: A take kept on the device with beats tapped while singing
+    when: It uploads and the server's record replaces the local one
+    then: >
+      The beats are still on the note, and are queued to reach the server
+      (INV-NOTES-220).
+
