@@ -444,3 +444,19 @@ acceptance:
     maps_to:
       capability: transport.play
       invariants: [INV-TPORT-006]
+
+  - id: ACC-TPORT-034
+    title: A start still in the mailbox does not end the run
+    given: A report carrying the generation of the run before this one
+    when: The transport asks whether this run has ended
+    then: >
+      It cannot say, so the decoded length is used and the run plays to
+      its end (INV-TPORT-038).
+
+  - id: ACC-TPORT-035
+    title: The engine's word counts once it has taken the start
+    given: A report whose generation has passed the one at the start
+    when: That report says the run is not running
+    then: >
+      The run has ended, and the transport stops (INV-TPORT-011).
+

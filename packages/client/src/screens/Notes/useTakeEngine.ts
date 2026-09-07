@@ -36,7 +36,8 @@ import type { TransportEngine } from '../../audio/transportStore';
 import {
   beginEngineRun,
   endEngineRun,
-  engineRun
+  engineRun,
+  hasRunEnded
 } from '../../audio/engineTransport';
 import { useTakeAnchor } from './useTakeAnchor';
 import { trackBus } from './trackRegistry';
@@ -77,6 +78,14 @@ export function useTakeEngine(
    * every attempt to fix it from outside.
    */
   const loadedOn = useRef(0);
+  /**
+   * Which run the engine was on when this one was posted (INV-TPORT-038).
+   *
+   * -1 before anything has been started, so a report of generation 0 — an
+   * engine that has never run — is not mistaken for one still carrying a
+   * previous run of ours.
+   */
+  const startedAfter = useRef(-1);
 
   // A different take means a different recording: what is loaded is no
   // longer what anyone is going to ask for.
@@ -135,7 +144,13 @@ export function useTakeEngine(
       // The run and the sound begin together but are not the same thing:
       // one is time passing, the other is a voice. Muting the take must
       // not stop the clock (INV-TPORT-013).
-      beginEngineRun(offsetMs, beginsAtMs, beginsAtMs + (takeMs - offsetMs));
+      // Which run the engine was on before it was told about this one. Kept
+      // so "not started yet" is not read as "over" (INV-TPORT-038).
+      startedAfter.current = beginEngineRun(
+        offsetMs,
+        beginsAtMs,
+        beginsAtMs + (takeMs - offsetMs)
+      );
       anchor.mark(beginsAtMs - offsetMs);
       return takeMs;
     },
@@ -208,12 +223,12 @@ export function useTakeEngine(
 
   /**
    * Whether the engine says this run is over, or undefined where it
-   * cannot say (INV-TPORT-011, INV-TPORT-014).
+   * cannot say (INV-TPORT-011, INV-TPORT-014, INV-TPORT-038).
    */
-  const hasEnded = useCallback((): boolean | undefined => {
-    const run = engineRun();
-    return run == null ? undefined : !run.running;
-  }, []);
+  const hasEnded = useCallback(
+    (): boolean | undefined => hasRunEnded(engineRun(), startedAfter.current),
+    []
+  );
 
   return {
     start,

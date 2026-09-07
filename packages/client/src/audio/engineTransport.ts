@@ -71,13 +71,50 @@ export function engineRun(): EngineRun | null {
   }
 }
 
-/** Tell the engine a run has begun. A no-op where it cannot be told. */
+/**
+ * Whether the engine says THIS run is over, or undefined where it cannot
+ * say yet (INV-TPORT-038).
+ *
+ * `startedAfter` is the generation the engine was on when the start was
+ * posted. While the report still carries it, the start is in the mailbox
+ * and the report describes the run before ours — which is finished, so its
+ * `running` is false about the wrong run. "Has not started" and "is over"
+ * are the same word; the generation is what tells them apart.
+ *
+ * Here rather than in the hook, so the rule and the test of it read the
+ * same function.
+ */
+export function hasRunEnded(
+  run: EngineRun | null,
+  startedAfter: number
+): boolean | undefined {
+  if (run == null || run.generation === startedAfter) {
+    return undefined;
+  }
+  return !run.running;
+}
+
+/**
+ * Tell the engine a run has begun, and say which run the engine was on
+ * before it was told (INV-TPORT-038).
+ *
+ * Every command reaches the audio thread through a mailbox, so this start
+ * is posted and applied later. The run's generation rises when it is
+ * APPLIED. Until it does, the report still describes the previous run —
+ * which is finished — and `running` is false because that one ended.
+ *
+ * Returning the generation as it was is what lets a caller tell the two
+ * apart: while the report still carries it, this run has not begun, and
+ * the engine cannot yet be asked whether it is over.
+ */
 export function beginEngineRun(
   fromMs: number,
   startMs: number,
   endMs: number
-): void {
+): number {
+  const before = engineRun()?.generation ?? 0;
   NativeSynth?.startTransport?.(fromMs, startMs, endMs);
+  return before;
 }
 
 /** Tell the engine the run has ended. */

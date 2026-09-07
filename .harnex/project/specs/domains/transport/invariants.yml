@@ -607,3 +607,28 @@ invariants:
       told nobody, so every press afterwards scheduled a slot holding
       nothing — silence that survived every attempt to fix it from the
       outside, because the cache was certain and wrong.
+
+  - id: INV-TPORT-038
+    description: A run that has not begun is not a run that has ended
+    severity: critical
+    check: >
+      The engine's word on whether a run is over counts only once the
+      engine has taken the start it belongs to. Until then it cannot say,
+      and the decoded length is used instead. Verified by asserting that a
+      report still carrying the previous run's generation reads as "cannot
+      say" rather than as "ended".
+
+      Every command reaches the audio thread through a mailbox, so a start
+      is posted and applied later — the run's generation rises when it is
+      applied, not when it is asked for. Between those two moments the
+      report still describes the PREVIOUS run, which is finished, and
+      `running` is false because that run ended, not because this one did.
+
+      Read without the generation, that false ends the new run at the first
+      poll: the take sounds for as long as one watch tick and stops, the
+      head stops with it, and pressing again does exactly the same. It
+      looks like a broken take and it is a stale answer to a question that
+      had not been asked yet.
+
+      "It has not started" and "it is over" are the same word only to a
+      reader that does not check which run it is looking at.
