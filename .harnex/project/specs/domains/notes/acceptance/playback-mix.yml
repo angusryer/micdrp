@@ -294,3 +294,19 @@ acceptance:
       The beats are still on the note, and are queued to reach the server
       (INV-NOTES-220).
 
+  - id: ACC-NOTES-235
+    title: A take nobody tapped can still be told its bar is six beats
+    given: A take with no tapped beats
+    when: The bar length is set to six
+    then: >
+      The grid holds six beats to a bar, and no tempo is claimed from the
+      taps that are not there (INV-NOTES-221).
+
+  - id: ACC-NOTES-236
+    title: What moves the bar lines is at the top of the sheet
+    given: The analysis sheet open over the graph
+    when: It is read from the top
+    then: >
+      Tempo, pickup and tap pattern come first, and the measured summary
+      follows them (INV-NOTES-222).
+

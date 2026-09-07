@@ -70,27 +70,29 @@ export function TapPatternRow({
 }: TapPatternRowProps): React.JSX.Element | null {
   const { colors } = useTheme();
 
-  // Nothing was tapped, so there is nothing to say anything about. A control
-  // for a take with no taps is a question with no answer.
-  if (tapCount === 0) {
-    return null;
-  }
-
+  // Shown on every take. It was hidden where nothing had been tapped, on
+  // the reasoning that a control for a take with no taps is a question with
+  // no answer — but it asks two questions, and only one of them is about
+  // the taps. How long a bar is, is a fact about the music, and somebody
+  // who sang in six-eight knows it whether or not their hand was moving
+  // (INV-NOTES-221).
   const tooFew = tapCount < MIN_TAPS;
 
   return (
     <View style={styles.row}>
       <Text style={[styles.title, { color: colors.typography }]}>
-        The beat you tapped
+        Bars and the beat you tapped
       </Text>
       <Text style={[styles.hint, { color: colors.gray300 }]}>
-        {tooFew
-          ? 'One tap marks a moment. Two or more can say where the beat is, once you say which beats they were.'
-          : pattern == null
-            ? `${tapCount} taps, held as marks. Say which beats they were and they become the tempo.`
-            : bpm == null
-              ? 'These taps do not sit on that pattern evenly enough to read a tempo from.'
-              : `${Math.round(bpm)} bpm, from ${tapCount} taps.`}
+        {tapCount === 0
+          ? 'Nothing was tapped, so no tempo can come from here — but the bar length still applies.'
+          : tooFew
+            ? 'One tap marks a moment. Two or more can say where the beat is, once you say which beats they were.'
+            : pattern == null
+              ? `${tapCount} taps, held as marks. Say which beats they were and they become the tempo.`
+              : bpm == null
+                ? 'These taps do not sit on that pattern evenly enough to read a tempo from.'
+                : `${Math.round(bpm)} bpm, from ${tapCount} taps.`}
       </Text>
       <View style={styles.pills}>
         <TogglePill
@@ -109,7 +111,6 @@ export function TapPatternRow({
             label={patternLabel(choice)}
             accessibilityLabel={`The taps were ${patternLabel(choice)}`}
             isOn={pattern != null && samePattern(pattern, choice)}
-            isDisabled={tooFew}
             role="radio"
             onPress={() => onSet(choice)}
           />
@@ -123,11 +124,7 @@ export function TapPatternRow({
           the shape of the question rather than an answer to it. Showing the
           suggestion highlighted here would say a pattern was set while the
           pill above said none was. */}
-      <TapPatternEditor
-        pattern={pattern ?? UNSAID}
-        isDisabled={tooFew}
-        onSet={onSet}
-      />
+      <TapPatternEditor pattern={pattern ?? UNSAID} onSet={onSet} />
     </View>
   );
 }

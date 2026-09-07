@@ -123,8 +123,10 @@ describe('the editor beside the presets', () => {
     ).toMatchObject({ checked: false });
   });
 
-  it('is not offered at all on a take with nothing tapped', async () => {
+  it('is offered on a take with nothing tapped, for the bar length', async () => {
+    // Hidden there until INV-NOTES-221: how long a bar is, is a fact about
+    // the music, and a take whose taps were lost had no route to it.
     await row(undefined, 0);
-    expect(screen.queryByTestId('beats-per-bar')).toBeNull();
+    expect(screen.queryByTestId('beats-per-bar')).not.toBeNull();
   });
 });

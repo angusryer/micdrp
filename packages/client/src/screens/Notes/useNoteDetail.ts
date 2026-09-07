@@ -52,6 +52,7 @@ import {
 import { cacheReading, cachedNotes } from '../../data/notesSync';
 import { hasTakeAudio } from '../../data/takeAudio';
 import { rereadTake } from '../../analysis/reread';
+import { heldGrid } from './heldGrid';
 import {
   restoreReadWith,
   seedReadWith,
@@ -267,20 +268,21 @@ export function useNoteDetail(id: string) {
       : tempoFromPattern(interpretation.savedBeats, pattern);
   }, [interpretation.savedTapPattern, interpretation.savedBeats]);
 
-  const grid = useMemo(() => {
-    if (interpretation.savedBpm != null && interpretation.savedBpm > 0) {
-      return { ...quantized.grid, bpm: interpretation.savedBpm };
-    }
-    if (patterned != null) {
-      return {
-        ...quantized.grid,
-        bpm: patterned.bpm,
-        offsetMs: patterned.offsetMs,
-        beatsPerBar: patterned.beatsPerBar
-      };
-    }
-    return quantized.grid;
-  }, [quantized.grid, interpretation.savedBpm, patterned]);
+  const grid = useMemo(
+    () =>
+      heldGrid(
+        quantized.grid,
+        interpretation.savedBpm,
+        interpretation.savedTapPattern,
+        patterned
+      ),
+    [
+      quantized.grid,
+      interpretation.savedBpm,
+      interpretation.savedTapPattern,
+      patterned
+    ]
+  );
   const hasGrid = grid.bpm > 0 && melody.length > 1;
 
   /**

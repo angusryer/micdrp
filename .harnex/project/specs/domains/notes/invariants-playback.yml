@@ -1316,3 +1316,38 @@ invariants:
       nobody had tapped. The symptom was in one screen; the fault is that
       a sync treated the server as authoritative about a fact the server
       had never been given.
+
+  - id: INV-NOTES-221
+    description: How long a bar is can be said without having tapped
+    severity: high
+    check: >
+      The bar length set on a take applies to the grid whether or not the
+      taps can give a tempo, and the control that sets it is offered on
+      every take rather than only on one with taps. Verified by setting six
+      beats to a bar on a take with no taps and asserting the grid holds
+      six.
+
+      The bar length reached the grid only through the tempo read from the
+      taps, and that reading needs at least two of them. So a take nobody
+      tapped — or one whose taps were lost — could not be told it was in
+      six-eight by any route at all, and the control that would have said
+      so was hidden, because it was treated as a question about the taps.
+
+      It is two facts wearing one control. How fast the pulse runs is a
+      reading of the taps and needs them. How long a bar is, is a fact
+      about the music, and the person who sang it knows it whether or not
+      their hand was moving at the time.
+
+  - id: INV-NOTES-222
+    description: The sheet opens on what moves the bar lines
+    severity: medium
+    check: >
+      Tempo, pickup and tap pattern are the first thing in the analysis
+      sheet, and the measured summary follows them. Verified by asserting
+      that order in the rendered sheet.
+
+      The sheet opens part way over the graph so the bar lines can be
+      watched moving as they change (INV-NOTES-078). What moves them
+      belongs where it is reachable without scrolling past everything that
+      does not; the key, range and chord count are read once and then left
+      alone.

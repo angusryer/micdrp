@@ -91,19 +91,33 @@ describe('a take that was tapped', () => {
 });
 
 describe('a take with too little to go on', () => {
-  it('asks nothing of a take nobody tapped', async () => {
+  it('is still asked about, because the bar is not a claim about the taps', async () => {
+    // This asked nothing of a take nobody tapped, on the reasoning that a
+    // control with no answer is worse than no control. But it asks two
+    // questions and only one of them is about the taps: how long a bar is,
+    // is a fact about the music, and hiding this left no route to it at all
+    // (INV-NOTES-221).
     await show({ tapCount: 0 });
-    // A control for a take with no taps is a question with no answer.
-    expect(screen.queryByTestId('tap-pattern-none')).toBeNull();
+    expect(screen.queryByTestId('tap-pattern-none')).not.toBeNull();
+    expect(screen.queryByTestId('beats-per-bar')).not.toBeNull();
   });
 
-  it('greys the patterns for a single tap rather than hiding them', async () => {
+  it('says what it cannot do rather than looking broken', async () => {
+    await show({ tapCount: 0 });
+    expect(screen.getByText(/Nothing was tapped/)).toBeTruthy();
+  });
+
+  it('offers the patterns on a single tap, for the bar they name', async () => {
+    // They were greyed, because one tap cannot give a rate. It still
+    // cannot — but choosing "2 and 4 of 4" also says the bar holds four,
+    // and that part is answerable (INV-NOTES-221).
     await show({ tapCount: 1 });
     const backbeat = screen.getByLabelText(
       `The taps were ${patternLabel(SUGGESTED_TAP_PATTERN)}`
     );
-    // Greyed reads as a limit; vanished reads as a bug.
-    expect(backbeat.props.accessibilityState).toMatchObject({ disabled: true });
+    expect(backbeat.props.accessibilityState).toMatchObject({
+      disabled: false
+    });
   });
 });
 

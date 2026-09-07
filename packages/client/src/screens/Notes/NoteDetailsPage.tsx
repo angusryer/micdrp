@@ -115,37 +115,12 @@ export function NoteDetailsPage({
           <Text style={[styles.section, { color: colors.gray500 }]}>
             {t('notes.analysis')}
           </Text>
-          {/* First, because it is what this sheet is opened for while a
-              detector is being tuned. Everything below is read once; this is
-              read on every turn of the loop (INV-NOTES-172). */}
-          <TuningPanel
-            onReread={() => {
-              setIsTuning(true);
-              setProblem(null);
-              void detail
-                .reread()
-                .then((failed) => setProblem(failed ? WHY[failed] : null))
-                .catch(() => setProblem(WHY.unreadable))
-                .finally(() => setIsTuning(false));
-            }}
-            isReading={isTuning}
-            problem={problem}
-            noteId={detail.note?.id ?? null}
-          />
+          {/* First, all three of them: the sheet opens part way over the
+              graph so the bar lines can be watched moving as these change
+              (INV-NOTES-078, INV-NOTES-222). What moves them belongs where
+              it is reachable without scrolling past what does not.
 
-          <NoteStats
-            note={note}
-            grid={detail.grid}
-            hasGrid={detail.hasGrid}
-            chordCount={detail.chords.slots.length}
-          />
-
-          {/* A note is asked about by touching it on the graph, which says
-              everything the column here said and more — how loud it was, and
-              whether it was read or moved by hand (INV-NOTES-213). What is
-              below was under forty rows of it. */}
-
-          {/* Every other reading here can be corrected; the one everything
+              Every other reading here can be corrected; the one everything
               else is measured against could not (INV-NOTES-123). */}
           <TempoRow
             bpm={detail.bpm}
@@ -175,6 +150,36 @@ export function NoteDetailsPage({
             tapCount={detail.tapCount}
             bpm={detail.patternedTempo?.bpm ?? null}
             onSet={detail.setTapPattern}
+          />
+
+          {/* Read once and then left alone, so it sits under the controls
+              rather than above them (INV-NOTES-222). A note is asked about
+              by touching it on the graph, which says everything the column
+              here said and more (INV-NOTES-213). */}
+          <NoteStats
+            note={note}
+            grid={detail.grid}
+            hasGrid={detail.hasGrid}
+            chordCount={detail.chords.slots.length}
+          />
+
+          {/* Below what moves the bar lines, because tuning a detector is a
+              slower loop than saying where the bar sits, and the knobs are a
+              long list to scroll past on the way to a stepper
+              (INV-NOTES-172, INV-NOTES-222). */}
+          <TuningPanel
+            onReread={() => {
+              setIsTuning(true);
+              setProblem(null);
+              void detail
+                .reread()
+                .then((failed) => setProblem(failed ? WHY[failed] : null))
+                .catch(() => setProblem(WHY.unreadable))
+                .finally(() => setIsTuning(false));
+            }}
+            isReading={isTuning}
+            problem={problem}
+            noteId={detail.note?.id ?? null}
           />
 
           {/* Last, because it replaces everything above it (INV-NOTES-116). */}
