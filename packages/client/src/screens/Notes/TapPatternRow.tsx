@@ -13,6 +13,10 @@
  * "Nobody has said" is the first choice and the one a take starts on. Taking
  * the pattern back brings the grid it had, because nothing was overwritten
  * to get here (INV-NOTES-161).
+ *
+ * The presets are an offer, not the vocabulary: a phrase in six-eight tapped
+ * on one, three and five is none of them, so the editor below says any
+ * pattern a bar can hold (INV-NOTES-218).
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -20,10 +24,21 @@ import { StyleSheet, Text, View } from 'react-native';
 import { TAP_PATTERNS, samePattern, type TapPattern } from 'logic';
 
 import { useTheme } from '../../theme';
+import { TapPatternEditor } from './TapPatternEditor';
 import { TogglePill } from './TogglePill';
 
 /** How few taps make a pattern unreadable, whatever it claims. */
 const MIN_TAPS = 2;
+
+/**
+ * What the editor shows before anybody has said anything.
+ *
+ * A four-beat bar with no beat chosen: the shape of the question, not an
+ * answer to it. Not a usable pattern and never handed to anything that
+ * reads one — the take carries none until a beat here is pressed
+ * (INV-NOTES-161).
+ */
+const UNSAID: TapPattern = { beats: [], beatsPerBar: 4 };
 
 export interface TapPatternRowProps {
   /** What was said, or undefined where nobody has. */
@@ -100,6 +115,19 @@ export function TapPatternRow({
           />
         ))}
       </View>
+      {/* Always shown, not hidden behind "custom": the presets are the fast
+          path, and a control that has to be found first is one a person in
+          the middle of tuning does not know exists.
+
+          With nothing set, it opens on a four-beat bar with no beat chosen —
+          the shape of the question rather than an answer to it. Showing the
+          suggestion highlighted here would say a pattern was set while the
+          pill above said none was. */}
+      <TapPatternEditor
+        pattern={pattern ?? UNSAID}
+        isDisabled={tooFew}
+        onSet={onSet}
+      />
     </View>
   );
 }

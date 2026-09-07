@@ -22,6 +22,7 @@ export * from './percussion';
 export * from './readTake';
 export * from './tappedBeats';
 export * from './tapPattern';
+export * from './tapPatternEdit';
 export * from './beatGrid';
 export {
   beatIntervals,

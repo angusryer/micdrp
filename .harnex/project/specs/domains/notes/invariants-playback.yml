@@ -1255,3 +1255,40 @@ invariants:
       it is drawn is worse than two controls. The panel exists to be turned
       while listening to one take; that is the scope it should have, and
       the scope it should say it has.
+
+  - id: INV-NOTES-218
+    description: Any tap pattern can be said, not only the offered ones
+    severity: high
+    check: >
+      The bar length and which beats were tapped are both settable to any
+      whole values a bar can hold, independently of the offered presets.
+      Verified by setting six beats to a bar with beats one, three and five
+      tapped — a pattern no preset contains — and asserting the tempo read
+      from the taps uses it.
+
+      The presets were four-four and three-four, on the reasoning that they
+      cover most singing. They do not cover a phrase sung in six-eight and
+      tapped on one, three and five, and there was no way to say so: the
+      only sentences available were ones somebody else had written down.
+
+      A take carries no pattern until somebody sets one (INV-NOTES-161), and
+      the whole point of setting it afterwards is that the singer knows what
+      the taps were for. A closed list takes that back — it says the taps
+      meant one of these six things, and a person whose phrase was none of
+      them is left with marks that stay marks. The presets stay, because
+      they are quick and usually right; they are an offer, not the vocabulary.
+
+  - id: INV-NOTES-219
+    description: A bar always holds at least one tapped beat
+    severity: medium
+    check: >
+      While a pattern is set, at least one beat stays chosen, and shortening
+      the bar drops the beats that no longer fit rather than leaving a
+      pattern the bar cannot hold. Verified by asserting that beats above
+      the new bar length are dropped, and that removing the last chosen beat
+      leaves it chosen.
+
+      A pattern with no beats, or with a beat past the end of the bar, reads
+      as no tempo at all — the taps are silently unusable while the control
+      still shows a pattern set. Saying nothing is a real answer and has its
+      own control; it must not also be reachable by accident.

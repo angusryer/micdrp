@@ -269,3 +269,20 @@ acceptance:
     maps_to:
       capability: notes.reread_take
       invariants: [INV-NOTES-215, INV-NOTES-116]
+
+  - id: ACC-NOTES-232
+    title: A phrase in six-eight, tapped on one, three and five
+    given: A take with taps and no pattern set
+    when: The bar is set to six beats and beats 1, 3 and 5 are chosen
+    then: >
+      The pattern is six beats to a bar with those three tapped, and the
+      tempo is read through it (INV-NOTES-218).
+
+  - id: ACC-NOTES-233
+    title: Shortening the bar drops what no longer fits
+    given: Six beats to a bar with 1, 3 and 5 tapped
+    when: The bar is set to four beats
+    then: >
+      Beat 5 is dropped and 1 and 3 stay, rather than leaving a pattern the
+      bar cannot hold (INV-NOTES-219).
+
