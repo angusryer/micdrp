@@ -15,7 +15,9 @@ import React from 'react';
 
 jest.mock('../../../specs/NativeSynth', () => ({
   __esModule: true,
-  default: require('../__fixtures__/synthDouble').synthDouble
+  default: (
+    require('../__fixtures__/synthDouble') as typeof import('../__fixtures__/synthDouble')
+  ).synthDouble
 }));
 
 import {
@@ -57,7 +59,9 @@ it('ACC-NOTES-237: keeps sounding the pitch the drag moved the note to', async (
     tree.update(<Probe midi={61} />);
   });
 
-  const scheduled = synth.schedule.mock.calls.flatMap(([notes]) => notes);
+  const scheduled = synth.schedule.mock.calls.flatMap(
+    ([notes]) => notes as { frequencyHz: number }[]
+  );
   expect(scheduled).toHaveLength(1);
   expect(scheduled[0].frequencyHz).toBeCloseTo(CS4_HZ, 3);
   // Still sounding: nothing cleared the bus behind it, and the engine that
