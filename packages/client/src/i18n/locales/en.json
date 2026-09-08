@@ -173,13 +173,16 @@
     "graphMenu": "What governs this graph",
     "graphMenuClose": "Close this menu",
     "rewind": "Back to the beginning",
+    "actRecordBass": "Sing a bass line under this",
+    "actReread": "Read this take again",
+    "actChords": "The chords, on the graph",
+    "actsHandle": "More to do with this take",
     "instrumentsSoon": "More instruments coming",
     "instrumentsSoonWhy": "A piano, and whatever else this line is worth hearing on",
     "graphMenuOptions": "Levels and voices",
     "graphMenuOptionsWhy": "What each track sounds at, and in what voice",
     "graphMenuAnalysis": "Analysis",
     "graphMenuAnalysisWhy": "What was measured, and how it was read",
-    "harmonyAsk": "Tap the beat and mark where the bars begin, then read the harmony from it.",
     "harmonyAskAction": "Read the chords"
   },
   "dashboard": {

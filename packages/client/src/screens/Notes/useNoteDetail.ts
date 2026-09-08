@@ -805,6 +805,17 @@ export function useNoteDetail(id: string) {
      * already made replay onto the new reading.
      */
     hasHarmony: interpretation.hasHarmony,
+    /**
+     * Ask for the chords, take them off the graph, ask afresh
+     * (INV-NOTES-231). One control, in that order.
+     */
+    toggleHarmony: useCallback(() => {
+      if (interpretation.hasHarmony) {
+        interpretation.forgetHarmony();
+      } else {
+        interpretation.askForHarmony(ANALYSIS_VERSION);
+      }
+    }, [interpretation]),
     askForHarmony: useCallback(
       () => interpretation.askForHarmony(ANALYSIS_VERSION),
       [interpretation]

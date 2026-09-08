@@ -10,8 +10,10 @@
  */
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import type { SharedValue } from 'react-native-reanimated';
 
+import { I18nProvider } from '../../../i18n';
 import { ThemeProvider } from '../../../theme';
 import { TrackRail } from '../TrackRail';
 import { DEFAULT_MIX } from '../playbackTracks';
@@ -36,7 +38,9 @@ const transportOf = (state: RailFootProps['state']): RailFootProps => ({
 const setup = async (transport: RailFootProps | null) =>
   waitFor(() =>
     render(
-      <ThemeProvider>
+      <GestureHandlerRootView>
+        <I18nProvider>
+        <ThemeProvider>
         <TrackRail
           tracks={['take']}
           mix={DEFAULT_MIX}
@@ -48,7 +52,9 @@ const setup = async (transport: RailFootProps | null) =>
           onRewind={transport != null ? onRewind : undefined}
           transport={transport}
         />
-      </ThemeProvider>
+        </ThemeProvider>
+        </I18nProvider>
+      </GestureHandlerRootView>
     )
   );
 

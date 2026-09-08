@@ -63,6 +63,13 @@ export interface Interpretation {
    * about the music rather than about the algorithm (INV-NOTES-171).
    */
   askForHarmony: (analysisVersion: number) => void;
+  /**
+   * Take the chords off the graph again (INV-NOTES-231).
+   *
+   * Forgets that they were asked for, and nothing else: the decisions made
+   * about them are kept, and replay onto the next reading (INV-NOTES-022).
+   */
+  forgetHarmony: () => void;
   /** Keep the corrections to what was heard. */
   updateNotes: (notes: NoteEdit[]) => void;
   /** True once a write has failed, so a screen can say so. */
@@ -182,6 +189,12 @@ export function useInterpretation(
     [schedule]
   );
 
+  const forgetHarmony = useCallback(() => {
+    setHasHarmony(false);
+    latest.current = { ...latest.current, harmony: undefined };
+    schedule();
+  }, [schedule]);
+
   const update = useCallback(
     (edits: ChordSlotEdit[]) => {
       setSavedEdits(edits);
@@ -258,6 +271,7 @@ export function useInterpretation(
     savedNoteEdits,
     update,
     askForHarmony,
+    forgetHarmony,
     updateBarLines,
     updateBpm,
     updateBeats,

@@ -35,7 +35,8 @@ export type IconName =
   | 'metronomeOff'
   | 'info'
   | 'reset'
-  | 'kebab';
+  | 'kebab'
+  | 'piano';
 
 /** Material-style filled glyphs, authored on a 24×24 viewbox. */
 const ICON_PATHS: Record<IconName, string> = {
@@ -102,6 +103,11 @@ const ICON_PATHS: Record<IconName, string> = {
     'M12 2h2l4.5 18h-13L10 2h2zm.9 4h-1.8l-2.7 11h7.2L12.9 6zM7 21h10v1H7v-1zM3 3l18 18-1.4 1.4L1.6 4.4 3 3z',
   options:
     'M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z',
+  // A keyboard, seen from above: the chords, said as an instrument rather
+  // than as a word, so it sits in a row of acts all the same width
+  // (INV-NOTES-231).
+  piano:
+    'M3 5h18a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1zm1 2v10h4v-4H6.5V7H4zm6 0v6H9.5v4h5v-4H13V7h-3zm6 0v6h-1.5v4H20V7h-4z',
   // Three dots in a column — the conventional "more", and the one control
   // that opens what governs the graph from outside it (INV-NOTES-229).
   kebab:

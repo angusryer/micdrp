@@ -137,6 +137,9 @@ export function NoteShapeSection({
   // What governs the graph from outside it, behind one control on the rail
   // (INV-NOTES-229).
   const [menuOpen, setMenuOpen] = useState(false);
+  // A re-read reads the whole recording again, which takes long enough that
+  // the control has to say it is working (INV-NOTES-230).
+  const [isRereading, setIsRereading] = useState(false);
   const resetScale = useRef<() => void>(() => {});
   const onScaleChange = useCallback(
     (state: { isDefault: boolean; reset: () => void }) => {
@@ -267,7 +270,33 @@ export function NoteShapeSection({
                     positionMs: transport.drawnPositionMs,
                     durationMs: detail.note?.durationMs,
                     onPlay: () => transport.play?.(),
-                    onPause: () => transport.pause?.()
+                    onPause: () => transport.pause?.(),
+                    // What the foot's handle opens into: the three acts that
+                    // change what is drawn rather than what is heard
+                    // (INV-NOTES-230).
+                    acts: {
+                      isRecording: detail.layerCapture.isRecording,
+                      onRecord: () => {
+                        if (detail.layerCapture.isRecording) {
+                          transport.stop?.();
+                          void detail.layerCapture.stop();
+                          return;
+                        }
+                        // Recording first, then playback: a take started
+                        // while the microphone was still opening would be
+                        // sung against a moment already gone by.
+                        void detail.layerCapture
+                          .start('bass')
+                          .then(() => transport.play?.());
+                      },
+                      isRereading,
+                      onReread: () => {
+                        setIsRereading(true);
+                        void detail.reread().finally(() => setIsRereading(false));
+                      },
+                      hasChords: detail.hasHarmony,
+                      onChords: detail.toggleHarmony
+                    }
                   }
                 : null
             }
