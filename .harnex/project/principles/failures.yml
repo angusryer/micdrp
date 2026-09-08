@@ -1,1 +1,22 @@
-failures: []
+failures:
+- id: FAIL-0001
+  date: '2026-09-08'
+  axiom: verify-before-ship
+  summary: A worklet was given the directive and the function it calls was not, exiting
+    the app on opening a note
+  detail: "Moving the drag loupe onto the UI thread marked placeLoupe as a worklet.\
+    \ It calls clamp, a module-scope helper beside it that was not marked. A worklet\
+    \ reaching plain JavaScript does not throw \u2014 it takes the process down, with\
+    \ no error and no crash report \u2014 and the loupe's animated style is evaluated\
+    \ when the graph mounts, so the app exited the instant a note was opened. Preflight\
+    \ was green: types, lint and 1282 tests all pass on this, because no test in the\
+    \ repo can run a worklet. This is the second time the same shape has shipped;\
+    \ the first was xForMs from the scrub handle's animated style, which is why INV-NOTES-207\
+    \ exists. INV-NOTES-207 required the directive on the function the UI thread calls\
+    \ and said nothing about what that function itself calls."
+  remediation: "clamp carries the directive. INV-NOTES-207 now states the rule transitively\
+    \ and no longer claims the violation is untestable. components/workletReach.ts\
+    \ walks the call graph out of every worklet in the client and its test asserts\
+    \ that every function reached carries the directive \u2014 verified to fail, naming\
+    \ clamp, against the shipped bug. Running a worklet is not testable here; reading\
+    \ one is."

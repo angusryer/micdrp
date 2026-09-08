@@ -1062,23 +1062,37 @@ invariants:
     description: Anything the UI thread calls is a worklet, in a module of its own
     severity: critical
     check: >
-      An animated style calls nothing but worklets. Placement arithmetic
-      reached from the UI thread lives in its own module with the
-      directive on it — playheadPlacement and scrubPlacement — and never
-      borrows a helper written for the JS thread. Verified by asserting
-      every function an animated style calls carries the directive.
+      An animated style calls nothing but worklets, and neither does a
+      worklet — the rule is transitive, and everything reachable from the
+      UI thread carries the directive however many calls away it is.
+      Placement arithmetic reached from the UI thread lives in its own
+      module with the directive on it — playheadPlacement,
+      scrubPlacement, loupePosition — and never borrows a helper written
+      for the JS thread. Verified by walking every worklet in the client
+      and asserting that every function it calls is one too.
 
       Moving the scrub handle onto the UI thread called `xForMs` from
       inside an animated style. It is three terms of arithmetic and it
       is ordinary JavaScript, so the app crashed natively the instant a
       note was opened — not an error, not a red screen, a hard exit.
 
-      Nothing catches this. The types are satisfied, the linter is
-      satisfied, and no test in this repo can run a worklet, so the
-      first thing to notice is a device. Which is why the rule is a
-      convention with a shape: a `*Placement` module, pure, with the
-      directive at the top, testable as arithmetic even though the
-      violation it prevents is not testable at all.
+      Neither the types nor the linter see it, and no test in this repo
+      can run a worklet — so for a long time the first thing to notice
+      was a device. That is why the rule is also a convention with a
+      shape: a placement module, pure, with the directive at the top,
+      testable as arithmetic.
+
+      It happened a second time all the same: `placeLoupe` was given the
+      directive and the `clamp` beside it was not, and opening a note
+      exited the app again. The half that was missing from this rule was
+      the transitive half — the function reached from the UI thread had
+      the directive, and the function *it* reached did not.
+
+      So it is checked rather than remembered. Running a worklet is not
+      testable; reading one is. The call graph out of every worklet is
+      walked statically and every function in it must carry the
+      directive, which is the whole violation and is entirely visible
+      without a device.
 
       Duplicating a sum is the price. A worklet cannot call across to a
       plain function, and marking a widely-used helper as a worklet only
