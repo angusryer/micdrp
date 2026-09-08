@@ -365,6 +365,25 @@ acceptance:
       of the screen, each opening what it names, closing on a touch anywhere
       else, and neither reachable any other way (INV-NOTES-229).
 
+  - id: ACC-NOTES-250
+    title: Dragging an end of a stretch writes it down once
+    given: A note with a playable stretch marked on its graph
+    when: An end of that stretch is dragged across the graph and released
+    then: >
+      The end follows the finger the whole way without the page re-rendering,
+      the take falls silent once as the drag begins rather than on every
+      frame, and the moved end is written down once, on release
+      (INV-NOTES-235).
+
+  - id: ACC-NOTES-251
+    title: Dragging a level does not re-render what holds it
+    given: A track with a level control
+    when: The level is dragged
+    then: >
+      What is heard follows the finger, the control's own thumb is drawn from
+      a value the UI thread owns, and the gesture is not rebuilt as the drag
+      runs (INV-NOTES-235).
+
   - id: ACC-NOTES-249
     title: A note with no reading yet does not recompute for ever
     given: A note whose take has been kept but not yet read

@@ -1,6 +1,7 @@
-# Referential stability: what must be the same object between renders, and why.
-# Its own file because the failures here look like performance faults and are
-# not — they are correctness faults that present as heat.
+# Render economy: what must keep its identity between renders, and what must
+# never reach the JS thread at all. Its own file because the failures here look
+# like performance faults and are not — they are correctness faults that
+# present as heat, and two of them have stopped this app dead.
 invariants:
   - id: INV-NOTES-234
     description: An absent reading is the same absence on every render
@@ -27,3 +28,35 @@ invariants:
       long as the note is. The one that suffers is the note with no reading
       yet, which is the note just captured and the note whose reading failed —
       the two least able to afford it.
+
+  - id: INV-NOTES-235
+    description: A dragged control moves on the UI thread and commits once
+    severity: major
+    check: >
+      Anything dragged along the graph — an end of a playable stretch, a level,
+      the readout that follows a moved note — is drawn from a value the UI
+      thread owns, and follows the finger without a render. What it means is
+      written down once, when the finger leaves. Not per frame: a control that
+      commits on every update re-renders whatever holds that state sixty times
+      a second, and where that state is read beside the graph, the graph
+      reconciles sixty times a second with it.
+
+      Anything that has to happen the moment a drag begins — falling silent
+      while a stretch is being decided — happens on the first touch and not
+      again. Once is what "while it is being moved" means; sixty times a
+      second is the same instruction repeated until the finger lifts.
+
+      What the gesture is built from must be stable too, or the memo around it
+      is decoration: an inline arrow passed as the handler is a new handler
+      every render, so the gesture is rebuilt on every frame of the very drag
+      it is handling.
+
+      Verified by asserting a drag from touch to release writes the moved
+      value once, that what must happen at the start happens once, and that
+      the drawn position comes from a shared value rather than from a prop.
+
+      The exception is what a drag genuinely changes as it goes. Moving a note
+      by a semitone is a change to the reading and must be written down when
+      it crosses, which is why that one is gated on crossing rather than on
+      the frame — the rule is that a frame is not a reason, not that a drag
+      may never write.

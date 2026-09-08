@@ -30,6 +30,7 @@ import type {
   HitPoint,
   Selection
 } from './graphSelection';
+import { NOTHING } from '../utilities/nothing';
 
 /** The spill, and the edge. */
 const OUTER = { blur: 9, stroke: 7, opacity: 0.32 };
@@ -62,9 +63,9 @@ export function SelectionGlow({
   tones,
   bars,
   notes,
-  layerNotes = [],
-  hits = [],
-  beatLines = [],
+  layerNotes = NOTHING,
+  hits = NOTHING,
+  beatLines = NOTHING,
   width,
   height,
   colour

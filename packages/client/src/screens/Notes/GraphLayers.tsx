@@ -29,6 +29,7 @@ import { useTheme } from '../../theme';
 import { BarRuler } from './BarRuler';
 import { barHandles } from './barRulerModel';
 import type { useNoteDetail } from './useNoteDetail';
+import { NOTHING } from '../../utilities/nothing';
 
 export interface GraphLayersProps {
   detail: ReturnType<typeof useNoteDetail>;
@@ -53,7 +54,7 @@ export function GraphLayers({
   noteRects,
   contentWidth,
   height,
-  noteRectsUnder = [],
+  noteRectsUnder = NOTHING,
   underHeight = 0,
   timeAxis,
   pitchAxis,

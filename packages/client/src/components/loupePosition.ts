@@ -57,6 +57,13 @@ export function placeLoupe(
   bounds: LoupeBounds,
   options: LoupeOptions
 ): LoupePlacement {
+  // Reached from the UI thread: the loupe follows a finger, and a readout
+  // that had to be re-rendered to move is a readout drawn a frame behind the
+  // hand it is meant to be next to (INV-NOTES-207, INV-NOTES-235). This is
+  // the module the arithmetic is stated in and the only place it is used, so
+  // the directive belongs on it rather than on a helper shared with anything
+  // that might later unmark it.
+  'worklet';
   const { loupeWidth, loupeHeight } = options;
   const offset = options.offset ?? LOUPE_OFFSET;
   const top = bounds.top ?? 0;

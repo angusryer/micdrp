@@ -37,6 +37,7 @@ import { usePlaybackMix, type MixAccompaniment } from './usePlaybackMix';
 
 export type { PlaybackState } from './usePlayback';
 import type { PlaybackState } from './usePlayback';
+import { NOTHING } from '../../utilities/nothing';
 export type { PlaybackMix };
 
 export interface PlaybackBarProps {
@@ -151,7 +152,7 @@ export function PlaybackBar({
   sungDb = null,
   isOptionsOpen,
   onOptionsOpen,
-  beats = [],
+  beats = NOTHING,
   trackOptions,
   onTransport,
   listening

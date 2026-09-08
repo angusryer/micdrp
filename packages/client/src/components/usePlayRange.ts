@@ -33,7 +33,16 @@ export interface PlayRangeState {
   range: PlayRange | null;
   /** Mark one around a span, with room either side, and play it once. */
   markAround: (fromMs: number, toMs: number) => void;
-  /** Move one end of it. */
+  /**
+   * Take hold of an end, before moving it.
+   *
+   * Falling silent while a stretch is being decided happens here, on the
+   * first touch — deciding a stretch against a recording that keeps
+   * restarting is harder than deciding it in quiet, and once is what "while
+   * it is being moved" means (INV-NOTES-235).
+   */
+  hold: () => void;
+  /** Where an end came to rest. Said once, when the finger leaves. */
   moveEnd: (edge: RangeEdge, toMs: number) => void;
   /** Play it again from its start. */
   playRange: () => void;
@@ -113,12 +122,18 @@ export function usePlayRange(
     [bounds, sound]
   );
 
+  // The sound, not only the timer that would have ended it — otherwise it
+  // runs on past the end it no longer has.
+  const hold = silence;
+
   const moveEnd = useCallback(
     (edge: RangeEdge, toMs: number) => {
-      // Silent while an end is being moved: the stretch is being decided, and
-      // deciding it against a recording that keeps restarting is harder than
-      // deciding it in quiet. The sound, not only the timer that would have
-      // ended it — otherwise it runs on past the end it no longer has.
+      // Here as well as on the first touch, and not because a drag needs it
+      // twice: silence is idempotent, and INV-NOTES-189 should hold for
+      // anything that moves an end rather than only for a caller that
+      // remembered to take hold of it first. This used to run on every frame,
+      // which is the part that had to go (INV-NOTES-235) — once per drag it
+      // costs nothing and cannot be forgotten.
       silence();
       setRange((was) => (was ? moveEdge(was, edge, toMs, bounds) : was));
     },
@@ -140,5 +155,5 @@ export function usePlayRange(
   // begun after the screen was left.
   useEffect(() => cancelStop, [cancelStop]);
 
-  return { range, markAround, moveEnd, playRange, clear, isPlaying };
+  return { range, markAround, hold, moveEnd, playRange, clear, isPlaying };
 }

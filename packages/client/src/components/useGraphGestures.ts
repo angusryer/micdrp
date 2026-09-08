@@ -19,6 +19,7 @@ import type {
   GraphGestureOptions,
   SettledOptions
 } from './graphGestureOptions';
+import { NOTHING } from '../utilities/nothing';
 
 export type { DragPreview, GraphGestureOptions } from './graphGestureOptions';
 
@@ -27,9 +28,9 @@ export function useGraphGestures(options: GraphGestureOptions) {
     tones,
     bars,
     notes,
-    layerNotes = [],
-    hits = [],
-    beats = [],
+    layerNotes = NOTHING,
+    hits = NOTHING,
+    beats = NOTHING,
     laneHeight,
     originX,
     stepWidth,

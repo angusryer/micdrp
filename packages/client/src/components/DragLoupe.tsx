@@ -16,6 +16,10 @@
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  type SharedValue
+} from 'react-native-reanimated';
 
 import { useTheme } from '../theme';
 import { LOUPE_OFFSET, placeLoupe, type LoupeBounds } from './loupePosition';
@@ -38,8 +42,15 @@ export const LOUPE_CLEARANCE = LOUPE_HEIGHT + LOUPE_OFFSET;
 export interface DragLoupeProps {
   /** Hidden entirely when no drag is in flight. */
   isVisible: boolean;
-  touchX: number;
-  touchY: number;
+  /**
+   * Where the finger is, owned by the UI thread.
+   *
+   * Shared rather than two numbers: this moves every frame of a drag, and
+   * coming back through React to do so re-rendered the surface it is drawn on
+   * sixty times a second (INV-NOTES-235).
+   */
+  touchX: SharedValue<number>;
+  touchY: SharedValue<number>;
   bounds: LoupeBounds;
   /** The large line: what the thing being placed will become. */
   value: string;
@@ -62,27 +73,30 @@ export function DragLoupe({
   midi
 }: DragLoupeProps): React.JSX.Element | null {
   const { colors } = useTheme();
+
+  const place = useAnimatedStyle(() => {
+    const at = placeLoupe(touchX.value, touchY.value, bounds, {
+      loupeWidth: LOUPE_WIDTH,
+      loupeHeight: LOUPE_HEIGHT
+    });
+    return { transform: [{ translateX: at.x }, { translateY: at.y }] };
+  });
+
   if (!isVisible) {
     return null;
   }
 
-  const placement = placeLoupe(touchX, touchY, bounds, {
-    loupeWidth: LOUPE_WIDTH,
-    loupeHeight: LOUPE_HEIGHT
-  });
-
   return (
-    <View
+    <Animated.View
       pointerEvents="none"
       testID="drag-loupe"
       style={[
         styles.loupe,
         {
-          left: placement.x,
-          top: placement.y,
           backgroundColor: colors.neutral50,
           borderColor: colors.primary500
-        }
+        },
+        place
       ]}
     >
       {midi != null ? (
@@ -126,13 +140,17 @@ export function DragLoupe({
           </Text>
         )}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   loupe: {
     position: 'absolute',
+    // Placed by a transform rather than by left/top: the UI thread can write
+    // one without a layout pass, which is what lets it keep up with a finger.
+    left: 0,
+    top: 0,
     width: LOUPE_WIDTH,
     height: LOUPE_HEIGHT,
     borderRadius: 10,

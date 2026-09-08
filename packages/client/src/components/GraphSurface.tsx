@@ -12,9 +12,10 @@
  * nothing is grabbed by accident because nothing is grabbed that was not
  * first chosen.
  */
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
+import { useSharedValue } from 'react-native-reanimated';
 
 import type { ChordToneRect } from './chordLayout';
 import type { NoteRect } from './melodyLayout';
@@ -25,7 +26,17 @@ import type {
   HitPoint
 } from './graphSelection';
 import { DragLoupe } from './DragLoupe';
+
+/**
+ * What the loupe says, as against where it is.
+ *
+ * Its own type because the two are held apart: this changes on a semitone
+ * crossing and is worth a render, the position changes every frame and is not
+ * (INV-NOTES-235).
+ */
+type LoupeWords = Pick<DragPreview, 'midi' | 'value' | 'caption'>;
 import { useGraphGestures, type DragPreview } from './useGraphGestures';
+import { NOTHING } from '../utilities/nothing';
 
 export interface GraphSurfaceProps {
   width: number;
@@ -71,9 +82,9 @@ export function GraphSurface({
   tones,
   bars,
   notes,
-  layerNotes = [],
-  hits = [],
-  beats = [],
+  layerNotes = NOTHING,
+  hits = NOTHING,
+  beats = NOTHING,
   laneHeight,
   originX,
   stepWidth,
@@ -92,7 +103,37 @@ export function GraphSurface({
   // Held here rather than reported upward: the readout belongs over the
   // graph it is placing something on, and nothing above needs to know a drag
   // is in flight (INV-NOTES-025).
-  const [preview, setPreview] = useState<DragPreview | null>(null);
+  //
+  // Split in two, because the two halves change at different rates
+  // (INV-NOTES-235). Where the finger is changes every frame and goes to the
+  // UI thread, which draws it without a render. What it says changes only
+  // when the note crosses a semitone, and that is worth a render.
+  const touchX = useSharedValue(0);
+  const touchY = useSharedValue(0);
+  const [said, setSaid] = useState<LoupeWords | null>(null);
+
+  const preview = useCallback(
+    (next: DragPreview | null) => {
+      if (next == null) {
+        setSaid(null);
+        return;
+      }
+      touchX.value = next.x;
+      touchY.value = next.y;
+      // Only when the words change. They are the same for every frame between
+      // one semitone and the next, and setting them again would be a render
+      // that redraws exactly what is already there.
+      setSaid((was) =>
+        was != null &&
+        was.midi === next.midi &&
+        was.value === next.value &&
+        was.caption === next.caption
+          ? was
+          : { midi: next.midi, value: next.value, caption: next.caption }
+      );
+    },
+    [touchX, touchY]
+  );
 
   const gesture = useGraphGestures({
     tones,
@@ -115,7 +156,7 @@ export function GraphSurface({
     onAddBar,
     snapToGrid: isSnapping,
     onHear,
-    onPreview: setPreview
+    onPreview: preview
   });
 
   return (
@@ -124,13 +165,13 @@ export function GraphSurface({
         <View style={[styles.fill, { width, height }]} />
       </GestureDetector>
       <DragLoupe
-        isVisible={preview != null}
-        touchX={preview?.x ?? 0}
-        touchY={preview?.y ?? 0}
+        isVisible={said != null}
+        touchX={touchX}
+        touchY={touchY}
         bounds={{ width, height }}
-        value={preview?.value ?? ''}
-        caption={preview?.caption}
-        midi={preview?.midi}
+        value={said?.value ?? ''}
+        caption={said?.caption}
+        midi={said?.midi}
       />
     </>
   );

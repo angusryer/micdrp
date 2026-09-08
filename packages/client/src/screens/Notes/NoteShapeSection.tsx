@@ -407,6 +407,7 @@ export function NoteShapeSection({
                   fromColor={colors.gold}
                   toColor={colors.primary500}
                   controlColor={colors.gold}
+                  onGrab={listenBack.hold}
                   onMoveEnd={listenBack.moveEnd}
                   onPlay={listenBack.playRange}
                   isPlaying={listenBack.isPlaying}
