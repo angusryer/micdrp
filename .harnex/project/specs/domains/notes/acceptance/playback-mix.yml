@@ -365,6 +365,18 @@ acceptance:
       of the screen, each opening what it names, closing on a touch anywhere
       else, and neither reachable any other way (INV-NOTES-229).
 
+  - id: ACC-NOTES-247
+    title: The rail can be read rather than guessed at
+    given: A note detail page whose take has no bass line
+    when: The question mark under the rail's menu control is pressed
+    then: >
+      A legend rises from the bottom of the screen naming every mark on the
+      rail and in its foot — the letter of each track the note has, the grid,
+      the menu, the question mark, the rewind, the play control and the
+      moment, the handle and each act behind it — carrying the same mark the
+      rail carries in each row, saying nothing about the bass line the note
+      does not have, and closing again (INV-NOTES-232).
+
   - id: ACC-NOTES-242
     title: A corrected note changes what the card says about the take
     given: A take whose highest note has been corrected upward by hand

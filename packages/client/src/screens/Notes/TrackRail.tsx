@@ -19,11 +19,12 @@
  * column keeps everything that governs the graph on the graph's own edge
  * (INV-NOTES-142).
  *
- * Below everything, a rule and then room enough for a thumb: the one control
- * that opens what governs the graph from outside it (INV-NOTES-229), the
- * rewind, and the foot the take is played from (INV-NOTES-227). The column's
- * colour turns right along the bottom to hold that foot, so it reads as the
- * graph's edge continuing rather than a control dropped on the drawing.
+ * Below everything, RailBelow: the door onto what governs the graph
+ * (INV-NOTES-229), the question mark that says what all of this means
+ * (INV-NOTES-232), and the rewind. Then the foot the take is played from
+ * (INV-NOTES-227) — the column's colour turns right along the bottom to hold
+ * it, so it reads as the graph's edge continuing rather than a control
+ * dropped on the drawing.
  *
  * A muted row is drawn by its colour alone. A glyph as well was saying the
  * same thing twice in a column 38 points wide.
@@ -32,7 +33,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { RailFoot, RAIL_FOOT_HEIGHT, type RailFootProps } from './RailFoot';
-import { RailRewind, RAIL_REWIND_SIZE } from './RailRewind';
+import { RailBelow } from './RailBelow';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { Icon } from '../../components/Icon';
@@ -40,15 +41,6 @@ import { TRACK_TITLES, type PlaybackMix, type TrackName } from './playbackTracks
 
 /** How wide the rail is. Enough for a thumb, and no more than the graph can spare. */
 export const TRACK_RAIL_WIDTH = 38;
-
-/**
- * How far up from the foot of the graph the menu control sits, in px.
- *
- * Read from the things actually stacked under it — the transport's foot, the
- * rewind, and the gaps around the rule between them — so what opens out of
- * that control comes out level with it rather than near it (INV-NOTES-229).
- */
-export const RAIL_MENU_BOTTOM = RAIL_FOOT_HEIGHT + RAIL_REWIND_SIZE + 22;
 
 export interface TrackRailProps {
   /** Which tracks this note has, in the order they are drawn. */
@@ -61,14 +53,22 @@ export interface TrackRailProps {
   onSnapping: (snap: boolean) => void;
   /** Open what governs the graph from outside it (INV-NOTES-229). */
   onMenu?: () => void;
+  /** Say what every mark on this column means (INV-NOTES-232). */
+  onHelp?: () => void;
   /** Back to the beginning, directly above the play control. */
   onRewind?: () => void;
   /** The take, played from the foot of the column (INV-NOTES-227). */
   transport?: RailFootProps | null;
 }
 
-/** The letter a track is known by here, where there is no room for a word. */
-const INITIAL: Record<string, string> = {
+/**
+ * The letter a track is known by here, where there is no room for a word.
+ *
+ * Exported because the legend draws the same letters (INV-NOTES-232), and a
+ * legend with its own copy of them is a legend that can disagree with the
+ * rail it describes.
+ */
+export const TRACK_INITIAL: Record<string, string> = {
   take: 'T',
   chords: 'C',
   bass: 'B',
@@ -86,6 +86,7 @@ export function TrackRail({
   isSnapping,
   onSnapping,
   onMenu,
+  onHelp,
   onRewind,
   transport
 }: TrackRailProps): React.JSX.Element | null {
@@ -127,7 +128,7 @@ export function TrackRail({
                 { color: isAudible ? colors.primary500 : colors.gray300 }
               ]}
             >
-              {INITIAL[track] ?? track[0].toUpperCase()}
+              {TRACK_INITIAL[track] ?? track[0].toUpperCase()}
             </Text>
           </Pressable>
         );
@@ -150,45 +151,7 @@ export function TrackRail({
         />
       </Pressable>
 
-      {/* Pushed to the bottom of the column, and set apart from the switches
-          above by a rule and room for a thumb: what is behind these is read
-          rather than watched, and pressing one by accident while reaching for
-          a mute is worse than reaching a little further. */}
-      <View style={styles.below}>
-        {onMenu != null ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('notes.graphMenu')}
-            testID="rail-menu"
-            onPress={onMenu}
-            hitSlop={6}
-            style={styles.row}
-          >
-            <Icon name="kebab" size={18} color={colors.gray300} />
-          </Pressable>
-        ) : null}
-
-        {/* Between the two, because that is where the column changes subject:
-            everything above governs the graph, everything below plays the
-            take. Room either side of it, so neither is pressed by mistake
-            while reaching for the other. */}
-        {onMenu != null && onRewind != null ? (
-          <View
-            style={[
-              styles.rule,
-              styles.menuRule,
-              { backgroundColor: colors.neutral500 }
-            ]}
-          />
-        ) : null}
-
-        {onRewind != null ? (
-          <>
-            <RailRewind onPress={onRewind} />
-            <View style={styles.aboveFoot} />
-          </>
-        ) : null}
-      </View>
+      <RailBelow onMenu={onMenu} onHelp={onHelp} onRewind={onRewind} />
 
       {transport != null ? <RailFoot {...transport} /> : null}
     </View>
@@ -212,15 +175,6 @@ const styles = StyleSheet.create({
     zIndex: 1,
     elevation: 1
   },
-  // Pushed to the bottom of the column, whatever is above it.
-  // Room for a thumb between the switches and these: pressing one by
-  // accident while reaching for a mute is worse than reaching a bit further.
-  below: { marginTop: 'auto', width: '100%', alignItems: 'center', gap: 6 },
-  // Room either side, so the two controls it separates are a thumb apart.
-  menuRule: { marginVertical: 8 },
-  // And room under the rewind, so it is not crowded onto the play control
-  // reaching out of the corner below it.
-  aboveFoot: { height: 10 },
   row: { alignItems: 'center', paddingVertical: 6, width: '100%' },
   // What sounds, and what governs the drawing, are different questions.
   rule: { height: StyleSheet.hairlineWidth, width: '60%', marginVertical: 4 },

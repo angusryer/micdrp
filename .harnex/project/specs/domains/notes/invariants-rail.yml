@@ -1,0 +1,38 @@
+# What the rail says about itself. Its own file rather than another entry in
+# invariants-graph-frame.yml, which is already well past the 150-line spec-file
+# budget (Axiom 3).
+invariants:
+  - id: INV-NOTES-232
+    description: The rail says what its own controls mean
+    severity: minor
+    check: >
+      Every control on the graph's left edge can be read rather than guessed
+      at. A question mark directly under the control that opens what governs
+      the graph (INV-NOTES-229) opens a legend naming each of them: every
+      track letter against the track it silences, the grid, that menu, the
+      question mark itself, the rewind, the play control and the moment
+      beside it, the handle, and each of the acts the handle opens into
+      (INV-NOTES-230). Each row carries the same mark the rail carries, drawn
+      the same way, so the legend is read by matching rather than by
+      description.
+
+      It names the tracks the note actually has and no others, for the same
+      reason the rail shows only those rows: a legend entry for a control that
+      is not there is a legend that lies (INT-NOTES-026).
+
+      It rises from the bottom of the screen, dimming what is behind it —
+      alone among the things reached from the rail. What the rail's other door
+      opens is used while watching the graph, so it must not cover it; this is
+      read once, understood, and put away, and nothing on the graph is being
+      watched while it is open.
+
+      Verified by asserting the question mark opens the legend, that every
+      control drawn on the rail is named in it, that a track the note does not
+      have is not named, and that it closes again.
+
+      The rail is glyphs and single letters, because it is 38 points wide and
+      every point of width it takes is a moment of the take it does not draw.
+      That is the right trade for a control pressed while looking at the
+      graph, and the wrong one for a control met for the first time — a letter
+      is only a reminder to whoever already knows what it stands for. The
+      legend is where the knowing comes from.

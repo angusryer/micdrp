@@ -35,11 +35,9 @@ import { ChordTrack } from './ChordTrack';
 import { NoteShapeControls } from './NoteShapeControls';
 import { Playhead } from './Playhead';
 import { GraphMenu } from './GraphMenu';
-import {
-  TrackRail,
-  RAIL_MENU_BOTTOM,
-  TRACK_RAIL_WIDTH
-} from './TrackRail';
+import { RailLegend } from './RailLegend';
+import { TrackRail, TRACK_RAIL_WIDTH } from './TrackRail';
+import { RAIL_MENU_BOTTOM } from './RailBelow';
 import type { PlaybackState } from './usePlayback';
 import { Scrubber } from './Scrubber';
 import type { useNoteDetail } from './useNoteDetail';
@@ -137,6 +135,8 @@ export function NoteShapeSection({
   // What governs the graph from outside it, behind one control on the rail
   // (INV-NOTES-229).
   const [menuOpen, setMenuOpen] = useState(false);
+  // What every mark on that rail means, said in words (INV-NOTES-232).
+  const [legendOpen, setLegendOpen] = useState(false);
   // A re-read reads the whole recording again, which takes long enough that
   // the control has to say it is working (INV-NOTES-230).
   const [isRereading, setIsRereading] = useState(false);
@@ -258,6 +258,14 @@ export function NoteShapeSection({
             onMenu={
               onOptions != null || onDetails != null
                 ? () => setMenuOpen((was) => !was)
+                : undefined
+            }
+            // Alongside the menu and never without it: the question mark is
+            // the only thing on the column that explains the column
+            // (INV-NOTES-232).
+            onHelp={
+              onOptions != null || onDetails != null
+                ? () => setLegendOpen(true)
                 : undefined
             }
             onRewind={
@@ -439,6 +447,16 @@ export function NoteShapeSection({
           fromBottom={RAIL_MENU_BOTTOM}
           onOptions={onOptions}
           onDetails={onDetails}
+        />
+
+        {/* Named from what the rail is actually showing, so it describes this
+            note's column rather than the column in general (INV-NOTES-232). */}
+        <RailLegend
+          isOpen={legendOpen}
+          onClose={() => setLegendOpen(false)}
+          tracks={detail.railTracks}
+          hasTransport={transport?.state != null}
+          hasActs={transport?.state != null}
         />
 
         {shifted != null ? (
