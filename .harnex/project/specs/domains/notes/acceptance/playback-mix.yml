@@ -386,11 +386,12 @@ acceptance:
   - id: ACC-NOTES-245
     title: The foot opens into what remakes the graph
     given: A note detail page with a take
-    when: The moment beside the play control is touched, or its handle dragged
+    when: The handle down its right edge is dragged, or the moment touched
     then: >
-      The foot opens along the graph's bottom edge offering, each the same
-      width, a record for a bass line, a re-read of the take, and the chords;
-      touching again closes it (INV-NOTES-230).
+      The foot follows the thumb as far as there is to open, settles fully
+      open or fully shut when it leaves, and offers — each the same width — a
+      record for a bass line, a re-read of the take, and the chords
+      (INV-NOTES-230).
 
   - id: ACC-NOTES-246
     title: The chords come and go on one control

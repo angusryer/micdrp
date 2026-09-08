@@ -386,12 +386,19 @@ invariants:
     description: The foot pulls out into the acts that remake the graph
     severity: major
     check: >
-      The curved end of the rail's foot is drawn as a handle. Touching the
-      moment beside the play control, or dragging that handle rightward, opens
-      a row of acts along the foot, each the same width as the next: record a
-      bass line over the take, read the take again, and read the chords. The
-      same touch or a drag back closes it, and it opens closed on every visit
-      — a drawer left open is a drawer covering the graph.
+      The curved end of the rail's foot is drawn as a handle — a bar down that
+      edge alone, in the colour the app acts in, thick enough to be aimed at.
+      Dragging it opens a row of acts along the foot, each the same width as
+      the next: record a bass line over the take, read the take again, and
+      read the chords. It follows the thumb as it goes, either way and only as
+      far as there is to open, and settles fully open or fully shut when the
+      thumb leaves — never between two states. A touch without a drag does the
+      same thing, and it opens closed on every visit: a drawer left open is a
+      drawer covering the graph.
+
+      Down that edge alone, because a border around the whole foot draws a
+      line between the play control and the rewind directly above it, which
+      are one column and not two.
 
       None of them touch what was done by hand. Reading the take again keeps
       the corrections and replays them (INV-NOTES-116); asking for the chords

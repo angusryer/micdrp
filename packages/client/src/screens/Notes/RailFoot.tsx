@@ -15,11 +15,13 @@
  * Drawn out of the column's flow, because it is wider than the column and the
  * column's own width is what keeps the drawing where it is.
  */
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  runOnJS,
   useAnimatedStyle,
+  useSharedValue,
   withTiming
 } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
@@ -43,8 +45,17 @@ const ACTS = 3;
 /** The curve at the end, half its height: a full round rather than a corner. */
 const TURN_RADIUS = RAIL_FOOT_HEIGHT / 2;
 
-/** How far it must be dragged to count as pulled, in px. */
-const PULL_MS = 24;
+/** How much of it is open, in px, when it is all the way open. */
+const OPENS_BY = ACTS * ACT_WIDTH;
+
+/** How far a thumb must travel before the drag is a drag and not a press. */
+const IS_A_DRAG = 8;
+
+/** How much a flick counts for, in px per px-per-second of what it was doing. */
+const FLICK_WEIGHT = 0.15;
+
+/** The bar down the handle's edge: thick enough to be aimed at, in px. */
+const HANDLE_BAR = 3;
 
 /** Quick, because it answers a finger already moving. */
 const OPENS_IN_MS = 180;
@@ -75,21 +86,50 @@ export function RailFoot({
   const [isOpen, setIsOpen] = useState(false);
   const opens = acts != null;
 
-  const width = useAnimatedStyle(() => ({
-    width: withTiming(isOpen ? SHUT_WIDTH + ACTS * ACT_WIDTH : SHUT_WIDTH, {
-      duration: OPENS_IN_MS
-    })
-  }));
+  /**
+   * How far open it is, in px, on the UI thread.
+   *
+   * It follows the thumb, so it changes every frame and cannot be state: a
+   * width re-rendered sixty times a second re-renders the graph beside it
+   * (INV-NOTES-206). What React is told is only which of the two states it
+   * settled in, which changes twice a gesture.
+   */
+  const openBy = useSharedValue(0);
+  /** Where it was when the thumb landed, so a drag is measured from there. */
+  const wasAt = useSharedValue(0);
 
-  // Pulled open, or pushed shut. A tap on the same place does the same thing,
-  // because a handle that only answers a drag is a handle nobody finds.
+  const width = useAnimatedStyle(() => ({ width: SHUT_WIDTH + openBy.value }));
+
+  /** Settle on one state or the other; never between two. */
+  const settle = useCallback(
+    (open: boolean) => {
+      openBy.value = withTiming(open ? OPENS_BY : 0, {
+        duration: OPENS_IN_MS
+      });
+      setIsOpen(open);
+    },
+    [openBy]
+  );
+
+  // Follows the thumb both ways, and only as far as there is to open. It
+  // claims the touch after real sideways travel, so a press still reaches the
+  // control underneath it.
   const pull = Gesture.Pan()
-    .onEnd((e) => {
-      if (Math.abs(e.translationX) > PULL_MS) {
-        setIsOpen(e.translationX > 0);
-      }
+    .enabled(opens)
+    .activeOffsetX([-IS_A_DRAG, IS_A_DRAG])
+    .onBegin(() => {
+      wasAt.value = openBy.value;
     })
-    .runOnJS(true);
+    .onUpdate((e) => {
+      const wanted = wasAt.value + e.translationX;
+      openBy.value = wanted < 0 ? 0 : wanted > OPENS_BY ? OPENS_BY : wanted;
+    })
+    .onEnd((e) => {
+      // Where it would come to rest if it kept going: a flick opens it even
+      // from a short drag, which is what a flick means.
+      const carried = openBy.value + e.velocityX * FLICK_WEIGHT;
+      runOnJS(settle)(carried > OPENS_BY / 2);
+    });
 
   return (
     <Animated.View
@@ -99,7 +139,10 @@ export function RailFoot({
         {
           backgroundColor: colors.neutral100,
           borderBottomLeftRadius: dimensions.radii[10],
-          borderColor: colors.neutral500
+          // Down this edge alone, in the colour the app acts in. A border
+          // around the whole foot drew a line between the play control and
+          // the rewind directly above it, which are one column and not two.
+          borderRightColor: opens ? colors.primary500 : 'transparent'
         },
         width
       ]}
@@ -127,7 +170,7 @@ export function RailFoot({
           accessibilityState={opens ? { expanded: isOpen } : undefined}
           testID="rail-handle"
           disabled={!opens}
-          onPress={() => setIsOpen((was) => !was)}
+          onPress={() => settle(!isOpen)}
           style={styles.handle}
         >
           <RunClock
@@ -165,8 +208,7 @@ const styles = StyleSheet.create({
     // handle rather than as where the colour happens to stop.
     borderTopRightRadius: TURN_RADIUS,
     borderBottomRightRadius: TURN_RADIUS,
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderRightWidth: HANDLE_BAR,
     // What is past the end while it is shut, which is the acts, is not drawn
     // over the graph.
     overflow: 'hidden'

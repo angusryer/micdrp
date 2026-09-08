@@ -118,6 +118,20 @@ it('ACC-NOTES-246: says whether the chords are on the graph', async () => {
   );
 });
 
+it('draws the handle down its right edge alone', async () => {
+  const view = await setup();
+  const foot = view.getByTestId('rail-foot').props.style as Record<
+    string,
+    unknown
+  >[];
+  const shape = Object.assign({}, ...foot.flat()) as Record<string, unknown>;
+  // A border around the whole foot drew a line between the play control and
+  // the rewind directly above it, which are one column and not two.
+  expect(shape.borderRightWidth).toBeGreaterThan(1);
+  expect(shape.borderTopWidth).toBeUndefined();
+  expect(shape.borderLeftWidth).toBeUndefined();
+});
+
 it('does not offer a handle where there is nothing to open', async () => {
   const view = await setup(null);
   // The moment is still read there; what is gone is the promise that
