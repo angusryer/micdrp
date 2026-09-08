@@ -406,3 +406,28 @@ invariants:
       What was below the list is what the sheet is for — the tempo, the
       pickup, the beat that was tapped. Those were under a column long
       enough to need scrolling past.
+
+  - id: INV-NOTES-223
+    description: An edit does not silence the sound it asked for
+    severity: major
+    check: >
+      A pitch sounded while something is being edited survives the edit that
+      asked for it. Taking the shared voice for a one-shot pitch neither lets
+      go of the engine nor clears the bus — the pitch about to be played does
+      both by itself — and a reading that changes underneath stops only a
+      melody that is actually sounding. Verified by asserting that a pitch
+      heard as a drag crosses it is still scheduled, still holding the engine
+      and unmuted after the note it moved has changed, and that changing the
+      reading while the melody plays still stops the melody.
+
+      A drag was silent on the device though every wire from the gesture to
+      the engine was in place. Two things cut the note within a frame of it
+      starting. Claiming the voice stopped the player, which released the last
+      hold on the engine and tore it down, so each semitone crossed restarted
+      the engine before it could sound. And the effect that stops a melody
+      when the reading changes fired on the very change the drag had just
+      made, clearing the bus behind the note it had scheduled.
+
+      The lesson is narrower than the fix: a shared voice cannot be cleaned up
+      by whoever notices a change, because the thing that changed is often
+      what the sound is about.

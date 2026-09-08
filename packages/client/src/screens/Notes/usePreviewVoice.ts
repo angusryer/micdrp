@@ -52,15 +52,28 @@ export function usePreviewVoice(
   // there is nothing left to stop.
   const [isMelodyPlaying, setIsMelodyPlaying] = useState(false);
   const endsAt = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /**
+   * The same fact as `isMelodyPlaying`, readable from a cleanup.
+   *
+   * A cleanup closes over the render it was created in, so it cannot ask the
+   * state whether a melody is sounding now — only whether one was then.
+   */
+  const melodySounding = useRef(false);
 
-  const stopMelody = useCallback(() => {
+  /** Forget the melody without touching the voice. */
+  const releaseMelody = useCallback(() => {
     if (endsAt.current) {
       clearTimeout(endsAt.current);
       endsAt.current = null;
     }
-    tonePlayer.stop();
+    melodySounding.current = false;
     setIsMelodyPlaying(false);
-  }, [tonePlayer]);
+  }, []);
+
+  const stopMelody = useCallback(() => {
+    releaseMelody();
+    tonePlayer.stop();
+  }, [releaseMelody, tonePlayer]);
 
   /**
    * Take the voice, at a stated level (INV-NOTES-190).
@@ -73,10 +86,15 @@ export function usePreviewVoice(
    */
   const claim = useCallback(
     (level: number) => {
-      stopMelody();
+      // The melody is forgotten but the player is left running: a claim is
+      // always followed by a play, and a play already clears the bus of
+      // whatever it interrupts. Stopping here instead released the last hold
+      // on the engine and tore it down, so a drag restarted the engine once
+      // per semitone and sounded nothing (INV-NOTES-223).
+      releaseMelody();
       tonePlayer.setLevel(level);
     },
-    [stopMelody, tonePlayer]
+    [releaseMelody, tonePlayer]
   );
 
   // Hearing a note as it is moved — its own file, and its own level. It
@@ -100,14 +118,28 @@ export function usePreviewVoice(
       return;
     }
     tonePlayer.play(melodyTones);
+    melodySounding.current = true;
     setIsMelodyPlaying(true);
     const runsFor = melodyTones[melodyTones.length - 1]?.endMs ?? 0;
-    endsAt.current = setTimeout(() => setIsMelodyPlaying(false), runsFor);
+    endsAt.current = setTimeout(() => {
+      melodySounding.current = false;
+      setIsMelodyPlaying(false);
+    }, runsFor);
   }, [tonePlayer, melodyTones, stopMelody]);
 
   // A reading that changes under a sounding melody makes it the wrong
-  // melody, and the view going takes the voice with it.
-  useEffect(() => stopMelody, [stopMelody, melodyTones]);
+  // melody. Only a melody: the reading most often changes because an edit
+  // changed it, and that edit is exactly what the drag is sounding — stopping
+  // here cut every dragged pitch a frame after it started (INV-NOTES-223).
+  // The view going takes the voice with it through the unmount above.
+  useEffect(
+    () => () => {
+      if (melodySounding.current) {
+        stopMelody();
+      }
+    },
+    [stopMelody, melodyTones]
+  );
 
   // Shifted like the rest: a tap that checks a pitch has to agree with what
   // playing the melody sounds, or it is checking a different note.

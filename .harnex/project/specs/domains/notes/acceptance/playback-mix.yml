@@ -310,3 +310,11 @@ acceptance:
       Tempo, pickup and tap pattern come first, and the measured summary
       follows them (INV-NOTES-222).
 
+  - id: ACC-NOTES-237
+    title: A dragged pitch is still sounding after the drag has moved it
+    given: A sung note chosen on the graph, with drag hearing on
+    when: The finger crosses a semitone, moving the note as it goes
+    then: >
+      The pitch it reached is scheduled and still sounding — the engine is
+      still held and the audition bus is not cleared — though the reading
+      changed in the same frame (INV-NOTES-223, INV-NOTES-070).
