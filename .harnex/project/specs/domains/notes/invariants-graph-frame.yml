@@ -359,9 +359,17 @@ invariants:
       one control on the rail, set apart from the switches above it by a rule
       and room enough for a thumb. It opens out of the rail itself, rightward
       across the graph, level with the control that opened it, and closes on
-      a touch anywhere else. Nothing else on the graph opens either. Verified
-      by asserting the control offers both, that each opens what it names,
-      that a touch outside closes it, and that neither has a second way in.
+      a touch anywhere but itself — on the graph, on the rail, and on the
+      control that opened it, which is the first place a hand goes to put a
+      menu away. Nothing else on the graph opens either. Verified by
+      asserting the control offers both, that each opens what it names, that
+      a touch outside closes it wherever it lands, and that neither has a
+      second way in.
+
+      Closing worked only over the drawing at first: the rail is raised over
+      that drawing so its foot can reach into it (INV-NOTES-227), and a
+      raised thing is above anything not raised — so every touch on the rail,
+      the kebab included, went to the rail and the menu stayed open.
 
       Out of the rail rather than up from the bottom of the screen: what it
       offers belongs to the graph, and a sheet rising over the page says the

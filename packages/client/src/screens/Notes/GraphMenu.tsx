@@ -94,15 +94,18 @@ export function GraphMenu({
 
   return (
     <>
-      {/* A touch anywhere else puts it away. Over the whole card, because
-          the graph is what it is covering and a menu that survives a touch
-          on the thing it governs is a menu in the way. */}
+      {/* A touch anywhere else puts it away — over the drawing, over the
+          rail, and over the control that opened it, which is the first place
+          a hand goes to close a menu. Above the rail, which is itself raised
+          over the drawing so its foot can reach into it (INV-NOTES-227): a
+          raised thing is above anything not raised, so a scrim without a
+          place of its own caught nothing on the rail at all. */}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('notes.graphMenuClose')}
         testID="menu-scrim"
         onPress={onClose}
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, styles.scrim]}
       />
       <Animated.View
         testID="graph-menu"
@@ -143,10 +146,11 @@ const styles = StyleSheet.create({
     // opening out rather than a card resting on the graph.
     borderTopRightRadius: 12,
     borderBottomRightRadius: 12,
-    // Above the drawing, like the rail it comes out of.
-    zIndex: 2,
-    elevation: 2
+    // Above the scrim below it, which is itself above the rail.
+    zIndex: 4,
+    elevation: 4
   },
+  scrim: { zIndex: 3, elevation: 3 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 },
   title: { fontSize: 14, fontWeight: '600' }
 });

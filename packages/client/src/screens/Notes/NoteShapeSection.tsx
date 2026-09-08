@@ -248,9 +248,13 @@ export function NoteShapeSection({
             onToggle={detail.listening.setAudible}
             isSnapping={detail.listening.snapToGrid}
             onSnapping={detail.listening.setSnapToGrid}
+            // A press closes what it opened. The scrim over it catches the
+            // press first while the menu is up, but a control that would not
+            // put away what it put there is wrong whether or not anything
+            // else is covering it (INV-NOTES-229).
             onMenu={
               onOptions != null || onDetails != null
-                ? () => setMenuOpen(true)
+                ? () => setMenuOpen((was) => !was)
                 : undefined
             }
             onRewind={

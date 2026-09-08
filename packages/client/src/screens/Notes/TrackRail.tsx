@@ -182,7 +182,12 @@ export function TrackRail({
           />
         ) : null}
 
-        {onRewind != null ? <RailRewind onPress={onRewind} /> : null}
+        {onRewind != null ? (
+          <>
+            <RailRewind onPress={onRewind} />
+            <View style={styles.aboveFoot} />
+          </>
+        ) : null}
       </View>
 
       {transport != null ? <RailFoot {...transport} /> : null}
@@ -213,6 +218,9 @@ const styles = StyleSheet.create({
   below: { marginTop: 'auto', width: '100%', alignItems: 'center', gap: 6 },
   // Room either side, so the two controls it separates are a thumb apart.
   menuRule: { marginVertical: 8 },
+  // And room under the rewind, so it is not crowded onto the play control
+  // reaching out of the corner below it.
+  aboveFoot: { height: 10 },
   row: { alignItems: 'center', paddingVertical: 6, width: '100%' },
   // What sounds, and what governs the drawing, are different questions.
   rule: { height: StyleSheet.hairlineWidth, width: '60%', marginVertical: 4 },

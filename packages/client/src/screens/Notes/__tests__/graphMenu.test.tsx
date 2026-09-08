@@ -79,6 +79,18 @@ it('closes on a touch anywhere else', async () => {
   expect(onClose).toHaveBeenCalled();
 });
 
+it('catches that touch on the rail too, not only on the drawing', async () => {
+  const view = await setup();
+  const scrim = shapeOf(view.getByTestId('menu-scrim').props.style);
+  const panel = shapeOf(view.getByTestId('graph-menu').props.style);
+  // The rail is raised over the drawing so its foot can reach into it
+  // (INV-NOTES-227), and a raised thing is above anything not raised — so a
+  // scrim with no place of its own caught nothing on the rail at all,
+  // including the control that opened this.
+  expect(scrim.zIndex as number).toBeGreaterThan(1);
+  expect(panel.zIndex as number).toBeGreaterThan(scrim.zIndex as number);
+});
+
 it('is not in the way while it is closed', async () => {
   const view = await setup(false);
   // Not merely invisible: a scrim over the graph would swallow every touch
