@@ -10,7 +10,7 @@
  * So this is where a capture lands first. What was sung is a fact the moment
  * it was sung; where it ends up stored is a detail that can be retried.
  */
-import type { CreateNoteInput } from 'shared';
+import type { CreateNoteInput, InterpretationDto } from 'shared';
 import { NOTES_INDEX_KEY, listNotes, type NoteMeta } from './notesCache';
 import { setJSON } from './store';
 
@@ -39,6 +39,38 @@ export function putNote(note: NoteMeta): void {
   }
   index[note.id] = note;
   setJSON(NOTES_INDEX_KEY, index);
+}
+
+/**
+ * Keep what a person decided about a take, here, now (INV-NOTES-224).
+ *
+ * The same argument as the recording above: a decision is a fact the moment
+ * it is made, and where it ends up stored is a detail that can be retried.
+ * Corrections went to the server and nowhere else while the screen that shows
+ * them reads this cache, so leaving the note and coming back showed the take
+ * as the detector had heard it.
+ *
+ * Silent about a note it has never heard of: a save can outlive the take being
+ * deleted, and re-creating it from an edit would put a note back that somebody
+ * threw away.
+ */
+export function keepInterpretations(
+  noteId: string,
+  interpretations: readonly InterpretationDto[]
+): void {
+  const index: Record<string, NoteMeta> = {};
+  let found = false;
+  for (const meta of listNotes()) {
+    if (meta.id === noteId) {
+      found = true;
+      index[meta.id] = { ...meta, interpretations: [...interpretations] };
+    } else {
+      index[meta.id] = meta;
+    }
+  }
+  if (found) {
+    setJSON(NOTES_INDEX_KEY, index);
+  }
 }
 
 /** Take one note out of the index, whatever its state. */

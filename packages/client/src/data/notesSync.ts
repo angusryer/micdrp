@@ -15,6 +15,7 @@
  */
 import type { HitDto, NoteDto, NoteEventDto } from 'shared';
 
+import { pendingInterpretations } from './interpretationQueue';
 import { notesRepo } from './notesRepo';
 import { NOTES_INDEX_KEY, listNotes, type NoteMeta } from './notesCache';
 import { setJSON } from './store';
@@ -74,12 +75,25 @@ export async function syncNotes(): Promise<NoteMeta[]> {
       index[meta.id] = meta;
     }
   }
+  // Which takes have a reading still on its way up. What is waiting is by
+  // definition newer than anything the server can answer with, so the server
+  // does not win about those (INV-NOTES-224).
+  const undelivered = new Set(
+    pendingInterpretations().map((held) => held.noteId)
+  );
+  const cached = new Map(listNotes().map((meta) => [meta.id, meta]));
   for (const meta of metas) {
     // What the server holds, plus where the audio sits on this device if it
     // was sung here: the local file outlives the upload and is the faster
     // thing to play.
-    const held = index[meta.id];
-    index[meta.id] = { ...meta, localAudioUri: held?.localAudioUri };
+    const held = cached.get(meta.id);
+    index[meta.id] = {
+      ...meta,
+      localAudioUri: held?.localAudioUri,
+      ...(undelivered.has(meta.id) && held?.interpretations != null
+        ? { interpretations: held.interpretations }
+        : {})
+    };
   }
   setJSON(NOTES_INDEX_KEY, index);
 

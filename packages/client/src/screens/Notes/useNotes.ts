@@ -21,6 +21,7 @@ import { AppErrorCode } from 'shared';
 import { notesRepo } from '../../data/notesRepo';
 import { cachedNotes, syncNotes } from '../../data/notesSync';
 import { flushPending, pendingCount } from '../../data/notesQueue';
+import { flushInterpretations } from '../../data/interpretationQueue';
 import { dropNote, isLocalId } from '../../data/notesLocal';
 import type { NoteMeta } from '../../data/notesCache';
 
@@ -73,6 +74,11 @@ export function useNotes(): UseNotesValue {
     // reconciled by the sync that follows rather than the next one.
     try {
       await flushPending();
+      // And what a person decided about takes already up there. Otherwise a
+      // correction waited for the next edit to carry it, while the sync below
+      // asked the server what it held — which was the reading without it
+      // (INV-NOTES-224).
+      await flushInterpretations();
     } catch {
       // Nothing to do: the notes are on the device either way.
     }

@@ -353,6 +353,37 @@ invariants:
       never received, on a take whose reading reported no tempo at all.
       Nothing failed loudly; the marks were simply not there afterwards.
 
+  - id: INV-NOTES-224
+    description: A decision is kept on this device the moment it is made
+    severity: critical
+    check: >
+      Editing a take writes the whole reading into the local cache before any
+      attempt to deliver it, so leaving the note and coming back shows what was
+      decided whether or not the server has heard of it. A sync never replaces
+      a cached reading whose delivery is still queued — what is waiting is
+      newer than anything the server can answer with — and everything queued is
+      sent before the list asks the server what it holds. Verified by editing,
+      syncing against a server that has not received the edit, and asserting
+      the cached note still carries it.
+
+      INV-NOTES-021 says a decision outlives the screen it was made on, and
+      pitch corrections did not. Nothing wrote them to the device: a save went
+      to the server and the cache was left as it was, and the note detail reads
+      the cache. Going back to the list then ran a sync, which overwrites the
+      cache with what the server holds — and the save, debounced and then a
+      round trip, had usually not landed. So a correction survived only when it
+      won a race it had no reason to win, and on a take that had not been
+      uploaded at all it could not survive: the save was refused and there was
+      nowhere else it lived.
+
+      Observed while correcting a transcription note by note: every correction
+      gone on re-opening the take.
+
+      Local-first is the rule for both irreplaceable things. The recording is
+      kept on the device before it is uploaded (INV-NOTES-139), and what a
+      person did to it now is too — the queue was already the record of a
+      decision, and the cache is where a screen reads one back.
+
   - id: INV-NOTES-198
     description: A tap is one beat, and the taps are the beat
     severity: critical

@@ -19,6 +19,7 @@
  */
 import type { InterpretationDto } from 'shared';
 
+import { keepInterpretations } from './notesLocal';
 import { notesRepo } from './notesRepo';
 import { getJSON, setJSON } from './store';
 
@@ -58,6 +59,11 @@ export function queueInterpretations(
   noteId: string,
   interpretations: readonly InterpretationDto[]
 ): void {
+  // On the device first, and in the same act as queueing it: the queue is the
+  // record that a decision must still travel, and the cache is where the
+  // screen reads it back. Writing only the first left every correction
+  // looking lost the moment the note was closed (INV-NOTES-224).
+  keepInterpretations(noteId, interpretations);
   seq += 1;
   write([
     ...read().filter((held) => held.noteId !== noteId),

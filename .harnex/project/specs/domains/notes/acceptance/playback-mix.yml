@@ -318,3 +318,12 @@ acceptance:
       The pitch it reached is scheduled and still sounding — the engine is
       still held and the audition bus is not cleared — though the reading
       changed in the same frame (INV-NOTES-223, INV-NOTES-070).
+
+  - id: ACC-NOTES-238
+    title: Corrected pitches are still there on coming back to the take
+    given: A take whose notes have been corrected on the graph
+    when: The note is left for the list — which syncs — and opened again
+    then: >
+      Every correction is still on the graph, whether or not the server
+      received it, and a sync does not replace a reading still waiting to
+      be delivered (INV-NOTES-224, INV-NOTES-021).
