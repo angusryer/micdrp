@@ -112,21 +112,24 @@ invariants:
       which is the drift INV-NOTES-026 exists to prevent.
 
   - id: INV-NOTES-151
-    description: The neck can be put away, and stays put away for that note
+    description: The neck is one instrument among several, swiped between
     severity: minor
     check: >
-      A control beside the neck hides and shows it, the choice is kept
-      with that note, and it is remembered on the next visit. Shown
-      before anybody chooses. Hidden, the control stays where it was —
-      the neck goes, the way back does not. Verified by asserting the
-      choice survives leaving and reopening the note, and that a
-      different note is unaffected by it.
+      What sits under the graph is a row of instruments swiped through one at
+      a time, each holding the whole width and settling on one rather than
+      between two. The guitar neck is the first, and the last says what is
+      still to come rather than pretending the row ends there. Nothing hides
+      it: putting it away and bringing it back was a control for a thing that
+      is about to be several. Verified by asserting the row settles on whole
+      cards, that the neck is what it opens on, and that the last card claims
+      no instrument.
 
-      The neck takes real height under a graph already given half the
-      screen, and a singer with no guitar in the room has no use for it.
-      Kept per note like the rest of how a note is listened to
-      (INV-NOTES-114) rather than as a setting: it answers "is this idea
-      one I am working out on an instrument", which is about the idea.
+      The neck used to be hidden and shown by a control beside it, kept per
+      note (INV-NOTES-114) — the neck takes real height under a graph already
+      given half the screen, and a singer with no guitar in the room has no
+      use for it. But "which instrument am I working this out on" is the
+      question that control was standing in for, and it is better asked by
+      swiping to the instrument than by hiding the one that is there.
 
   - id: INV-NOTES-153
     description: The marked frets say which fret they are

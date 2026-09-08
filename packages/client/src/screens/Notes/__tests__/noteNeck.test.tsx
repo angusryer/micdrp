@@ -8,7 +8,7 @@
  * lit on it is what is sounding.
  */
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render } from '@testing-library/react-native';
 
 import { I18nProvider } from '../../../i18n';
 import { ThemeProvider } from '../../../theme';
@@ -55,13 +55,7 @@ const draw = async (
   await render(
     <I18nProvider>
       <ThemeProvider>
-        <NoteNeckSection
-          melody={MELODY}
-          width={WIDTH}
-          isShown
-          onShown={props.onShown ?? jest.fn()}
-          {...props}
-        />
+        <NoteNeckSection melody={MELODY} width={WIDTH} {...props} />
       </ThemeProvider>
     </I18nProvider>
   );
@@ -149,22 +143,17 @@ describe('INV-NOTES-149 — a place is lit exactly while its note sounds', () =>
   });
 });
 
-describe('INV-NOTES-150/151 — what is shown, and putting it away', () => {
+describe('INV-NOTES-150/151 — what is shown', () => {
   it('places the reading it was handed, note for note', () => {
     expect(placeMelody(MELODY, GEOMETRY).notes).toHaveLength(MELODY.length);
     expect(placeMelody(MELODY.slice(0, 2), GEOMETRY).notes).toHaveLength(2);
   });
 
-  it('draws no board when it has been put away, but keeps the way back', async () => {
-    const away = await draw({ isShown: false });
-    expect(skiaDrawn(away, 'Line')).toHaveLength(0);
-    expect(away.getByTestId('neck-toggle')).toBeTruthy();
-  });
-
-  it('asks to be put away when the control is pressed', async () => {
-    const onShown = jest.fn();
-    const tree = await draw({ onShown });
-    await fireEvent.press(tree.getByTestId('neck-toggle'));
-    expect(onShown).toHaveBeenCalledWith(false);
+  it('cannot be put away, being one instrument of several', async () => {
+    // The control that hid it was standing in for "which instrument am I
+    // working this out on", which is answered by swiping to one.
+    const tree = await draw();
+    expect(tree.queryByTestId('neck-toggle')).toBeNull();
+    expect(skiaDrawn(tree, 'Line').length).toBeGreaterThan(0);
   });
 });

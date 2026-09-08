@@ -122,7 +122,6 @@
       "chords": "Chords",
       "melody": "Melody"
     },
-    "neckShow": "On the neck",
     "neckOctave_one": "An octave {{direction}} from where it was sung, to reach the neck.",
     "neckOctave_other": "{{count}} octaves {{direction}} from where it was sung, to reach the neck.",
     "neckOctaveUp": "up",
@@ -173,6 +172,8 @@
     "playbackOptions": "What to play, what to show",
     "graphMenu": "What governs this graph",
     "rewind": "Back to the beginning",
+    "instrumentsSoon": "More instruments coming",
+    "instrumentsSoonWhy": "A piano, and whatever else this line is worth hearing on",
     "graphMenuOptions": "Levels and voices",
     "graphMenuOptionsWhy": "What each track sounds at, and in what voice",
     "graphMenuAnalysis": "Analysis",

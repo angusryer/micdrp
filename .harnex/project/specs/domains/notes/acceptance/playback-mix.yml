@@ -372,3 +372,12 @@ acceptance:
       The card's range and shape carry the correction, and so does the open
       note's analysis, while the steadiness measured against the recording is
       unchanged (INV-NOTES-228).
+
+  - id: ACC-NOTES-244
+    title: The instruments under the graph are swiped through
+    given: A note detail page with a melody
+    when: The row under the graph is swiped sideways
+    then: >
+      It settles on one instrument at a time, opens on the guitar neck, and
+      ends on a card saying more instruments are coming rather than on an
+      empty edge (INV-NOTES-151).

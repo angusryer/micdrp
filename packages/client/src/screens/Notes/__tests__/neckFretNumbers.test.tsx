@@ -30,15 +30,13 @@ const MELODY = [
   { midi: 71, startMs: 1000, endMs: 1400 }
 ];
 
-const draw = async (isShown = true) =>
+const draw = async () =>
   await render(
     <I18nProvider>
       <ThemeProvider>
         <NoteNeckSection
           melody={MELODY}
           width={WIDTH}
-          isShown={isShown}
-          onShown={jest.fn()}
         />
       </ThemeProvider>
     </I18nProvider>
@@ -80,10 +78,12 @@ describe('INV-NOTES-153 — the marked frets say which fret they are', () => {
     });
   });
 
-  it('takes the numbers away with the board', async () => {
-    const away = await draw(false);
-    NUMBERED_FRETS.forEach((fret) => {
-      expect(away.queryByTestId(testIDFor(fret))).toBeNull();
-    });
+  it('numbers only the frets a player looks for', async () => {
+    // The board is always drawn now — it is one instrument of several rather
+    // than something that can be put away (INV-NOTES-151) — so what there is
+    // to assert is which frets carry a number, not whether any do.
+    const tree = await draw();
+    expect(tree.queryByTestId(testIDFor(2))).toBeNull();
+    expect(tree.queryByTestId(testIDFor(4))).toBeNull();
   });
 });

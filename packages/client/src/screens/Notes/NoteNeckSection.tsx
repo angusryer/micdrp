@@ -10,6 +10,11 @@
  * Every place the line visits is drawn faintly and the one sounding is drawn
  * solid, so the phrase has a shape under the hand even at rest. Under the
  * board, the marked frets are numbered (INV-NOTES-153).
+ *
+ * It is the first of a row of instruments rather than a thing that can be put
+ * away: what the control that hid it was really asking is which instrument
+ * this idea is being worked out on, and that is better answered by swiping to
+ * one than by hiding the one that is there (INV-NOTES-151).
  */
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -20,7 +25,6 @@ import { NECK_FRETS, STANDARD_NECK } from 'logic';
 
 import { NeckBoard } from './NeckBoard';
 import { NeckFretNumbers } from './NeckFretNumbers';
-import { TogglePill } from './TogglePill';
 import { NECK_HEIGHT, layoutNeck } from './neckLayout';
 import { placeMelody, visitedPlaces, type PlaceableNote } from './neckPlaces';
 import { useLitPlace } from './useLitPlace';
@@ -36,8 +40,6 @@ export interface NoteNeckSectionProps {
   /** The reading the graph is drawing, not the stored melody (INV-NOTES-150). */
   melody: readonly PlaceableNote[];
   width: number;
-  isShown: boolean;
-  onShown: (shown: boolean) => void;
   /** The same moment the playhead is drawn from (INV-NOTES-149). */
   positionMs?: SharedValue<number> | null;
 }
@@ -45,8 +47,6 @@ export interface NoteNeckSectionProps {
 export function NoteNeckSection({
   melody,
   width,
-  isShown,
-  onShown,
   positionMs
 }: NoteNeckSectionProps): React.JSX.Element {
   const { colors } = useTheme();
@@ -71,16 +71,10 @@ export function NoteNeckSection({
 
   return (
     <View style={styles.block}>
-      <View style={styles.header}>
-        <TogglePill
-          testID="neck-toggle"
-          label={t('notes.neckShow')}
-          isOn={isShown}
-          onPress={() => onShown(!isShown)}
-        />
-        {/* Said rather than drawn: the line is on the neck an octave from
-            where it was sung, and the neck cannot show that by itself. */}
-        {isShown && placed.octaves !== 0 ? (
+      {/* Said rather than drawn: the line is on the neck an octave from
+          where it was sung, and the neck cannot show that by itself. */}
+      {placed.octaves !== 0 ? (
+        <View style={styles.header}>
           <Text style={[styles.caption, { color: colors.gray300 }]}>
             {t('notes.neckOctave', {
               count: Math.abs(placed.octaves),
@@ -91,49 +85,41 @@ export function NoteNeckSection({
               )
             })}
           </Text>
-        ) : null}
-      </View>
-
-      {isShown ? (
-        <>
-          <Canvas style={{ width, height: NECK_HEIGHT }}>
-            <NeckBoard
-              geometry={geometry}
-              width={width}
-              height={NECK_HEIGHT}
-              colors={{
-                board: colors.gold,
-                wire: colors.neutral50,
-                string: colors.neutral100,
-                marker: colors.neutral300
-              }}
-            />
-            {visited.map((at) => (
-              <Circle
-                key={at.key}
-                cx={at.x}
-                cy={at.y}
-                r={VISITED_RADIUS}
-                color={colors.white}
-                opacity={VISITED_OPACITY}
-              />
-            ))}
-            <Circle
-              cx={lit.x}
-              cy={lit.y}
-              r={LIT_RADIUS}
-              color={colors.primary500}
-            />
-          </Canvas>
-          {/* Off the board rather than on it, so no number lands on a string
-              or a wire (INV-NOTES-153). */}
-          <NeckFretNumbers
-            geometry={geometry}
-            width={width}
-            color={colors.gray300}
-          />
-        </>
+        </View>
       ) : null}
+
+      <Canvas style={{ width, height: NECK_HEIGHT }}>
+        <NeckBoard
+          geometry={geometry}
+          width={width}
+          height={NECK_HEIGHT}
+          colors={{
+            board: colors.gold,
+            wire: colors.neutral50,
+            string: colors.neutral100,
+            marker: colors.neutral300
+          }}
+        />
+        {visited.map((at) => (
+          <Circle
+            key={at.key}
+            cx={at.x}
+            cy={at.y}
+            r={VISITED_RADIUS}
+            color={colors.white}
+            opacity={VISITED_OPACITY}
+          />
+        ))}
+        <Circle cx={lit.x} cy={lit.y} r={LIT_RADIUS} color={colors.primary500} />
+      </Canvas>
+
+      {/* Off the board rather than on it, so no number lands on a string or
+          a wire (INV-NOTES-153). */}
+      <NeckFretNumbers
+        geometry={geometry}
+        width={width}
+        color={colors.gray300}
+      />
     </View>
   );
 }

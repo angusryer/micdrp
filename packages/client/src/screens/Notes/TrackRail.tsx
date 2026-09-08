@@ -147,25 +147,30 @@ export function TrackRail({
           a mute is worse than reaching a little further. */}
       <View style={styles.below}>
         {onMenu != null ? (
-          <>
-            <View
-              style={[
-                styles.rule,
-                styles.menuRule,
-                { backgroundColor: colors.neutral500 }
-              ]}
-            />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('notes.graphMenu')}
-              testID="rail-menu"
-              onPress={onMenu}
-              hitSlop={6}
-              style={styles.row}
-            >
-              <Icon name="kebab" size={18} color={colors.gray300} />
-            </Pressable>
-          </>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('notes.graphMenu')}
+            testID="rail-menu"
+            onPress={onMenu}
+            hitSlop={6}
+            style={styles.row}
+          >
+            <Icon name="kebab" size={18} color={colors.gray300} />
+          </Pressable>
+        ) : null}
+
+        {/* Between the two, because that is where the column changes subject:
+            everything above governs the graph, everything below plays the
+            take. Room either side of it, so neither is pressed by mistake
+            while reaching for the other. */}
+        {onMenu != null && onRewind != null ? (
+          <View
+            style={[
+              styles.rule,
+              styles.menuRule,
+              { backgroundColor: colors.neutral500 }
+            ]}
+          />
         ) : null}
 
         {onRewind != null ? <RailRewind onPress={onRewind} /> : null}
@@ -197,9 +202,8 @@ const styles = StyleSheet.create({
   // Room for a thumb between the switches and these: pressing one by
   // accident while reaching for a mute is worse than reaching a bit further.
   below: { marginTop: 'auto', width: '100%', alignItems: 'center', gap: 6 },
-  // More room above the rule than the one between the tracks and the snap
-  // toggle, because what is below it is a different kind of thing again.
-  menuRule: { marginTop: 10, marginBottom: 4 },
+  // Room either side, so the two controls it separates are a thumb apart.
+  menuRule: { marginVertical: 8 },
   row: { alignItems: 'center', paddingVertical: 6, width: '100%' },
   // What sounds, and what governs the drawing, are different questions.
   rule: { height: StyleSheet.hairlineWidth, width: '60%', marginVertical: 4 },

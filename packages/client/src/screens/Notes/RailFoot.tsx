@@ -34,8 +34,13 @@ export const RAIL_FOOT_HEIGHT = 56;
  */
 const FOOT_WIDTH = 150;
 
-/** The curve where the column turns the corner. */
-const TURN_RADIUS = 20;
+/**
+ * The curve where the column turns the corner.
+ *
+ * Half its height, so the right edge is a full round rather than a rounded
+ * rectangle: the foot reads as one shape the rail swells into.
+ */
+const TURN_RADIUS = RAIL_FOOT_HEIGHT / 2;
 
 export interface RailFootProps {
   state: PlaybackState;

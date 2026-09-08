@@ -5,6 +5,11 @@
  * it again, and finding the top of the take was costing the whole take
  * (INT-NOTES-020).
  *
+ * Ringed, faintly: it is a control rather than a switch like the rows above
+ * it, and the ring says so without another glyph or a word in a column 38
+ * points wide. Lighter than the play control below it, which is the one being
+ * aimed at.
+ *
  * Its own component for the same reason PlaybackButton is one — a control
  * that can be pressed on its own can be tested on its own.
  */
@@ -30,15 +35,28 @@ export function RailRewind({ onPress }: RailRewindProps): React.JSX.Element {
       testID="rail-rewind"
       onPress={onPress}
       hitSlop={6}
-      style={({ pressed }) => [styles.row, { opacity: pressed ? 0.5 : 1 }]}
+      style={({ pressed }) => [
+        styles.ring,
+        { borderColor: colors.neutral500, opacity: pressed ? 0.5 : 1 }
+      ]}
     >
-      <Icon name="rewind" size={18} color={colors.gray300} />
+      <Icon name="rewind" size={16} color={colors.gray300} />
     </Pressable>
   );
 }
 
 export default RailRewind;
 
+/** Comfortably inside the rail, and clear of the control below it. */
+const SIZE = 30;
+
 const styles = StyleSheet.create({
-  row: { alignItems: 'center', paddingVertical: 6, width: '100%' }
+  ring: {
+    width: SIZE,
+    height: SIZE,
+    borderRadius: SIZE / 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center'
+  }
 });
