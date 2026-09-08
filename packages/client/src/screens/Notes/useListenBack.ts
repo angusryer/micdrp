@@ -75,16 +75,15 @@ export function useListenBack({
     if (retimed) {
       acts.current.markAround(retimed.fromMs, retimed.toMs);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the retiming is
-    // the fact; its span is read through the ref at the moment it is used.
+    // The retiming is the fact; its span is read at the moment it is used.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [retimed?.nth]);
 
   // A stretch belongs to the edit that marked it. Choosing something else is
   // moving on, and a mark left behind would be pointing at nothing.
   useEffect(() => {
     acts.current.clear();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- what changed is
-    // the selection. Clearing is how this reacts to it, not a dependency.
+    // What changed is the selection. Clearing is how this reacts to it.
   }, [selection]);
 
   return range;
