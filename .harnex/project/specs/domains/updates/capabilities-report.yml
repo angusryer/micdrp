@@ -1,0 +1,30 @@
+# What the install sends back when something goes wrong. Its own file so
+# capabilities.yml stays inside the spec-file budget (Axiom 3).
+capabilities:
+  - name: updates.report_crash
+    description: >
+      Send a JavaScript error that reached the top — a render the boundary
+      caught, or a fatal the global handler saw — to the update server,
+      against the bundle that was running when it happened. Bundles reach
+      installed builds without review, so the bundle is the one fact a crash
+      has to be joined to before it means anything.
+    actor: singer
+    implemented_by: packages/client/src/updates/report.ts
+    parameters:
+      required:
+        - error
+        - where
+      optional:
+        - survived
+    preconditions:
+      - the binary was built with an update server
+    postconditions:
+      - the report names the bundle actually running, not one merely staged
+      - the report carries the channel, app version and build the binary
+        was compiled with
+      - the report says where the error came from and whether the app
+        survived it
+      - nothing the singer recorded, sang, wrote or was called is included
+      - an install with no update server performs no request
+      - a refused or unreachable server changes nothing the singer sees
+      - the caller's own recovery runs whether or not the report succeeded

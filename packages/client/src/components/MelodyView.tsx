@@ -149,7 +149,15 @@ export function MelodyView({
       any = true;
     }
     return any ? path : null;
-  }, [layout.timeAxis, layout.firstNoteMs, layout.lastNoteMs, height]);
+  }, [
+    layout.timeAxis,
+    layout.firstNoteMs,
+    layout.lastNoteMs,
+    // Read inside and not listed, so moving the pickup's end left the hatch
+    // shading where it used to be (INV-NOTES-234).
+    pickupEndsMs,
+    height
+  ]);
 
   const radius = Math.min(4, height / 16);
 

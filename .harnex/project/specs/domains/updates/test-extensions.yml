@@ -71,6 +71,13 @@ given:
     action: upd_set_offline
 
 when:
+  - id: WX-UPD-CRASH
+    pattern: 'the app crashes while {value}'
+    mode: extension
+    action: upd_crash
+    params: { where: "{value}" }
+    resolution: Raise a JavaScript error from a render or from the global handler.
+
   - id: WX-UPD-CHECK
     pattern: 'the app checks for an update'
     mode: extension
@@ -114,6 +121,17 @@ then:
     mode: extension
     action: upd_assert_offered
     params: { label: "{label}" }
+  - id: TX-UPD-CRASH-REPORTED
+    pattern: 'a crash is reported against bundle {label}'
+    mode: extension
+    action: upd_assert_crash_reported
+    params: { label: "{label}" }
+
+  - id: TX-UPD-NO-CRASH-REPORT
+    pattern: 'no crash report reaches the update server'
+    mode: extension
+    action: upd_assert_no_crash_report
+
   - id: TX-UPD-NO-REQUEST
     pattern: 'no request reaches the update server'
     mode: extension

@@ -204,6 +204,42 @@ cmd_list() {
        ORDER BY id DESC"
 }
 
+# What fell over, on which bundle (INV-UPD-027).
+#
+# A bundle reaches installed builds without review, so the first question about
+# any crash is which publish it was running. That is why these are kept beside
+# the checks rather than in a crash service: the join is the whole value.
+cmd_crashes() {
+  local many="${1:-20}"
+  d1 "SELECT at, build_number AS build, bundle_id AS running,
+             origin, survived, name, message
+        FROM crashes
+       ORDER BY id DESC
+       LIMIT ${many}"
+}
+
+# Create the tables this server writes to, if they are not there already.
+#
+# Idempotent, so it is safe to run before any deploy — which is what makes a
+# new column a one-command change rather than a thing to remember.
+cmd_schema() {
+  d1 "CREATE TABLE IF NOT EXISTS crashes (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        at           TEXT    NOT NULL,
+        channel      TEXT    NOT NULL,
+        app_version  TEXT    NOT NULL,
+        build_number INTEGER NOT NULL,
+        bundle_id    TEXT,
+        origin       TEXT    NOT NULL,
+        survived     INTEGER NOT NULL,
+        name         TEXT    NOT NULL,
+        message      TEXT    NOT NULL,
+        stack        TEXT    NOT NULL
+      )"
+  d1 "CREATE INDEX IF NOT EXISTS crashes_at ON crashes (id DESC)"
+  info "schema applied"
+}
+
 # What the server has actually been asked, and what it said (INV-UPD-026).
 #
 # Three faults here were diagnosed by reasoning rather than by evidence.
@@ -221,9 +257,11 @@ cmd_checks() {
 case "${1:-}" in
   publish) shift; cmd_publish "$@" ;;
   checks)  shift; cmd_checks "$@" ;;
+  crashes) shift; cmd_crashes "$@" ;;
+  schema)  shift; cmd_schema ;;
   disable) shift; cmd_disable "$@" ;;
   list)    shift; cmd_list "$@" ;;
   whoami)  shift; cmd_whoami ;;
   deploy)  shift; cmd_deploy ;;
-  *) die "usage: yarn ota {publish <channel>|disable <bundleId>|list [channel]|checks [n]|whoami|deploy}" ;;
+  *) die "usage: yarn ota {publish <channel>|disable <bundleId>|list [channel]|checks [n]|crashes [n]|schema|whoami|deploy}" ;;
 esac

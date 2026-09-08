@@ -230,7 +230,9 @@ export function useChordTrack(
             })
           : [];
       },
-      [slots]
+      // Read inside, so a bottom note other than the default gave stale
+      // voicings from here while every other reading of it updated.
+      [slots, floorMidi]
     ),
     auditionMs: AUDITION_MS
   };

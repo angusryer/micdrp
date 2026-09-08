@@ -1,0 +1,46 @@
+# What the install sends back when something goes wrong (INV-UPD-027).
+acceptance_tests:
+  - id: ACC-UPD-032
+    interface: module
+    title: A caught render crash is reported against the running bundle
+    given:
+      - the install is a testflight install
+      - the binary is version 1.0.0 build 55
+      - bundle A is published for version 1.0.0 build 55
+      - the install is running bundle A
+    when:
+      - the app crashes while rendering
+    then:
+      - a crash is reported against bundle A
+    maps_to:
+      capability: updates.report_crash
+      invariants: [INV-UPD-027]
+
+  - id: ACC-UPD-033
+    interface: module
+    title: An install with no update server reports nothing
+    given:
+      - the install is an app store install
+      - the binary is version 1.0.0 build 55
+    when:
+      - the app crashes while rendering
+    then:
+      - no crash report reaches the update server
+    maps_to:
+      capability: updates.report_crash
+      invariants: [INV-UPD-027, INV-UPD-001]
+
+  - id: ACC-UPD-034
+    interface: module
+    title: A server that refuses the report changes nothing the singer sees
+    given:
+      - the install is a testflight install
+      - the binary is version 1.0.0 build 55
+      - the update server is unreachable
+    when:
+      - the app crashes while rendering
+    then:
+      - nothing is surfaced to the singer
+    maps_to:
+      capability: updates.report_crash
+      invariants: [INV-UPD-027]

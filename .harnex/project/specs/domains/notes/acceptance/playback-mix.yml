@@ -365,6 +365,15 @@ acceptance:
       of the screen, each opening what it names, closing on a touch anywhere
       else, and neither reachable any other way (INV-NOTES-229).
 
+  - id: ACC-NOTES-249
+    title: A note with no reading yet does not recompute for ever
+    given: A note whose take has been kept but not yet read
+    when: The page renders twice with nothing changed
+    then: >
+      The reading it works from is the same object both times, and so is
+      everything derived from it — no memo downstream of an absent reading is
+      invalidated by the absence itself (INV-NOTES-234).
+
   - id: ACC-NOTES-248
     title: A rail with more switches than room still offers all of them
     given: A note with every track, beside a graph too short to hold them

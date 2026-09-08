@@ -1,0 +1,29 @@
+# Referential stability: what must be the same object between renders, and why.
+# Its own file because the failures here look like performance faults and are
+# not — they are correctness faults that present as heat.
+invariants:
+  - id: INV-NOTES-234
+    description: An absent reading is the same absence on every render
+    severity: major
+    check: >
+      A value handed to a memo, a callback, or anything published upward must
+      keep its identity while the thing it describes has not changed. Where the
+      value is a reading that may be missing, the stand-in for missing is one
+      object reused, never a fresh empty literal per render: an empty array
+      written at the point of use is a different array every time, and every
+      memo downstream of it recomputes for ever.
+
+      Verified by asserting that a note with no reading yields the same reading
+      object across renders, and that what is derived from it does too.
+
+      This is a correctness rule wearing a performance rule's clothes. What it
+      actually prevents is the shape that has already broken this app once: a
+      value regenerated each render travels up into something published, the
+      publish re-renders the holder, the holder makes a new value, and the JS
+      thread never comes back. Nothing there is slow — it is a loop, and it
+      presents as an app that will not start rather than as an app that lags.
+
+      A note with a reading was never at risk, because its reading is stable as
+      long as the note is. The one that suffers is the note with no reading
+      yet, which is the note just captured and the note whose reading failed —
+      the two least able to afford it.

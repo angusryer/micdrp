@@ -3,6 +3,7 @@ export * from './dto/practiceProgress';
 export * from './dto/feedback';
 export * from './dto/profile';
 export * from './dto/updateBundle';
+export * from './dto/crashReport';
 export * from './dto/dogfood';
 export * from './dto/dogfoodAgent';
 export * from './dto/takeSample';

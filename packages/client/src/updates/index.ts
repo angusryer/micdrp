@@ -20,6 +20,8 @@ export { applyUpdate, deferUpdate, isDeferred } from './apply';
 export { crashedBundleIds, rollBack } from './rollback';
 export { resolveEligibility } from './eligibility';
 export { describeInstall } from './describe';
+export { reportCrash } from './report';
+export { watchForCrashes } from './watch';
 export { runningBundle, embeddedBundle } from './bundle';
 export { readUpdatesConfig, BETA_CHANNEL } from './config';
 export type { BusyActivity } from '../app/activity';

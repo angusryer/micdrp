@@ -2,7 +2,7 @@ import React from 'react';
 import AppProviders from './src/app/providers';
 import RootNavigator from './src/navigation/RootNavigator';
 import ErrorBoundary from './src/screens/ErrorBoundary';
-import { initUpdates, UpdateGate } from './src/updates';
+import { initUpdates, UpdateGate, watchForCrashes } from './src/updates';
 import { registerNativeProbe } from './src/audio/outputRoute';
 import { applyEngineConfig } from './src/audio/engineSettings';
 
@@ -11,6 +11,12 @@ import { applyEngineConfig } from './src/audio/engineSettings';
 // handled on the first render rather than after a screen has already drawn.
 // A build with no update server configured returns immediately.
 initUpdates();
+
+// Before anything else can throw. The boundary below catches renders, which
+// are the minority; a throw from an event handler or an unawaited promise
+// never reaches React at all, and those are the ones that end the process
+// (INV-UPD-027). A build with no update server reports nothing.
+watchForCrashes();
 
 // Fill the audio-route probe from the native side. Done here rather than
 // lazily so the first thing to ask — Practice deciding whether it may play the

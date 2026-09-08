@@ -14,6 +14,7 @@ import React, { PureComponent, useContext, type ReactElement } from 'react';
 import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import AppError from '../utilities/errors';
+import { reportCrash } from '../updates';
 import { ThemeContext } from '../theme';
 import { useTranslation } from '../i18n';
 
@@ -80,9 +81,24 @@ export default class ErrorBoundary extends PureComponent<
     };
   }
 
-  async componentDidCatch() {
-    // const appError = new AppError(error, { stack: componentStack });
-    // Send to log endpoint
+  /**
+   * Tell the server what fell over, against the bundle it fell over on
+   * (INV-UPD-027).
+   *
+   * The bundle is the point: JavaScript reaches installed builds without
+   * review, so "which publish was this" is the first question every time, and
+   * the update server is the only thing that knows the answer.
+   *
+   * Not awaited, and unable to throw: the recovery below is what the singer
+   * sees, and it must not wait on a network call or be prevented by one.
+   */
+  componentDidCatch(error: unknown, info: { componentStack?: string | null }) {
+    void reportCrash(
+      new AppError(error, { stack: info.componentStack ?? undefined }),
+      'render',
+      // The boundary caught it and is about to draw a way out of it.
+      true
+    );
   }
 
   /** Clear the caught error so the children re-mount and the app recovers. */

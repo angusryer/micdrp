@@ -92,6 +92,16 @@ const EMPTY_HITS: HitDto[] = [];
 /** Stable, so a take with nothing heard is the same take on every render. */
 const EMPTY_PITCHES: number[] = [];
 
+/**
+ * And for a note whose take has not been read yet (INV-NOTES-234).
+ *
+ * This one was written as a literal at the point of use, which made it a
+ * different array every render and invalidated eleven memos below it every
+ * time — for the note just captured and the note whose reading failed, which
+ * are the two least able to afford it.
+ */
+const EMPTY_MELODY: NoteEvent[] = [];
+
 export function useNoteDetail(id: string) {
   // Bumped when the take is re-read, so the whole page recomputes from the
   // new reading rather than from the one it opened with (INV-NOTES-116).
@@ -105,9 +115,14 @@ export function useNoteDetail(id: string) {
   const [canUndoReread, setCanUndoReread] = useState(false);
   const note = useMemo(
     () => cachedNotes().find((n) => n.id === id),
+    // readingAt is the whole point and cannot be seen from the body:
+    // cachedNotes() is impure, and this is the bump that says to read it
+    // again after a re-read (INV-NOTES-116). Removing it would leave the page
+    // showing the reading it opened with for ever.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [id, readingAt]
   );
-  const heard = (note?.melody ?? []) as NoteEvent[];
+  const heard = useMemo(() => note?.melody ?? EMPTY_MELODY, [note]);
 
   // Mint the audio URL when Play is pressed rather than here: the token it
   // carries is good for about two minutes (INV-NOTES-014).
@@ -361,7 +376,8 @@ export function useNoteDetail(id: string) {
       grid.offsetMs,
       grid.beatsPerBar,
       grid.stepsPerBeat,
-      bars.isArranged,
+      // Not bars.isArranged: nothing here reads it, and the lines it would
+      // change are already listed.
       bars.layout.lines
     ]
   );

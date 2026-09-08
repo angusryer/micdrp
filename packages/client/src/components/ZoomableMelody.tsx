@@ -342,7 +342,9 @@ export function ZoomableMelody({
         scroller.current?.scrollTo({ x: wanted, animated: true });
       }
     },
-    [layout.timeAxis, layout.contentWidth, width]
+    // scroller is a ref and never changes; listed because useAnimatedRef is
+    // not the useRef the rule knows how to see through.
+    [layout.timeAxis, layout.contentWidth, width, scroller]
   );
 
   useEffect(() => {

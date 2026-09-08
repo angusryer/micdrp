@@ -19,6 +19,7 @@
  *
  * Spec: .harnex/project/specs/domains/updates/
  */
+import { handleCrash } from './crash';
 import {
   decideUpdate,
   NIL_BUNDLE_ID,
@@ -240,6 +241,13 @@ export default {
 
     if (request.method === 'POST' && url.pathname === '/check') {
       return handleCheck(request, env);
+    }
+
+    // Beside the check, because it answers the other half of the same
+    // question: the check says which bundle an install took, and this says
+    // what happened to it (INV-UPD-027).
+    if (request.method === 'POST' && url.pathname === '/crash') {
+      return handleCrash(request, env);
     }
 
     if (request.method === 'GET' && url.pathname.startsWith('/bundle/')) {

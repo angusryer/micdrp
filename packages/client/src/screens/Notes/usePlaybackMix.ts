@@ -309,7 +309,16 @@ export function usePlaybackMix({
     wantsCount,
     wantsLayers,
     wantsBass,
-    takeElapsedMs
+    takeElapsedMs,
+    // All refs from useLatest — stable, and listed only because the rule
+    // cannot see through a custom hook to know that. Adding them changes
+    // nothing about when this runs.
+    latest,
+    latestVoice,
+    latestRhythm,
+    latestCount,
+    latestLayers,
+    latestBass
   ]);
 
   /**
@@ -373,7 +382,9 @@ export function usePlaybackMix({
     }
     // The take carries the transport whether or not it is audible.
     await playTake(fromMs);
-  }, [wantsCount, playTake, cueMs]);
+    // latestCount is a ref from useLatest — stable, and listed only because
+    // the rule cannot see through a custom hook to know that.
+  }, [wantsCount, playTake, cueMs, latestCount]);
 
   // A track turned mid-playback stops what is sounding, so the next press is
   // the whole of the mix as it now stands rather than half of two.

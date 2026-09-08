@@ -88,3 +88,39 @@ invariants:
       An install offered nothing is the interesting row, not the boring one: it
       is the difference between "it never asked" and "it asked and was told
       no", and those have opposite causes.
+
+  - id: INV-UPD-027
+    description: A crash is reported against the bundle that was running
+    severity: major
+    check: >
+      A JavaScript error that reaches the top — a render the boundary catches,
+      or a fatal the global handler sees — is sent to the update server with
+      the moment, the channel, the app version and build, the bundle actually
+      running, whether the app survived it, where it came from, and the error's
+      name, message and stack. It is recorded bounded, like a check, and is
+      readable from the command line.
+
+      Reporting is quiet and never a second failure: no dialogue, no retry, no
+      throw out of the handler, and the recovery the singer sees is exactly
+      what it was before. A boundary that crashes while reporting a crash has
+      turned one broken screen into a broken app.
+
+      A build with no update server reports nothing, because there is nowhere
+      to report to. That is the same gate that keeps an App Store binary from
+      asking for beta JavaScript (INV-UPD-001) and needs no policy of its own:
+      an install that may not take a bundle has no bundle to blame.
+
+      Nothing the singer recorded, sang, wrote or was called travels with it.
+      A stack trace and a version are the whole report.
+
+      Verified by asserting a caught render error posts the running bundle and
+      is marked survived, that a fatal is marked otherwise, that a report to an
+      unconfigured install performs no request, and that a server which refuses
+      the report changes nothing about what the singer sees.
+
+      Bundles are published straight to installed builds, which means a bad one
+      reaches every tester before anybody is told. The server already knows
+      which bundle each install is running (INV-UPD-026) — a crash is only
+      worth what it can be joined to, and the bundle is the join. Without it a
+      publish is a change made to other people's phones that only reports back
+      if somebody happens to say so.
