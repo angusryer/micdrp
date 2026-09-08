@@ -41,6 +41,31 @@ invariants:
       silent, so the same edit answered its own question or did not depending
       on which control made it.
 
+  - id: INV-NOTES-225
+    description: What an edit does, it does once — not once per redraw
+    severity: critical
+    check: >
+      An effect that acts on the take — sounding a stretch, seeking, silencing
+      — fires on the fact that changed and not on the identity of the function
+      it calls. Redrawing the screen for any other reason repeats none of it.
+      Verified by driving the real hook, re-rendering it with the same edit and
+      a freshly built transport, and asserting the stretch is played once.
+
+      The transport object carries the state it is in, so it is a different
+      object once that state has changed — by design. The listen-back effects
+      listed the callbacks they used, and every one of those was rebuilt from
+      that object, so both effects ran on every render: mark the stretch, seek
+      to it, play it, then clear it and silence it. Pressing play re-rendered
+      the screen, which re-seeked to the last retimed note and stopped the
+      take. A take could not be played at all after a note had been moved in
+      time, while moving one in pitch — which marks no stretch — left playback
+      working.
+
+      The same shape as INV-TPORT-002, one level up: there an unstable
+      identity re-published the transport, here it re-runs the work. A
+      dependency list is not a list of things used; it is a statement about
+      when the work should happen again.
+
   - id: INV-NOTES-177
     description: What is chosen is brought into view
     severity: major

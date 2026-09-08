@@ -6,7 +6,7 @@
  * the stretch reusable for a loop or a section to practise later
  * (INV-NOTES-178).
  */
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import { usePlayRange, type PlayRangeState } from '../../components/usePlayRange';
 import type { Chosen } from '../../components/graphSelection';
@@ -55,19 +55,37 @@ export function useListenBack({
     [durationMs]
   );
   const range = usePlayRange(playable, bounds);
-  const { markAround, clear } = range;
 
+  /**
+   * The two acts, always the current ones, never a reason to act again.
+   *
+   * Both are rebuilt whenever the transport is, and the transport carries the
+   * state it is in — so it is a different object the moment anything is
+   * playing. Listing them as dependencies ran both effects on every render:
+   * mark the stretch, seek to it, play it, clear it, silence it, and again on
+   * the render that caused. A take could not be played at all once a note had
+   * been moved in time (INV-NOTES-225).
+   */
+  const acts = useRef(range);
+  acts.current = range;
+
+  // Once per retiming, which is what `nth` counts: the same note moved twice
+  // is two edits and asks to be heard twice, while a redraw is neither.
   useEffect(() => {
     if (retimed) {
-      markAround(retimed.fromMs, retimed.toMs);
+      acts.current.markAround(retimed.fromMs, retimed.toMs);
     }
-  }, [retimed, markAround]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the retiming is
+    // the fact; its span is read through the ref at the moment it is used.
+  }, [retimed?.nth]);
 
   // A stretch belongs to the edit that marked it. Choosing something else is
   // moving on, and a mark left behind would be pointing at nothing.
   useEffect(() => {
-    clear();
-  }, [selection, clear]);
+    acts.current.clear();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- what changed is
+    // the selection. Clearing is how this reacts to it, not a dependency.
+  }, [selection]);
 
   return range;
 }

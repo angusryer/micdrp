@@ -327,3 +327,12 @@ acceptance:
       Every correction is still on the graph, whether or not the server
       received it, and a sync does not replace a reading still waiting to
       be delivered (INV-NOTES-224, INV-NOTES-021).
+
+  - id: ACC-NOTES-239
+    title: A take still plays after a note has been moved in time
+    given: A take with a note that has been moved earlier or later
+    when: Play is pressed
+    then: >
+      The take plays from where the head is, and the stretch marked by the
+      retiming sounds once when it was marked rather than again on every
+      redraw (INV-NOTES-225, INV-NOTES-178).
