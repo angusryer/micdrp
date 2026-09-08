@@ -45,8 +45,17 @@ const ACTS = 3;
 /** The curve at the end, half its height: a full round rather than a corner. */
 const TURN_RADIUS = RAIL_FOOT_HEIGHT / 2;
 
+/**
+ * Room between the last act and that bar, in px.
+ *
+ * More than the gap between one act and the next: the bar is a handle, and a
+ * glyph pressed right up against the thing you pull is a glyph you catch
+ * while pulling.
+ */
+const TAIL = 16;
+
 /** How much of it is open, in px, when it is all the way open. */
-const OPENS_BY = ACTS * ACT_WIDTH;
+const OPENS_BY = ACTS * ACT_WIDTH + TAIL;
 
 /** How far a thumb must travel before the drag is a drag and not a press. */
 const IS_A_DRAG = 8;
@@ -111,9 +120,15 @@ export function RailFoot({
     [openBy]
   );
 
-  // Follows the thumb both ways, and only as far as there is to open. It
-  // claims the touch after real sideways travel, so a press still reaches the
-  // control underneath it.
+  // Follows the thumb both ways, and only as far as there is to open. Over
+  // the moment and the acts rather than the handle alone: what is being moved
+  // is the foot, and a drawer that can only be pulled by one corner has to be
+  // aimed at twice. It claims the touch only after real sideways travel, so
+  // every act underneath still answers a press of its own.
+  //
+  // Not over the play control, which answers the finger landing rather than
+  // leaving (INV-TPORT-004) — a drag begun on it would pause the take before
+  // the drag had been recognised as one.
   const pull = Gesture.Pan()
     .enabled(opens)
     .activeOffsetX([-IS_A_DRAG, IS_A_DRAG])
@@ -133,7 +148,7 @@ export function RailFoot({
 
   return (
     <Animated.View
-      testID="rail-foot"
+      testID='rail-foot'
       style={[
         styles.foot,
         {
@@ -145,10 +160,9 @@ export function RailFoot({
           borderRightColor: opens ? colors.primary500 : 'transparent'
         },
         width
-      ]}
-    >
+      ]}>
       <PlaybackButton
-        testID="rail-playback-button"
+        testID='rail-playback-button'
         state={state}
         // As the finger lands, like every other transport press
         // (INV-TPORT-004).
@@ -161,32 +175,34 @@ export function RailFoot({
         onPause={onPause}
       />
 
-      {/* The moment, and the handle that opens the rest. One thing, because
-          the whole end of the foot is what a hand reaches for. */}
+      {/* Everything a drag may be started on. */}
       <GestureDetector gesture={pull}>
-        <Pressable
-          accessibilityRole={opens ? 'button' : 'text'}
-          accessibilityLabel={opens ? t('notes.actsHandle') : undefined}
-          accessibilityState={opens ? { expanded: isOpen } : undefined}
-          testID="rail-handle"
-          disabled={!opens}
-          onPress={() => settle(!isOpen)}
-          style={styles.handle}
-        >
-          <RunClock
-            testID="rail-clock"
-            positionMs={positionMs}
-            ofMs={durationMs}
-            color={colors.gray300}
-          />
-        </Pressable>
-      </GestureDetector>
+        <View style={styles.pullable}>
+          {/* The moment, and the press that opens the rest without a
+                drag. */}
+          <Pressable
+            accessibilityRole={opens ? 'button' : 'text'}
+            accessibilityLabel={opens ? t('notes.actsHandle') : undefined}
+            accessibilityState={opens ? { expanded: isOpen } : undefined}
+            testID='rail-handle'
+            disabled={!opens}
+            onPress={() => settle(!isOpen)}
+            style={styles.handle}>
+            <RunClock
+              testID='rail-clock'
+              positionMs={positionMs}
+              ofMs={durationMs}
+              color={colors.gray300}
+            />
+          </Pressable>
 
-      {acts != null ? (
-        <View style={styles.acts}>
-          <RailActs {...acts} />
+          {acts != null ? (
+            <View style={styles.acts}>
+              <RailActs {...acts} />
+            </View>
+          ) : null}
         </View>
-      ) : null}
+      </GestureDetector>
     </Animated.View>
   );
 }
@@ -213,6 +229,13 @@ const styles = StyleSheet.create({
     // over the graph.
     overflow: 'hidden'
   },
+  // Everything right of the play control: the moment, and the acts behind it.
+  pullable: {
+    flex: 1,
+    flexDirection: 'row',
+    alignSelf: 'stretch',
+    alignItems: 'center'
+  },
   // The rest of the shut foot: the moment sits in it, and it is all handle.
   handle: {
     width: SHUT_WIDTH - 44 - 18,
@@ -220,5 +243,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
-  acts: { flexDirection: 'row', alignSelf: 'stretch', alignItems: 'center' }
+  acts: {
+    flexDirection: 'row',
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    paddingRight: TAIL
+  }
 });
