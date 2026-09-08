@@ -107,14 +107,6 @@ export interface NoteShapeSectionProps {
     pause?: () => void;
     rewind?: () => void;
   } | null;
-  /**
-   * Whether a sheet is over the page.
-   *
-   * The rail carries the transport only then: the bar above the graph has
-   * gone off the top by that point, and two of the same control within reach
-   * at once is two answers to one question (INV-NOTES-227).
-   */
-  isCovered?: boolean;
 }
 
 export function NoteShapeSection({
@@ -128,8 +120,7 @@ export function NoteShapeSection({
   flashing,
   onOptions,
   onDetails,
-  transport,
-  isCovered = false
+  transport
 }: NoteShapeSectionProps): React.JSX.Element {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -269,7 +260,7 @@ export function NoteShapeSection({
             onSnapping={detail.listening.setSnapToGrid}
             onOptions={onOptions}
             transport={
-              isCovered && transport?.state != null
+              transport?.state != null
                 ? {
                     state: transport.state,
                     positionMs: transport.drawnPositionMs,

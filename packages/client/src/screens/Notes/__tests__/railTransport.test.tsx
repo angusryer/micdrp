@@ -1,10 +1,10 @@
 /**
- * ACC-NOTES-241 / INV-NOTES-227 — the transport on the graph's edge while a
- * sheet covers the page.
+ * ACC-NOTES-241 / INV-NOTES-227 — the transport on the graph's own edge.
  *
  * Bringing the graph up against the header (INV-NOTES-226) puts the playback
  * bar off the top of the page, and hearing the note being corrected is most
- * of why it is being corrected at all.
+ * of why it is being corrected at all. It is the same transport as that bar,
+ * not a rival to it, so it is here whenever the take is.
  */
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
@@ -56,10 +56,15 @@ beforeEach(() => {
   onRewind.mockReset();
 });
 
-it('is not on the rail while nothing covers the page', async () => {
+it('is on the rail whether or not a sheet is open', async () => {
+  // A control that comes and goes is one you cannot reach for without
+  // looking. The bar above the graph is the same transport, not a rival.
+  const view = await setup(transportOf('stopped'));
+  expect(view.getByTestId('rail-transport')).toBeTruthy();
+});
+
+it('is absent from a note with no take to play', async () => {
   const view = await setup(null);
-  // The bar above the graph is reachable, and two of the same control within
-  // reach at once is two answers to one question.
   expect(view.queryByTestId('rail-transport')).toBeNull();
 });
 

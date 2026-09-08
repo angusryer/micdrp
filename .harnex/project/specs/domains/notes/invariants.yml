@@ -384,6 +384,26 @@ invariants:
       person did to it now is too — the queue was already the record of a
       decision, and the cache is where a screen reads one back.
 
+  - id: INV-NOTES-228
+    description: A take is described as its owner has corrected it
+    severity: major
+    check: >
+      Everywhere a take is described — the card in the list and the analysis
+      of the open note — what is derived from its notes follows the
+      corrections made by hand: the shape drawn, the range, the key, the
+      count. What was measured against the recording itself does not, because
+      a correction says the detector misheard and the recording has not
+      changed; steadiness and the mean error still describe the reading, and
+      are put right by reading the take again (INV-NOTES-195). One derivation
+      serves every place, so the card and the open note can never disagree
+      about the same take. Verified by correcting a note above the take's
+      range and asserting the card's range and the analysis both follow it,
+      while the steadiness does not.
+
+      The card went on describing what the detector heard, so correcting a
+      note by hand changed nothing anybody could see from the list — which
+      read as the correction not having been kept at all.
+
   - id: INV-NOTES-198
     description: A tap is one beat, and the taps are the beat
     severity: critical

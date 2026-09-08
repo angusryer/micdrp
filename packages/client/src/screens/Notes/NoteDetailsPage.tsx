@@ -25,6 +25,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { OVER_THE_GRAPH, Sheet } from '../../components/Sheet';
 import { ShareTakeSection } from '../../dogfood/ShareTakeSection';
 
+import { notesSummary } from '../../analysis/summary';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { ExportSheet } from '../Results/ExportSheet';
@@ -156,8 +157,19 @@ export function NoteDetailsPage({
               rather than above them (INV-NOTES-222). A note is asked about
               by touching it on the graph, which says everything the column
               here said and more (INV-NOTES-213). */}
+          {/* The take as it has been corrected, not as it was first heard —
+              the same reading the card in the list describes, from the same
+              derivation, so the two can never disagree (INV-NOTES-228). Live
+              here rather than kept: these are being read while the
+              corrections are made. */}
           <NoteStats
-            note={note}
+            note={{
+              ...note,
+              ...notesSummary(melody),
+              // Measured against the recording, which a correction does not
+              // change: it says the detector misheard it (INV-NOTES-195).
+              inTuneRatio: note.inTuneRatio
+            }}
             grid={detail.grid}
             hasGrid={detail.hasGrid}
             chordCount={detail.chords.slots.length}

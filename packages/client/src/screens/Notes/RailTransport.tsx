@@ -8,12 +8,12 @@
  * (INV-NOTES-142, INV-NOTES-227).
  *
  * Repeated, not duplicated: the same control component, the same state, and
- * the same presses. Only one of the two is ever reachable, because this one
- * is here only while something is covering the page.
+ * the same presses, so the two can never disagree about what is sounding.
  *
- * The play control reaches out past the rail into the drawing. The rail is
- * narrower than a touch target, and the thing most often aimed at should not
- * be the thing squeezed to fit.
+ * The play control reaches out past the rail into the drawing, ringed in the
+ * rail's own colour so the rail reads as wrapping around it rather than
+ * ending behind it. The rail is narrower than a touch target, and the thing
+ * most often aimed at should not be the thing squeezed to fit.
  */
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -27,6 +27,12 @@ import type { PlaybackState } from './usePlayback';
 
 /** How far the play control overhangs the rail, in px. */
 const BUBBLE = 10;
+
+/** How much rail is drawn around it, in px. */
+const RING = 4;
+
+/** The control's own diameter, from PlaybackButton. */
+const CONTROL = 44;
 
 export interface RailTransportProps {
   state: PlaybackState;
@@ -60,7 +66,14 @@ export function RailTransport({
         <Icon name="rewind" size={18} color={colors.gray300} />
       </Pressable>
 
-      <View style={styles.bubble}>
+      <View
+        style={[
+          styles.bubble,
+          // The rail's own colour, so the column reads as swelling around
+          // the control rather than the control sitting on top of it.
+          { backgroundColor: colors.neutral100 }
+        ]}
+      >
         <PlaybackButton
           testID="rail-playback-button"
           state={state}
@@ -89,6 +102,11 @@ export default RailTransport;
 const styles = StyleSheet.create({
   group: { alignItems: 'center', gap: 4, width: '100%' },
   rewind: { paddingVertical: 4 },
-  // Out past the rail's right edge and into the drawing.
-  bubble: { transform: [{ translateX: BUBBLE }] }
+  // Out past the rail's right edge and into the drawing, with a ring of rail
+  // drawn around it.
+  bubble: {
+    transform: [{ translateX: BUBBLE }],
+    padding: RING,
+    borderRadius: (CONTROL + RING * 2) / 2
+  }
 });

@@ -28,15 +28,33 @@ export const MIN_KEY_CONFIDENCE = 0.04;
 /** estimateTempo confidence below which the tempo is too weak to assert. */
 export const MIN_TEMPO_CONFIDENCE = 0.4;
 
-/** Everything about a take that is derived from its notes and its frames. */
-export interface TakeSummary {
+/**
+ * What the notes alone say about a take.
+ *
+ * Apart from the rest because these are the measures a hand correction
+ * changes: correcting a note changes the range it reaches and the key it
+ * implies, and the card in the list and the open note both have to say so
+ * without re-reading the audio (INV-NOTES-228).
+ */
+export interface NotesSummary {
   key: string | null;
   tempoBpm: number | null;
-  inTuneRatio: number | null;
-  meanCentsError: number | null;
   noteCount: number;
   rangeLowMidi: number | null;
   rangeHighMidi: number | null;
+}
+
+/** Everything about a take that is derived from its notes and its frames. */
+export interface TakeSummary extends NotesSummary {
+  /**
+   * How the pitch was held, and how far off it was.
+   *
+   * Measured against the trace rather than the notes, so a correction by
+   * hand leaves both alone: it says the detector misheard, and the recording
+   * has not changed (INV-NOTES-228).
+   */
+  inTuneRatio: number | null;
+  meanCentsError: number | null;
 }
 
 /** Self-referential target grid: each note is the target for its own span. */
@@ -52,14 +70,8 @@ function selfTargets(notes: readonly NoteEvent[]): TargetNote[] {
  * how cleanly each pitch was held, not how close its rounded value is to
  * itself.
  */
-export function takeSummary(
-  notes: readonly NoteEvent[],
-  smoothed: readonly PitchFrame[]
-): TakeSummary {
+export function notesSummary(notes: readonly NoteEvent[]): NotesSummary {
   const hasNotes = notes.length > 0;
-  // Copied because scorePitch takes a mutable array; the caller's frames
-  // are not ours to hand on.
-  const score = scorePitch([...smoothed], selfTargets(notes));
 
   const key = detectKey(notes);
   const keyLabel =
@@ -81,10 +93,24 @@ export function takeSummary(
   return {
     key: keyLabel,
     tempoBpm,
-    inTuneRatio: hasNotes ? score.inTuneRatio : null,
-    meanCentsError: hasNotes ? score.meanCentsError : null,
     noteCount: notes.length,
     rangeLowMidi: low,
     rangeHighMidi: high
+  };
+}
+
+export function takeSummary(
+  notes: readonly NoteEvent[],
+  smoothed: readonly PitchFrame[]
+): TakeSummary {
+  const hasNotes = notes.length > 0;
+  // Copied because scorePitch takes a mutable array; the caller's frames
+  // are not ours to hand on.
+  const score = scorePitch([...smoothed], selfTargets(notes));
+
+  return {
+    ...notesSummary(notes),
+    inTuneRatio: hasNotes ? score.inTuneRatio : null,
+    meanCentsError: hasNotes ? score.meanCentsError : null
   };
 }

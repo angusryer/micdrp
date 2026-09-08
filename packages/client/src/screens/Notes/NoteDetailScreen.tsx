@@ -178,9 +178,6 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
                 onDetails={() => setShowDetails(true)}
                 width={graphWidth}
                 height={room.graphHeight}
-                // Only while something is covering the page, so the bar above
-                // and this are never both within reach (INV-NOTES-227).
-                isCovered={sheetCover > 0}
                 transport={transport}
                 selection={detail.selection}
                 onSelect={detail.setSelection}

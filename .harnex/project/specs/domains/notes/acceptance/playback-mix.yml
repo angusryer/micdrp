@@ -347,10 +347,18 @@ acceptance:
       and never smaller than a graph can be drawn in (INV-NOTES-226).
 
   - id: ACC-NOTES-241
-    title: The take can be played from the graph's edge while a sheet is open
-    given: A note detail page with a sheet covering it
+    title: The take can be played from the graph's own edge
+    given: A note detail page, with or without a sheet over it
     when: The rail's play control is pressed while the take runs
     then: >
-      The take pauses where it reached rather than returning to the top, the
-      moment is shown beneath the control, and the same controls are absent
-      once nothing covers the page (INV-NOTES-227).
+      The take pauses where it reached rather than returning to the top, and
+      the moment is shown beneath the control (INV-NOTES-227).
+
+  - id: ACC-NOTES-242
+    title: A corrected note changes what the card says about the take
+    given: A take whose highest note has been corrected upward by hand
+    when: The list is read
+    then: >
+      The card's range and shape carry the correction, and so does the open
+      note's analysis, while the steadiness measured against the recording is
+      unchanged (INV-NOTES-228).

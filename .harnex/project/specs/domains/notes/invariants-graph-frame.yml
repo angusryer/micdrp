@@ -329,18 +329,23 @@ invariants:
     description: The transport is on the graph's edge while a sheet covers the page
     severity: major
     check: >
-      While a sheet covers the page, the take can be rewound, started and
-      paused, and the moment it has reached read, from the foot of the rail
-      down the graph's left edge — the play control reaching into the drawing,
-      the rewind above it and the moment below. It is the same transport as
-      the bar above the graph, showing the same state and answering the same
-      way, and it is absent when nothing is covering the page, so only one of
-      the two is ever reachable. The moment is drawn from the value the
-      playhead is drawn from, on the UI thread, and never as state
+      The take can be rewound, started and paused, and the moment it has
+      reached read, from the foot of the rail down the graph's left edge —
+      the play control reaching out into the drawing, ringed in the rail's own
+      colour so the rail reads as wrapping around it, the rewind above it and
+      the moment below. It is there whenever the take is, not only while
+      something covers the page. It is the same transport as the bar above the
+      graph — the same control, the same state, the same presses — so the two
+      can never disagree about what is sounding. The moment is drawn from the
+      value the playhead is drawn from, on the UI thread, and never as state
       (INV-NOTES-206). Verified by asserting the rail's control pauses rather
-      than stops, that it appears only while covered, and that no render is
+      than stops, that it is present with no sheet open, and that no render is
       caused by the moment advancing.
 
       Bringing the graph up against the header (INV-NOTES-226) puts the
       playback bar off the top of the page, and hearing the note being
-      corrected is most of why it is being corrected at all.
+      corrected is most of why it is being corrected at all. It appeared only
+      while a sheet covered the page at first, so that the two were never
+      reachable at once; but the transport belongs beside the graph whether or
+      not a sheet is open, and a control that comes and goes is one you cannot
+      reach for without looking.

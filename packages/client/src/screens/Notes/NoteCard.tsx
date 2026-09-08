@@ -13,9 +13,10 @@
  * carries the take's clock, counting the position while it runs
  * (INV-NOTES-016).
  */
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
+import { correctedMelody } from '../../data/asCorrected';
 import { hasTakeAudio } from '../../data/takeAudio';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
@@ -84,6 +85,10 @@ export function NoteCard({
   // device before it is on the server, and may never reach it (INV-NOTES-186).
   const canPlay = hasTakeAudio(note) && isTakeAudible;
 
+  // The shape the singer has made of it, not the one first heard: the same
+  // reading the card's key and range are read from (INV-NOTES-228).
+  const shape = useMemo(() => correctedMelody(note), [note]);
+
   return (
     <View
       style={[
@@ -100,10 +105,10 @@ export function NoteCard({
         onPress={handleOpen}>
         <NoteCardMeta note={note} />
 
-        {note.melody.length > 0 ? (
+        {shape.length > 0 ? (
           <View style={styles.melodyWrap}>
             <MelodyView
-              notes={note.melody}
+              notes={shape}
               width={width - CARD_HORIZONTAL_INSET}
               height={48}
             />
