@@ -21,8 +21,8 @@ jest.mock('../store', () => ({
   clearAll: () => mockStore.clear()
 }));
 
-const mockList = jest.fn();
-const mockSave = jest.fn();
+const mockList = jest.fn<Promise<unknown[]>, []>();
+const mockSave = jest.fn<Promise<void>, unknown[]>();
 jest.mock('../notesRepo', () => ({
   notesRepo: {
     list: () => mockList(),
