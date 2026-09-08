@@ -14,11 +14,16 @@
  * One row per track the note actually has. A row for a track that would make
  * no sound is a control that lies (INT-NOTES-026).
  *
- * The snap toggle sits below a rule, and the options at the very foot. Those
- * are not tracks and do not sound — one decides where an edit lands
- * (INV-NOTES-143) and the other opens what governs every row above — but
- * keeping them in the same column keeps everything that governs the graph on
- * the graph's own edge (INV-NOTES-142).
+ * The snap toggle sits below a rule: it is not a track and does not sound, it
+ * decides where an edit lands (INV-NOTES-143), but keeping it in the same
+ * column keeps everything that governs the graph on the graph's own edge
+ * (INV-NOTES-142).
+ *
+ * Below everything, a rule and then room enough for a thumb: the one control
+ * that opens what governs the graph from outside it (INV-NOTES-229), the
+ * rewind, and the foot the take is played from (INV-NOTES-227). The column's
+ * colour turns right along the bottom to hold that foot, so it reads as the
+ * graph's edge continuing rather than a control dropped on the drawing.
  *
  * A muted row is drawn by its colour alone. A glyph as well was saying the
  * same thing twice in a column 38 points wide.
@@ -26,7 +31,8 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { RailTransport, type RailTransportProps } from './RailTransport';
+import { RailFoot, RAIL_FOOT_HEIGHT, type RailFootProps } from './RailFoot';
+import { RailRewind } from './RailRewind';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { Icon } from '../../components/Icon';
@@ -44,13 +50,12 @@ export interface TrackRailProps {
   /** Whether an edit lands on the grid (INV-NOTES-143). */
   isSnapping: boolean;
   onSnapping: (snap: boolean) => void;
-  /** Open everything that decides what a press sounds (INT-NOTES-021). */
-  onOptions?: () => void;
-  /**
-   * The take's transport, while a sheet has covered the bar above the graph
-   * (INV-NOTES-227). Null the rest of the time, when that bar is reachable.
-   */
-  transport?: RailTransportProps | null;
+  /** Open what governs the graph from outside it (INV-NOTES-229). */
+  onMenu?: () => void;
+  /** Back to the beginning, directly above the play control. */
+  onRewind?: () => void;
+  /** The take, played from the foot of the column (INV-NOTES-227). */
+  transport?: RailFootProps | null;
 }
 
 /** The letter a track is known by here, where there is no room for a word. */
@@ -71,7 +76,8 @@ export function TrackRail({
   onToggle,
   isSnapping,
   onSnapping,
-  onOptions,
+  onMenu,
+  onRewind,
   transport
 }: TrackRailProps): React.JSX.Element | null {
   const { colors } = useTheme();
@@ -85,7 +91,13 @@ export function TrackRail({
       testID="track-rail"
       style={[
         styles.rail,
-        { width: TRACK_RAIL_WIDTH, height, backgroundColor: colors.neutral100 }
+        {
+          width: TRACK_RAIL_WIDTH,
+          height,
+          backgroundColor: colors.neutral100,
+          // Room for the foot, which is drawn out of the flow.
+          paddingBottom: transport != null ? RAIL_FOOT_HEIGHT : 6
+        }
       ]}
     >
       {tracks.map((track) => {
@@ -129,25 +141,37 @@ export function TrackRail({
         />
       </Pressable>
 
-      {/* The foot of the column, pushed there together. The sheet at the
-          bottom holds a level and a voice for each row above, so it reads as
-          the end of the column rather than another thing in it — and the
-          transport sits over it while the bar above the graph is out of
-          reach (INV-NOTES-227). */}
-      <View style={styles.foot}>
-        {transport != null ? <RailTransport {...transport} /> : null}
-        {onOptions != null ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('notes.playbackOptions')}
-            testID="rail-options"
-            onPress={onOptions}
-            style={styles.row}
-          >
-            <Icon name="options" size={17} color={colors.gray300} />
-          </Pressable>
+      {/* Pushed to the bottom of the column, and set apart from the switches
+          above by a rule and room for a thumb: what is behind these is read
+          rather than watched, and pressing one by accident while reaching for
+          a mute is worse than reaching a little further. */}
+      <View style={styles.below}>
+        {onMenu != null ? (
+          <>
+            <View
+              style={[
+                styles.rule,
+                styles.menuRule,
+                { backgroundColor: colors.neutral500 }
+              ]}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('notes.graphMenu')}
+              testID="rail-menu"
+              onPress={onMenu}
+              hitSlop={6}
+              style={styles.row}
+            >
+              <Icon name="kebab" size={18} color={colors.gray300} />
+            </Pressable>
+          </>
         ) : null}
+
+        {onRewind != null ? <RailRewind onPress={onRewind} /> : null}
       </View>
+
+      {transport != null ? <RailFoot {...transport} /> : null}
     </View>
   );
 }
@@ -156,15 +180,26 @@ export default TrackRail;
 
 const styles = StyleSheet.create({
   // No radius on the right and no margin: it meets the drawing exactly.
+  //
+  // Raised over the drawing, because the foot reaches out past the column
+  // and the drawing is painted after it. Without this the take's transport
+  // is behind the graph and cannot be pressed at all.
   rail: {
     borderTopLeftRadius: 12,
     borderBottomLeftRadius: 12,
     paddingVertical: 6,
     alignItems: 'center',
-    gap: 2
+    gap: 2,
+    zIndex: 1,
+    elevation: 1
   },
   // Pushed to the bottom of the column, whatever is above it.
-  foot: { marginTop: 'auto', width: '100%', alignItems: 'center', gap: 6 },
+  // Room for a thumb between the switches and these: pressing one by
+  // accident while reaching for a mute is worse than reaching a bit further.
+  below: { marginTop: 'auto', width: '100%', alignItems: 'center', gap: 6 },
+  // More room above the rule than the one between the tracks and the snap
+  // toggle, because what is below it is a different kind of thing again.
+  menuRule: { marginTop: 10, marginBottom: 4 },
   row: { alignItems: 'center', paddingVertical: 6, width: '100%' },
   // What sounds, and what governs the drawing, are different questions.
   rule: { height: StyleSheet.hairlineWidth, width: '60%', marginVertical: 4 },

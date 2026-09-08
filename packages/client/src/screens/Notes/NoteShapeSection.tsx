@@ -17,7 +17,7 @@ import React, {
   useRef,
   useState
 } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { octaveLabel, pickupEndsAtMs } from 'logic';
 
@@ -29,12 +29,12 @@ import { ZoomableMelody } from '../../components/ZoomableMelody';
 import { chosenMomentMs } from './chosenMoment';
 import { PlayRangeOverlay } from '../../components/PlayRangeOverlay';
 import { useListenBack } from './useListenBack';
-import { Icon } from '../../components/Icon';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { ChordTrack } from './ChordTrack';
 import { NoteShapeControls } from './NoteShapeControls';
 import { Playhead } from './Playhead';
+import { GraphMenuSheet } from './GraphMenuSheet';
 import { TrackRail, TRACK_RAIL_WIDTH } from './TrackRail';
 import type { PlaybackState } from './usePlayback';
 import { Scrubber } from './Scrubber';
@@ -130,6 +130,9 @@ export function NoteShapeSection({
   // boolean rather than the callback itself: React drops a set that does not
   // change the value, so a pinch that stays zoomed re-renders nothing.
   const [canReset, setCanReset] = useState(false);
+  // What governs the graph from outside it, behind one control on the rail
+  // (INV-NOTES-229).
+  const [menuOpen, setMenuOpen] = useState(false);
   const resetScale = useRef<() => void>(() => {});
   const onScaleChange = useCallback(
     (state: { isDefault: boolean; reset: () => void }) => {
@@ -230,23 +233,6 @@ export function NoteShapeSection({
 
   return (
     <>
-      {onDetails != null ? (
-        <View style={styles.aboveGraph}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('notes.detailTitle')}
-            testID="open-analysis"
-            onPress={onDetails}
-            hitSlop={8}
-            style={({ pressed }) => [
-              styles.analysis,
-              { opacity: pressed ? 0.5 : 1 }
-            ]}
-          >
-            <Icon name="details" size={20} color={colors.gray300} />
-          </Pressable>
-        </View>
-      ) : null}
       <View style={[styles.card, { backgroundColor: colors.neutral50 }]}>
         {/* Beside the drawing and outside its scroll, so it is the same
             distance from every part of the take (INV-NOTES-142). */}
@@ -258,15 +244,22 @@ export function NoteShapeSection({
             onToggle={detail.listening.setAudible}
             isSnapping={detail.listening.snapToGrid}
             onSnapping={detail.listening.setSnapToGrid}
-            onOptions={onOptions}
+            onMenu={
+              onOptions != null || onDetails != null
+                ? () => setMenuOpen(true)
+                : undefined
+            }
+            onRewind={
+              transport?.rewind != null ? () => transport.rewind?.() : undefined
+            }
             transport={
               transport?.state != null
                 ? {
                     state: transport.state,
                     positionMs: transport.drawnPositionMs,
+                    durationMs: detail.note?.durationMs,
                     onPlay: () => transport.play?.(),
-                    onPause: () => transport.pause?.(),
-                    onRewind: () => transport.rewind?.()
+                    onPause: () => transport.pause?.()
                   }
                 : null
             }
@@ -430,6 +423,14 @@ export function NoteShapeSection({
       </View>
 
       {showControls ? <NoteShapeControls detail={detail} /> : null}
+
+      {/* One door, two things behind it (INV-NOTES-229). */}
+      <GraphMenuSheet
+        isOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onOptions={onOptions}
+        onDetails={onDetails}
+      />
     </>
   );
 }
@@ -443,8 +444,6 @@ const styles = StyleSheet.create({
   // they are one instrument, and a gap would read as two panels.
   // Above the drawing and hard right: it opens a reading OF the graph, so it
   // belongs to the graph without being in it.
-  aboveGraph: { alignItems: 'flex-end', paddingRight: 4 },
-  analysis: { padding: 6 },
   withRail: { flexDirection: 'row' },
   drawing: { flex: 1 },
   card: { overflow: 'hidden' },

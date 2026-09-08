@@ -38,7 +38,6 @@ import { useNeckShown } from './useNeckShown';
 import { TrackOptions } from './TrackOptions';
 import { BeatTap } from './BeatTap';
 import { SelectionSheet } from './SelectionSheet';
-import { formatDuration } from './NoteStats';
 import { PlaybackBar } from './PlaybackBar';
 import { useNoteDetail } from './useNoteDetail';
 import type { PlaybackState } from './usePlayback';
@@ -146,7 +145,6 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
         {hasTakeAudio(note) ? (
           <PlaybackBar
             resolveAudioUri={detail.resolveAudio}
-            durationLabel={formatDuration(note.durationMs)}
             accompaniment={detail.backdrop}
             voice={detail.melodyVoiceMix}
             listening={detail.listening}

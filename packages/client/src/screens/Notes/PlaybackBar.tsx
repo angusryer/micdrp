@@ -15,15 +15,13 @@
  */
 import { type SharedValue } from 'react-native-reanimated';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { Icon } from '../../components/Icon';
 import { PlaybackSheet } from './PlaybackSheet';
 import { useTheme } from '../../theme';
 import { offeredTracks } from './offeredTracks';
 import { useListening, type UseListening } from './useListening';
 import { useHapticBeat } from './useHapticBeat';
-import { PlaybackButton } from './PlaybackButton';
 import { GlyphGuideSheet } from './GlyphGuideSheet';
 import { TrackCard } from './TrackCard';
 import { IconToggle } from './IconToggle';
@@ -52,8 +50,7 @@ export interface PlaybackBarProps {
    * balance is kept with the note; absent, it lasts as long as the bar does.
    */
   listening?: UseListening;
-  /** Optional override duration label (e.g. "1:23"). */
-  durationLabel?: string;
+
   /**
    * The note's chord backdrop. Sounds with the take, or on its own when the
    * chords are what was chosen, and is silenced whenever the transport is not
@@ -144,7 +141,6 @@ export interface PlaybackBarProps {
 
 export function PlaybackBar({
   resolveAudioUri,
-  durationLabel,
   accompaniment,
   voice,
   count,
@@ -283,53 +279,21 @@ export function PlaybackBar({
 
   return (
     <View style={styles.stack}>
-      <View style={styles.container}>
-        {/* Beside play rather than behind a gesture: a wrong note is judged by
-            hearing it again, and that was costing the whole take
-            (INT-NOTES-020). */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back to the beginning"
-          onPress={() => void rewind()}
-          hitSlop={8}
-          style={({ pressed }) => [styles.rewind, { opacity: pressed ? 0.5 : 1 }]}
-        >
-          <Icon name="rewind" size={20} color={colors.gray300} />
-        </Pressable>
-        {/* A press mid-take pauses it: the playhead stays on the moment
-            reached so it can be read, and the next press carries on from
-            there (INV-NOTES-152). */}
-        <PlaybackButton
-          state={state}
-          // As the finger lands, not as it lifts. A transport should
-          // answer the press, and a press that has to survive until
-          // release is one anything cancelling a press can take away —
-          // something was taking them (INV-TPORT-004).
-          onPressIn={() => {
-            if (state === 'playing') {
-              void pause();
-            }
-          }}
-          onPlay={() => void play()}
-          onPause={() => void pause()}
-        />
-
-        {durationLabel != null ? (
-          <Text style={[styles.duration, { color: colors.gray300 }]}>
-            {durationLabel}
-          </Text>
-        ) : null}
-
-        {state === 'error' ? (
-          // What went wrong, not that something did. A take whose audio was
-          // never uploaded and one that will not decode are two different
-          // problems with two different remedies (INV-TPORT-006).
+      {/* All that is left above the graph. The transport moved to the foot of
+          the rail, where the graph is (INV-NOTES-227) — but a command the
+          engine will not take must never read as a control that did nothing,
+          and the rail is 38 points wide with no room for a sentence
+          (INV-TPORT-006). */}
+      {state === 'error' ? (
+        <View style={styles.container}>
+          {/* What went wrong, not that something did. A take whose audio was
+              never uploaded and one that will not decode are two different
+              problems with two different remedies. */}
           <Text style={[styles.error, { color: colors.error }]}>
             {problem ?? 'Playback failed'}
           </Text>
-        ) : null}
-
-      </View>
+        </View>
+      ) : null}
 
 
       <PlaybackSheet
@@ -385,16 +349,12 @@ export function PlaybackBar({
 export default PlaybackBar;
 
 const styles = StyleSheet.create({
-  rewind: { padding: 4, marginRight: 4 },
   details: { padding: 6 },
   stack: { gap: 8 },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12
-  },
-  duration: {
-    fontSize: 13
   },
   error: {
     fontSize: 12

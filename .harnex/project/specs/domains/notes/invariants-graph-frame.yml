@@ -329,23 +329,39 @@ invariants:
     description: The transport is on the graph's edge while a sheet covers the page
     severity: major
     check: >
-      The take can be rewound, started and paused, and the moment it has
-      reached read, from the foot of the rail down the graph's left edge —
-      the play control reaching out into the drawing, ringed in the rail's own
-      colour so the rail reads as wrapping around it, the rewind above it and
-      the moment below. It is there whenever the take is, not only while
-      something covers the page. It is the same transport as the bar above the
-      graph — the same control, the same state, the same presses — so the two
-      can never disagree about what is sounding. The moment is drawn from the
-      value the playhead is drawn from, on the UI thread, and never as state
-      (INV-NOTES-206). Verified by asserting the rail's control pauses rather
-      than stops, that it is present with no sheet open, and that no render is
-      caused by the moment advancing.
+      The take is played from the graph's own edge and nowhere else. The play
+      control sits at the very foot of the rail, the rewind directly above it,
+      and the moment reached beside it — how far the take has run against how
+      long it is. The rail's colour runs down the column and turns right along
+      the bottom around both, so the two read as held by the rail rather than
+      laid over the drawing. Pressing it mid-take pauses where it reached
+      rather than returning to the top (INV-NOTES-152), and the moment is
+      drawn from the value the playhead is drawn from, on the UI thread, never
+      as state (INV-NOTES-206). Verified by asserting the control pauses
+      rather than stops, that the length is said alongside the moment, and
+      that no render is caused by the moment advancing.
 
-      Bringing the graph up against the header (INV-NOTES-226) puts the
-      playback bar off the top of the page, and hearing the note being
-      corrected is most of why it is being corrected at all. It appeared only
-      while a sheet covered the page at first, so that the two were never
-      reachable at once; but the transport belongs beside the graph whether or
-      not a sheet is open, and a control that comes and goes is one you cannot
-      reach for without looking.
+      It began as a repeat of the bar above the graph, shown only while a
+      sheet covered that bar. Two controls for one transport is two things to
+      keep in step for no gain, and the bar was the one out of reach: bringing
+      the graph up against the header (INV-NOTES-226) scrolls it away, and
+      hearing the note being corrected is most of why it is being corrected at
+      all. So the transport is here, and the bar above the graph is gone —
+      what is left of it says only what went wrong when a take will not play
+      (INV-TPORT-006).
+
+  - id: INV-NOTES-229
+    description: One control opens everything that governs the graph
+    severity: minor
+    check: >
+      What governs the graph without being part of it — the levels and voices
+      each track sounds at, and the take's own analysis — is reached through
+      one control on the rail, set apart from the switches above it by a rule
+      and room enough for a thumb. Nothing else on the graph opens either.
+      Verified by asserting the control offers both, that each opens what it
+      names, and that neither has a second way in.
+
+      They were two glyphs in two places — one at the foot of the rail, one
+      above the drawing — and neither said what it was. Two rarely-pressed
+      doors on the edges of the thing being worked on cost more attention than
+      what is behind them is worth.

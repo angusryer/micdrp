@@ -13,9 +13,7 @@
  * The engine's clock is the double's `nowMs`, so "twelve seconds in" is a
  * return value rather than a wait.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import React from 'react';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import type { SharedValue } from 'react-native-reanimated';
 
 jest.mock('../../../specs/NativeSynth', () => ({
@@ -28,9 +26,6 @@ jest.mock('../../../specs/NativeSynth', () => ({
 
 import { resetSynthDouble, synthDouble as synth } from '../__fixtures__/synthDouble';
 
-import { I18nProvider } from '../../../i18n';
-import { ThemeProvider } from '../../../theme';
-import { PlaybackBar } from '../PlaybackBar';
 import { backdrop, renderPlaybackBar } from '../__fixtures__/renderPlaybackBar';
 import { SCHEDULE_LEAD_MS } from '../../../audio/audioClock';
 
@@ -55,24 +50,27 @@ interface Transport {
   drawnPositionMs: SharedValue<number>;
 }
 
-/** The bar, with the transport it reports kept for reading afterwards. */
+/**
+ * The transport as the screen mounts it, with what it reports kept for
+ * reading afterwards.
+ *
+ * Through the shared fixture, because the control that presses it is no
+ * longer part of the bar: it sits at the foot of the rail down the graph's
+ * edge, and a test pressing anything else would be pressing something the
+ * app does not ship (INV-NOTES-227).
+ */
 const renderWithTransport = async () => {
   const seen: { current: Transport | null } = { current: null };
-  await waitFor(() =>
-    render(
-      <GestureHandlerRootView>
-        <I18nProvider>
-          <ThemeProvider>
-            <PlaybackBar
-              resolveAudioUri={() => Promise.resolve(REMOTE)}
-              onTransport={(transport) => {
-                seen.current = transport;
-              }}
-            />
-          </ThemeProvider>
-        </I18nProvider>
-      </GestureHandlerRootView>
-    )
+  await renderPlaybackBar(
+    () => Promise.resolve(REMOTE),
+    undefined,
+    undefined,
+    undefined,
+    {
+      onTransport: (transport) => {
+        seen.current = transport;
+      }
+    }
   );
   return seen;
 };

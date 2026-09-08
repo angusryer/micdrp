@@ -1,6 +1,12 @@
 /**
- * Rendering a PlaybackBar under the providers it expects, plus a stand-in for
- * the note's chord backdrop.
+ * Rendering the take's transport under the providers it expects, plus a
+ * stand-in for the note's chord backdrop.
+ *
+ * The bar and the control are two components now: PlaybackBar owns the mix
+ * and publishes the transport, and the control that presses it sits at the
+ * foot of the rail down the graph's edge (INV-NOTES-227). This mounts both,
+ * wired the way the screen wires them, so a suite that presses Play is still
+ * pressing the control the app ships.
  *
  * `await waitFor(() => render(...))` before touching any query, matching
  * renderNoteCard.tsx — a bare render leaves `screen` unbound here.
@@ -16,6 +22,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { I18nProvider } from '../../../i18n';
 import { ThemeProvider } from '../../../theme';
 import { PlaybackBar } from '../PlaybackBar';
+import { RailFoot } from '../RailFoot';
+import { RailRewind } from '../RailRewind';
 
 /**
  * A track that reports a length, so the bar offers a toggle for it. A length
@@ -38,6 +46,52 @@ export const melodyVoice = backdrop;
  * using this fixture is about which tracks sound rather than about how the
  * sheet opens — so opening it here keeps those tests about their subject.
  */
+/**
+ * The bar and the control it publishes, as the screen mounts them.
+ *
+ * The rail's foot is the only play control there is, so a suite about what a
+ * press sounds has to have one on the screen (INV-NOTES-227).
+ */
+type Published = Parameters<
+  NonNullable<React.ComponentProps<typeof PlaybackBar>['onTransport']>
+>[0];
+
+function Transport({
+  onTransport,
+  ...bar
+}: React.ComponentProps<typeof PlaybackBar>): React.JSX.Element {
+  const [published, setPublished] = React.useState<Published | null>(null);
+
+  // Held stable, and the caller's own reached through a ref. A fresh handler
+  // each render is a dependency of the bar's publishing effect, so it would
+  // publish, re-render, and publish again without end — the very loop
+  // INV-TPORT-002 is about, and it takes the test runner out of memory
+  // rather than presenting as anything readable.
+  const theirs = React.useRef(onTransport);
+  theirs.current = onTransport;
+  const publish = React.useCallback((t: Published) => {
+    setPublished(t);
+    theirs.current?.(t);
+  }, []);
+
+  return (
+    <>
+      <PlaybackBar {...bar} onTransport={publish} />
+      {published != null ? (
+        <>
+          <RailRewind onPress={published.rewind} />
+          <RailFoot
+            state={published.state}
+            positionMs={published.drawnPositionMs}
+            onPlay={published.play}
+            onPause={published.pause}
+          />
+        </>
+      ) : null}
+    </>
+  );
+}
+
 export const renderPlaybackBar = async (
   resolveAudioUri: () => Promise<string | null>,
   accompaniment?: ReturnType<typeof backdrop>,
@@ -55,7 +109,7 @@ export const renderPlaybackBar = async (
       <GestureHandlerRootView>
         <I18nProvider>
         <ThemeProvider>
-          <PlaybackBar
+          <Transport
             resolveAudioUri={resolveAudioUri}
             accompaniment={accompaniment}
             voice={voice}

@@ -118,15 +118,13 @@ views:
       - Controls on each chord slot to nudge it, reshape it, and revert
         it, none of which claim a sideways drag
       - A revert-all control, shown only once something has been edited
-      - A playback bar, absent when the note has no stored audio, whose
-        play control sounds the chord backdrop under the take as well as
-        the take itself, and silences it again on stop
-      - That play control drawn as a round button carrying a triangle
-        while it will start the take and a pair of upright bars while it
-        is playing, with no word on it
-      - A control at the far end of that bar which opens the playback
-        options, drawn as a sliders glyph and carrying no word, named to
-        a screen reader by what it opens
+      - A play control which sounds the chord backdrop under the take as
+        well as the take itself and silences it again on stop, drawn as a
+        round button carrying a triangle while it will start the take and
+        a pair of upright bars while it is playing, with no word on it,
+        and absent when the note has no stored audio
+      - A line saying what went wrong when a take will not play, and
+        nothing else above the graph
       - One toggle per track in the playback options — the take, the
         chords, the melody read from the take — each turned on and off
         on its own, with the take and the chords on and the melody off
@@ -147,8 +145,11 @@ views:
         of the page and leaving the graph visible above it — the page
         scrolled so the graph's top meets the header, and the graph sized
         to the room between them
-      - The transport repeated at the foot of the rail down the graph's
-        left edge — rewind above, the play control below it reaching out
-        into the drawing and ringed in the rail's own colour so the rail
-        reads as wrapping around it, and the moment reached beneath that
+      - The take's transport at the foot of the rail down the graph's left
+        edge, and nowhere else — the play control at the very bottom, the
+        rewind directly above it, the moment reached beside it against the
+        take's length, and the rail's colour turning right along the bottom
+        to hold both
+      - One control above those, set off by a rule, opening what each track
+        sounds at and the take's analysis
       - An export control offering the melody as a MIDI file

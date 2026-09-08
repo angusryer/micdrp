@@ -171,6 +171,12 @@
     "signedOutSubtitle": "Your notes are safe on the server. Your session just ran out.",
     "snapToGrid": "Snap edits to the grid",
     "playbackOptions": "What to play, what to show",
+    "graphMenu": "What governs this graph",
+    "rewind": "Back to the beginning",
+    "graphMenuOptions": "Levels and voices",
+    "graphMenuOptionsWhy": "What each track sounds at, and in what voice",
+    "graphMenuAnalysis": "Analysis",
+    "graphMenuAnalysisWhy": "What was measured, and how it was read",
     "harmonyAsk": "Tap the beat and mark where the bars begin, then read the harmony from it.",
     "harmonyAskAction": "Read the chords"
   },

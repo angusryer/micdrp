@@ -17,15 +17,25 @@ import Animated, {
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
 /** Minutes and seconds, on the UI thread. */
-export function clockLabel(ms: number): string {
+export function clockLabel(ms: number, ofMs?: number): string {
   'worklet';
-  const whole = Math.max(0, Math.floor(ms / 1000));
-  const seconds = whole % 60;
-  return `${Math.floor(whole / 60)}:${seconds < 10 ? '0' : ''}${seconds}`;
+  const said = (at: number): string => {
+    const whole = Math.max(0, Math.floor(at / 1000));
+    const seconds = whole % 60;
+    return `${Math.floor(whole / 60)}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
+  // Against the length where there is one: how far in you are means little
+  // without how far there is to go, and the take's length is said nowhere
+  // else now (INV-NOTES-227).
+  return ofMs != null && ofMs > 0
+    ? `${said(Math.min(ms, ofMs))} / ${said(ofMs)}`
+    : said(ms);
 }
 
 export interface RunClockProps {
   positionMs: SharedValue<number>;
+  /** How long the take runs, so the moment is read against something. */
+  ofMs?: number;
   color: string;
   style?: TextStyle;
   testID?: string;
@@ -33,11 +43,12 @@ export interface RunClockProps {
 
 export function RunClock({
   positionMs,
+  ofMs,
   color,
   style,
   testID
 }: RunClockProps): React.JSX.Element {
-  const text = useDerivedValue(() => clockLabel(positionMs.value), []);
+  const text = useDerivedValue(() => clockLabel(positionMs.value, ofMs), [ofMs]);
   const animatedProps = useAnimatedProps(() => ({
     text: text.value,
     defaultValue: text.value

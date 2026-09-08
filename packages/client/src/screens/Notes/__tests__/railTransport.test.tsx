@@ -1,10 +1,12 @@
 /**
- * ACC-NOTES-241 / INV-NOTES-227 — the transport on the graph's own edge.
+ * ACC-NOTES-241, ACC-NOTES-243 / INV-NOTES-227, INV-NOTES-229 — the foot of
+ * the rail: where the take is played from, and the one door to what governs
+ * the graph from outside it.
  *
- * Bringing the graph up against the header (INV-NOTES-226) puts the playback
- * bar off the top of the page, and hearing the note being corrected is most
- * of why it is being corrected at all. It is the same transport as that bar,
- * not a rival to it, so it is here whenever the take is.
+ * The transport began as a repeat of the bar above the graph. Two controls
+ * for one transport is two things to keep in step for no gain, and the bar
+ * was the one out of reach — bringing the graph up against the header
+ * (INV-NOTES-226) scrolls it away.
  */
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
@@ -13,7 +15,7 @@ import type { SharedValue } from 'react-native-reanimated';
 import { ThemeProvider } from '../../../theme';
 import { TrackRail } from '../TrackRail';
 import { DEFAULT_MIX } from '../playbackTracks';
-import type { RailTransportProps } from '../RailTransport';
+import type { RailFootProps } from '../RailFoot';
 
 /** As much of a shared value as a clock reads. */
 const held = (value: number) => ({ value }) as SharedValue<number>;
@@ -21,18 +23,17 @@ const held = (value: number) => ({ value }) as SharedValue<number>;
 const onPlay = jest.fn();
 const onPause = jest.fn();
 const onRewind = jest.fn();
+const onMenu = jest.fn();
 
-const transportOf = (
-  state: RailTransportProps['state']
-): RailTransportProps => ({
+const transportOf = (state: RailFootProps['state']): RailFootProps => ({
   state,
   positionMs: held(0),
+  durationMs: 26_000,
   onPlay,
-  onPause,
-  onRewind
+  onPause
 });
 
-const setup = async (transport: RailTransportProps | null) =>
+const setup = async (transport: RailFootProps | null) =>
   waitFor(() =>
     render(
       <ThemeProvider>
@@ -43,7 +44,8 @@ const setup = async (transport: RailTransportProps | null) =>
           onToggle={jest.fn()}
           isSnapping
           onSnapping={jest.fn()}
-          onOptions={jest.fn()}
+          onMenu={onMenu}
+          onRewind={transport != null ? onRewind : undefined}
           transport={transport}
         />
       </ThemeProvider>
@@ -54,18 +56,17 @@ beforeEach(() => {
   onPlay.mockReset();
   onPause.mockReset();
   onRewind.mockReset();
+  onMenu.mockReset();
 });
 
-it('is on the rail whether or not a sheet is open', async () => {
-  // A control that comes and goes is one you cannot reach for without
-  // looking. The bar above the graph is the same transport, not a rival.
+it('carries the transport at the foot of the column', async () => {
   const view = await setup(transportOf('stopped'));
-  expect(view.getByTestId('rail-transport')).toBeTruthy();
+  expect(view.getByTestId('rail-foot')).toBeTruthy();
 });
 
 it('is absent from a note with no take to play', async () => {
   const view = await setup(null);
-  expect(view.queryByTestId('rail-transport')).toBeNull();
+  expect(view.queryByTestId('rail-foot')).toBeNull();
 });
 
 it('ACC-NOTES-241: pauses the take where it reached rather than stopping it', async () => {
@@ -81,13 +82,21 @@ it('starts the take when it is not running', async () => {
   expect(onPlay).toHaveBeenCalled();
 });
 
-it('goes back to the beginning', async () => {
+it('goes back to the beginning, from directly above the play control', async () => {
   const view = await setup(transportOf('playing'));
   await fireEvent.press(view.getByTestId('rail-rewind'));
   expect(onRewind).toHaveBeenCalled();
 });
 
-it('shows the moment reached under the control', async () => {
+it('shows the moment reached beside the control', async () => {
   const view = await setup(transportOf('playing'));
   expect(view.getByTestId('rail-clock')).toBeTruthy();
+});
+
+it('ACC-NOTES-243: opens what governs the graph from one control', async () => {
+  const view = await setup(transportOf('stopped'));
+  await fireEvent.press(view.getByTestId('rail-menu'));
+  expect(onMenu).toHaveBeenCalled();
+  // And the two doors it replaced are gone from the rail itself.
+  expect(view.queryByTestId('rail-options')).toBeNull();
 });
