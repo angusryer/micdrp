@@ -1,33 +1,47 @@
 /**
  * ACC-NOTES-243 / INV-NOTES-229 — one control opens everything that governs
- * the graph.
+ * the graph, and it opens out of the rail rather than up from the bottom of
+ * the screen.
  *
- * They were two glyphs in two places — one at the foot of the rail, one above
- * the drawing — and neither said what it was.
+ * What it offers belongs to the graph. A sheet rising over the page says the
+ * opposite: it covers the thing being worked on, and it is the gesture
+ * already spoken for by the analysis and the selection.
  */
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
+import { I18nProvider } from '../../../i18n';
 import { ThemeProvider } from '../../../theme';
-import { GraphMenuSheet } from '../GraphMenuSheet';
+import { GraphMenu } from '../GraphMenu';
+import { TRACK_RAIL_WIDTH } from '../TrackRail';
 
 const onClose = jest.fn();
 const onOptions = jest.fn();
 const onDetails = jest.fn();
 
-const setup = async () =>
+const setup = async (isOpen = true) =>
   waitFor(() =>
     render(
-      <ThemeProvider>
-        <GraphMenuSheet
-          isOpen
-          onClose={onClose}
-          onOptions={onOptions}
-          onDetails={onDetails}
-        />
-      </ThemeProvider>
+      <I18nProvider>
+        <ThemeProvider>
+          <GraphMenu
+            isOpen={isOpen}
+            onClose={onClose}
+            fromX={TRACK_RAIL_WIDTH}
+            fromBottom={100}
+            onOptions={onOptions}
+            onDetails={onDetails}
+          />
+        </ThemeProvider>
+      </I18nProvider>
     )
   );
+
+/** The panel's flattened style, whichever way it was composed. */
+const shapeOf = (style: unknown): Record<string, unknown> =>
+  Array.isArray(style)
+    ? (Object.assign({}, ...style.flat()) as Record<string, unknown>)
+    : (style as Record<string, unknown>);
 
 beforeEach(() => {
   onClose.mockReset();
@@ -39,8 +53,6 @@ it('ACC-NOTES-243: offers what each track sounds at', async () => {
   const view = await setup();
   await fireEvent.press(view.getByTestId('menu-options'));
   expect(onOptions).toHaveBeenCalled();
-  // Closed on the way: both of these are sheets, and one raised over another
-  // leaves the first to be dismissed twice.
   expect(onClose).toHaveBeenCalled();
 });
 
@@ -51,10 +63,26 @@ it('ACC-NOTES-243: offers the take’s analysis', async () => {
   expect(onClose).toHaveBeenCalled();
 });
 
-it('says what each one is, rather than drawing a glyph for it', async () => {
+it('comes out of the rail, level with the control that opened it', async () => {
   const view = await setup();
-  // These are read once and then not thought about again, which is what
-  // words are for and glyphs are not (INV-NOTES-086).
-  expect(view.getByText('Levels and voices')).toBeTruthy();
-  expect(view.getByText('Analysis')).toBeTruthy();
+  const panel = shapeOf(view.getByTestId('graph-menu').props.style);
+  // Against the rail's edge rather than over it, and at the height of the
+  // control rather than near it.
+  expect(panel.left).toBe(TRACK_RAIL_WIDTH);
+  expect(panel.bottom).toBe(100);
+  expect(panel.position).toBe('absolute');
+});
+
+it('closes on a touch anywhere else', async () => {
+  const view = await setup();
+  await fireEvent.press(view.getByTestId('menu-scrim'));
+  expect(onClose).toHaveBeenCalled();
+});
+
+it('is not in the way while it is closed', async () => {
+  const view = await setup(false);
+  // Not merely invisible: a scrim over the graph would swallow every touch
+  // meant for the notes under it.
+  expect(view.queryByTestId('graph-menu')).toBeNull();
+  expect(view.queryByTestId('menu-scrim')).toBeNull();
 });

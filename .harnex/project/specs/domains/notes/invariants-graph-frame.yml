@@ -357,9 +357,17 @@ invariants:
       What governs the graph without being part of it — the levels and voices
       each track sounds at, and the take's own analysis — is reached through
       one control on the rail, set apart from the switches above it by a rule
-      and room enough for a thumb. Nothing else on the graph opens either.
-      Verified by asserting the control offers both, that each opens what it
-      names, and that neither has a second way in.
+      and room enough for a thumb. It opens out of the rail itself, rightward
+      across the graph, level with the control that opened it, and closes on
+      a touch anywhere else. Nothing else on the graph opens either. Verified
+      by asserting the control offers both, that each opens what it names,
+      that a touch outside closes it, and that neither has a second way in.
+
+      Out of the rail rather than up from the bottom of the screen: what it
+      offers belongs to the graph, and a sheet rising over the page says the
+      opposite — it covers the thing being worked on, and it is the same
+      gesture the analysis and the selection already use for things that are
+      about the take rather than about the picture of it.
 
       They were two glyphs in two places — one at the foot of the rail, one
       above the drawing — and neither said what it was. Two rarely-pressed

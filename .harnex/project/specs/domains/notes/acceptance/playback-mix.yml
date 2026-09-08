@@ -361,8 +361,9 @@ acceptance:
     when: The control at the foot of the rail's switches is pressed
     then: >
       Both what each track sounds at and the take's analysis are offered,
-      each opening what it names, and neither is reachable any other way
-      (INV-NOTES-229).
+      opening out of the rail across the graph rather than up from the bottom
+      of the screen, each opening what it names, closing on a touch anywhere
+      else, and neither reachable any other way (INV-NOTES-229).
 
   - id: ACC-NOTES-242
     title: A corrected note changes what the card says about the take

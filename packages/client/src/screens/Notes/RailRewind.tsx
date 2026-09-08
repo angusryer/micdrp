@@ -48,7 +48,8 @@ export function RailRewind({ onPress }: RailRewindProps): React.JSX.Element {
 export default RailRewind;
 
 /** Comfortably inside the rail, and clear of the control below it. */
-const SIZE = 30;
+export const RAIL_REWIND_SIZE = 30;
+const SIZE = RAIL_REWIND_SIZE;
 
 const styles = StyleSheet.create({
   ring: {

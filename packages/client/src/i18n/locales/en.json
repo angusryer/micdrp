@@ -171,6 +171,7 @@
     "snapToGrid": "Snap edits to the grid",
     "playbackOptions": "What to play, what to show",
     "graphMenu": "What governs this graph",
+    "graphMenuClose": "Close this menu",
     "rewind": "Back to the beginning",
     "instrumentsSoon": "More instruments coming",
     "instrumentsSoonWhy": "A piano, and whatever else this line is worth hearing on",

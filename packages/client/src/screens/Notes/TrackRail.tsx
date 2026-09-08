@@ -32,7 +32,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { RailFoot, RAIL_FOOT_HEIGHT, type RailFootProps } from './RailFoot';
-import { RailRewind } from './RailRewind';
+import { RailRewind, RAIL_REWIND_SIZE } from './RailRewind';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { Icon } from '../../components/Icon';
@@ -40,6 +40,15 @@ import { TRACK_TITLES, type PlaybackMix, type TrackName } from './playbackTracks
 
 /** How wide the rail is. Enough for a thumb, and no more than the graph can spare. */
 export const TRACK_RAIL_WIDTH = 38;
+
+/**
+ * How far up from the foot of the graph the menu control sits, in px.
+ *
+ * Read from the things actually stacked under it — the transport's foot, the
+ * rewind, and the gaps around the rule between them — so what opens out of
+ * that control comes out level with it rather than near it (INV-NOTES-229).
+ */
+export const RAIL_MENU_BOTTOM = RAIL_FOOT_HEIGHT + RAIL_REWIND_SIZE + 22;
 
 export interface TrackRailProps {
   /** Which tracks this note has, in the order they are drawn. */

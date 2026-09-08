@@ -34,8 +34,12 @@ import { useTranslation } from '../../i18n';
 import { ChordTrack } from './ChordTrack';
 import { NoteShapeControls } from './NoteShapeControls';
 import { Playhead } from './Playhead';
-import { GraphMenuSheet } from './GraphMenuSheet';
-import { TrackRail, TRACK_RAIL_WIDTH } from './TrackRail';
+import { GraphMenu } from './GraphMenu';
+import {
+  TrackRail,
+  RAIL_MENU_BOTTOM,
+  TRACK_RAIL_WIDTH
+} from './TrackRail';
 import type { PlaybackState } from './usePlayback';
 import { Scrubber } from './Scrubber';
 import type { useNoteDetail } from './useNoteDetail';
@@ -393,6 +397,17 @@ export function NoteShapeSection({
         )}
           </View>
         </View>
+        {/* One door, two things behind it, opening out of the rail it sits on
+            (INV-NOTES-229). */}
+        <GraphMenu
+          isOpen={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          fromX={detail.railTracks.length > 0 ? TRACK_RAIL_WIDTH : 0}
+          fromBottom={RAIL_MENU_BOTTOM}
+          onOptions={onOptions}
+          onDetails={onDetails}
+        />
+
         {shifted != null ? (
           <View
             style={[styles.octaveBadge, { backgroundColor: colors.neutral100 }]}
@@ -423,14 +438,6 @@ export function NoteShapeSection({
       </View>
 
       {showControls ? <NoteShapeControls detail={detail} /> : null}
-
-      {/* One door, two things behind it (INV-NOTES-229). */}
-      <GraphMenuSheet
-        isOpen={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        onOptions={onOptions}
-        onDetails={onDetails}
-      />
     </>
   );
 }
