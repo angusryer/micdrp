@@ -26,6 +26,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { RailTransport, type RailTransportProps } from './RailTransport';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { Icon } from '../../components/Icon';
@@ -45,6 +46,11 @@ export interface TrackRailProps {
   onSnapping: (snap: boolean) => void;
   /** Open everything that decides what a press sounds (INT-NOTES-021). */
   onOptions?: () => void;
+  /**
+   * The take's transport, while a sheet has covered the bar above the graph
+   * (INV-NOTES-227). Null the rest of the time, when that bar is reachable.
+   */
+  transport?: RailTransportProps | null;
 }
 
 /** The letter a track is known by here, where there is no room for a word. */
@@ -65,7 +71,8 @@ export function TrackRail({
   onToggle,
   isSnapping,
   onSnapping,
-  onOptions
+  onOptions,
+  transport
 }: TrackRailProps): React.JSX.Element | null {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -122,20 +129,25 @@ export function TrackRail({
         />
       </Pressable>
 
-      {/* At the foot, below everything it governs: the sheet holds a level
-          and a voice for each row above, so it reads as the end of the
-          column rather than another thing in it. */}
-      {onOptions != null ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('notes.playbackOptions')}
-          testID="rail-options"
-          onPress={onOptions}
-          style={[styles.row, styles.foot]}
-        >
-          <Icon name="options" size={17} color={colors.gray300} />
-        </Pressable>
-      ) : null}
+      {/* The foot of the column, pushed there together. The sheet at the
+          bottom holds a level and a voice for each row above, so it reads as
+          the end of the column rather than another thing in it — and the
+          transport sits over it while the bar above the graph is out of
+          reach (INV-NOTES-227). */}
+      <View style={styles.foot}>
+        {transport != null ? <RailTransport {...transport} /> : null}
+        {onOptions != null ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('notes.playbackOptions')}
+            testID="rail-options"
+            onPress={onOptions}
+            style={styles.row}
+          >
+            <Icon name="options" size={17} color={colors.gray300} />
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -152,7 +164,7 @@ const styles = StyleSheet.create({
     gap: 2
   },
   // Pushed to the bottom of the column, whatever is above it.
-  foot: { marginTop: 'auto' },
+  foot: { marginTop: 'auto', width: '100%', alignItems: 'center', gap: 6 },
   row: { alignItems: 'center', paddingVertical: 6, width: '100%' },
   // What sounds, and what governs the drawing, are different questions.
   rule: { height: StyleSheet.hairlineWidth, width: '60%', marginVertical: 4 },

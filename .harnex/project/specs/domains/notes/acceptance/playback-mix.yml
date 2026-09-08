@@ -336,3 +336,21 @@ acceptance:
       The take plays from where the head is, and the stretch marked by the
       retiming sounds once when it was marked rather than again on every
       redraw (INV-NOTES-225, INV-NOTES-178).
+
+  - id: ACC-NOTES-240
+    title: Choosing a note brings the graph above the sheet
+    given: A note detail page with the graph at its usual size
+    when: A note is chosen and the sheet describing it opens
+    then: >
+      The page is scrolled to the graph and the graph is sized to the room
+      between the header and the top of the sheet, never larger than it was
+      and never smaller than a graph can be drawn in (INV-NOTES-226).
+
+  - id: ACC-NOTES-241
+    title: The take can be played from the graph's edge while a sheet is open
+    given: A note detail page with a sheet covering it
+    when: The rail's play control is pressed while the take runs
+    then: >
+      The take pauses where it reached rather than returning to the top, the
+      moment is shown beneath the control, and the same controls are absent
+      once nothing covers the page (INV-NOTES-227).

@@ -36,6 +36,7 @@ import { ChordTrack } from './ChordTrack';
 import { NoteShapeControls } from './NoteShapeControls';
 import { Playhead } from './Playhead';
 import { TrackRail, TRACK_RAIL_WIDTH } from './TrackRail';
+import type { PlaybackState } from './usePlayback';
 import { Scrubber } from './Scrubber';
 import type { useNoteDetail } from './useNoteDetail';
 import type { Hit } from 'logic';
@@ -101,7 +102,19 @@ export interface NoteShapeSectionProps {
     isPlaying?: boolean;
     play?: () => void;
     stop?: () => void;
+    /** What the rail's copy of the transport draws and presses. */
+    state?: PlaybackState;
+    pause?: () => void;
+    rewind?: () => void;
   } | null;
+  /**
+   * Whether a sheet is over the page.
+   *
+   * The rail carries the transport only then: the bar above the graph has
+   * gone off the top by that point, and two of the same control within reach
+   * at once is two answers to one question (INV-NOTES-227).
+   */
+  isCovered?: boolean;
 }
 
 export function NoteShapeSection({
@@ -115,7 +128,8 @@ export function NoteShapeSection({
   flashing,
   onOptions,
   onDetails,
-  transport
+  transport,
+  isCovered = false
 }: NoteShapeSectionProps): React.JSX.Element {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -254,6 +268,17 @@ export function NoteShapeSection({
             isSnapping={detail.listening.snapToGrid}
             onSnapping={detail.listening.setSnapToGrid}
             onOptions={onOptions}
+            transport={
+              isCovered && transport?.state != null
+                ? {
+                    state: transport.state,
+                    positionMs: transport.drawnPositionMs,
+                    onPlay: () => transport.play?.(),
+                    onPause: () => transport.pause?.(),
+                    onRewind: () => transport.rewind?.()
+                  }
+                : null
+            }
           />
           <View style={styles.drawing}>
         {/* A beat is a fixed width here and the take scrolls past the screen,

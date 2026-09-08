@@ -304,3 +304,43 @@ invariants:
       that it was a drum. Confidence is a fact about the reading, not about the
       sound, and expressing it as loudness would draw a softly-struck hit the
       app is certain of more weakly than a loud one it is guessing at.
+
+  - id: INV-NOTES-226
+    description: A sheet over the graph leaves the whole graph above it
+    severity: major
+    check: >
+      Opening a sheet over the note brings the page to the graph — its top
+      against the header — and sizes the graph to the room left between the
+      header and the top of the sheet, down to the least a graph can be drawn
+      in. It never grows past the share it has when nothing covers it, and
+      the room it takes goes back when the sheet does. Verified by asserting
+      the height chosen for a covered page fits above the sheet, that it is
+      never larger than the uncovered share, that it stops at the minimum,
+      and that the page is scrolled to the graph once per opening.
+
+      Choosing a note opens a sheet describing it, and the note being
+      described was then behind that sheet — so the edit had to be made
+      blind, or the page scrolled by hand first, every time. The sheet is
+      undimmed precisely so the graph can be watched while it is used
+      (INV-NOTES-078); leaving the graph underneath it makes that promise
+      only on paper.
+
+  - id: INV-NOTES-227
+    description: The transport is on the graph's edge while a sheet covers the page
+    severity: major
+    check: >
+      While a sheet covers the page, the take can be rewound, started and
+      paused, and the moment it has reached read, from the foot of the rail
+      down the graph's left edge — the play control reaching into the drawing,
+      the rewind above it and the moment below. It is the same transport as
+      the bar above the graph, showing the same state and answering the same
+      way, and it is absent when nothing is covering the page, so only one of
+      the two is ever reachable. The moment is drawn from the value the
+      playhead is drawn from, on the UI thread, and never as state
+      (INV-NOTES-206). Verified by asserting the rail's control pauses rather
+      than stops, that it appears only while covered, and that no render is
+      caused by the moment advancing.
+
+      Bringing the graph up against the header (INV-NOTES-226) puts the
+      playback bar off the top of the page, and hearing the note being
+      corrected is most of why it is being corrected at all.

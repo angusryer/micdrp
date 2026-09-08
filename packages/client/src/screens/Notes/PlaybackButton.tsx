@@ -32,6 +32,11 @@ const GLYPH = 20;
 export interface PlaybackButtonProps {
   state: PlaybackState;
   /**
+   * Which of them this is. Two are on the page at once — the bar's and the
+   * rail's — and a name that named both would name neither (INV-NOTES-227).
+   */
+  testID?: string;
+  /**
    * Answered as the finger lands (INV-TPORT-004). A press that has to
    * survive until release is one anything cancelling a press can take
    * away, and something was.
@@ -48,6 +53,7 @@ export interface PlaybackButtonProps {
 
 export function PlaybackButton({
   state,
+  testID = 'playback-button',
   onPressIn,
   onPlay,
   onPause
@@ -73,7 +79,7 @@ export function PlaybackButton({
       // here because a press that does complete must not be ignored, and
       // pausing an already-paused take is a no-op.
       onPress={isPlaying ? onPause : onPlay}
-      testID="playback-button"
+      testID={testID}
       style={[
         styles.button,
         { backgroundColor: isPlaying ? colors.primary300 : colors.primary500 }

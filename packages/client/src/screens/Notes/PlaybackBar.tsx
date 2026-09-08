@@ -38,6 +38,7 @@ import {
 import { usePlaybackMix, type MixAccompaniment } from './usePlaybackMix';
 
 export type { PlaybackState } from './usePlayback';
+import type { PlaybackState } from './usePlayback';
 export type { PlaybackMix };
 
 export interface PlaybackBarProps {
@@ -130,6 +131,14 @@ export interface PlaybackBarProps {
     /** Start the take, so a layer can be sung against it (INT-NOTES-025). */
     play: () => void;
     stop: () => void;
+    /**
+     * What the rail's copy of this control needs to be the same control
+     * rather than a second one: the state it draws, and the two presses
+     * that are not stop (INV-NOTES-227).
+     */
+    state: PlaybackState;
+    pause: () => void;
+    rewind: () => void;
   }) => void;
 }
 
@@ -244,7 +253,13 @@ export function PlaybackBar({
         grabHead,
         dropHead,
         play: () => void play(),
-        stop: () => void stop()
+        stop: () => void stop(),
+        // What the rail's copy of this needs to be the same control rather
+        // than a second one: the state it draws, and the two presses that
+        // are not stop (INV-NOTES-227).
+        state,
+        pause: () => void pause(),
+        rewind: () => void rewind()
       }),
     // Deliberately without `positionMs`. It changes twice a second while a
     // take runs, and publishing it re-rendered the whole screen above this
@@ -252,7 +267,18 @@ export function PlaybackBar({
     // so the JS thread never went idle and a press had nowhere to be
     // handled (INV-NOTES-206). The moment reaches the displays as a shared
     // value the UI thread advances instead.
-    [onTransport, drawnPositionMs, state, cueTo, grabHead, dropHead, play, stop]
+    [
+      onTransport,
+      drawnPositionMs,
+      state,
+      cueTo,
+      grabHead,
+      dropHead,
+      play,
+      pause,
+      rewind,
+      stop
+    ]
   );
 
   return (

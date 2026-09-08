@@ -41,6 +41,8 @@ import { SelectionSheet } from './SelectionSheet';
 import { formatDuration } from './NoteStats';
 import { PlaybackBar } from './PlaybackBar';
 import { useNoteDetail } from './useNoteDetail';
+import type { PlaybackState } from './usePlayback';
+import { useGraphRoom } from './useGraphRoom';
 
 /** Side padding of the detail scroll content (keep in sync with styles.content). */
 const CONTENT_PADDING = 20;
@@ -53,9 +55,6 @@ const CONTENT_PADDING = 20;
  * the screen on a large one and most of it on a small one (INV-NOTES-106).
  */
 const GRAPH_SHARE_OF_SCREEN = 0.5;
-
-/** Below this it stops being a graph, whatever the screen is. */
-const MIN_GRAPH_CARD = 204;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NoteDetail'>;
 
@@ -77,6 +76,13 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   // of it. It sits over a live page rather than a dimmed one, and a page
   // whose bottom row cannot be reached is live in name only (INV-NOTES-109).
   const { cover: sheetCover, report: reportCover } = useSheetCover();
+  // A sheet is opened over a note to work on that note, so the note stays on
+  // the screen: the page comes to the graph and the graph takes the room left
+  // above the sheet (INV-NOTES-226).
+  const room = useGraphRoom({
+    coveredPx: sheetCover,
+    usualPx: Math.round(height * GRAPH_SHARE_OF_SCREEN)
+  });
 
   /**
    * What the transport offers this screen.
@@ -96,6 +102,10 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
     dropHead: (ms: number) => void;
     play: () => void;
     stop: () => void;
+    /** What the rail's copy of the transport draws (INV-NOTES-227). */
+    state: PlaybackState;
+    pause: () => void;
+    rewind: () => void;
   } | null>(null);
 
   if (!note) {
@@ -122,6 +132,8 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.neutral300 }]}>
       <ScrollView
+        ref={room.scrollRef}
+        onLayout={room.onViewportLayout}
         contentContainerStyle={[
           styles.content,
           sheetCover > 0 ? { paddingBottom: sheetCover } : null
@@ -159,16 +171,16 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             {/* The word "Shape" said what the picture already says; the top
                 edge of the graph carries the scrubber instead
                 (INT-NOTES-022). */}
-            <View style={styles.fullBleed}>
+            <View style={styles.fullBleed} onLayout={room.onGraphLayout}>
               <NoteShapeSection
                 detail={detail}
                 onOptions={() => setShowOptions(true)}
                 onDetails={() => setShowDetails(true)}
                 width={graphWidth}
-                height={Math.max(
-                  MIN_GRAPH_CARD,
-                  Math.round(height * GRAPH_SHARE_OF_SCREEN)
-                )}
+                height={room.graphHeight}
+                // Only while something is covering the page, so the bar above
+                // and this are never both within reach (INV-NOTES-227).
+                isCovered={sheetCover > 0}
                 transport={transport}
                 selection={detail.selection}
                 onSelect={detail.setSelection}
