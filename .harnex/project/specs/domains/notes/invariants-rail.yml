@@ -36,3 +36,30 @@ invariants:
       graph, and the wrong one for a control met for the first time — a letter
       is only a reminder to whoever already knows what it stands for. The
       legend is where the knowing comes from.
+
+  - id: INV-NOTES-233
+    description: The rail's switches scroll while its doors and its foot stay put
+    severity: major
+    check: >
+      The rail is as tall as the drawing beside it and no taller, and what it
+      has to hold does not depend on that height: a note with every track has
+      more switches than a short graph has room for. The switches and the grid
+      below them scroll within whatever room is left, on their own — the graph
+      does not move with them, and they do not move with the page.
+
+      Everything below that rule does not scroll. The play control stays at
+      the very foot of the column and the rewind directly above it
+      (INV-NOTES-227), and the door onto what governs the graph
+      (INV-NOTES-229) and the question mark beside it (INV-NOTES-232) stay
+      where they are — a menu that opens level with a control that has
+      scrolled away opens level with nothing, and a transport that can be
+      scrolled out of reach is a transport that is not at the graph's foot.
+
+      Where there is more than fits, the column says so once as it appears
+      rather than waiting to be discovered: 38 points is too narrow to carry a
+      standing mark, and a clipped letter reads as a letter rather than as a
+      list continuing.
+
+      Verified by asserting the switches are inside a scroll and the foot and
+      the doors are not, and that a rail too short for its tracks still offers
+      every one of them.

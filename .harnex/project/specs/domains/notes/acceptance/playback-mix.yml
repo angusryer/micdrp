@@ -365,6 +365,16 @@ acceptance:
       of the screen, each opening what it names, closing on a touch anywhere
       else, and neither reachable any other way (INV-NOTES-229).
 
+  - id: ACC-NOTES-248
+    title: A rail with more switches than room still offers all of them
+    given: A note with every track, beside a graph too short to hold them
+    when: The rail is read
+    then: >
+      The switches and the grid scroll within the room left over, on their own
+      and without moving the graph, while the menu, the question mark, the
+      rewind and the play control stay where they are — every track still
+      reachable, and the transport still at the graph's foot (INV-NOTES-233).
+
   - id: ACC-NOTES-247
     title: The rail can be read rather than guessed at
     given: A note detail page whose take has no bass line

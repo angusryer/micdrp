@@ -130,7 +130,9 @@ views:
         chords, the melody read from the take — each turned on and off
         on its own, with the take and the chords on and the melody off
         until they are turned, offering only the tracks the note has and
-        nothing at all when there is none to turn
+        nothing at all when there is none to turn — scrolling on their own
+        within the room the graph's height leaves them, while the controls
+        below them and the foot stay where they are
       - A toggle in that same list for which reading is sounded when the
         melody itself is played, made separately from which reading is
         drawn and from what the take's play control sounds

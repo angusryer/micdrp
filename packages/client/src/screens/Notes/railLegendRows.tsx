@@ -12,7 +12,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '../../components/Icon';
 import { clockLabel } from './RunClock';
-import { TRACK_INITIAL } from './TrackRail';
+import { TRACK_INITIAL } from './RailSwitches';
 import { TRACK_TITLES, type TrackName } from './playbackTracks';
 
 export interface LegendRow {
