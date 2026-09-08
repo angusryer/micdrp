@@ -40,6 +40,10 @@ export interface LoupeOptions {
 export const LOUPE_OFFSET = 56;
 
 function clamp(value: number, low: number, high: number): number {
+  // Reached from the UI thread, because placeLoupe is (INV-NOTES-207). A
+  // worklet that calls a plain function exits the app natively the moment the
+  // style is evaluated — no JS error, no report, nothing to catch.
+  'worklet';
   return Math.min(Math.max(value, low), high);
 }
 
