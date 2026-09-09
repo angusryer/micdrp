@@ -13,14 +13,11 @@ invariants:
     description: Between two taps the beat is the reading, phase-locked to both
     severity: critical
     check: >
-      The gap between two consecutive taps holds a whole number of beats.
-      How many is read from the detected beat — the gap divided by the
-      detected period, rounded — or from a tap pattern where somebody set
-      one, which overrides it. The interior beats are then placed by
-      warping the detected beat so the ends of the gap land exactly on the
-      two taps. Verified by asserting that two taps 1800ms apart against a
-      detected beat of 600ms yield exactly two interior beats, and that
-      both tapped instants are unchanged to the millisecond.
+      The gap between two consecutive taps holds a whole number of beats,
+      and its interior beats divide it evenly, so its ends land exactly on
+      the two taps. Verified by asserting a gap three times its neighbours
+      gains two interior beats while both tapped instants are unchanged to
+      the millisecond.
 
       Each gap is warped to its own pair of anchors and no other, so a take
       that slows through one phrase and pushes through the next keeps both.
@@ -28,8 +25,27 @@ invariants:
       matches neither, which is what tempoFromPattern did and why a rubato
       take reported no tempo at all.
 
-      Where there is no detected beat there is nothing to divide by, and
-      the gap holds one beat: two taps, two beats, per INV-NOTES-198.
+      How many beats a gap holds is read against the gaps either side of
+      it, never against the detected period directly. Somebody tapping
+      every beat who slows to land a note leaves a gap that a detected
+      period calls two missed taps, and filling it would put a beat in the
+      middle of the phrase they stretched — undoing exactly what they were
+      doing. Against its neighbours that same gap is this stretch's pulse,
+      while a genuinely missed tap still stands out. Verified by asserting
+      a steadily slowing phrase gains no interior beats at all.
+
+      The reading settles the one thing the taps cannot: whether a tap is a
+      beat, or every second or third one. That is a property of the take
+      rather than of any one gap, so it is taken from the whole of the
+      tapping at once, and never falls below one beat to the tap — a tap is
+      a beat (INV-NOTES-198), so the reading may say a tap-gap holds more
+      beats than one but never fewer. A tap pattern somebody set overrides
+      it.
+
+      With no detected beat, a tap-gap is one beat. The comparison against
+      neighbouring gaps still stands: a gap several times its neighbours is
+      a missed tap whether or not a melody was read, and a take whose pitch
+      detection failed is the one that most needs tapping.
 
   - id: INV-NOTES-237
     description: A stated beat and a worked-out beat are drawn as different things

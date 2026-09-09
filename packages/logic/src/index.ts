@@ -25,6 +25,11 @@ export * from './tapPattern';
 export * from './tapPatternEdit';
 export * from './beatGrid';
 export {
+  timelineFromAnchors,
+  type AnchoredTimeline
+} from './beatAnchors';
+export { beatsPerTap, spanOf } from './beatSpans';
+export {
   beatIntervals,
   beatToMs,
   countedBars,
