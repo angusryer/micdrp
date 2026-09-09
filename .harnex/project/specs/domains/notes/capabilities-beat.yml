@@ -1,0 +1,54 @@
+# Placing the beat of a take by hand, and choosing which time to see it in.
+# Its own file: tapping was never a capability of its own, so it had been
+# riding on notes.set_playback_mix, which is about which tracks sound.
+capabilities:
+  - name: notes.set_beat
+    description: >
+      Put a beat where one was played. A tap is an anchor at the instant
+      the finger landed and states nothing beyond that (INV-NOTES-238);
+      the beats between anchors come from the reading, phase-locked to
+      them (INV-NOTES-236). Anchors are placed a few at a time, over as
+      many passes as it takes, and each pass disturbs only the stretch it
+      touched (INV-NOTES-239).
+    actor: singer
+    implemented_by: packages/client/src/screens/Notes/useNoteDetail.ts
+    parameters:
+      required: [noteId, beats]
+    preconditions:
+      - the take belongs to the singer
+    postconditions:
+      - every tapped instant is stored exactly as it landed and is never
+        moved, averaged or dropped (INV-NOTES-198)
+      - the beats between two taps are placed by warping the detected beat
+        onto them, a whole number of beats to the gap
+      - each of those beats reports derived, and each tapped beat reports
+        stated, so the two are never confused (INV-NOTES-237)
+      - beats outside the stretch either side of a change are unchanged to
+        the millisecond
+      - no note, pitch, harmony or melody changes
+      - a take with no taps keeps the beat read from its melody, and one
+        tap does not discard it (INV-NOTES-241)
+    permissions:
+      - role: singer
+        notes: A person's own account of their own take.
+
+  - name: notes.set_time_axis
+    description: >
+      Choose whether the graph is drawn in the time the take was played or
+      in the time it was counted (INV-NOTES-240). Rubato is the difference
+      between the two, so seeing it means being able to see both.
+    actor: singer
+    implemented_by: packages/client/src/screens/Notes/useNoteDetail.ts
+    parameters:
+      required: [noteId, axis]
+    preconditions:
+      - the take belongs to the singer
+    postconditions:
+      - in played time the axis is milliseconds and the beats sit unevenly
+      - in counted time the axis is beats and the notes and audio stretch
+        against an even ruler
+      - every overlay on the graph reads whichever axis is current
+      - nothing stored on the take changes
+    permissions:
+      - role: singer
+        notes: A way of looking, not a claim about the take.

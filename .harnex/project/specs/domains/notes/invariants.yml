@@ -408,11 +408,10 @@ invariants:
     description: A tap is one beat, and the taps are the beat
     severity: critical
     check: >
-      Each tap is the next beat. The taps in order are the beat timeline
-      of the take, at the intervals they were made, and nothing fits a
-      period to them or decides that a gap spanned several beats.
-      Verified by asserting that n taps produce n beats whatever their
-      spacing.
+      Each tap is a beat at the instant the finger landed. A tap is never
+      moved, never averaged and never dropped, and no period is ever
+      fitted across the take. Verified by asserting that n taps produce n
+      beats at exactly their own instants, whatever their spacing.
 
       A person tapping while they sing is stating the pulse their singing
       lives around, and that pulse moves — slowing to land a note is
@@ -421,8 +420,17 @@ invariants:
 
       This is not the grid that INV-NOTES-131 removed. That one inferred:
       it guessed how many beats a gap spanned, fitted a uniform tempo,
-      and let the result silently re-cut a person's harmony. This one
-      counts, and changes nothing on its own.
+      and let the result silently re-cut a person's harmony.
+
+      The clause forbidding anything to decide how many beats a gap
+      spanned is superseded by INV-NOTES-236, which fills the gap from the
+      reading rather than from a fit, phase-locked to the taps either side
+      so neither moves. What it required — that the taps themselves are
+      untouchable — is unchanged and is the whole of this invariant. Gaps
+      are filled because tapping is sparse by nature: somebody taps every
+      beat through one phrase, twice around an awkward bar, and not at all
+      through the next, and a beat that exists only where a finger moved
+      leaves most of the take with none.
 
   - id: INV-NOTES-199
     description: Bars are counted between downbeats, never fitted
@@ -443,19 +451,24 @@ invariants:
       last are a trailing part-bar. Neither is padded out to a full bar.
 
   - id: INV-NOTES-200
-    description: A gap that looks like a missed tap is pointed at, not filled
+    description: A gap is filled from the reading, and the fill says it is one
     severity: major
     check: >
-      An interval about twice its neighbours is marked as suspect and
-      nothing else happens: no beat is inserted, no bar is renumbered, no
-      count changes. Verified by asserting a doubled gap is reported and
-      that the timeline through it is identical to one without the mark.
+      A gap between two taps is filled per INV-NOTES-236, and every beat
+      the fill places reports derived rather than stated (INV-NOTES-237).
+      No tap is moved, no bar somebody marked is renumbered. Verified by
+      asserting a doubled gap gains its interior beats, that all of them
+      report derived, and that the taps either side are unchanged to the
+      millisecond.
 
-      One tap is one beat (INV-NOTES-198), so a missed tap makes a bar
-      genuinely short, and the app has no way to tell that from a bar
-      that was short. Saying which gaps look odd costs a person one
-      glance; guessing on their behalf is the inference that this whole
-      part of the app exists to avoid.
+      Superseding the earlier rule, which pointed at an odd gap and
+      refused to fill it. That refusal was right while a filled beat was
+      indistinguishable from a tapped one: the app had no way to tell a
+      missed tap from a genuinely short bar, and filling one silently
+      would have put a beat in a place nobody played with nothing to show
+      it had. Drawing the two differently answers that — the fill is
+      visibly the app's guess, sitting next to the person's statement, and
+      correcting it is a glance and a tap rather than an act of faith.
 
   - id: INV-NOTES-201
     description: The tapped tempo is a range, because a pulse moves

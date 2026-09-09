@@ -1,0 +1,141 @@
+# Tapping the beat of a take that breathes — notes.set_beat and
+# notes.set_time_axis. Its own file; the tap tests that were riding on
+# playback-mix.yml describe the tap pattern, which these supersede.
+acceptance:
+  - id: ACC-NOTES-252
+    interface: ui
+    title: A gap between two taps is filled from the reading
+    given:
+      - a signed-in singer S
+      - singer S has a note N whose take was read at 100 bpm
+      - note N has two taps 1800ms apart
+    when:
+      - singer S calls notes.set_beat on note N
+    then:
+      - the note field beatCount is 4
+      - the note field derivedBeatCount is 2
+      - the note field firstTapMs is unchanged
+      - the note field lastTapMs is unchanged
+    maps_to:
+      capability: notes.set_beat
+      invariants: [INV-NOTES-236, INV-NOTES-198]
+
+  - id: ACC-NOTES-253
+    interface: ui
+    title: A filled beat says it was not tapped
+    given:
+      - a signed-in singer S
+      - singer S has a note N with a filled gap between two taps
+    when:
+      - singer S calls notes.set_beat on note N
+    then:
+      - the note field interiorBeatsAllDerived is true
+      - the note field flankingBeatsAllStated is true
+    maps_to:
+      capability: notes.set_beat
+      invariants: [INV-NOTES-237, INV-NOTES-200]
+
+  - id: ACC-NOTES-254
+    interface: ui
+    title: Two taps at an uneven pulse keep both speeds
+    given:
+      - a signed-in singer S
+      - singer S has a note N tapped through a phrase that slows
+    when:
+      - singer S calls notes.set_beat on note N
+    then:
+      - the note field beatIntervalsAreUneven is true
+      - the note field fittedTempoApplied is false
+    maps_to:
+      capability: notes.set_beat
+      invariants: [INV-NOTES-236, INV-NOTES-201]
+
+  - id: ACC-NOTES-255
+    interface: ui
+    title: Tapping mid-take leaves the rest of the take alone
+    given:
+      - a signed-in singer S
+      - singer S has a long note N with taps at either end
+    when:
+      - singer S calls notes.set_beat on note N
+    then:
+      - the note field beatsOutsideFlankingGapsUnchanged is true
+      - the note field tappedInstantsUnchanged is true
+    maps_to:
+      capability: notes.set_beat
+      invariants: [INV-NOTES-239]
+
+  - id: ACC-NOTES-256
+    interface: ui
+    title: Tapping changes nothing about the music
+    given:
+      - a signed-in singer S
+      - singer S has a note N with a read melody and chords
+    when:
+      - singer S calls notes.set_beat on note N
+    then:
+      - the note field melodyUnchanged is true
+      - the note field chordsUnchanged is true
+    maps_to:
+      capability: notes.set_beat
+      invariants: [INV-NOTES-238, INV-NOTES-161]
+
+  - id: ACC-NOTES-257
+    interface: ui
+    title: A take nobody tapped keeps the beat read from its melody
+    given:
+      - a signed-in singer S
+      - singer S has a note N with no taps and a read tempo
+    when:
+      - singer S calls notes.set_beat on note N
+    then:
+      - the note field beatsEqualDetectedGrid is true
+      - the note field derivedBeatCount is the beat count
+    maps_to:
+      capability: notes.set_beat
+      invariants: [INV-NOTES-241]
+
+  - id: ACC-NOTES-258
+    interface: ui
+    title: One tap on an untapped take anchors the grid without discarding it
+    given:
+      - a signed-in singer S
+      - singer S has a note N with no taps and a read tempo
+    when:
+      - singer S calls notes.set_beat on note N
+    then:
+      - the note field beatsOutsideFlankingGapsUnchanged is true
+      - the note field statedBeatCount is 1
+    maps_to:
+      capability: notes.set_beat
+      invariants: [INV-NOTES-241, INV-NOTES-239]
+
+  - id: ACC-NOTES-259
+    interface: ui
+    title: Counted time draws an even ruler and stores nothing
+    given:
+      - a signed-in singer S
+      - singer S has a rubato note N whose beats are unevenly spaced
+    when:
+      - singer S calls notes.set_time_axis on note N
+    then:
+      - the note field beatSpacingIsEven is true
+      - the note field storedTakeUnchanged is true
+    maps_to:
+      capability: notes.set_time_axis
+      invariants: [INV-NOTES-240]
+
+  - id: ACC-NOTES-260
+    interface: ui
+    title: Played time puts the beats back where they were played
+    given:
+      - a signed-in singer S
+      - singer S has a rubato note N being read in counted time
+    when:
+      - singer S calls notes.set_time_axis on note N
+    then:
+      - the note field beatSpacingIsEven is false
+      - the note field storedTakeUnchanged is true
+    maps_to:
+      capability: notes.set_time_axis
+      invariants: [INV-NOTES-240]

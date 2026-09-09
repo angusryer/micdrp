@@ -1,0 +1,114 @@
+# The beat of a take that breathes. Its own file rather than more entries in
+# invariants.yml or invariants-playback.yml, both already past the 150-line
+# spec-file budget (Axiom 3).
+#
+# These supersede the parts of INV-NOTES-198 and INV-NOTES-200 that forbade
+# filling a gap. Those were written after a fitted grid silently re-cut a
+# person's harmony, and the lesson they carry — the app must not overwrite what
+# somebody stated — is kept whole here. What changed is that a filled beat is
+# now visibly not a tapped one (INV-NOTES-237), which is the safeguard those
+# invariants did not have and the reason they could not allow filling at all.
+invariants:
+  - id: INV-NOTES-236
+    description: Between two taps the beat is the reading, phase-locked to both
+    severity: critical
+    check: >
+      The gap between two consecutive taps holds a whole number of beats.
+      How many is read from the detected beat — the gap divided by the
+      detected period, rounded — or from a tap pattern where somebody set
+      one, which overrides it. The interior beats are then placed by
+      warping the detected beat so the ends of the gap land exactly on the
+      two taps. Verified by asserting that two taps 1800ms apart against a
+      detected beat of 600ms yield exactly two interior beats, and that
+      both tapped instants are unchanged to the millisecond.
+
+      Each gap is warped to its own pair of anchors and no other, so a take
+      that slows through one phrase and pushes through the next keeps both.
+      A single tempo fitted across the take averages them into one that
+      matches neither, which is what tempoFromPattern did and why a rubato
+      take reported no tempo at all.
+
+      Where there is no detected beat there is nothing to divide by, and
+      the gap holds one beat: two taps, two beats, per INV-NOTES-198.
+
+  - id: INV-NOTES-237
+    description: A stated beat and a worked-out beat are drawn as different things
+    severity: critical
+    check: >
+      Every beat of the timeline carries whether a person put it there.
+      Beats at tapped instants report stated; beats placed inside a gap by
+      INV-NOTES-236 report derived, and the graph draws the two
+      distinguishably. Verified by asserting that filling a gap marks every
+      interior beat derived while the taps either side stay stated, and
+      that the mark survives a redraw.
+
+      This is the whole licence for filling a gap. A grid that fills
+      silently is indistinguishable from one a person tapped, so the person
+      cannot tell their own statement from the app's guess and has no way
+      to correct the guess without also doubting themselves. Saying which
+      is which costs one glance and returns that ability.
+
+  - id: INV-NOTES-238
+    description: A tap anchors the beat and states nothing else
+    severity: critical
+    check: >
+      A tap is a beat at the instant the finger landed. It is not a
+      downbeat, not a bar line, not a chord boundary and not a phrase mark
+      until it is marked as one. Adding, moving or removing a tap changes
+      no note, no pitch, no harmony and no melody. Verified by asserting
+      the melody and the chord reading are identical before and after a
+      take is tapped through.
+
+      INV-NOTES-161 in its own terms: a mark somebody makes on their own
+      recording must not redraw the thing it was made on. Filling gaps
+      (INV-NOTES-236) does not narrow it, because the beat layer is not the
+      reading — nothing that reads harmony reads the beat.
+
+  - id: INV-NOTES-239
+    description: A tap added later re-locks its own neighbourhood and no further
+    severity: major
+    check: >
+      Placing a tap changes the beat only between the anchors either side
+      of it. Beats before the previous anchor and after the next are
+      unchanged to the millisecond, and so are the taps themselves.
+      Verified by tapping once in the middle of a long take and asserting
+      every beat outside the two flanking gaps is identical.
+
+      Tapping is done a little at a time — a few anchors around an awkward
+      bar, the rest left alone, and more added on a later pass. A tap that
+      moved the whole take would make each pass undo the one before it, so
+      nobody could correct one stretch without re-checking every other.
+
+  - id: INV-NOTES-240
+    description: The graph's time axis is switchable between played and counted time
+    severity: major
+    check: >
+      In played time the axis is milliseconds: the beats sit where they
+      were played, unevenly. In counted time the axis is beats: the beats
+      sit evenly and the notes and the audio stretch against them. One
+      control switches the two, every overlay on the graph reads whichever
+      is current, and switching writes nothing to the take. Verified by
+      asserting the stored notes, taps and bar lines are byte-identical
+      either side of a switch, and that a rubato take draws uneven beat
+      spacing in one and even in the other.
+
+      Rubato is a relationship between what was counted and what was
+      played, and the two axes are the two halves of it. Neither alone can
+      show it: played time cannot show that a phrase was stretched, and
+      counted time cannot show by how much.
+
+  - id: INV-NOTES-241
+    description: A take nobody tapped uses the detected grid, and stays open to taps
+    severity: major
+    check: >
+      With no taps, the beat is the constant grid read from the melody,
+      unchanged from before any of this. Tapping such a take afterwards
+      does not discard that grid: each tap becomes an anchor and the grid
+      is warped to it per INV-NOTES-236 and INV-NOTES-239. Verified by
+      asserting an untapped take's beats equal the detected grid exactly,
+      and that adding one tap leaves every beat outside its flanking gaps
+      unchanged.
+
+      Nobody taps a take before they know it needs tapping. The beat has to
+      be usable with no taps at all and improvable one tap at a time, or
+      the only way to fix a take is to perform the whole of it again.
