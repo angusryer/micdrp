@@ -15,12 +15,11 @@
  * three move together with the finger and none of them costs a render. React
  * hears about it once, when the finger leaves.
  */
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+
+import { offsetFrom, useDragOffset } from './dragOffset';
 
 import { RangeHandle } from './RangeHandle';
 import { Icon } from './Icon';
@@ -64,29 +63,14 @@ export function PlayRangeOverlay({
   onPlay,
   isPlaying
 }: PlayRangeOverlayProps): React.JSX.Element | null {
-  /**
-   * How far each end has been taken from where the committed stretch puts it.
-   *
-   * Offsets rather than positions, so what is drawn is right on the very
-   * first frame — the committed place alone is already correct, and an
-   * overlay that had to wait for an effect to learn where it was would paint
-   * one frame at nothing every time a stretch appeared.
-   */
-  const fromDrag = useSharedValue(0);
-  const toDrag = useSharedValue(0);
+  // How far each end has been taken from where the committed stretch puts it.
+  // Offsets rather than positions, so what is drawn is right on the very
+  // first frame: the committed place alone is already correct.
+  const fromDrag = useDragOffset();
+  const toDrag = useDragOffset();
 
   const left = range ? xForMs(timeAxis, range.fromMs) : 0;
   const right = range ? xForMs(timeAxis, range.toMs) : 0;
-
-  // Back to nothing once the commit has landed. Invisible by construction:
-  // the drag settled at `left + fromDrag`, and this runs on the render where
-  // `left` has become exactly that — so zero moves it by zero.
-  useEffect(() => {
-    fromDrag.value = 0;
-  }, [fromDrag, left]);
-  useEffect(() => {
-    toDrag.value = 0;
-  }, [toDrag, right]);
 
   const limits = useMemo(
     () => dragLimits(timeAxis, left, right),
@@ -105,15 +89,15 @@ export function PlayRangeOverlay({
   );
 
   const stretch = useAnimatedStyle(() => {
-    const at = left + fromDrag.value;
+    const at = left + offsetFrom(fromDrag, left);
     return {
       transform: [{ translateX: at }],
-      width: Math.max(0, right + toDrag.value - at)
+      width: Math.max(0, right + offsetFrom(toDrag, right) - at)
     };
   });
 
   const control = useAnimatedStyle(() => ({
-    transform: [{ translateX: left + fromDrag.value + PLAY_INSET }]
+    transform: [{ translateX: left + offsetFrom(fromDrag, left) + PLAY_INSET }]
   }));
 
   if (!range) {

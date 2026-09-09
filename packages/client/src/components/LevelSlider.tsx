@@ -24,6 +24,7 @@ import Animated, {
   useSharedValue
 } from 'react-native-reanimated';
 
+import { moveOffset, offsetFrom, useDragOffset } from './dragOffset';
 import { useTheme } from '../theme';
 
 const KNOB = 14;
@@ -56,7 +57,7 @@ export function LevelSlider({
   const [width, setWidth] = useState(0);
 
   /** How far the finger has taken it from the level as last reported, 0..1. */
-  const drag = useSharedValue(0);
+  const drag = useDragOffset();
   /** When it was last reported, so the reporting has a rate rather than a frame. */
   const saidAt = useSharedValue(0);
 
@@ -65,13 +66,6 @@ export function LevelSlider({
   }, []);
 
   const filled = Math.min(1, Math.max(0, value));
-
-  // Back to nothing once the reported level has caught up. Invisible: the
-  // drag was drawn at `filled + drag`, and this runs on the render where
-  // `filled` has become that, so zero moves it by zero.
-  React.useEffect(() => {
-    drag.value = 0;
-  }, [drag, filled]);
 
   const pan = useMemo(
     () =>
@@ -85,31 +79,39 @@ export function LevelSlider({
             return;
           }
           const wanted = e.x / width;
-          drag.value = (wanted < 0 ? 0 : wanted > 1 ? 1 : wanted) - filled;
+          const held = wanted < 0 ? 0 : wanted > 1 ? 1 : wanted;
+          moveOffset(drag, filled, held - filled);
           saidAt.value = Date.now();
-          runOnJS(onChange)(filled + drag.value);
+          runOnJS(onChange)(held);
         })
         .onUpdate((e) => {
           if (width <= 0) {
             return;
           }
           const wanted = e.x / width;
-          drag.value = (wanted < 0 ? 0 : wanted > 1 ? 1 : wanted) - filled;
+          const held = wanted < 0 ? 0 : wanted > 1 ? 1 : wanted;
+          moveOffset(drag, filled, held - filled);
           // The drawing above has already followed. This is only about what
           // is heard, and an ear does not resolve sixty of these a second.
           const now = Date.now();
           if (now - saidAt.value >= SAY_EVERY_MS) {
             saidAt.value = now;
-            runOnJS(onChange)(filled + drag.value);
+            runOnJS(onChange)(held);
           }
         })
         // Exactly where it was left, whatever the steps along the way said.
-        .onEnd(() => runOnJS(onChange)(filled + drag.value)),
+        .onEnd(() => runOnJS(onChange)(filled + offsetFrom(drag, filled))),
+    // Rebuilt when the reported level changes, which during a drag is at the
+    // reporting rate. Deliberate: the gesture and the drawing must measure
+    // the offset from the same base, and holding the level in a shared value
+    // to keep the gesture stable would let the two disagree for a frame —
+    // which is the frame this whole design exists to remove. A rebuild costs
+    // an object; a disagreement costs a jump.
     [drag, saidAt, width, filled, onChange]
   );
 
   const fill = useAnimatedStyle(() => ({
-    width: `${(filled + drag.value) * 100}%`
+    width: `${(filled + offsetFrom(drag, filled)) * 100}%`
   }));
 
   const knob = useAnimatedStyle(() => ({
@@ -119,7 +121,10 @@ export function LevelSlider({
       {
         translateX: Math.max(
           0,
-          Math.min(width - KNOB, (filled + drag.value) * width - KNOB / 2)
+          Math.min(
+          width - KNOB,
+          (filled + offsetFrom(drag, filled)) * width - KNOB / 2
+        )
         )
       }
     ]
@@ -136,6 +141,7 @@ export function LevelSlider({
         style={styles.hit}>
         <View style={[styles.track, { backgroundColor: colors.neutral500 }]}>
           <Animated.View
+            testID="level-slider-fill"
             style={[styles.fill, { backgroundColor: colors.primary500 }, fill]}
           />
         </View>

@@ -22,20 +22,20 @@ import { ThemeProvider } from '../../theme';
 /** A hundred points wide, so an x reads as a percentage. */
 const WIDTH = 100;
 
+const sliderAt = (value: number, onChange: (v: number) => void) => (
+  <GestureHandlerRootView>
+    <ThemeProvider>
+      <LevelSlider
+        value={value}
+        onChange={onChange}
+        accessibilityLabel="Take level"
+      />
+    </ThemeProvider>
+  </GestureHandlerRootView>
+);
+
 const draw = async (onChange: (v: number) => void, value = 0.5) => {
-  const view = await waitFor(() =>
-    render(
-      <GestureHandlerRootView>
-        <ThemeProvider>
-          <LevelSlider
-            value={value}
-            onChange={onChange}
-            accessibilityLabel="Take level"
-          />
-        </ThemeProvider>
-      </GestureHandlerRootView>
-    )
-  );
+  const view = await waitFor(() => render(sliderAt(value, onChange)));
   // Nothing can be worked out from a control of no width, and the gesture is
   // rebuilt once the width is known — so this has to land before the drag.
   const onLayout = view.getByTestId('level-slider').props.onLayout as (
@@ -84,12 +84,73 @@ it('ACC-NOTES-251: it is still heard moving while the finger is down', async () 
   expect(onChange.mock.calls.length).toBeGreaterThan(2);
 });
 
+it('ACC-NOTES-251: a drag survives what its own reporting re-renders', async () => {
+  // Reporting sets state upstream, so the parent re-renders while the finger
+  // is still down — with the level just reported, and, at a call site that
+  // writes its handler as an arrow, a new handler too. A gesture rebuilt on
+  // that render is a gesture rebuilt in the middle of the drag it is
+  // handling (INV-NOTES-235).
+  const onChange = jest.fn();
+  const view = await draw(onChange);
+
+  fireGestureHandler(getByGestureTestId('level-slider-pan'), [
+    { state: State.BEGAN, x: 20 },
+    { state: State.ACTIVE, x: 20 },
+    { x: 40 }
+  ]);
+
+  // What the report does: the same tree, at the level just heard, with the
+  // fresh handler an inline arrow at the call site would hand it.
+  await act(async () => {
+    await view.rerender(
+      sliderAt(0.4, (v: number) => {
+        onChange(v);
+      })
+    );
+  });
+
+  fireGestureHandler(getByGestureTestId('level-slider-pan'), [
+    { state: State.ACTIVE, x: 60 },
+    { x: 80 },
+    { state: State.END, x: 80 }
+  ]);
+
+  const calls = onChange.mock.calls as [number][];
+  expect(calls[calls.length - 1][0]).toBeCloseTo(0.8, 5);
+});
+
 it('ACC-NOTES-251: lands on exactly where the finger left it', async () => {
   const onChange = jest.fn();
   await draw(onChange);
   dragAcross([50, 60, 70, 80]);
   const calls = onChange.mock.calls as [number][];
   expect(calls[calls.length - 1][0]).toBeCloseTo(0.8, 5);
+});
+
+it('ACC-NOTES-251: the render after a release draws it where it was left', async () => {
+  // The frame that catches this: the commit makes the reported level the new
+  // base, and an offset still counting against the old one would draw the
+  // control a whole drag further on before snapping back (INV-NOTES-235).
+  const onChange = jest.fn();
+  const view = await draw(onChange, 0.2);
+
+  // The first ACTIVE is the activation; the moving is what comes after it.
+  fireGestureHandler(getByGestureTestId('level-slider-pan'), [
+    { state: State.BEGAN, x: 20 },
+    { state: State.ACTIVE, x: 20 },
+    { x: 40 },
+    { x: 60 },
+    { state: State.END, x: 60 }
+  ]);
+
+  // What the report does: the same tree, at the level just settled on.
+  await act(async () => {
+    await view.rerender(sliderAt(0.6, onChange));
+  });
+
+  expect(view.getByTestId('level-slider-fill').props.style).toEqual(
+    expect.arrayContaining([expect.objectContaining({ width: '60%' })])
+  );
 });
 
 it('ACC-NOTES-251: landing on the track moves it there at once', async () => {

@@ -20,9 +20,10 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
-  useSharedValue,
-  type SharedValue
+  useSharedValue
 } from 'react-native-reanimated';
+
+import { moveOffset, offsetFrom, type DragOffset } from './dragOffset';
 
 /** How wide the invisible part a finger may land on is, in px. */
 const GRAB_WIDTH = 32;
@@ -33,16 +34,8 @@ const LINE_WIDTH = 2;
 export interface RangeHandleProps {
   /** Where the committed stretch puts it, in the graph's own pixel space. */
   baseX: number;
-  /**
-   * How far the finger has taken it from there, owned by the UI thread.
-   *
-   * An offset rather than the position itself, so the drawn place is right on
-   * the very first frame — `baseX` alone is already correct — and so the
-   * commit costs nothing to look at: settling writes `baseX + drag` and the
-   * next render arrives with that as the new `baseX`, at which point zeroing
-   * the offset moves the handle by exactly nothing.
-   */
-  drag: SharedValue<number>;
+  /** How far the finger has taken it from there, owned by the UI thread. */
+  drag: DragOffset;
   /** How far it may travel, in that same space. */
   lowX: number;
   highX: number;
@@ -83,7 +76,7 @@ export function RangeHandle({
         // a control, and everything under it is already spoken for.
         .minDistance(0)
         .onBegin(() => {
-          wasAt.value = drag.value;
+          wasAt.value = offsetFrom(drag, baseX);
           // Once, here, rather than on every frame: falling silent while a
           // stretch is being decided is a thing that happens when the finger
           // lands, not a thing that keeps happening.
@@ -92,16 +85,16 @@ export function RangeHandle({
         .onUpdate((e) => {
           const wanted = baseX + wasAt.value + e.translationX;
           const held = wanted < lowX ? lowX : wanted > highX ? highX : wanted;
-          drag.value = held - baseX;
+          moveOffset(drag, baseX, held - baseX);
         })
         // The only other crossing. Nothing between the first touch and the
         // release reaches the JS thread at all.
-        .onEnd(() => runOnJS(onSettled)(baseX + drag.value)),
+        .onEnd(() => runOnJS(onSettled)(baseX + offsetFrom(drag, baseX))),
     [baseX, drag, wasAt, lowX, highX, onGrab, onSettled, testID]
   );
 
   const place = useAnimatedStyle(() => ({
-    transform: [{ translateX: baseX + drag.value - GRAB_WIDTH / 2 }]
+    transform: [{ translateX: baseX + offsetFrom(drag, baseX) - GRAB_WIDTH / 2 }]
   }));
 
   return (
