@@ -105,8 +105,8 @@ export function GraphLayers({
   // Where each tapped beat is drawn, from the same layout that paints them
   // (INV-NOTES-104).
   const beatMarks = useMemo(
-    () => beatLines(detail.beats, timeAxis),
-    [detail.beats, timeAxis]
+    () => beatLines(detail.anchors, timeAxis),
+    [detail.anchors, timeAxis]
   );
 
   const hitPoints = useMemo(

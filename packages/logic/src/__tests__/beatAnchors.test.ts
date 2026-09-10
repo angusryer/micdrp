@@ -25,9 +25,9 @@ const walk = (from: number, gaps: readonly number[]): TappedBeat[] => {
   return out;
 };
 
-/** The instants of the beats a person actually tapped. */
-const statedAt = (t: { beats: number[]; stated: boolean[] }): number[] =>
-  t.beats.filter((_, i) => t.stated[i]);
+/** The instants of the beats a person actually put there. */
+const statedAt = (t: { beats: number[]; kinds: string[] }): number[] =>
+  t.beats.filter((_, i) => t.kinds[i] !== 'derived');
 
 describe('timelineFromAnchors', () => {
   it('is null with nothing tapped, so the detected grid stands', () => {
@@ -49,8 +49,9 @@ describe('timelineFromAnchors', () => {
       4200
     )!;
     expect(timeline.beats).toEqual([0, 600, 1200, 1800, 2400, 3000, 3600, 4200]);
-    expect(timeline.stated).toEqual([
-      true, true, true, false, false, true, true, true
+    expect(timeline.kinds).toEqual([
+      'tapped', 'tapped', 'tapped', 'derived', 'derived',
+      'tapped', 'tapped', 'tapped'
     ]);
   });
 
@@ -61,7 +62,7 @@ describe('timelineFromAnchors', () => {
     const taps = walk(0, [600, 660, 750, 850, 750, 640]);
     const timeline = timelineFromAnchors(taps, 100, 4250)!;
     expect(timeline.beats).toEqual(taps.map((t) => t.atMs));
-    expect(timeline.stated.every((s) => s)).toBe(true);
+    expect(timeline.kinds.every((k) => k === 'tapped')).toBe(true);
     expect(timeline.suspectGaps).toEqual([]);
   });
 
@@ -70,7 +71,9 @@ describe('timelineFromAnchors', () => {
     // second beat, so a beat falls between each pair.
     const timeline = timelineFromAnchors(walk(0, [1200, 1200]), 100, 2400)!;
     expect(timeline.beats).toEqual([0, 600, 1200, 1800, 2400]);
-    expect(timeline.stated).toEqual([true, false, true, false, true]);
+    expect(timeline.kinds).toEqual([
+      'tapped', 'derived', 'tapped', 'derived', 'tapped'
+    ]);
   });
 
   it('never drops a tap for falling inside the reading’s beat', () => {
@@ -82,13 +85,15 @@ describe('timelineFromAnchors', () => {
   it('holds one beat to a gap where nothing was read from the melody', () => {
     const timeline = timelineFromAnchors([tap(0), tap(1800)], 0, 1800)!;
     expect(timeline.beats).toEqual([0, 1800]);
-    expect(timeline.stated.every((s) => s)).toBe(true);
+    expect(timeline.kinds.every((k) => k === 'tapped')).toBe(true);
   });
 
   it('carries the beat past the taps at the reading’s rate, as derived', () => {
     const timeline = timelineFromAnchors([tap(600), tap(1200)], 100, 2400)!;
     expect(timeline.beats).toEqual([0, 600, 1200, 1800, 2400]);
-    expect(timeline.stated).toEqual([false, true, true, false, false]);
+    expect(timeline.kinds).toEqual([
+      'derived', 'tapped', 'tapped', 'derived', 'derived'
+    ]);
   });
 
   it('moves the bar marks with the beats prepended before them', () => {
@@ -124,7 +129,20 @@ describe('timelineFromAnchors', () => {
       before.beats[before.beats.length - 1]
     );
     expect(after.beats).toContain(900);
-    expect(after.stated[after.beats.indexOf(900)]).toBe(true);
+    expect(after.kinds[after.beats.indexOf(900)]).toBe('tapped');
+  });
+
+  it('marks a beat heard in the take as voiced, not tapped', () => {
+    const timeline = timelineFromAnchors(
+      [
+        { atMs: 0, isDownbeat: false },
+        { atMs: 600, isDownbeat: false, isVoiced: true },
+        { atMs: 1200, isDownbeat: false }
+      ],
+      100,
+      1200
+    )!;
+    expect(timeline.kinds).toEqual(['tapped', 'voiced', 'tapped']);
   });
 
   it('reads a moment inside a stretched beat as part of that beat', () => {

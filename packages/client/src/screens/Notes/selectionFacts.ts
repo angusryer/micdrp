@@ -246,11 +246,16 @@ function describeBeat(
   detail: ReturnType<typeof useNoteDetail>,
   accent: string
 ): SelectionDescription {
-  const beat = detail.beats[selection.index];
+  const beat = detail.anchors[selection.index];
   if (beat == null) {
     return { title: 'Beat', accent, facts: [], actions: [] };
   }
-  const wasMoved = Math.round(beat.atMs) !== Math.round(beat.tappedAtMs);
+  // The tap this beat is, where it is one. A beat heard in the take has no
+  // tap behind it and so has never been moved from anywhere
+  // (INV-NOTES-242).
+  const tap = detail.beats.find((one) => one.atMs === beat.atMs);
+  const wasMoved =
+    tap != null && Math.round(tap.atMs) !== Math.round(tap.tappedAtMs);
   const actions: SelectionAction[] = [
     {
       label: beat.isDownbeat ? 'Not a bar start' : 'Start a bar here',
@@ -272,16 +277,25 @@ function describeBeat(
     run: () => detail.removeBeatAt(selection.index)
   });
   return {
-    title: beat.isDownbeat ? 'Bar starts here' : 'Beat',
+    title: beat.isDownbeat
+      ? 'Bar starts here'
+      : beat.isVoiced === true
+        ? 'Beat, heard in the take'
+        : 'Beat',
     accent,
     facts: [
       { label: 'At', value: seconds(beat.atMs) },
       {
         label: 'Read as',
-        value: wasMoved ? 'moved by hand' : 'where you tapped'
+        value:
+          beat.isVoiced === true
+            ? 'heard in the take'
+            : wasMoved
+              ? 'moved by hand'
+              : 'where you tapped'
       },
-      ...(wasMoved
-        ? [{ label: 'Tapped at', value: seconds(beat.tappedAtMs) }]
+      ...(wasMoved && tap != null
+        ? [{ label: 'Tapped at', value: seconds(tap.tappedAtMs) }]
         : [])
     ],
     actions

@@ -32,14 +32,15 @@ import {
   beatFromTap,
   markDownbeat,
   moveBeat,
-  removeBeat,
   replaceTaps,
   resetBeat,
   readMetre,
   countedBars,
   countedMetre,
   tappedTempo,
+  anchorsFrom,
   drawnBeats,
+  removeAnchor,
   timelineFromAnchors,
   type NoteEdge,
   type NoteEvent
@@ -313,10 +314,24 @@ export function useNoteDetail(id: string) {
    * Still not inference acting on its own: the tempo is offered by the
    * tempo row and applied only when pressed (INV-NOTES-161).
    */
+  const hits = useMemo(() => note?.hits ?? EMPTY_HITS, [note]);
+
+  /**
+   * Every beat a person put there, by finger or by mouth (INV-NOTES-242).
+   *
+   * A thump or a consonant in the take says what a tap says, so both anchor
+   * the timeline — and one thrown away stays thrown away, which is what the
+   * dismissals are for (INV-NOTES-243).
+   */
+  const anchors = useMemo(
+    () => anchorsFrom(beats, hits, interpretation.savedDismissedBeats),
+    [beats, hits, interpretation.savedDismissedBeats]
+  );
+
   const timeline = useMemo(
     () =>
-      timelineFromAnchors(beats, quantized.grid.bpm, note?.durationMs ?? 0),
-    [beats, quantized.grid.bpm, note?.durationMs]
+      timelineFromAnchors(anchors, quantized.grid.bpm, note?.durationMs ?? 0),
+    [anchors, quantized.grid.bpm, note?.durationMs]
   );
   const tapped = useMemo(
     () => (timeline == null ? null : tappedTempo(timeline)),
@@ -331,8 +346,6 @@ export function useNoteDetail(id: string) {
 
   // Stable when there are none, so a take with no drums does not look like a
   // different take on every render.
-  const hits = useMemo(() => note?.hits ?? EMPTY_HITS, [note]);
-
   // A second take sung against this one, when there is one. The bass layer
   // is the one that carries harmony: it names the root and states where the
   // chord changes, which are the two things a melody alone only implies
@@ -869,27 +882,112 @@ export function useNoteDetail(id: string) {
     beginTapPass: useCallback(() => {
       isFreshPass.current = true;
     }, []),
+    /**
+     * Throw a beat off the graph, whichever kind it is (INV-NOTES-243).
+     *
+     * Indexed into the anchors rather than the taps, because the anchors
+     * are what the graph draws and touches. A tap is deleted; a voiced beat
+     * is written down as gone, since the audio still holds the sound and
+     * the next read would find it again.
+     */
     removeBeatAt: useCallback(
-      (index: number) => interpretation.updateBeats(removeBeat(beats, index)),
-      [beats, interpretation]
+      (index: number) => {
+        const after = removeAnchor(
+          anchors,
+          index,
+          beats,
+          interpretation.savedDismissedBeats
+        );
+        if (after.taps.length !== beats.length) {
+          interpretation.updateBeats(after.taps);
+        }
+        if (
+          after.dismissed.length !== interpretation.savedDismissedBeats.length
+        ) {
+          interpretation.updateDismissedBeats(after.dismissed);
+        }
+      },
+      [anchors, beats, interpretation]
     ),
     clearBeats: useCallback(
       () => interpretation.updateBeats([]),
       [interpretation]
     ),
+    /**
+     * Move a beat to where it should have been (INV-NOTES-163).
+     *
+     * Moving a beat heard in the take turns it into a tapped one: the sound
+     * is still in the audio where it always was, so the moved beat is a
+     * person saying where the pulse actually is rather than a correction to
+     * the recording. The sound it came from is written off, or the next
+     * read would put a second beat back beside the moved one
+     * (INV-NOTES-243).
+     */
     moveBeatTo: useCallback(
-      (index: number, toMs: number) =>
-        interpretation.updateBeats(moveBeat(beats, index, toMs)),
-      [beats, interpretation]
+      (index: number, toMs: number) => {
+        const going = anchors[index];
+        if (going == null) {
+          return;
+        }
+        if (going.isVoiced !== true) {
+          const at = beats.findIndex((tap) => tap.atMs === going.atMs);
+          if (at >= 0) {
+            interpretation.updateBeats(moveBeat(beats, at, toMs));
+          }
+          return;
+        }
+        interpretation.updateBeats(addTap(beats, toMs));
+        interpretation.updateDismissedBeats([
+          ...interpretation.savedDismissedBeats,
+          going.atMs
+        ]);
+      },
+      [anchors, beats, interpretation]
     ),
+    /**
+     * Mark a beat as the start of a bar, whichever kind it is.
+     *
+     * A voiced beat becomes a tapped one first: a bar mark is a statement
+     * about the music that has to survive a re-read, and there is nowhere
+     * on a sound in the audio to keep one.
+     */
     setBeatIsDownbeat: useCallback(
-      (index: number, isDownbeat: boolean) =>
-        interpretation.updateBeats(markDownbeat(beats, index, isDownbeat)),
-      [beats, interpretation]
+      (index: number, isDownbeat: boolean) => {
+        const one = anchors[index];
+        if (one == null) {
+          return;
+        }
+        if (one.isVoiced === true) {
+          const grown = addTap(beats, one.atMs);
+          const at = grown.findIndex((tap) => tap.atMs === one.atMs);
+          interpretation.updateBeats(markDownbeat(grown, at, isDownbeat));
+          interpretation.updateDismissedBeats([
+            ...interpretation.savedDismissedBeats,
+            one.atMs
+          ]);
+          return;
+        }
+        const at = beats.findIndex((tap) => tap.atMs === one.atMs);
+        if (at >= 0) {
+          interpretation.updateBeats(markDownbeat(beats, at, isDownbeat));
+        }
+      },
+      [anchors, beats, interpretation]
     ),
+    /** Put a moved beat back where the finger landed. Taps only: a voiced
+     * beat has never been anywhere but where the sound is. */
     resetBeatAt: useCallback(
-      (index: number) => interpretation.updateBeats(resetBeat(beats, index)),
-      [beats, interpretation]
+      (index: number) => {
+        const one = anchors[index];
+        const at =
+          one == null
+            ? -1
+            : beats.findIndex((tap) => tap.atMs === one.atMs);
+        if (at >= 0) {
+          interpretation.updateBeats(resetBeat(beats, at));
+        }
+      },
+      [anchors, beats, interpretation]
     ),
     /** The tempo in use, and how to set it by hand (INV-NOTES-123). */
     bpm: grid.bpm,
@@ -925,6 +1023,13 @@ export function useNoteDetail(id: string) {
      * tapping one (INV-NOTES-238).
      */
     beatLine: timeline == null ? [] : drawnBeats(timeline),
+    /**
+     * The beats a finger can reach: what a person put there, not the fills.
+     *
+     * A derived beat is not a thing to drag or throw away — it is a thing
+     * to replace by tapping one (INV-NOTES-238).
+     */
+    anchors,
     /** Gaps the fill had to guess the length of (INV-NOTES-200). */
     suspectGaps: timeline?.suspectGaps ?? [],
     /** The bars counted between marked downbeats (INV-NOTES-199). */

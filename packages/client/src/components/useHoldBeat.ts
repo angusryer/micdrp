@@ -9,11 +9,19 @@
  * It picks the beat up whether or not it was chosen first: a hold on a beat
  * cannot have meant anything else, and asking for a tap before it would be two
  * gestures for one intention.
+ *
+ * A held beat can also be thrown away, by flicking it off the graph while
+ * still holding it (INV-NOTES-244). That test lives here as well as in
+ * useGraphDrag because this gesture wins the race for anything that starts
+ * on a beat — so without it a flick on a beat was read as a slow move and
+ * the beat came back down somewhere along the way, with no way left to
+ * discard the one thing already under the finger (INV-NOTES-132).
  */
 import { useMemo, useRef } from 'react';
 import { Gesture } from 'react-native-gesture-handler';
 
 import { tapped } from '../utilities/haptics';
+import { isAcross, isFlickAway, throwAway } from './flickAway';
 import { isChosen } from './graphSelection';
 import { foundAt, type SettledOptions } from './graphGestureOptions';
 
@@ -27,7 +35,7 @@ import { foundAt, type SettledOptions } from './graphGestureOptions';
 const HOLD_TO_DRAG_MS = 220;
 
 export function useHoldBeat(o: SettledOptions) {
-  const { onMoveBeat, onSelect, selection } = o;
+  const { onMoveBeat, onRemoveBar, onRemoveBeat, onSelect, selection } = o;
   /** Which beat a hold picked up, or null when none is being carried. */
   const held = useRef<number | null>(null);
 
@@ -69,15 +77,35 @@ export function useHoldBeat(o: SettledOptions) {
           if (held.current == null) {
             return;
           }
+          // Left where it is while the finger is travelling across it
+          // rather than along it: that drag is on its way to being a flick,
+          // and a beat dragged sideways first has moved and then vanished
+          // (INV-NOTES-244).
+          if (isAcross(e)) {
+            return;
+          }
           // Straight to the finger. There is nothing to snap to yet: the grid
           // is being taken out of the app's hands and put into the singer's
           // (INV-NOTES-161).
           onMoveBeat?.(held.current, e.x);
         })
+        // A flick across a held beat throws it away (INV-NOTES-132). Read at
+        // the end, because what makes it a flick is where it finished and how
+        // fast it was still going, neither known while the finger is down.
+        .onEnd((e) => {
+          if (held.current == null || !isFlickAway(e)) {
+            return;
+          }
+          if (throwAway([{ kind: 'beat', index: held.current }], onRemoveBar, onRemoveBeat) === 0) {
+            return;
+          }
+          tapped();
+          onSelect([]);
+        })
         .onFinalize(() => {
           held.current = null;
         })
         .runOnJS(true),
-    [o, onMoveBeat, onSelect, selection]
+    [o, onMoveBeat, onRemoveBar, onRemoveBeat, onSelect, selection]
   );
 }

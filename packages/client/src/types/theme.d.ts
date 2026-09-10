@@ -37,6 +37,8 @@ declare interface IPaletteColors {
   black: string;
   typography: string;
   gold: string;
+  /** A beat heard in the take, told apart from one tapped in (INV-NOTES-242). */
+  voiced: string;
   /** The ground the recording view stands on (VIEW-NOTES-010). */
   stage: string;
   error: string;

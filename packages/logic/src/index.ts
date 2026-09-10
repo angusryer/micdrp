@@ -26,9 +26,12 @@ export * from './tapPatternEdit';
 export {
   drawnBeats,
   timelineFromAnchors,
+  type Anchor,
   type AnchoredTimeline,
+  type BeatKind,
   type DrawnBeat
 } from './beatAnchors';
+export * from './voicedBeats';
 export { beatsPerTap, spanOf } from './beatSpans';
 export {
   beatIntervals,

@@ -10,10 +10,13 @@
  * A beat marked as a bar start is drawn heavier and taller, so the shape of
  * the metre is readable across the take without counting.
  *
- * A beat worked out between two taps is drawn too, but faintly and short:
- * it is the app's account of a stretch nobody tapped through, and it has to
- * be tellable at a glance from the beats a person stated (INV-NOTES-237).
- * That distinction is the whole licence for drawing it at all.
+ * Three kinds, three looks (INV-NOTES-237, INV-NOTES-242). A beat tapped in
+ * with a finger and a beat heard in the take are both things the person did,
+ * so both are drawn full strength — in different colours, because the graph
+ * must never claim somebody tapped what they sang. A beat worked out between
+ * two of them is faint and short: it is the app's account of a stretch
+ * nobody marked at all, and telling it apart at a glance is the whole
+ * licence for drawing it.
  *
  * Only the tapped ones can be picked up. A derived beat is not a thing to
  * drag into place — it is a thing to replace by tapping one (INV-NOTES-238).
@@ -26,7 +29,7 @@ import { Canvas, Line, vec } from '@shopify/react-native-skia';
 
 import { useTheme } from '../theme';
 import { xForMs, type TimeAxis } from './melodyScale';
-import type { DrawnBeat, TappedBeat } from 'logic';
+import type { DrawnBeat } from 'logic';
 
 /** How strongly a beat is drawn, against the rules it sits among. */
 const BEAT_OPACITY = 0.55;
@@ -45,7 +48,7 @@ export interface TappedBeatsProps {
 
 /** Where each beat is drawn, for the surface that has to touch one. */
 export function beatLines(
-  beats: readonly TappedBeat[],
+  beats: readonly { atMs: number }[],
   timeAxis: TimeAxis
 ): { index: number; x: number }[] {
   return beats.map((beat, index) => ({
@@ -76,16 +79,22 @@ export function TappedBeats({
           const x = xForMs(timeAxis, beat.atMs);
           // Short and faint where nobody tapped it: it reads as a tick
           // between the statements rather than as one of them.
-          const inset = beat.isStated ? 0.12 : 0.42;
+          const inset = beat.kind === 'derived' ? 0.42 : 0.12;
           return (
             <Line
               key={index}
               p1={vec(x, beat.isDownbeat ? 0 : height * inset)}
               p2={vec(x, beat.isDownbeat ? height : height * (1 - inset))}
               strokeWidth={beat.isDownbeat ? 2 : 1}
-              color={beat.isDownbeat ? colors.gold : colors.primary500}
+              color={
+                beat.isDownbeat
+                  ? colors.gold
+                  : beat.kind === 'voiced'
+                    ? colors.voiced
+                    : colors.primary500
+              }
               opacity={
-                !beat.isStated
+                beat.kind === 'derived'
                   ? DERIVED_OPACITY
                   : beat.isDownbeat
                     ? DOWNBEAT_OPACITY

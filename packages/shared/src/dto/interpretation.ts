@@ -77,6 +77,19 @@ export interface InterpretationDto {
    */
   tapPattern?: { beats: number[]; beatsPerBar: number };
   /**
+   * Beats heard in the take that a person threw away (INV-NOTES-243).
+   *
+   * A voiced beat is read out of the audio every time the take is read, so
+   * removing one leaves nothing behind — the next redraw simply finds the
+   * sound again and puts the beat back. Only a record of the removal can
+   * keep it away, and it belongs with the edits for the same reason the
+   * tempo does: it is a decision about the take, not a fact of it.
+   *
+   * Instants in ms, matched by nearness rather than exactly, because a
+   * re-read finds the same consonant a few milliseconds off.
+   */
+  dismissedBeats?: number[];
+  /**
    * That somebody asked for the harmony, and what read it (INV-NOTES-171).
    *
    * Absent means nobody has asked, and a note nobody has asked shows no
@@ -197,6 +210,13 @@ export function parseInterpretations(raw: unknown): InterpretationDto[] {
       ...(typeof v.bpm === 'number' && v.bpm > 0 ? { bpm: v.bpm } : {}),
       ...(Array.isArray(v.beats) ? { beats: v.beats.filter(isTappedBeat) } : {}),
       ...(isTapPattern(v.tapPattern) ? { tapPattern: v.tapPattern } : {}),
+      ...(Array.isArray(v.dismissedBeats)
+        ? {
+            dismissedBeats: v.dismissedBeats.filter(
+              (n) => typeof n === 'number' && Number.isFinite(n) && n >= 0
+            )
+          }
+        : {}),
       ...(isHarmonyAsk(v.harmony) ? { harmony: v.harmony } : {})
     });
   }

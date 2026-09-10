@@ -161,8 +161,12 @@ describe('INV-PITCH-020: how loud the note was', () => {
 describe('a chosen beat (INV-NOTES-163)', () => {
   const selection: Selection = { kind: 'beat', index: 0 };
 
+  // Anchors are what the graph draws and touches; `beats` is the taps
+  // behind them, which is where a tapped beat's original moment lives
+  // (INV-NOTES-242).
   const withBeat = (isDownbeat: boolean, atMs = 1000, tappedAtMs = 1000) =>
     fakeDetail({
+      anchors: [{ atMs, isDownbeat }],
       beats: [{ atMs, tappedAtMs, isDownbeat }],
       setBeatIsDownbeat: jest.fn(),
       resetBeatAt: jest.fn(),

@@ -34,6 +34,20 @@ export interface Flick {
 }
 
 /**
+ * Whether a drag is travelling across the line rather than along it.
+ *
+ * Readable while the finger is still down, unlike a flick, which needs the
+ * speed it finished at. A hold that has picked a beat up asks this to know
+ * whether to keep dragging it sideways or to leave it where it is and let
+ * the end of the gesture decide (INV-NOTES-244): a beat that slid off
+ * sideways on the way to being thrown away has moved and then vanished,
+ * and if the flick turns out not to be one, it stays where it was dragged.
+ */
+export function isAcross({ translationX, translationY }: Flick): boolean {
+  return Math.abs(translationY) >= Math.abs(translationX) * STRAIGHTNESS;
+}
+
+/**
  * Whether a finished drag was a flick across the line rather than along it.
  *
  * All three tests, because each one alone is something else: far but slow is a
@@ -45,11 +59,10 @@ export function isFlickAway({
   translationY,
   velocityY
 }: Flick): boolean {
-  const across = Math.abs(translationY);
   return (
-    across >= FLICK_PX &&
+    Math.abs(translationY) >= FLICK_PX &&
     Math.abs(velocityY) >= FLICK_VELOCITY &&
-    across >= Math.abs(translationX) * STRAIGHTNESS
+    isAcross({ translationX, translationY, velocityY })
   );
 }
 

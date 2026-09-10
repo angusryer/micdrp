@@ -41,6 +41,7 @@ export interface Interpretation {
   savedBeats: readonly TappedBeat[];
   /** Which beats of the bar those taps were for, or undefined if nobody said. */
   savedTapPattern: TapPattern | undefined;
+  savedDismissedBeats: readonly number[];
   /** Whether somebody has asked for the harmony (INV-NOTES-171). */
   hasHarmony: boolean;
   /** Pitches corrected where the detector heard wrongly. */
@@ -55,6 +56,7 @@ export interface Interpretation {
   updateBeats: (beats: readonly TappedBeat[]) => void;
   /** Say what the taps were for, or take it back (INV-NOTES-209). */
   updateTapPattern: (pattern: TapPattern | undefined) => void;
+  updateDismissedBeats: (dismissed: readonly number[]) => void;
   /**
    * Ask for the harmony, or ask again once the take has more to go on.
    *
@@ -97,6 +99,9 @@ export function useInterpretation(
   const [savedBeats, setSavedBeats] = useState<readonly TappedBeat[]>(
     () => active.beats ?? []
   );
+  const [savedDismissedBeats, setSavedDismissedBeats] = useState<
+    readonly number[]
+  >(() => active.dismissedBeats ?? []);
   const [hasHarmony, setHasHarmony] = useState(active.harmony != null);
   const [failed, setFailed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -125,6 +130,7 @@ export function useInterpretation(
     // The stored shape, which is mutable: a pattern is a sentence written
     // down, and `TapPattern` is how the code reads it back.
     tapPattern?: { beats: number[]; beatsPerBar: number };
+    dismissedBeats?: number[];
     harmony?: { askedAtMs: number; analysisVersion: number };
   }>({
     chords: active.chords as ChordSlotEdit[],
@@ -137,6 +143,9 @@ export function useInterpretation(
     ...(active.bpm != null ? { bpm: active.bpm } : {}),
     ...(active.beats ? { beats: [...active.beats] } : {}),
     ...(active.tapPattern ? { tapPattern: { ...active.tapPattern } } : {}),
+    ...(active.dismissedBeats
+      ? { dismissedBeats: [...active.dismissedBeats] }
+      : {}),
     ...(active.harmony ? { harmony: { ...active.harmony } } : {})
   });
 
@@ -261,9 +270,24 @@ export function useInterpretation(
     [schedule]
   );
 
+  /** Remember that a beat heard in the take was thrown away. */
+  const updateDismissedBeats = useCallback(
+    (dismissedBeats: readonly number[]) => {
+      setSavedDismissedBeats(dismissedBeats);
+      latest.current = {
+        ...latest.current,
+        dismissedBeats: [...dismissedBeats]
+      };
+      schedule();
+    },
+    [schedule]
+  );
+
   return {
     savedEdits,
     savedBarLines,
+    savedDismissedBeats,
+    updateDismissedBeats,
     savedBpm,
     savedBeats,
     savedTapPattern,

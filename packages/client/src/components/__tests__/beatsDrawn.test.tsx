@@ -24,9 +24,9 @@ const timeAxis = { t0: 0, span: 4000, pad: 12, innerW: 900, pxPerMs: 0.2 };
 const HEIGHT = 200;
 
 const LINE: DrawnBeat[] = [
-  { atMs: 0, isStated: true, isDownbeat: false },
-  { atMs: 600, isStated: false, isDownbeat: false },
-  { atMs: 1200, isStated: true, isDownbeat: false }
+  { atMs: 0, kind: 'tapped', isDownbeat: false },
+  { atMs: 600, kind: 'derived', isDownbeat: false },
+  { atMs: 1200, kind: 'voiced', isDownbeat: false }
 ];
 
 /** A drawn line's endpoints and weight, off the recorder's loose props. */
@@ -34,7 +34,8 @@ const at = (mark: DrawnNode) => ({
   x: (mark.props.p1 as { x: number }).x,
   top: (mark.props.p1 as { y: number }).y,
   bottom: (mark.props.p2 as { y: number }).y,
-  opacity: mark.props.opacity as number
+  opacity: mark.props.opacity as number,
+  colour: mark.props.color as string
 });
 
 const draw = (line: DrawnBeat[]) =>
@@ -68,6 +69,20 @@ describe('the beats drawn over the melody', () => {
   it('draws every beat, tapped or not, at its own moment', async () => {
     const lines = skiaDrawn(await draw(LINE), 'Line');
     expect(lines.map((mark) => at(mark).x)).toEqual([12, 132, 252]);
+  });
+
+  it('draws a beat heard in the take in a colour of its own', async () => {
+    // INV-NOTES-242. Both are things the person did, so both are drawn full
+    // strength — but the graph must never claim a sung beat was tapped.
+    const [tapped, , voiced] = skiaDrawn(await draw(LINE), 'Line').map(at);
+    expect(voiced.colour).not.toBe(tapped.colour);
+    expect(voiced.opacity).toBe(tapped.opacity);
+  });
+
+  it('draws all three kinds differently from each other', async () => {
+    const marks = skiaDrawn(await draw(LINE), 'Line').map(at);
+    const looks = marks.map((m) => `${m.colour}/${m.opacity}`);
+    expect(new Set(looks).size).toBe(3);
   });
 
   it('draws nothing at all for a take with no beats', async () => {

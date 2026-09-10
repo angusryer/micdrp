@@ -20,11 +20,28 @@
  */
 import { beatsPerTap, spanOf } from './beatSpans';
 import type { BeatTimeline } from './beatTimeline';
-import type { TappedBeat } from './tappedBeats';
+
+/**
+ * Where a beat came from.
+ *
+ * 'tapped' and 'voiced' are both things a person did — a finger on the pad
+ * and a sound in the take — and both anchor the timeline (INV-NOTES-242).
+ * 'derived' is the app's account of a stretch nobody marked at all, and is
+ * the only one of the three that is a guess (INV-NOTES-237).
+ */
+export type BeatKind = 'tapped' | 'voiced' | 'derived';
+
+/** A beat a person put there, by finger or by mouth. */
+export interface Anchor {
+  atMs: number;
+  isDownbeat: boolean;
+  /** True where this came out of the take rather than off the pad. */
+  isVoiced?: boolean;
+}
 
 export interface AnchoredTimeline extends BeatTimeline {
-  /** Index i is true where beat i is a tap rather than a fill. */
-  stated: boolean[];
+  /** Index i says what put beat i there. */
+  kinds: BeatKind[];
 }
 
 /**
@@ -34,7 +51,7 @@ export interface AnchoredTimeline extends BeatTimeline {
  * is what a take nobody tapped has and goes on having (INV-NOTES-241).
  */
 export function timelineFromAnchors(
-  taps: readonly TappedBeat[],
+  taps: readonly Anchor[],
   detectedBpm: number,
   durationMs: number
 ): AnchoredTimeline | null {
@@ -47,7 +64,7 @@ export function timelineFromAnchors(
   const perTap = beatsPerTap(gaps, detectedMs);
 
   const beats: number[] = [];
-  const stated: boolean[] = [];
+  const kinds: BeatKind[] = [];
   const barStarts: number[] = [];
   const suspectGaps: number[] = [];
 
@@ -56,7 +73,7 @@ export function timelineFromAnchors(
       barStarts.push(beats.length);
     }
     beats.push(anchors[i].atMs);
-    stated.push(true);
+    kinds.push(anchors[i].isVoiced === true ? 'voiced' : 'tapped');
 
     if (i + 1 >= anchors.length) {
       continue;
@@ -70,19 +87,19 @@ export function timelineFromAnchors(
     }
     for (let k = 1; k < span; k += 1) {
       beats.push(anchors[i].atMs + (gaps[i] * k) / span);
-      stated.push(false);
+      kinds.push('derived');
     }
   }
 
-  extend(beats, stated, barStarts, outerMs(beats, detectedMs), durationMs);
-  return { beats, barStarts, suspectGaps, isTapped: true, stated };
+  extend(beats, kinds, barStarts, outerMs(beats, detectedMs), durationMs);
+  return { beats, barStarts, suspectGaps, isTapped: true, kinds };
 }
 
 /** One beat of the take, ready to be drawn. */
 export interface DrawnBeat {
   atMs: number;
-  /** True where a person tapped this one rather than it being worked out. */
-  isStated: boolean;
+  /** What put it there: tapped, heard in the voice, or worked out. */
+  kind: BeatKind;
   isDownbeat: boolean;
 }
 
@@ -97,7 +114,7 @@ export function drawnBeats(timeline: AnchoredTimeline): DrawnBeat[] {
   const bars = new Set(timeline.barStarts);
   return timeline.beats.map((atMs, i) => ({
     atMs,
-    isStated: timeline.stated[i] === true,
+    kind: timeline.kinds[i] ?? 'derived',
     isDownbeat: bars.has(i)
   }));
 }
@@ -127,7 +144,7 @@ function outerMs(beats: readonly number[], detectedMs: number): number {
  */
 function extend(
   beats: number[],
-  stated: boolean[],
+  kinds: BeatKind[],
   barStarts: number[],
   periodMs: number,
   durationMs: number
@@ -138,7 +155,7 @@ function extend(
   const last = beats[beats.length - 1];
   for (let at = last + periodMs; at <= durationMs; at += periodMs) {
     beats.push(at);
-    stated.push(false);
+    kinds.push('derived');
   }
   const before: number[] = [];
   for (let at = beats[0] - periodMs; at >= 0; at -= periodMs) {
@@ -148,7 +165,7 @@ function extend(
     return;
   }
   beats.unshift(...before);
-  stated.unshift(...before.map(() => false));
+  kinds.unshift(...before.map((): BeatKind => 'derived'));
   for (let i = 0; i < barStarts.length; i += 1) {
     barStarts[i] += before.length;
   }
