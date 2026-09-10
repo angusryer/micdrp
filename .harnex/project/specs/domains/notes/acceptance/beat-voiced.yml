@@ -1,0 +1,76 @@
+# Beats heard in the voice, and throwing a beat away — notes.set_beat and
+# notes.remove_beat. Split from beat.yml for the 150-line budget.
+acceptance:
+  - id: ACC-NOTES-261
+    interface: ui
+    title: A sound made with the mouth is a beat
+    given:
+      - a signed-in singer S
+      - singer S has a note N with detected hits and no taps
+    when:
+      - singer S calls notes.set_beat on note N
+    then:
+      - the note field statedBeatCount is the hit count
+      - the note field voicedBeatCount is the hit count
+    maps_to:
+      capability: notes.set_beat
+      invariants: [INV-NOTES-242]
+
+  - id: ACC-NOTES-262
+    interface: ui
+    title: The three kinds of beat are told apart
+    given:
+      - a signed-in singer S
+      - singer S has a note N with taps, detected hits and a filled gap
+    when:
+      - singer S calls notes.set_beat on note N
+    then:
+      - the note field beatKindCount is 3
+      - the note field beatColoursAreDistinct is true
+    maps_to:
+      capability: notes.set_beat
+      invariants: [INV-NOTES-242, INV-NOTES-237]
+
+  - id: ACC-NOTES-263
+    interface: ui
+    title: A voiced beat thrown away does not come back on a re-read
+    given:
+      - a signed-in singer S
+      - singer S has a note N with a voiced beat removed
+    when:
+      - singer S calls notes.reread_take on note N
+    then:
+      - the note field voicedBeatRestored is false
+      - the note field dismissalKept is true
+    maps_to:
+      capability: notes.remove_beat
+      invariants: [INV-NOTES-243]
+
+  - id: ACC-NOTES-264
+    interface: ui
+    title: A dismissal survives the sound moving a little
+    given:
+      - a signed-in singer S
+      - singer S has a note N whose re-read moved a dismissed hit by 20ms
+    when:
+      - singer S calls notes.reread_take on note N
+    then:
+      - the note field voicedBeatRestored is false
+    maps_to:
+      capability: notes.remove_beat
+      invariants: [INV-NOTES-243]
+
+  - id: ACC-NOTES-265
+    interface: ui
+    title: A beat can still be moved as well as thrown away
+    given:
+      - a signed-in singer S
+      - singer S has a note N with a tapped beat
+    when:
+      - singer S calls notes.remove_beat on note N
+    then:
+      - the note field flickRemoves is true
+      - the note field heldDragMoves is true
+    maps_to:
+      capability: notes.remove_beat
+      invariants: [INV-NOTES-244]

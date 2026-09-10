@@ -1,0 +1,74 @@
+# Notes written into a take rather than sung — notes.add_note.
+acceptance:
+  - id: ACC-NOTES-266
+    interface: ui
+    title: Swiping down from the playhead writes a note there
+    given:
+      - a signed-in singer S
+      - singer S has a note N with the playhead at a known moment
+    when:
+      - singer S calls notes.add_note on note N
+    then:
+      - the note field addedNoteCount is 1
+      - the note field addedNoteStartsAtPlayhead is true
+    maps_to:
+      capability: notes.add_note
+      invariants: [INV-NOTES-245]
+
+  - id: ACC-NOTES-267
+    interface: ui
+    title: The written note takes the pitch the finger stopped on
+    given:
+      - a signed-in singer S
+      - singer S has a note N and a swipe released over a known pitch
+    when:
+      - singer S calls notes.add_note on note N
+    then:
+      - the note field addedNoteMidi is the released pitch
+    maps_to:
+      capability: notes.add_note
+      invariants: [INV-NOTES-245]
+
+  - id: ACC-NOTES-268
+    interface: ui
+    title: A written note is a quarter of the beat it sits in
+    given:
+      - a signed-in singer S
+      - singer S has a note N whose beat at the playhead is 600ms
+    when:
+      - singer S calls notes.add_note on note N
+    then:
+      - the note field addedNoteDurationMs is 150
+    maps_to:
+      capability: notes.add_note
+      invariants: [INV-NOTES-245]
+
+  - id: ACC-NOTES-269
+    interface: ui
+    title: A written note survives the take being read again
+    given:
+      - a signed-in singer S
+      - singer S has a note N with a written note
+    when:
+      - singer S calls notes.reread_take on note N
+    then:
+      - the note field addedNoteCount is 1
+      - the note field addedNoteDrawnAsWritten is true
+    maps_to:
+      capability: notes.add_note
+      invariants: [INV-NOTES-246]
+
+  - id: ACC-NOTES-270
+    interface: ui
+    title: A written note is exported like any other
+    given:
+      - a signed-in singer S
+      - singer S has a note N with a written note
+    when:
+      - singer S calls notes.export_midi on note N
+    then:
+      - the note field exportedNoteCount includes the written note
+      - the note field addedNoteDrawnAsWritten is true
+    maps_to:
+      capability: notes.add_note
+      invariants: [INV-NOTES-247]

@@ -1,0 +1,63 @@
+# The beat heard in the voice, and throwing any beat away. Split from
+# invariants-beat.yml to stay inside the 150-line spec-file budget (Axiom 3).
+invariants:
+  - id: INV-NOTES-242
+    description: A beat heard in the voice is a beat, in a colour of its own
+    severity: critical
+    check: >
+      A percussive sound in the take — a thump, a tap, a hiss — is a beat
+      of the timeline, anchoring it exactly as a tapped beat does
+      (INV-NOTES-236). It is drawn in its own colour, distinct from both a
+      beat tapped by finger and a beat the app worked out, so the graph
+      says of every beat where it came from. Verified by asserting a take
+      with detected hits and no taps has beats at those hits, that each
+      reports voiced, and that the three kinds draw in three colours.
+
+      There is no accepting. A sound somebody made with their mouth is a
+      statement about the beat in the same way a tap is — both are things
+      the person did, and neither is the app guessing. Requiring a press
+      before it counted would make a person confirm their own singing back
+      to the app.
+
+      That is what separates these from a fill (INV-NOTES-237), which is
+      the app's account of a stretch nobody marked at all, and why a fill
+      is faint while these are not.
+
+  - id: INV-NOTES-243
+    description: A beat thrown away stays thrown away, whatever put it there
+    severity: critical
+    check: >
+      Any beat a person did not work out — tapped or voiced — can be
+      thrown off the graph, and a voiced one that was thrown away does not
+      return: not on the next redraw, not when the note is reopened, and
+      not when the take is read again. Verified by removing a voiced beat,
+      re-reading the take, and asserting it is still gone.
+
+      A voiced beat is derived from the audio, so nothing but a record of
+      the removal can keep it away — without one, every redraw would put
+      back the beat just discarded, which is the app overruling a person
+      about their own take. The record lives with the interpretation
+      rather than the reading, because it is a decision about the take and
+      not a fact of it (INV-NOTES-123).
+
+      A re-read finds the same sounds at slightly different moments, so a
+      removal is matched by nearness rather than by an exact instant. A
+      dismissal that missed by three milliseconds would be no dismissal at
+      all.
+
+  - id: INV-NOTES-244
+    description: A beat is thrown away by flicking it, and holding still moves it
+    severity: major
+    check: >
+      A flick across a beat throws it away (INV-NOTES-132) and a hold
+      followed by a drag moves it (INV-NOTES-163), and neither gesture
+      prevents the other from being made. Verified by asserting a flick on
+      a beat removes it while a held drag on the same beat moves it.
+
+      The two competed: the hold that picks a beat up activates on a
+      timer and then owns the vertical direction, so a flick begun on a
+      beat was read as a slow move and the beat came back down where it
+      started. The gesture that discards is the one a person reaches for
+      when a beat is plainly wrong, and losing it means going looking for
+      a control for something already under the finger — which is the
+      whole reason INV-NOTES-132 exists.

@@ -52,3 +52,26 @@ capabilities:
     permissions:
       - role: singer
         notes: A way of looking, not a claim about the take.
+
+  - name: notes.remove_beat
+    description: >
+      Throw a beat off the graph by flicking across it (INV-NOTES-132).
+      Works on any beat a person did not work out — tapped by finger or
+      heard in the voice — and a voiced one stays gone through a re-read
+      (INV-NOTES-243).
+    actor: singer
+    implemented_by: packages/client/src/components/flickAway.ts
+    parameters:
+      required: [noteId, index]
+    preconditions:
+      - the take belongs to the singer
+    postconditions:
+      - the beat is gone from the timeline and the beats either side of it
+        are re-read across the gap it left
+      - a voiced beat's removal is remembered with the interpretation, and
+        matched by nearness so a re-read cannot undo it
+      - a flick and a held drag both remain possible on the same beat
+        (INV-NOTES-244)
+    permissions:
+      - role: singer
+        notes: A person's own account of their own take.

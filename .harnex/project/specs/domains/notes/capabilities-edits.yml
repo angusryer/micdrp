@@ -97,3 +97,27 @@ capabilities:
     permissions:
       - role: visitor
         notes: Pure computation.
+
+  - name: notes.add_note
+    description: >
+      Write a note into a take by swiping down from the playhead
+      (INV-NOTES-245). The first thing in this domain that adds to a take
+      rather than reading one, so what it adds is drawn as written for as
+      long as the take exists (INV-NOTES-246).
+    actor: singer
+    implemented_by: packages/client/src/screens/Notes/useNoteDetail.ts
+    parameters:
+      required: [noteId, atMs, midi]
+    preconditions:
+      - the take belongs to the singer
+    postconditions:
+      - the note starts at the playhead's moment and lasts a quarter of
+        the beat the playhead sits in
+      - its pitch is the one under the finger when the swipe ended
+      - it is kept with the interpretation and survives a re-read, which
+        no reading of the audio could ever produce it (INV-NOTES-246)
+      - it plays, exports, transposes and can be moved, resized and
+        removed like any other note (INV-NOTES-247)
+    permissions:
+      - role: singer
+        notes: A person's own account of their own take.

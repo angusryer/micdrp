@@ -1,0 +1,58 @@
+# Notes written in rather than sung. Its own file: everything else in the
+# notes domain reads a take, and this is the first thing that adds to one.
+invariants:
+  - id: INV-NOTES-245
+    description: A note is added at the playhead, by swiping down from it
+    severity: major
+    check: >
+      A swipe beginning at the top of the playhead adds a note starting at
+      the playhead's own moment. Where the finger comes to rest sets the
+      pitch, since that is the only thing the gesture carries. The note is
+      a quarter of a beat long, measured on the beat the playhead sits in,
+      so it is short enough to place inside a bar and long enough to see.
+      Verified by asserting a swipe from the head at a known moment adds
+      one note at that moment, at the pitch under the release.
+
+      At the playhead because that is where a person's attention already
+      is, and because it is the one moment on the graph the app and the
+      person already agree about. A note added anywhere else needs a
+      moment chosen first, which is a second decision for the same act.
+
+      A quarter beat rather than a beat: a note that is too short is
+      lengthened by dragging its end, which already exists, while one that
+      is too long hides what is under it.
+
+  - id: INV-NOTES-246
+    description: A note written in is drawn as written, never as sung
+    severity: critical
+    check: >
+      A note added by hand keeps its own look for as long as the take
+      exists — on the graph, on reopening the note, and after the take is
+      read again. Verified by adding a note, re-reading the take, and
+      asserting it is still present and still drawn as written.
+
+      A take is a recording of something somebody sang, and everything on
+      the graph until now has been the reading of that recording plus
+      corrections to it. A written note is neither: nothing in the audio
+      produced it and no re-read ever will. Drawing it like a sung note
+      would let a person come back to a take and take the app's word that
+      they sang something they wrote.
+
+      It survives a re-read for the same reason it is drawn apart: the
+      audio cannot produce it, so a re-read that dropped it would delete
+      work rather than refresh a reading (INV-NOTES-116).
+
+  - id: INV-NOTES-247
+    description: A written note is a note in every other respect
+    severity: major
+    check: >
+      A written note plays, exports, transposes, can be moved, resized and
+      removed, and counts towards the harmony read from the take, exactly
+      as a sung note does. Only its drawing and its provenance differ.
+      Verified by asserting a take's exported MIDI contains a note that
+      was written in, at its stated pitch and moment.
+
+      The distinction is about where a note came from, not about what it
+      is. A written note that could not be played would be an annotation
+      rather than a note, and the reason to add one is to hear whether it
+      belongs.
