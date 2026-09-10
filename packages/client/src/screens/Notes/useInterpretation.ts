@@ -49,6 +49,7 @@ export interface Interpretation {
   savedTapPattern: TapPattern | undefined;
   savedDismissedBeats: readonly number[];
   savedWrittenNotes: readonly WrittenNote[];
+  savedDeletedNotes: readonly number[];
   /** Whether somebody has asked for the harmony (INV-NOTES-171). */
   hasHarmony: boolean;
   /** Pitches corrected where the detector heard wrongly. */
@@ -65,6 +66,7 @@ export interface Interpretation {
   updateTapPattern: (pattern: TapPattern | undefined) => void;
   updateDismissedBeats: (dismissed: readonly number[]) => void;
   updateWrittenNotes: (written: readonly WrittenNote[]) => void;
+  updateDeletedNotes: (deleted: readonly number[]) => void;
   /**
    * Ask for the harmony, or ask again once the take has more to go on.
    *
@@ -113,6 +115,9 @@ export function useInterpretation(
   const [savedWrittenNotes, setSavedWrittenNotes] = useState<
     readonly WrittenNote[]
   >(() => active.writtenNotes ?? []);
+  const [savedDeletedNotes, setSavedDeletedNotes] = useState<
+    readonly number[]
+  >(() => active.deletedNotes ?? []);
   const [hasHarmony, setHasHarmony] = useState(active.harmony != null);
   const [failed, setFailed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -143,6 +148,7 @@ export function useInterpretation(
     tapPattern?: { beats: number[]; beatsPerBar: number };
     dismissedBeats?: number[];
     writtenNotes?: WrittenNote[];
+    deletedNotes?: number[];
     harmony?: { askedAtMs: number; analysisVersion: number };
   }>({
     chords: active.chords as ChordSlotEdit[],
@@ -160,6 +166,9 @@ export function useInterpretation(
       : {}),
     ...(active.writtenNotes
       ? { writtenNotes: active.writtenNotes.map((one) => ({ ...one })) }
+      : {}),
+    ...(active.deletedNotes
+      ? { deletedNotes: [...active.deletedNotes] }
       : {}),
     ...(active.harmony ? { harmony: { ...active.harmony } } : {})
   });
@@ -311,7 +320,22 @@ export function useInterpretation(
     [schedule]
   );
 
+  /** Keep which notes were thrown away (INV-NOTES-248). */
+  const updateDeletedNotes = useCallback(
+    (deletedNotes: readonly number[]) => {
+      setSavedDeletedNotes(deletedNotes);
+      latest.current = {
+        ...latest.current,
+        deletedNotes: [...deletedNotes]
+      };
+      schedule();
+    },
+    [schedule]
+  );
+
   return {
+    savedDeletedNotes,
+    updateDeletedNotes,
     savedEdits,
     savedBarLines,
     savedDismissedBeats,

@@ -56,3 +56,46 @@ invariants:
       is. A written note that could not be played would be an annotation
       rather than a note, and the reason to add one is to hear whether it
       belongs.
+
+  - id: INV-NOTES-248
+    description: A note can be thrown away, sung or written
+    severity: critical
+    check: >
+      Any note on the graph can be deleted. A written note goes from the
+      notes written in; a sung one is recorded as thrown away and left out
+      of the reading from then on, including after the take is read again.
+      Verified by deleting one of each, re-reading the take, and asserting
+      neither has returned.
+
+      A deletion cannot be an edit. Edits are collected by comparing what
+      is on screen against what was heard, note against note in order
+      (INV-NOTES-096), and a missing note shifts every anchor after it —
+      so collecting the edits again would rewrite every later correction
+      onto the wrong note. It is kept in its own list for the same reason
+      a dismissed beat is (INV-NOTES-243): both are things the reading
+      produces and a person removed, and neither has anywhere else to
+      live.
+
+      The note is left out before any edit is replayed, so nothing
+      downstream ever sees it. Indices, corrections, quantising and the
+      export all go on reading one list of notes and need to know nothing
+      about this.
+
+  - id: INV-NOTES-249
+    description: A thrown-away note can be put back
+    severity: major
+    check: >
+      While any note has been thrown away, a way to put them back is
+      offered, and taking it restores every one with its corrections
+      intact. Verified by correcting a note, deleting it, restoring it,
+      and asserting the correction survived.
+
+      Nothing else in this app is a one-way door: a correction can be
+      undone, a re-read can be undone, a tapped beat can be put back where
+      the finger landed (INV-NOTES-044, INV-NOTES-215). A deleted note has
+      no handle left on the graph to offer it from, which is exactly why
+      the offer has to live somewhere else rather than not exist.
+
+      Corrections survive because a deletion only hides the note. The edit
+      that corrected it is still anchored to a moment that does not move
+      (INV-NOTES-096), so putting the note back finds it again.

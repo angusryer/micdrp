@@ -142,8 +142,19 @@ function describeSungNote(
       run: () => detail.resetNote(selection.index)
     });
   }
+  // On every note, sung or written (INV-NOTES-248). A note the detector
+  // invented out of a breath has to be removable, and so does one written
+  // in by mistake.
+  actions.push({
+    label: 'Delete this note',
+    run: () => detail.deleteNoteAt(selection.index)
+  });
   return {
-    title: note ? midiToLabel(note.midi) : 'Sung note',
+    title: note
+      ? note.isWritten === true
+        ? `${midiToLabel(note.midi)}, written in`
+        : midiToLabel(note.midi)
+      : 'Sung note',
     accent,
     facts: note
       ? [
@@ -155,7 +166,12 @@ function describeSungNote(
           { label: 'Loudness', value: loudness(note.loudnessDb) },
           {
             label: 'Read as',
-            value: isCorrected ? 'moved by hand' : 'detected'
+            value:
+              note.isWritten === true
+                ? 'written in, never sung'
+                : isCorrected
+                  ? 'moved by hand'
+                  : 'detected'
           }
         ]
       : [],

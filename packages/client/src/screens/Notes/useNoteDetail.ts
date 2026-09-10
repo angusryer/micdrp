@@ -40,7 +40,9 @@ import {
   tappedTempo,
   anchorsFrom,
   drawnBeats,
+  anchorOf,
   withWritten,
+  withoutDeleted,
   writeAt,
   unwrite,
   removeAnchor,
@@ -164,8 +166,16 @@ export function useNoteDetail(id: string) {
   );
 
   const heard = useMemo(
-    () => withWritten(sung, interpretation.savedWrittenNotes),
-    [sung, interpretation.savedWrittenNotes]
+    () =>
+      withoutDeleted(
+        withWritten(sung, interpretation.savedWrittenNotes),
+        interpretation.savedDeletedNotes
+      ),
+    [
+      sung,
+      interpretation.savedWrittenNotes,
+      interpretation.savedDeletedNotes
+    ]
   );
 
 
@@ -1024,12 +1034,47 @@ export function useNoteDetail(id: string) {
       },
       [interpretation, timeline, grid.bpm]
     ),
-    /** Throw away a note that was written in rather than sung. */
-    removeWrittenNoteAt: useCallback(
-      (atMs: number) =>
-        interpretation.updateWrittenNotes(
-          unwrite(interpretation.savedWrittenNotes, atMs)
-        ),
+    /**
+     * Throw a note off the graph, sung or written (INV-NOTES-248).
+     *
+     * A written note goes from the list it lives in — there is nowhere
+     * else it exists. A sung one is recorded as thrown away, because the
+     * audio still holds it and the next read would find it again.
+     *
+     * Anchored against what was heard rather than against the corrected
+     * note, so a note that was moved is still found by its own deletion
+     * (INV-NOTES-096).
+     */
+    deleteNoteAt: useCallback(
+      (index: number) => {
+        const going = heard[index];
+        if (going == null) {
+          return;
+        }
+        if (going.isWritten === true) {
+          interpretation.updateWrittenNotes(
+            unwrite(interpretation.savedWrittenNotes, going.startMs)
+          );
+          return;
+        }
+        interpretation.updateDeletedNotes([
+          ...interpretation.savedDeletedNotes,
+          anchorOf(going)
+        ]);
+      },
+      [heard, interpretation]
+    ),
+    /** How many sung notes have been thrown away (INV-NOTES-249). */
+    deletedNoteCount: interpretation.savedDeletedNotes.length,
+    /**
+     * Put every thrown-away note back, corrections and all.
+     *
+     * A deletion only hides the note: the edit that corrected it is still
+     * anchored to a moment that does not move, so restoring finds it
+     * again (INV-NOTES-249).
+     */
+    restoreDeletedNotes: useCallback(
+      () => interpretation.updateDeletedNotes([]),
       [interpretation]
     ),
     writtenNotes: interpretation.savedWrittenNotes,

@@ -32,6 +32,7 @@ import { ExportSheet } from '../Results/ExportSheet';
 import { NoteStats } from './NoteStats';
 import { RereadCard } from './RereadCard';
 import { TuningPanel } from './TuningPanel';
+import { DeletedNotesRow } from './DeletedNotesRow';
 import { TempoRow } from './TempoRow';
 import { TapPatternRow } from './TapPatternRow';
 import { PickupRow } from './PickupRow';
@@ -130,6 +131,14 @@ export function NoteDetailsPage({
             tappedBpm={detail.tappedBpm}
             tappedRange={detail.tappedRange}
             onSet={detail.setBpm}
+          />
+
+          {/* Only while there is something to put back (INV-NOTES-249).
+              A deleted note has no handle left on the graph, so the way
+              back cannot live on the thing it undoes. */}
+          <DeletedNotesRow
+            count={detail.deletedNoteCount}
+            onRestore={detail.restoreDeletedNotes}
           />
 
           {/* How far into a bar the singing started. Beside the tap pattern

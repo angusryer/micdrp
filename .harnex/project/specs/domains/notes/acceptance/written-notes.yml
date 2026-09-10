@@ -72,3 +72,47 @@ acceptance:
     maps_to:
       capability: notes.add_note
       invariants: [INV-NOTES-247]
+
+  - id: ACC-NOTES-271
+    interface: ui
+    title: A sung note thrown away stays away through a re-read
+    given:
+      - a signed-in singer S
+      - singer S has a note N with a sung note deleted
+    when:
+      - singer S calls notes.reread_take on note N
+    then:
+      - the note field deletedNoteRestored is false
+      - the note field melodyExcludesDeleted is true
+    maps_to:
+      capability: notes.delete_note
+      invariants: [INV-NOTES-248]
+
+  - id: ACC-NOTES-272
+    interface: ui
+    title: Deleting a note leaves the corrections around it alone
+    given:
+      - a signed-in singer S
+      - singer S has a note N with two corrected notes
+    when:
+      - singer S calls notes.delete_note on note N
+    then:
+      - the note field remainingCorrectionsIntact is true
+    maps_to:
+      capability: notes.delete_note
+      invariants: [INV-NOTES-248]
+
+  - id: ACC-NOTES-273
+    interface: ui
+    title: A thrown-away note comes back with its correction
+    given:
+      - a signed-in singer S
+      - singer S has a note N with a corrected note that was deleted
+    when:
+      - singer S calls notes.delete_note on note N
+    then:
+      - the note field restoredNoteCount is 1
+      - the note field restoredNoteKeptCorrection is true
+    maps_to:
+      capability: notes.delete_note
+      invariants: [INV-NOTES-249]

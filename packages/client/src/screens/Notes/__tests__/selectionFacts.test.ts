@@ -50,7 +50,21 @@ describe('a chosen sung note', () => {
 
   it('offers nothing to undo on a note nobody has moved', () => {
     const shown = describeSelection(selection, fakeDetail(), ACCENT, jest.fn());
-    expect(labels(shown)).toEqual(['Hear it']);
+    expect(labels(shown)).not.toContain('Put it back');
+  });
+
+  it('offers to throw away any note at all (INV-NOTES-248)', () => {
+    // On every note, corrected or not: a note the detector invented out of
+    // a breath has to be removable, and so does one written in by mistake.
+    for (const isCorrected of [() => true, () => false]) {
+      const shown = describeSelection(
+        selection,
+        fakeDetail({ isCorrected }),
+        ACCENT,
+        jest.fn()
+      );
+      expect(labels(shown)).toContain('Delete this note');
+    }
   });
 
   it('offers to put back a note that was moved by hand', () => {

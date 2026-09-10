@@ -121,3 +121,25 @@ capabilities:
     permissions:
       - role: singer
         notes: A person's own account of their own take.
+
+  - name: notes.delete_note
+    description: >
+      Throw a note off the graph, whether it was sung or written in
+      (INV-NOTES-248), and put thrown-away notes back (INV-NOTES-249).
+    actor: singer
+    implemented_by: packages/client/src/screens/Notes/useNoteDetail.ts
+    parameters:
+      required: [noteId, index]
+    preconditions:
+      - the take belongs to the singer
+    postconditions:
+      - a written note is removed from the notes written in
+      - a sung note is recorded as thrown away, kept with the
+        interpretation, and stays away through a re-read
+      - the note is left out before any edit is replayed, so nothing
+        downstream sees it and no other correction is disturbed
+      - while anything has been thrown away, putting it back is offered,
+        and restoring keeps every correction that was made to it
+    permissions:
+      - role: singer
+        notes: A person's own account of their own take.

@@ -94,3 +94,38 @@ export function unwrite(
 ): WrittenNote[] {
   return written.filter((one) => Math.round(one.atMs) !== Math.round(atMs));
 }
+
+/**
+ * The notes left after the thrown-away ones (INV-NOTES-248).
+ *
+ * Applied before any edit is replayed, so nothing downstream ever sees a
+ * deleted note: indices, corrections, quantising and the export all go on
+ * reading one list and need to know nothing about this.
+ *
+ * A deletion cannot be an edit. Edits are collected by comparing what is on
+ * screen against what was heard, note against note in order, and a missing
+ * note shifts every anchor after it — so collecting them again would
+ * rewrite every later correction onto the wrong note.
+ *
+ * Anchored the way an edit is: by a moment inside the note as it was heard
+ * (INV-NOTES-096). A re-read moves an onset a little and a fixed instant
+ * would let every deleted note back in, but the note is still around that
+ * moment, so asking which note covers it finds the same one.
+ */
+export function withoutDeleted(
+  notes: readonly NoteEvent[],
+  deleted: readonly number[]
+): NoteEvent[] {
+  if (deleted.length === 0) {
+    return [...notes];
+  }
+  return notes.filter(
+    (note) =>
+      !deleted.some((atMs) => atMs >= note.startMs && atMs < note.endMs)
+  );
+}
+
+/** A moment inside this note, which is what a deletion is anchored to. */
+export function anchorOf(note: NoteEvent): number {
+  return note.startMs;
+}

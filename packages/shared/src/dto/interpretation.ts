@@ -98,6 +98,15 @@ export interface InterpretationDto {
    */
   writtenNotes?: { atMs: number; endMs: number; midi: number }[];
   /**
+   * Notes thrown off the graph (INV-NOTES-248).
+   *
+   * Moments inside each note as it was heard, anchored the way an edit is
+   * (INV-NOTES-096). Not an edit, because edits are collected by comparing
+   * the screen against the reading note for note, and a missing note shifts
+   * every anchor after it.
+   */
+  deletedNotes?: number[];
+  /**
    * That somebody asked for the harmony, and what read it (INV-NOTES-171).
    *
    * Absent means nobody has asked, and a note nobody has asked shows no
@@ -240,6 +249,13 @@ export function parseInterpretations(raw: unknown): InterpretationDto[] {
       ...(isTapPattern(v.tapPattern) ? { tapPattern: v.tapPattern } : {}),
       ...(Array.isArray(v.writtenNotes)
         ? { writtenNotes: v.writtenNotes.filter(isWrittenNote) }
+        : {}),
+      ...(Array.isArray(v.deletedNotes)
+        ? {
+            deletedNotes: v.deletedNotes.filter(
+              (n) => typeof n === 'number' && Number.isFinite(n) && n >= 0
+            )
+          }
         : {}),
       ...(Array.isArray(v.dismissedBeats)
         ? {
