@@ -39,7 +39,8 @@ import {
   countedBars,
   countedMetre,
   tappedTempo,
-  timelineFromTaps,
+  drawnBeats,
+  timelineFromAnchors,
   type NoteEdge,
   type NoteEvent
 } from 'logic';
@@ -301,14 +302,22 @@ export function useNoteDetail(id: string) {
   const hasGrid = grid.bpm > 0 && melody.length > 1;
 
   /**
-   * The beat the taps state, and the pulse they were made at.
+   * The beat the taps anchor, and the pulse they were made at.
    *
-   * A tap is one beat and the taps are the beat (INV-NOTES-198); nothing
-   * is fitted to them. Working the tempo out is not inferring from it:
-   * nothing downstream reads this, and the only thing that can act on it
-   * is a person pressing the offer in the tempo row (INV-NOTES-161).
+   * The taps are where they were tapped and are never moved
+   * (INV-NOTES-198); the beats between two of them come from the reading,
+   * warped to meet both (INV-NOTES-236). Filling those gaps is what makes
+   * the pulse below readable at all — one missed tap used to halve the
+   * slowest figure and report a spread nobody played.
+   *
+   * Still not inference acting on its own: the tempo is offered by the
+   * tempo row and applied only when pressed (INV-NOTES-161).
    */
-  const timeline = useMemo(() => timelineFromTaps(beats), [beats]);
+  const timeline = useMemo(
+    () =>
+      timelineFromAnchors(beats, quantized.grid.bpm, note?.durationMs ?? 0),
+    [beats, quantized.grid.bpm, note?.durationMs]
+  );
   const tapped = useMemo(
     () => (timeline == null ? null : tappedTempo(timeline)),
     [timeline]
@@ -909,7 +918,14 @@ export function useNoteDetail(id: string) {
       tapped == null
         ? null
         : ([tapped.slowestBpm, tapped.fastestBpm] as const),
-    /** Gaps that look like a missed tap. Pointed at, never filled. */
+    /**
+     * Every beat of the take, tapped and worked out together, each saying
+     * which it is (INV-NOTES-237). The taps stay in `beats`: a derived
+     * beat is not something to drag, it is something to replace by
+     * tapping one (INV-NOTES-238).
+     */
+    beatLine: timeline == null ? [] : drawnBeats(timeline),
+    /** Gaps the fill had to guess the length of (INV-NOTES-200). */
     suspectGaps: timeline?.suspectGaps ?? [],
     /** The bars counted between marked downbeats (INV-NOTES-199). */
     countedBars: timeline == null ? [] : countedBars(timeline),

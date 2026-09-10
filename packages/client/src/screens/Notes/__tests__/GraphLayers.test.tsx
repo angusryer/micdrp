@@ -52,6 +52,7 @@ const detail = {
   hearDragged: jest.fn(),
   hits: [],
   beats: [],
+  beatLine: [],
   // Where an edit lands (INV-NOTES-143). The graph asks the note, and a note
   // always has an answer.
   listening: { snapToGrid: true }

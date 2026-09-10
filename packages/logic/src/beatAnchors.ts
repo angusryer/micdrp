@@ -78,6 +78,30 @@ export function timelineFromAnchors(
   return { beats, barStarts, suspectGaps, isTapped: true, stated };
 }
 
+/** One beat of the take, ready to be drawn. */
+export interface DrawnBeat {
+  atMs: number;
+  /** True where a person tapped this one rather than it being worked out. */
+  isStated: boolean;
+  isDownbeat: boolean;
+}
+
+/**
+ * Every beat, shaped for the thing that draws it.
+ *
+ * The three parallel arrays a timeline holds are the right shape for
+ * arithmetic and the wrong one for a paint loop, which wants one beat at a
+ * time and has to say which kind each is (INV-NOTES-237).
+ */
+export function drawnBeats(timeline: AnchoredTimeline): DrawnBeat[] {
+  const bars = new Set(timeline.barStarts);
+  return timeline.beats.map((atMs, i) => ({
+    atMs,
+    isStated: timeline.stated[i] === true,
+    isDownbeat: bars.has(i)
+  }));
+}
+
 /**
  * The period the beat carries on at past the last tap and before the first.
  *

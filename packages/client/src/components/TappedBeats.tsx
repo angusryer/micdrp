@@ -10,8 +10,13 @@
  * A beat marked as a bar start is drawn heavier and taller, so the shape of
  * the metre is readable across the take without counting.
  *
- * Only what was tapped. Nothing is inferred from these any more: a mark on a
- * recording must not redraw the thing it was made on (INV-NOTES-161).
+ * A beat worked out between two taps is drawn too, but faintly and short:
+ * it is the app's account of a stretch nobody tapped through, and it has to
+ * be tellable at a glance from the beats a person stated (INV-NOTES-237).
+ * That distinction is the whole licence for drawing it at all.
+ *
+ * Only the tapped ones can be picked up. A derived beat is not a thing to
+ * drag into place — it is a thing to replace by tapping one (INV-NOTES-238).
  *
  * Paint only. Touches on the graph are read by one surface (INT-NOTES-015).
  */
@@ -21,14 +26,18 @@ import { Canvas, Line, vec } from '@shopify/react-native-skia';
 
 import { useTheme } from '../theme';
 import { xForMs, type TimeAxis } from './melodyScale';
-import type { TappedBeat } from 'logic';
+import type { DrawnBeat, TappedBeat } from 'logic';
 
 /** How strongly a beat is drawn, against the rules it sits among. */
 const BEAT_OPACITY = 0.55;
 const DOWNBEAT_OPACITY = 0.9;
 
+/** And a worked-out one: present, and plainly not a statement. */
+const DERIVED_OPACITY = 0.22;
+
 export interface TappedBeatsProps {
-  beats: readonly TappedBeat[];
+  /** Every beat, tapped and worked out, each saying which it is. */
+  line: readonly DrawnBeat[];
   timeAxis: TimeAxis;
   contentWidth: number;
   height: number;
@@ -46,13 +55,13 @@ export function beatLines(
 }
 
 export function TappedBeats({
-  beats,
+  line,
   timeAxis,
   contentWidth,
   height
 }: TappedBeatsProps): React.JSX.Element | null {
   const { colors } = useTheme();
-  if (beats.length === 0) {
+  if (line.length === 0) {
     return null;
   }
 
@@ -63,16 +72,25 @@ export function TappedBeats({
       style={[styles.layer, { width: contentWidth, height }]}
     >
       <Canvas style={{ width: contentWidth, height }}>
-        {beats.map((beat, index) => {
+        {line.map((beat, index) => {
           const x = xForMs(timeAxis, beat.atMs);
+          // Short and faint where nobody tapped it: it reads as a tick
+          // between the statements rather than as one of them.
+          const inset = beat.isStated ? 0.12 : 0.42;
           return (
             <Line
               key={index}
-              p1={vec(x, beat.isDownbeat ? 0 : height * 0.12)}
-              p2={vec(x, beat.isDownbeat ? height : height * 0.88)}
+              p1={vec(x, beat.isDownbeat ? 0 : height * inset)}
+              p2={vec(x, beat.isDownbeat ? height : height * (1 - inset))}
               strokeWidth={beat.isDownbeat ? 2 : 1}
               color={beat.isDownbeat ? colors.gold : colors.primary500}
-              opacity={beat.isDownbeat ? DOWNBEAT_OPACITY : BEAT_OPACITY}
+              opacity={
+                !beat.isStated
+                  ? DERIVED_OPACITY
+                  : beat.isDownbeat
+                    ? DOWNBEAT_OPACITY
+                    : BEAT_OPACITY
+              }
             />
           );
         })}

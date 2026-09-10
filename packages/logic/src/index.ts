@@ -23,10 +23,11 @@ export * from './readTake';
 export * from './tappedBeats';
 export * from './tapPattern';
 export * from './tapPatternEdit';
-export * from './beatGrid';
 export {
+  drawnBeats,
   timelineFromAnchors,
-  type AnchoredTimeline
+  type AnchoredTimeline,
+  type DrawnBeat
 } from './beatAnchors';
 export { beatsPerTap, spanOf } from './beatSpans';
 export {

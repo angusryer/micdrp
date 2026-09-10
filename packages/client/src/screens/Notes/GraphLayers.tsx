@@ -155,7 +155,7 @@ export function GraphLayers({
       {/* Over the rules and under the surface: stated rather than ruled, so
           it reads above the metre it may replace (INV-NOTES-130). */}
       <TappedBeats
-        beats={detail.beats}
+        line={detail.beatLine}
         timeAxis={timeAxis}
         contentWidth={contentWidth}
         height={height}

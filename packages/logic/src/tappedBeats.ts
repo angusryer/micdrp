@@ -8,9 +8,9 @@
  * nothing to get wrong (INV-NOTES-130).
  *
  * What a tap is NOT is a complete account. Nobody taps every beat of every
- * take, so the taps are evidence rather than a transcript, and the grid the
- * rest of the beats come from is fitted to them in `beatGrid` — this module
- * only holds what a person actually did (INV-NOTES-131).
+ * take, so the beats between two taps are worked out in `beatAnchors` and
+ * drawn as plainly not tapped — this module only holds what a person
+ * actually did (INV-NOTES-236, INV-NOTES-237).
  *
  * A tapped beat can be moved, and remembers where the finger actually landed.
  * Tapping along is played rather than typed, so a beat can be a little late
