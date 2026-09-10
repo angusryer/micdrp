@@ -32,6 +32,7 @@ export {
   type DrawnBeat
 } from './beatAnchors';
 export * from './voicedBeats';
+export * from './writtenNotes';
 export { beatsPerTap, spanOf } from './beatSpans';
 export {
   beatIntervals,

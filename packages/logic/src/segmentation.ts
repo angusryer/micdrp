@@ -50,6 +50,16 @@ export interface NoteEvent {
    * (INV-PITCH-020).
    */
   loudnessDb: number | null;
+  /**
+   * True where a person wrote this note in rather than singing it
+   * (INV-NOTES-246).
+   *
+   * Carried on the note itself so it survives every edit for free: an edit
+   * spreads the note it changes, so correcting a written note's pitch or
+   * length leaves it written. Absent on everything the detector produced,
+   * which is the overwhelming majority, so absent means sung.
+   */
+  isWritten?: boolean;
 }
 
 export interface SegmentOptions {

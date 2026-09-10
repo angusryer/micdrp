@@ -12,7 +12,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { activeInterpretation, type InterpretationDto } from 'shared';
-import type { ChordSlotEdit, NoteEdit, TapPattern, TappedBeat } from 'logic';
+import type {
+  ChordSlotEdit,
+  NoteEdit,
+  TapPattern,
+  TappedBeat,
+  WrittenNote
+} from 'logic';
 
 import {
   flushInterpretations,
@@ -42,6 +48,7 @@ export interface Interpretation {
   /** Which beats of the bar those taps were for, or undefined if nobody said. */
   savedTapPattern: TapPattern | undefined;
   savedDismissedBeats: readonly number[];
+  savedWrittenNotes: readonly WrittenNote[];
   /** Whether somebody has asked for the harmony (INV-NOTES-171). */
   hasHarmony: boolean;
   /** Pitches corrected where the detector heard wrongly. */
@@ -57,6 +64,7 @@ export interface Interpretation {
   /** Say what the taps were for, or take it back (INV-NOTES-209). */
   updateTapPattern: (pattern: TapPattern | undefined) => void;
   updateDismissedBeats: (dismissed: readonly number[]) => void;
+  updateWrittenNotes: (written: readonly WrittenNote[]) => void;
   /**
    * Ask for the harmony, or ask again once the take has more to go on.
    *
@@ -102,6 +110,9 @@ export function useInterpretation(
   const [savedDismissedBeats, setSavedDismissedBeats] = useState<
     readonly number[]
   >(() => active.dismissedBeats ?? []);
+  const [savedWrittenNotes, setSavedWrittenNotes] = useState<
+    readonly WrittenNote[]
+  >(() => active.writtenNotes ?? []);
   const [hasHarmony, setHasHarmony] = useState(active.harmony != null);
   const [failed, setFailed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -131,6 +142,7 @@ export function useInterpretation(
     // down, and `TapPattern` is how the code reads it back.
     tapPattern?: { beats: number[]; beatsPerBar: number };
     dismissedBeats?: number[];
+    writtenNotes?: WrittenNote[];
     harmony?: { askedAtMs: number; analysisVersion: number };
   }>({
     chords: active.chords as ChordSlotEdit[],
@@ -145,6 +157,9 @@ export function useInterpretation(
     ...(active.tapPattern ? { tapPattern: { ...active.tapPattern } } : {}),
     ...(active.dismissedBeats
       ? { dismissedBeats: [...active.dismissedBeats] }
+      : {}),
+    ...(active.writtenNotes
+      ? { writtenNotes: active.writtenNotes.map((one) => ({ ...one })) }
       : {}),
     ...(active.harmony ? { harmony: { ...active.harmony } } : {})
   });
@@ -283,11 +298,26 @@ export function useInterpretation(
     [schedule]
   );
 
+  /** Keep the notes somebody wrote in (INV-NOTES-246). */
+  const updateWrittenNotes = useCallback(
+    (writtenNotes: readonly WrittenNote[]) => {
+      setSavedWrittenNotes(writtenNotes);
+      latest.current = {
+        ...latest.current,
+        writtenNotes: writtenNotes.map((one) => ({ ...one }))
+      };
+      schedule();
+    },
+    [schedule]
+  );
+
   return {
     savedEdits,
     savedBarLines,
     savedDismissedBeats,
     updateDismissedBeats,
+    savedWrittenNotes,
+    updateWrittenNotes,
     savedBpm,
     savedBeats,
     savedTapPattern,

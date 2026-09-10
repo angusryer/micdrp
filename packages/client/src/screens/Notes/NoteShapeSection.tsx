@@ -34,6 +34,7 @@ import { useTranslation } from '../../i18n';
 import { ChordTrack } from './ChordTrack';
 import { NoteShapeControls } from './NoteShapeControls';
 import { Playhead } from './Playhead';
+import { WriteNoteHandle } from './WriteNoteHandle';
 import { GraphMenu } from './GraphMenu';
 import { RailLegend } from './RailLegend';
 import { TrackRail, TRACK_RAIL_WIDTH } from './TrackRail';
@@ -420,6 +421,18 @@ export function NoteShapeSection({
                     timeAxis={timeAxis}
                     contentWidth={contentWidth}
                     height={graphHeight}
+                  />
+                ) : null}
+                {/* Over the head it belongs to, and the only thing above
+                    the surface that takes a touch (INV-NOTES-245). */}
+                {transport != null ? (
+                  <WriteNoteHandle
+                    positionMs={transport.drawnPositionMs}
+                    timeAxis={timeAxis}
+                    pitchAxis={pitchAxis}
+                    contentWidth={contentWidth}
+                    height={graphHeight}
+                    onWrite={detail.addNoteAt}
                   />
                 ) : null}
               </>

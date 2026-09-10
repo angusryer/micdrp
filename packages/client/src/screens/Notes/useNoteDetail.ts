@@ -40,6 +40,9 @@ import {
   tappedTempo,
   anchorsFrom,
   drawnBeats,
+  withWritten,
+  writeAt,
+  unwrite,
   removeAnchor,
   timelineFromAnchors,
   type NoteEdge,
@@ -54,6 +57,7 @@ import {
 import { cacheReading, cachedNotes } from '../../data/notesSync';
 import { hasTakeAudio } from '../../data/takeAudio';
 import { rereadTake } from '../../analysis/reread';
+import { beatLengthAt } from './beatLengthAt';
 import { heldGrid } from './heldGrid';
 import {
   restoreReadWith,
@@ -124,7 +128,17 @@ export function useNoteDetail(id: string) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [id, readingAt]
   );
-  const heard = useMemo(() => note?.melody ?? EMPTY_MELODY, [note]);
+  /**
+   * What was heard, with what was written in merged into it
+   * (INV-NOTES-246).
+   *
+   * Merged here rather than handled apart, because everything downstream is
+   * written against one list of notes. An edit is anchored by the moment it
+   * covers rather than by an index (INV-NOTES-096), so a written note in
+   * this list can be corrected, moved, resized, quantised and exported like
+   * any other with nothing else changed at all (INV-NOTES-247).
+   */
+  const sung = useMemo(() => note?.melody ?? EMPTY_MELODY, [note]);
 
   // Mint the audio URL when Play is pressed rather than here: the token it
   // carries is good for about two minutes (INV-NOTES-014).
@@ -147,6 +161,11 @@ export function useNoteDetail(id: string) {
   const interpretation = useInterpretation(
     note?.id ?? null,
     note?.interpretations ?? EMPTY_READINGS
+  );
+
+  const heard = useMemo(
+    () => withWritten(sung, interpretation.savedWrittenNotes),
+    [sung, interpretation.savedWrittenNotes]
   );
 
 
@@ -989,6 +1008,31 @@ export function useNoteDetail(id: string) {
       },
       [anchors, beats, interpretation]
     ),
+    /**
+     * Write a note in at the playhead (INV-NOTES-245).
+     *
+     * A quarter of the beat the playhead is actually in, read off the beat
+     * timeline rather than off a constant tempo, so it is a quarter beat in
+     * a take that breathes too.
+     */
+    addNoteAt: useCallback(
+      (atMs: number, midi: number) => {
+        interpretation.updateWrittenNotes([
+          ...interpretation.savedWrittenNotes,
+          writeAt(atMs, midi, beatLengthAt(timeline, grid.bpm, atMs))
+        ]);
+      },
+      [interpretation, timeline, grid.bpm]
+    ),
+    /** Throw away a note that was written in rather than sung. */
+    removeWrittenNoteAt: useCallback(
+      (atMs: number) =>
+        interpretation.updateWrittenNotes(
+          unwrite(interpretation.savedWrittenNotes, atMs)
+        ),
+      [interpretation]
+    ),
+    writtenNotes: interpretation.savedWrittenNotes,
     /** The tempo in use, and how to set it by hand (INV-NOTES-123). */
     bpm: grid.bpm,
     isBpmByHand: interpretation.savedBpm != null,

@@ -43,6 +43,13 @@ export interface MelodyNote {
   midi: number;
   startMs: number;
   endMs: number;
+  /**
+   * True where a person wrote this note in rather than singing it.
+   *
+   * Optional because the detector produces the overwhelming majority and
+   * sets nothing, so absent means sung (INV-NOTES-246).
+   */
+  isWritten?: boolean;
 }
 
 export interface MelodyLayoutOptions extends ScaleRequest {
@@ -95,6 +102,8 @@ export interface NoteRect {
   /** Vertical centre of the bar, so a touch can be matched to the nearest. */
   cy: number;
   midi: number;
+  /** True where a person wrote this note in rather than singing it. */
+  isWritten?: boolean;
 }
 
 export interface MelodyLayout {
@@ -168,7 +177,17 @@ export function layoutMelody(
     const x = xForMs(timeAxis, n.startMs);
     const width = Math.max(2, (n.endMs - n.startMs) * pxPerMs - 1);
     const cy = yForMidi(pitchAxis, n.midi);
-    return { x, y: cy - barH / 2, width, height: barH, cy, midi: n.midi };
+    return {
+      x,
+      y: cy - barH / 2,
+      width,
+      height: barH,
+      cy,
+      midi: n.midi,
+      // Carried through so the drawing can say which notes came out of a
+      // mouth and which were put there afterwards (INV-NOTES-246).
+      ...(n.isWritten === true ? { isWritten: true } : {})
+    };
   });
 
   const underRects: NoteRect[] = (options.underlay ?? []).map((n) => {

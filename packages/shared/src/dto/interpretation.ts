@@ -90,6 +90,14 @@ export interface InterpretationDto {
    */
   dismissedBeats?: number[];
   /**
+   * Notes written into the take rather than sung (INV-NOTES-246).
+   *
+   * Nothing in the audio produced these and no re-read ever will, so they
+   * live here with the decisions rather than with the reading — a re-read
+   * that dropped them would delete work instead of refreshing a reading.
+   */
+  writtenNotes?: { atMs: number; endMs: number; midi: number }[];
+  /**
    * That somebody asked for the harmony, and what read it (INV-NOTES-171).
    *
    * Absent means nobody has asked, and a note nobody has asked shows no
@@ -152,6 +160,26 @@ function isTappedBeat(raw: unknown): raw is TappedBeatDto {
   );
 }
 
+/** A note somebody wrote in, as far as the wire is concerned. */
+function isWrittenNote(
+  raw: unknown
+): raw is { atMs: number; endMs: number; midi: number } {
+  const v = raw as
+    | { atMs?: unknown; endMs?: unknown; midi?: unknown }
+    | null;
+  return (
+    v != null &&
+    typeof v.atMs === 'number' &&
+    Number.isFinite(v.atMs) &&
+    v.atMs >= 0 &&
+    typeof v.endMs === 'number' &&
+    Number.isFinite(v.endMs) &&
+    v.endMs > v.atMs &&
+    typeof v.midi === 'number' &&
+    Number.isFinite(v.midi)
+  );
+}
+
 /** Which beats of the bar the taps were meant for (INV-NOTES-209). */
 function isTapPattern(
   raw: unknown
@@ -210,6 +238,9 @@ export function parseInterpretations(raw: unknown): InterpretationDto[] {
       ...(typeof v.bpm === 'number' && v.bpm > 0 ? { bpm: v.bpm } : {}),
       ...(Array.isArray(v.beats) ? { beats: v.beats.filter(isTappedBeat) } : {}),
       ...(isTapPattern(v.tapPattern) ? { tapPattern: v.tapPattern } : {}),
+      ...(Array.isArray(v.writtenNotes)
+        ? { writtenNotes: v.writtenNotes.filter(isWrittenNote) }
+        : {}),
       ...(Array.isArray(v.dismissedBeats)
         ? {
             dismissedBeats: v.dismissedBeats.filter(

@@ -225,6 +225,26 @@ export function MelodyView({
           // than as the line, so the tune reads as starting where it does
           // (INV-NOTES-113).
           const isCount = i < countedNotes;
+          // A note written in was never sung, and no re-read will ever
+          // produce it. Outlined rather than filled, so a take always shows
+          // what came out of a mouth and what was put there afterwards
+          // (INV-NOTES-246) — otherwise a person comes back later and takes
+          // the app's word that they sang something they wrote.
+          if (r.isWritten === true && !isCount) {
+            return (
+              <RoundedRect
+                key={i}
+                x={r.x}
+                y={r.y}
+                width={r.width}
+                height={r.height}
+                r={radius}
+                color={barColor}
+                style="stroke"
+                strokeWidth={1.5}
+              />
+            );
+          }
           return (
             <RoundedRect
               key={i}
