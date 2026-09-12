@@ -1,0 +1,91 @@
+# The pickup, and the view following a rewind. Its own file: the pickup
+# stopped being a measurement of the take and became a thing a person makes.
+invariants:
+  - id: INV-NOTES-250
+    description: A pickup is stated, never worked out
+    severity: critical
+    check: >
+      A take has no pickup until somebody makes one. Nothing reads a pickup
+      out of where the singing starts, and opening a take that has never
+      had one shows none. Verified by asserting a freshly read take
+      reports no pickup whatever its opening silence.
+
+      The old pickup was a measurement — how far into a bar the singing
+      began — worked out from wherever the first bar line landed. That
+      makes it a consequence of the bar lines rather than a statement about
+      the music, so it moved whenever they did and said something nobody
+      had claimed. A count-in is a decision: how many beats you would give
+      somebody before they came in. Only the person who wrote the tune
+      knows it, and before this there was no way for them to say it.
+
+  - id: INV-NOTES-251
+    description: A pickup's pulse is the steadiest run of the taps that made it
+    severity: critical
+    check: >
+      A pickup is made by playing the take and tapping along, then
+      stopping. The beat comes from the steadiest run of consecutive taps
+      in that pass, not from all of them: a pass begins before the hand has
+      settled and ends after it has stopped meaning it, and averaging those
+      in moves the answer away from the pulse actually played. Verified by
+      asserting a pass with ragged taps at each end reports the pulse of
+      the steady middle.
+
+      Fewer than three taps say nothing about a rate — two are an interval,
+      and an interval alone says nothing about whether it would have
+      happened again (INV-NOTES-198). A pass with fewer is refused rather
+      than guessed at.
+
+      This pulse spaces the pickup's beats and nothing else. It is not
+      applied to the take: a pass tapped to size a count-in would otherwise
+      move every bar line through the whole take, which is the silent
+      re-cutting INV-NOTES-161 exists to prevent.
+
+  - id: INV-NOTES-252
+    description: A pickup lives before the recording, and the graph opens to let it in
+    severity: critical
+    check: >
+      A pickup's beats sit before the take's first moment, at negative
+      times, and the drawing widens to the left to show them. Nothing of
+      the recording moves: the audio, the notes, the beats and every stored
+      moment stay exactly where they were. Verified by making a pickup and
+      asserting the take's notes are at the same moments as before, while
+      the drawn window now begins earlier.
+
+      Widened rather than shifted, because the take is a recording of
+      something that happened and its moments are facts. A count-in is
+      something added in front of it, and moving the recording to make room
+      would rewrite every one of those facts to record a decision about
+      what comes before them.
+
+  - id: INV-NOTES-253
+    description: Nothing of the take goes into the pickup unless the pickup is moved over it
+    severity: major
+    check: >
+      A note added, moved or lengthened, and a beat tapped or moved, stay
+      at or after the take's first moment however far the finger travels.
+      The pickup itself can be dragged later, and where it is dragged over
+      the start of the take the two overlap and the rule does not stop
+      anything already there. Verified by dragging a note past the start of
+      the take and asserting it stops there, and by dragging the pickup
+      over the take and asserting nothing of the take moved.
+
+      The pickup is empty by construction — it is counted, not sung — so a
+      note in it would be a note in a place where, by definition, nothing
+      was performed. Moving the pickup is the one way to say the count-in
+      and the singing overlap, and that is a statement about the count
+      rather than about the take.
+
+  - id: INV-NOTES-254
+    description: Rewinding takes the view back with the head
+    severity: major
+    check: >
+      A press of rewind puts the beginning of the take in the middle of the
+      drawing, whether or not it was sounding, and a hand that had scrolled
+      away no longer holds the view back. Verified by scrolling away from
+      the start, rewinding a stopped take, and asserting the view moved.
+
+      Rewind goes to the beginning (INV-NOTES-160), and the head goes with
+      it — but the view did not, so the control moved a line that was off
+      screen and looked like it had done nothing at all. The view follows
+      the head while a take sounds; the one moment it was not following was
+      the moment a person asked for the head to move.

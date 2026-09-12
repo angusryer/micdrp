@@ -104,7 +104,10 @@ export interface ZoomableMelodyProps {
    * that owns the machinery hands out the one verb, rather than the caller
    * reaching in for the ScrollView.
    */
-  onViewport?: (view: { bringIntoView: (atMs: number) => void }) => void;
+  onViewport?: (view: {
+    bringIntoView: (atMs: number) => void;
+    showAt: (atMs: number) => void;
+  }) => void;
   /**
    * The moment being played, read every frame, for the view to follow
    * (INV-NOTES-193).
@@ -347,9 +350,38 @@ export function ZoomableMelody({
     [layout.timeAxis, layout.contentWidth, width, scroller]
   );
 
+  /**
+   * Put a moment in the middle of the drawing, whatever is already shown
+   * (INV-NOTES-254).
+   *
+   * Unconditional, unlike `bringIntoView`, which leaves a moment already
+   * near the middle alone. Rewind asks for the head to move, and a view
+   * that stayed put made the control look like it had done nothing — so
+   * the answer here is never "it is close enough".
+   *
+   * It also lets go of the hand that had scrolled away. Holding the view
+   * back is how a person says "stop following"; asking for the head is how
+   * they take it back.
+   */
+  const showAt = useCallback(
+    (atMs: number) => {
+      isHeld.value = false;
+      const wanted = offsetCentring(
+        xForMs(layout.timeAxis, atMs),
+        width,
+        layout.contentWidth
+      );
+      ledTo.value = wanted;
+      scroller.current?.scrollTo({ x: wanted, animated: true });
+    },
+    // scroller is a ref and never changes; listed because useAnimatedRef is
+    // not the useRef the rule knows how to see through.
+    [layout.timeAxis, layout.contentWidth, width, scroller, isHeld, ledTo]
+  );
+
   useEffect(() => {
-    onViewport?.({ bringIntoView });
-  }, [onViewport, bringIntoView]);
+    onViewport?.({ bringIntoView, showAt });
+  }, [onViewport, bringIntoView, showAt]);
 
   // Starting to play takes the view back, so a take followed once, scrolled
   // away from, and played again follows once more.

@@ -1,36 +1,38 @@
 /**
- * How far into a bar the singing started (INV-NOTES-211).
+ * The count-in in front of the take (INV-NOTES-250).
  *
- * The pickup could only be changed by dragging the first bar line, which
- * holds that line between its neighbours — so it resized the first bar
- * instead of shifting the music, and saying "this take has a two-beat
- * pickup" meant dragging every line in turn and hoping they stayed even.
+ * Not a measurement any more. This used to say how far into a bar the
+ * singing began, worked out from wherever the first bar line landed — so it
+ * was a consequence of the bars rather than a statement about the music,
+ * and it moved whenever they did.
  *
- * Beside the tap pattern because they are the same kind of sentence: both
- * say where the bar sits, and neither is a reading of the take. In the sheet
- * that opens part way over the graph, so the bar lines can be watched moving
- * as it changes (INV-NOTES-078).
+ * A count-in is a decision: how many beats you would give somebody before
+ * they came in. Only the person who wrote the tune knows it, so they play
+ * the take, tap the count they hear, and say how long it runs
+ * (INV-NOTES-251).
  *
- * Counted with the same stepper the bar length uses, rather than one pill per
- * possible answer. It is a quantity, not a set of alternatives — and the row
- * of pills grew with the bar, so a six-beat bar spent a line of the sheet on
- * numbers to scan for the one already chosen.
+ * In the sheet that opens part way over the graph, so the count can be
+ * watched appearing in front of the take as it is made (INV-NOTES-078).
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import type { Pickup } from 'logic';
+
 import { useTheme } from '../../theme';
-import { CountStepper } from './CountStepper';
+import { PickupMaker } from './PickupMaker';
 
 export interface PickupRowProps {
-  /** How long the pickup runs, in beats. */
-  beats: number;
-  /** How many beats a bar holds, which bounds the pickup. */
-  beatsPerBar: number;
-  onSet: (beats: number) => void;
+  /** The count, or null where nobody has made one. */
+  pickup: Pickup | null;
+  onPlay: () => void;
+  onStop: () => void;
+  atMs: () => number;
+  onMake: (taps: readonly number[], beats: number) => void;
+  onClear: () => void;
 }
 
-/** "2 beats", and "none" for a take that opens on a downbeat. */
+/** "2 beats", and "none" for a take with no count in front of it. */
 export function pickupLabel(beats: number): string {
   if (beats <= 0) {
     return 'None';
@@ -39,39 +41,42 @@ export function pickupLabel(beats: number): string {
 }
 
 export function PickupRow({
-  beats,
-  beatsPerBar,
-  onSet
-}: PickupRowProps): React.JSX.Element | null {
+  pickup,
+  onPlay,
+  onStop,
+  atMs,
+  onMake,
+  onClear
+}: PickupRowProps): React.JSX.Element {
   const { colors } = useTheme();
-
-  // Nothing to divide a pickup out of. A bar of one beat cannot have a note
-  // before its own downbeat.
-  if (!(beatsPerBar > 1)) {
-    return null;
-  }
 
   return (
     <View style={styles.row}>
-      <Text style={[styles.title, { color: colors.typography }]}>Pickup</Text>
+      <Text style={[styles.title, { color: colors.typography }]}>Count-in</Text>
       <Text style={[styles.hint, { color: colors.gray300 }]}>
-        {beats > 0
-          ? `The singing starts ${pickupLabel(beats).toLowerCase()} before the first full bar.`
-          : 'The take opens on a downbeat.'}
+        {pickup == null
+          ? 'Nothing counts you in. Play the take, tap the count you hear, and say how long it runs.'
+          : `${pickupLabel(pickup.beats)} at ${Math.round(60000 / pickup.beatMs)} bpm, before the take starts.`}
       </Text>
-      <CountStepper
-        label="Beats before the first bar"
-        value={beats}
-        min={0}
-        // A pickup is less than a bar: a whole bar before the first downbeat
-        // is just an earlier downbeat.
-        max={beatsPerBar - 1}
-        describe={(n) => (n === 0 ? 'No pickup' : `A pickup of ${pickupLabel(n).toLowerCase()}`)}
-        downLabel="A shorter pickup"
-        upLabel="A longer pickup"
-        testID="pickup-beats"
-        onSet={onSet}
-      />
+      {pickup == null ? (
+        <PickupMaker
+          onPlay={onPlay}
+          onStop={onStop}
+          atMs={atMs}
+          onMake={onMake}
+          onCancel={onClear}
+        />
+      ) : (
+        <Text
+          accessibilityRole="button"
+          accessibilityLabel="Take the count-in away"
+          testID="pickup-clear"
+          onPress={onClear}
+          style={[styles.action, { color: colors.primary500 }]}
+        >
+          Take it away
+        </Text>
+      )}
     </View>
   );
 }
@@ -82,4 +87,5 @@ const styles = StyleSheet.create({
   row: { gap: 8 },
   title: { fontSize: 16, fontWeight: '600' },
   hint: { fontSize: 13, lineHeight: 18 },
+  action: { fontSize: 13, fontWeight: '600' }
 });

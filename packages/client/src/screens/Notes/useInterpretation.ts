@@ -16,6 +16,7 @@ import type {
   ChordSlotEdit,
   NoteEdit,
   TapPattern,
+  Pickup,
   TappedBeat,
   WrittenNote
 } from 'logic';
@@ -50,6 +51,7 @@ export interface Interpretation {
   savedDismissedBeats: readonly number[];
   savedWrittenNotes: readonly WrittenNote[];
   savedDeletedNotes: readonly number[];
+  savedPickup: Pickup | null;
   /** Whether somebody has asked for the harmony (INV-NOTES-171). */
   hasHarmony: boolean;
   /** Pitches corrected where the detector heard wrongly. */
@@ -67,6 +69,7 @@ export interface Interpretation {
   updateDismissedBeats: (dismissed: readonly number[]) => void;
   updateWrittenNotes: (written: readonly WrittenNote[]) => void;
   updateDeletedNotes: (deleted: readonly number[]) => void;
+  updatePickup: (pickup: Pickup | null) => void;
   /**
    * Ask for the harmony, or ask again once the take has more to go on.
    *
@@ -118,6 +121,9 @@ export function useInterpretation(
   const [savedDeletedNotes, setSavedDeletedNotes] = useState<
     readonly number[]
   >(() => active.deletedNotes ?? []);
+  const [savedPickup, setSavedPickup] = useState<Pickup | null>(
+    () => active.pickup ?? null
+  );
   const [hasHarmony, setHasHarmony] = useState(active.harmony != null);
   const [failed, setFailed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -149,6 +155,7 @@ export function useInterpretation(
     dismissedBeats?: number[];
     writtenNotes?: WrittenNote[];
     deletedNotes?: number[];
+    pickup?: Pickup;
     harmony?: { askedAtMs: number; analysisVersion: number };
   }>({
     chords: active.chords as ChordSlotEdit[],
@@ -170,6 +177,7 @@ export function useInterpretation(
     ...(active.deletedNotes
       ? { deletedNotes: [...active.deletedNotes] }
       : {}),
+    ...(active.pickup ? { pickup: { ...active.pickup } } : {}),
     ...(active.harmony ? { harmony: { ...active.harmony } } : {})
   });
 
@@ -333,7 +341,27 @@ export function useInterpretation(
     [schedule]
   );
 
+  /**
+   * Keep the count-in, or take it away (INV-NOTES-250).
+   *
+   * Null is a real answer and the one a take starts at: nothing reads a
+   * pickup out of a recording, so absent means nobody has made one.
+   */
+  const updatePickup = useCallback(
+    (pickup: Pickup | null) => {
+      setSavedPickup(pickup);
+      latest.current = {
+        ...latest.current,
+        pickup: pickup == null ? undefined : { ...pickup }
+      };
+      schedule();
+    },
+    [schedule]
+  );
+
   return {
+    savedPickup,
+    updatePickup,
     savedDeletedNotes,
     updateDeletedNotes,
     savedEdits,

@@ -1,0 +1,100 @@
+# Making a count-in, and the view following a rewind.
+acceptance:
+  - id: ACC-NOTES-274
+    interface: ui
+    title: A freshly read take has no pickup at all
+    given:
+      - a signed-in singer S
+      - singer S has a note N read from a take that opens with silence
+    when:
+      - singer S opens the note
+    then:
+      - the note field hasPickup is false
+    maps_to:
+      capability: notes.make_pickup
+      invariants: [INV-NOTES-250]
+
+  - id: ACC-NOTES-275
+    interface: ui
+    title: The pulse comes from the steady middle of the pass
+    given:
+      - a signed-in singer S
+      - singer S has a note N tapped raggedly at each end and steadily between
+    when:
+      - singer S calls notes.make_pickup on note N
+    then:
+      - the note field pickupBeatMs is the steady interval
+    maps_to:
+      capability: notes.make_pickup
+      invariants: [INV-NOTES-251]
+
+  - id: ACC-NOTES-276
+    interface: ui
+    title: A pass of fewer than three taps is refused
+    given:
+      - a signed-in singer S
+      - singer S has a note N with two taps in the pass
+    when:
+      - singer S calls notes.make_pickup on note N
+    then:
+      - the note field hasPickup is false
+    maps_to:
+      capability: notes.make_pickup
+      invariants: [INV-NOTES-251]
+
+  - id: ACC-NOTES-277
+    interface: ui
+    title: Making a pickup moves nothing of the take
+    given:
+      - a signed-in singer S
+      - singer S has a note N with notes and tapped beats
+    when:
+      - singer S calls notes.make_pickup on note N
+    then:
+      - the note field takeMomentsUnchanged is true
+      - the note field drawnWindowStartsEarlier is true
+    maps_to:
+      capability: notes.make_pickup
+      invariants: [INV-NOTES-252]
+
+  - id: ACC-NOTES-278
+    interface: ui
+    title: The pickup's pulse is not applied to the take
+    given:
+      - a signed-in singer S
+      - singer S has a note N with a tempo of its own and a new pickup
+    when:
+      - singer S calls notes.make_pickup on note N
+    then:
+      - the note field takeBpmUnchanged is true
+    maps_to:
+      capability: notes.make_pickup
+      invariants: [INV-NOTES-251]
+
+  - id: ACC-NOTES-279
+    interface: ui
+    title: A note dragged back stops at the start of the take
+    given:
+      - a signed-in singer S
+      - singer S has a note N with a pickup and a note near the start
+    when:
+      - singer S calls notes.add_note on note N
+    then:
+      - the note field earliestNoteMs is 0
+    maps_to:
+      capability: notes.make_pickup
+      invariants: [INV-NOTES-253]
+
+  - id: ACC-NOTES-280
+    interface: ui
+    title: Rewinding a stopped take brings the view back
+    given:
+      - a signed-in singer S
+      - singer S has a note N scrolled away from its start and not sounding
+    when:
+      - singer S calls notes.play on note N
+    then:
+      - the note field viewCentredOnHead is true
+    maps_to:
+      capability: notes.play
+      invariants: [INV-NOTES-254]

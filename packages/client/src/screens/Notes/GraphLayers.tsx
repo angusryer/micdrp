@@ -156,6 +156,7 @@ export function GraphLayers({
           it reads above the metre it may replace (INV-NOTES-130). */}
       <TappedBeats
         line={detail.beatLine}
+        countIn={detail.pickupBeats}
         timeAxis={timeAxis}
         contentWidth={contentWidth}
         height={height}

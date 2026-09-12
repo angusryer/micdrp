@@ -107,6 +107,14 @@ export interface InterpretationDto {
    */
   deletedNotes?: number[];
   /**
+   * The count-in put in front of the take (INV-NOTES-250).
+   *
+   * Beats before the recording's first moment, at negative times. A
+   * decision about the music rather than a fact of it — nothing reads one
+   * out of the take — so it lives here and survives a re-read.
+   */
+  pickup?: { beats: number; beatMs: number; endMs: number };
+  /**
    * That somebody asked for the harmony, and what read it (INV-NOTES-171).
    *
    * Absent means nobody has asked, and a note nobody has asked shows no
@@ -166,6 +174,26 @@ function isTappedBeat(raw: unknown): raw is TappedBeatDto {
     typeof v.atMs === 'number' &&
     typeof v.tappedAtMs === 'number' &&
     typeof v.isDownbeat === 'boolean'
+  );
+}
+
+/** A count-in, as far as the wire is concerned. */
+function isPickup(
+  raw: unknown
+): raw is { beats: number; beatMs: number; endMs: number } {
+  const v = raw as
+    | { beats?: unknown; beatMs?: unknown; endMs?: unknown }
+    | null;
+  return (
+    v != null &&
+    typeof v.beats === 'number' &&
+    Number.isInteger(v.beats) &&
+    v.beats > 0 &&
+    typeof v.beatMs === 'number' &&
+    Number.isFinite(v.beatMs) &&
+    v.beatMs > 0 &&
+    typeof v.endMs === 'number' &&
+    Number.isFinite(v.endMs)
   );
 }
 
@@ -250,6 +278,7 @@ export function parseInterpretations(raw: unknown): InterpretationDto[] {
       ...(Array.isArray(v.writtenNotes)
         ? { writtenNotes: v.writtenNotes.filter(isWrittenNote) }
         : {}),
+      ...(isPickup(v.pickup) ? { pickup: v.pickup } : {}),
       ...(Array.isArray(v.deletedNotes)
         ? {
             deletedNotes: v.deletedNotes.filter(

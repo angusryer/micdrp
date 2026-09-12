@@ -1,101 +1,129 @@
 /**
- * ACC-NOTES-226 / INV-NOTES-211 — saying how long the pickup is.
+ * Making a count-in — INV-NOTES-250 and INV-NOTES-251.
  *
- * It could only be changed by dragging the first bar line, which holds that
- * line between its neighbours: it resized the first bar instead of shifting
- * the music, so saying "this take has a two-beat pickup" meant dragging every
- * line in turn and hoping they stayed even.
- *
- * It sits beside the tap pattern because they are the same kind of sentence —
- * both say where the bar sits, and neither is a reading of the take.
+ * This used to test saying how far into a bar the singing began, which was
+ * a measurement of the take rather than a statement about the music. The
+ * count-in replaced it: play the take, tap the count, say how long it runs.
  */
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { I18nProvider } from '../../../i18n';
 import { ThemeProvider } from '../../../theme';
 import { PickupRow, pickupLabel } from '../PickupRow';
 
+/** A pass of taps at a steady 500ms, played back to the row on demand. */
+const STEADY = [0, 500, 1000, 1500, 2000];
+
 const show = async (
   props: Partial<React.ComponentProps<typeof PickupRow>> = {}
 ) => {
-  const onSet = jest.fn();
+  const onMake = jest.fn();
+  const onPlay = jest.fn();
+  const onStop = jest.fn();
+  const onClear = jest.fn();
+  let next = 0;
   await waitFor(() =>
     render(
       <I18nProvider>
         <ThemeProvider>
-          <PickupRow beats={0} beatsPerBar={4} onSet={onSet} {...props} />
+          <PickupRow
+            pickup={null}
+            onPlay={onPlay}
+            onStop={onStop}
+            atMs={() => STEADY[next++] ?? 0}
+            onMake={onMake}
+            onClear={onClear}
+            {...props}
+          />
         </ThemeProvider>
       </I18nProvider>
     )
   );
-  return onSet;
+  return { onMake, onPlay, onStop, onClear };
 };
 
-describe('a take that opens on a downbeat', () => {
-  it('says so, rather than calling it a pickup of no length', async () => {
-    await show({ beats: 0 });
-    expect(screen.getByText(/opens on a downbeat/)).toBeTruthy();
-    expect(screen.getByTestId('pickup-beats')).toHaveTextContent('0');
+/**
+ * A press, and the render it causes.
+ *
+ * Rendering is asynchronous here, so a press followed straight away by a
+ * query looks at the tree as it was before the press — which reads as a
+ * control that is not there rather than as a test racing the renderer.
+ */
+const press = async (testID: string): Promise<void> => {
+  await act(async () => {
+    await fireEvent.press(screen.getByTestId(testID));
+  });
+};
+
+const tapTimes = async (n: number): Promise<void> => {
+  await act(async () => {
+    for (let i = 0; i < n; i += 1) {
+      await fireEvent(screen.getByTestId('pickup-tap'), 'pressIn');
+    }
+  });
+};
+
+describe('the count-in row', () => {
+  it('says a take has none until somebody makes one', async () => {
+    await show();
+    expect(screen.getByText(/Nothing counts you in/)).toBeTruthy();
   });
 
-  it('ACC-NOTES-226: lengthens the pickup a beat at a time', async () => {
-    const onSet = await show({ beats: 1 });
-    void fireEvent.press(screen.getByTestId('pickup-beats-up'));
-    expect(onSet).toHaveBeenCalledWith(2);
+  it('plays the take when the count is begun', async () => {
+    const { onPlay } = await show();
+    await press('pickup-begin');
+    expect(onPlay).toHaveBeenCalled();
   });
 
-  it('will not go below no pickup at all', async () => {
-    const onSet = await show({ beats: 0 });
-    void fireEvent.press(screen.getByTestId('pickup-beats-down'));
-    expect(onSet).not.toHaveBeenCalled();
+  it('stops the take when the pass ends', async () => {
+    const { onStop } = await show();
+    await press('pickup-begin');
+    await press('pickup-stop');
+    expect(onStop).toHaveBeenCalled();
+  });
+
+  it('asks how long the count runs, once a pulse is there', async () => {
+    await show();
+    await press('pickup-begin');
+    await tapTimes(STEADY.length);
+    await press('pickup-stop');
+    expect(screen.getByText(/120 bpm/)).toBeTruthy();
+  });
+
+  it('makes the count with the taps and the beats asked for', async () => {
+    const { onMake } = await show();
+    await press('pickup-begin');
+    await tapTimes(STEADY.length);
+    await press('pickup-stop');
+    await press('pickup-beats-4');
+    expect(onMake).toHaveBeenCalledWith(STEADY, 4);
+  });
+
+  it('says so rather than guessing when a pass is too short', async () => {
+    await show();
+    await press('pickup-begin');
+    await tapTimes(1);
+    await press('pickup-stop');
+    expect(screen.getByText(/Too few taps/)).toBeTruthy();
+  });
+
+  it('describes a count that has been made', async () => {
+    await show({ pickup: { beats: 4, beatMs: 500, endMs: 0 } });
+    expect(screen.getByText(/4 beats at 120 bpm/)).toBeTruthy();
+  });
+
+  it('offers to take a made count away', async () => {
+    const { onClear } = await show({
+      pickup: { beats: 2, beatMs: 500, endMs: 0 }
+    });
+    await press('pickup-clear');
+    expect(onClear).toHaveBeenCalled();
   });
 });
 
-describe('a take with a pickup', () => {
-  it('says how far in the singing starts', async () => {
-    await show({ beats: 2 });
-    expect(screen.getByText(/starts 2 beats before the first full bar/)).toBeTruthy();
-  });
-
-  it('can be taken back towards a downbeat', async () => {
-    const onSet = await show({ beats: 1 });
-    void fireEvent.press(screen.getByTestId('pickup-beats-down'));
-    expect(onSet).toHaveBeenCalledWith(0);
-  });
-
-  it('says what the number means, not just the number', async () => {
-    await show({ beats: 2 });
-    expect(screen.queryByLabelText('A pickup of 2 beats')).not.toBeNull();
-  });
-});
-
-describe('what a pickup may be', () => {
-  it('is less than a bar, because a whole bar is an earlier downbeat', async () => {
-    const onSet = await show({ beats: 3, beatsPerBar: 4 });
-    void fireEvent.press(screen.getByTestId('pickup-beats-up'));
-    expect(onSet).not.toHaveBeenCalled();
-  });
-
-  it('follows the bar it is a part of', async () => {
-    const onSet = await show({ beats: 2, beatsPerBar: 3 });
-    void fireEvent.press(screen.getByTestId('pickup-beats-up'));
-    expect(onSet).not.toHaveBeenCalled();
-
-    const longer = await show({ beats: 2, beatsPerBar: 6 });
-    void fireEvent.press(screen.getByTestId('pickup-beats-up'));
-    expect(longer).toHaveBeenCalledWith(3);
-  });
-
-  it('is not asked about at all where a bar holds one beat', async () => {
-    await show({ beatsPerBar: 1 });
-    // A bar of one beat cannot have a note before its own downbeat.
-    expect(screen.queryByTestId('pickup-beats')).toBeNull();
-  });
-});
-
-describe('how a pickup is written down', () => {
-  it('says it the way a person would', () => {
+describe('pickupLabel', () => {
+  it('counts in beats, and says none for nothing', () => {
     expect(pickupLabel(0)).toBe('None');
     expect(pickupLabel(1)).toBe('1 beat');
     expect(pickupLabel(3)).toBe('3 beats');

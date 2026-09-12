@@ -75,3 +75,28 @@ capabilities:
     permissions:
       - role: singer
         notes: A person's own account of their own take.
+
+  - name: notes.make_pickup
+    description: >
+      Make a count-in for the take (INV-NOTES-250). The take plays, the
+      singer taps the beat they would count, and stops; the steadiest run
+      of those taps sets the pulse (INV-NOTES-251) and they say how many
+      beats the count runs for. The beats sit before the recording and
+      nothing of the take moves (INV-NOTES-252).
+    actor: singer
+    implemented_by: packages/client/src/screens/Notes/usePickup.ts
+    parameters:
+      required: [noteId, beats, beatMs]
+    preconditions:
+      - the take belongs to the singer
+      - at least three taps were made in the pass
+    postconditions:
+      - the pulse is the steadiest run of consecutive taps, not the whole pass
+      - the pulse spaces the pickup's beats and is not applied to the take
+      - the pickup's beats sit at negative moments and the drawing widens left
+      - every stored moment of the take is unchanged
+      - the pickup can be dragged later, and only that can make it overlap
+        the take (INV-NOTES-253)
+    permissions:
+      - role: singer
+        notes: A person's own account of their own take.

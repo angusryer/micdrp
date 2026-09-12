@@ -54,6 +54,18 @@ export interface NoteDetailsPageProps {
   detail: ReturnType<typeof useNoteDetail>;
   isOpen: boolean;
   onClose: () => void;
+  /**
+   * Enough of the transport to count a take in against (INV-NOTES-251).
+   *
+   * A count-in can only be tapped while the take is sounding — that is the
+   * whole point of it — so the sheet that makes one needs to start and stop
+   * the take and ask where it has reached.
+   */
+  transport?: {
+    play: () => void;
+    stop: () => void;
+    atMs: () => number;
+  } | null;
   /** Told what it is covering, so the page beneath can scroll clear of it. */
   onCover?: (name: string, px: number) => void;
 }
@@ -62,6 +74,7 @@ export function NoteDetailsPage({
   detail,
   isOpen,
   onClose,
+  transport,
   onCover
 }: NoteDetailsPageProps): React.JSX.Element | null {
   const { colors } = useTheme();
@@ -146,11 +159,12 @@ export function NoteDetailsPage({
               bar sits, and neither is a reading of the take
               (INV-NOTES-211). */}
           <PickupRow
-            beats={Math.round(detail.bars.pickup / detail.grid.stepsPerBeat)}
-            beatsPerBar={detail.grid.beatsPerBar}
-            onSet={(beats) =>
-              detail.bars.setPickup(beats * detail.grid.stepsPerBeat)
-            }
+            pickup={detail.pickup}
+            onPlay={() => transport?.play()}
+            onStop={() => transport?.stop()}
+            atMs={() => transport?.atMs() ?? 0}
+            onMake={detail.makePickup}
+            onClear={detail.clearPickup}
           />
 
           {/* Beside the tempo because it is one: this is how the taps become

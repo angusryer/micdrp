@@ -19,7 +19,7 @@ import React, {
 } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { octaveLabel, pickupEndsAtMs } from 'logic';
+import { octaveLabel } from 'logic';
 
 import { GraphLayers } from './GraphLayers';
 import { RhythmBand, rhythmBandHeight } from '../../components/RhythmBand';
@@ -160,6 +160,7 @@ export function NoteShapeSection({
    */
   const [viewport, setViewport] = useState<{
     bringIntoView: (atMs: number) => void;
+    showAt: (atMs: number) => void;
   } | null>(null);
   const chosenAtMs = useMemo(
     () => chosenMomentMs(detail.selection, melody),
@@ -210,18 +211,19 @@ export function NoteShapeSection({
   // (INV-NOTES-058).
   const shifted = octaveLabel(octaves);
   /**
-   * Where the pickup ends, which is where the music proper begins
-   * (INV-NOTES-210).
+   * Where the unsung opening ends: the first note, and nothing else.
    *
-   * The first bar line. It was the first note, so moving that note later
-   * grew the pickup under it and put the moment it had started at out of
-   * the head's reach — an edit to one note quietly redefining where the
-   * music began.
+   * It was the first bar line, which meant the app hatched a pickup it had
+   * worked out from where the bars happened to fall — a measurement of the
+   * take presented as a statement about the music. Nothing reads a pickup
+   * out of a recording any more (INV-NOTES-250); a count-in is made by
+   * hand and sits in front of the take, where the drawing already widens
+   * to show it (INV-NOTES-252).
+   *
+   * Left undefined so the drawing falls back to the first note, which is
+   * the honest claim: there is recording here and nothing was sung in it
+   * (INV-NOTES-107).
    */
-  const pickupEndsMs = useMemo(
-    () => pickupEndsAtMs(gridForView ?? detail.grid, detail.bars.layout.lines),
-    [gridForView, detail.grid, detail.bars.layout.lines]
-  );
   // The rail takes its room out of the drawing rather than out of the page:
   // the graph still reaches both edges of the card, and the strip is part of
   // the graph rather than something beside it (INV-NOTES-142).
@@ -261,7 +263,16 @@ export function NoteShapeSection({
                 : undefined
             }
             onRewind={
-              transport?.rewind != null ? () => transport.rewind?.() : undefined
+              transport?.rewind != null
+                ? () => {
+                    void transport.rewind?.();
+                    // The head goes to the beginning (INV-NOTES-160) and
+                    // the view goes with it, sounding or not: a control
+                    // that moves a line off screen looks like it did
+                    // nothing (INV-NOTES-254).
+                    viewport?.showAt(0);
+                  }
+                : undefined
             }
             transport={
               transport?.state != null
@@ -315,13 +326,16 @@ export function NoteShapeSection({
             alsoShow={shownWith}
             underlay={bass}
             underlayColor={colors.gold}
-            fromMs={0}
+            // Where the drawing has to begin. Zero is the take's own start;
+            // a count-in sits in front of it at negative moments, and the
+            // window widens left to let it in rather than the recording
+            // moving to make room (INV-NOTES-252).
+            fromMs={detail.pickupStartMs}
             // The whole recording, so a take that ran on after the last
             // note is not drawn as one that stopped there (INV-NOTES-108).
             toMs={detail.note?.durationMs}
             // Where the music proper begins, from the bars rather than from
             // wherever the first note happens to start (INV-NOTES-210).
-            pickupEndsMs={pickupEndsMs}
             // Marked, not hidden: they were sung (INV-NOTES-113).
             countedNotes={detail.countedNotes}
             headerHeight={SCRUB_BAND_HEIGHT}

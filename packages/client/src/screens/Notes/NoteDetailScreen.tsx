@@ -234,6 +234,15 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
         detail={detail}
         isOpen={showDetails}
         onClose={() => setShowDetails(false)}
+        transport={
+          transport != null
+            ? {
+                play: () => transport.play(),
+                stop: () => transport.stop(),
+                atMs: () => transport.drawnPositionMs.value
+              }
+            : null
+        }
         // The same room every other sheet asks for. This one covers the page
         // too, and did not say so — which is the fault INV-NOTES-109 was
         // written for, reappearing with the next sheet (INV-NOTES-181).

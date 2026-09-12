@@ -33,6 +33,7 @@ export {
 } from './beatAnchors';
 export * from './voicedBeats';
 export * from './writtenNotes';
+export * from './pickup';
 export { beatsPerTap, spanOf } from './beatSpans';
 export {
   beatIntervals,

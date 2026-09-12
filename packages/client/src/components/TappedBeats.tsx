@@ -38,9 +38,23 @@ const DOWNBEAT_OPACITY = 0.9;
 /** And a worked-out one: present, and plainly not a statement. */
 const DERIVED_OPACITY = 0.22;
 
+/** The count-in's own beats, which belong to no part of the recording. */
+const COUNT_OPACITY = 0.4;
+
+/** Stable, so a take with no count is the same take on every render. */
+const NO_COUNT: readonly number[] = [];
+
 export interface TappedBeatsProps {
   /** Every beat, tapped and worked out, each saying which it is. */
   line: readonly DrawnBeat[];
+  /**
+   * The count-in's beats, in ms, all before the take (INV-NOTES-252).
+   *
+   * Drawn here rather than in their own layer so there is one place that
+   * knows what a beat looks like. They are not of the take — nothing was
+   * sung against them — so they are drawn as the count they are.
+   */
+  countIn?: readonly number[];
   timeAxis: TimeAxis;
   contentWidth: number;
   height: number;
@@ -59,12 +73,13 @@ export function beatLines(
 
 export function TappedBeats({
   line,
+  countIn = NO_COUNT,
   timeAxis,
   contentWidth,
   height
 }: TappedBeatsProps): React.JSX.Element | null {
   const { colors } = useTheme();
-  if (line.length === 0) {
+  if (line.length === 0 && countIn.length === 0) {
     return null;
   }
 
@@ -75,6 +90,19 @@ export function TappedBeats({
       style={[styles.layer, { width: contentWidth, height }]}
     >
       <Canvas style={{ width: contentWidth, height }}>
+        {countIn.map((atMs, index) => (
+          // Full height and dashed-looking by its gap from the rest: the
+          // count is a different thing from the take's own beat, and the
+          // region it sits in holds no singing at all.
+          <Line
+            key={`count-${index}`}
+            p1={vec(xForMs(timeAxis, atMs), 0)}
+            p2={vec(xForMs(timeAxis, atMs), height)}
+            strokeWidth={1}
+            color={colors.gray300}
+            opacity={COUNT_OPACITY}
+          />
+        ))}
         {line.map((beat, index) => {
           const x = xForMs(timeAxis, beat.atMs);
           // Short and faint where nobody tapped it: it reads as a tick

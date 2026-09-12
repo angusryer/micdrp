@@ -41,6 +41,12 @@ import {
   anchorsFrom,
   drawnBeats,
   anchorOf,
+  insideTake,
+  movePickup,
+  pickupBeats,
+  pickupFrom,
+  pickupStartMs,
+  withPickupBeats,
   withWritten,
   withoutDeleted,
   writeAt,
@@ -899,10 +905,13 @@ export function useNoteDetail(id: string) {
       (atMs: number) => {
         const fresh = isFreshPass.current;
         isFreshPass.current = false;
+        // Inside the take. A beat in the count-in would be a pulse stated
+        // where nothing was sung (INV-NOTES-253).
+        const at = insideTake(atMs);
         interpretation.updateBeats(
           fresh
-            ? replaceTaps(beats, [beatFromTap(atMs)])
-            : addTap(beats, atMs)
+            ? replaceTaps(beats, [beatFromTap(at)])
+            : addTap(beats, at)
         );
       },
       [beats, interpretation]
@@ -958,14 +967,17 @@ export function useNoteDetail(id: string) {
         if (going == null) {
           return;
         }
+        // Held inside the take, however far the finger travelled into the
+        // count-in in front of it (INV-NOTES-253).
+        const to = insideTake(toMs);
         if (going.isVoiced !== true) {
           const at = beats.findIndex((tap) => tap.atMs === going.atMs);
           if (at >= 0) {
-            interpretation.updateBeats(moveBeat(beats, at, toMs));
+            interpretation.updateBeats(moveBeat(beats, at, to));
           }
           return;
         }
-        interpretation.updateBeats(addTap(beats, toMs));
+        interpretation.updateBeats(addTap(beats, to));
         interpretation.updateDismissedBeats([
           ...interpretation.savedDismissedBeats,
           going.atMs
@@ -1027,9 +1039,13 @@ export function useNoteDetail(id: string) {
      */
     addNoteAt: useCallback(
       (atMs: number, midi: number) => {
+        // Held inside the take: the count-in in front of it is empty by
+        // construction, and a note there would claim something was sung
+        // where nothing was performed at all (INV-NOTES-253).
+        const at = insideTake(atMs);
         interpretation.updateWrittenNotes([
           ...interpretation.savedWrittenNotes,
-          writeAt(atMs, midi, beatLengthAt(timeline, grid.bpm, atMs))
+          writeAt(at, midi, beatLengthAt(timeline, grid.bpm, at))
         ]);
       },
       [interpretation, timeline, grid.bpm]
@@ -1063,6 +1079,52 @@ export function useNoteDetail(id: string) {
         ]);
       },
       [heard, interpretation]
+    ),
+    /**
+     * The count-in put in front of the take, or null where nobody has made
+     * one (INV-NOTES-250). Nothing reads one out of a recording.
+     */
+    pickup: interpretation.savedPickup,
+    /** Where the drawing has to begin to show it (INV-NOTES-252). */
+    pickupStartMs: pickupStartMs(interpretation.savedPickup),
+    /** The moments the count's beats fall on, all before the take. */
+    pickupBeats: pickupBeats(interpretation.savedPickup),
+    /**
+     * Make a count-in from a pass of taps (INV-NOTES-251).
+     *
+     * The pulse is the steadiest run of them, not the whole pass — and a
+     * pass with nothing steady in it makes nothing rather than a guess.
+     * It spaces the count's beats and is never applied to the take.
+     */
+    makePickup: useCallback(
+      (taps: readonly number[], beats: number) =>
+        interpretation.updatePickup(pickupFrom(taps, beats)),
+      [interpretation]
+    ),
+    /** Say how long the count runs, keeping the pulse it was tapped at. */
+    setPickupBeats: useCallback(
+      (beats: number) =>
+        interpretation.updatePickup(
+          interpretation.savedPickup == null
+            ? null
+            : withPickupBeats(interpretation.savedPickup, beats)
+        ),
+      [interpretation]
+    ),
+    /** Move the whole count — the one way it can reach the take. */
+    movePickupTo: useCallback(
+      (endMs: number) =>
+        interpretation.updatePickup(
+          interpretation.savedPickup == null
+            ? null
+            : movePickup(interpretation.savedPickup, endMs)
+        ),
+      [interpretation]
+    ),
+    /** Take the count away. */
+    clearPickup: useCallback(
+      () => interpretation.updatePickup(null),
+      [interpretation]
     ),
     /** How many sung notes have been thrown away (INV-NOTES-249). */
     deletedNoteCount: interpretation.savedDeletedNotes.length,
