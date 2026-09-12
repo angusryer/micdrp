@@ -44,12 +44,19 @@ invariants:
     description: A pickup lives before the recording, and the graph opens to let it in
     severity: critical
     check: >
-      A pickup's beats sit before the take's first moment, at negative
-      times, and the drawing widens to the left to show them. Nothing of
-      the recording moves: the audio, the notes, the beats and every stored
-      moment stay exactly where they were. Verified by making a pickup and
-      asserting the take's notes are at the same moments as before, while
-      the drawn window now begins earlier.
+      A pickup's beats sit before the singing, and the drawing widens to
+      the left to show them. Nothing of the recording moves: the audio,
+      the notes, the beats and every stored moment stay exactly where they
+      were. Verified by making a pickup and asserting the take's notes are
+      at the same moments as before, while the drawn window now begins
+      earlier.
+
+      Before the *singing*, not before the recording. A person presses
+      record, waits, and then comes in, so the recording's first moment is
+      somewhere in that silence and a count ending there counts in nothing.
+      A count is made to be come in on, so it ends where the coming in
+      happens: at the first sung note by default, and wherever it is
+      dragged to after (INV-NOTES-268).
 
       Widened rather than shifted, because the take is a recording of
       something that happened and its moments are facts. A count-in is
@@ -89,3 +96,25 @@ invariants:
       screen and looked like it had done nothing at all. The view follows
       the head while a take sounds; the one moment it was not following was
       the moment a person asked for the head to move.
+
+  - id: INV-NOTES-268
+    description: The count-in is a block that can be dragged onto the singing
+    severity: major
+    check: >
+      The count-in is drawn as one block spanning its beats, and dragging
+      it moves the whole count — every beat keeping its spacing — so its
+      end can be put on the moment the singing starts. The take does not
+      move with it (INV-NOTES-253). Where it lands is kept with the note
+      and survives reopening. Verified by dragging the block and asserting
+      the count's beats all moved by the same amount while every note of
+      the take stayed where it was.
+
+      Its end is what is being placed, so that is what the block's right
+      edge shows: a count of four beats ending on the first sung note is
+      four clicks and then the singer, which is what a count-in is.
+
+      Dragging it moves the drawn window with it, since the window opens
+      to the earliest thing there is. The block is placed as a base plus
+      an offset for that reason (INV-NOTES-235): the base moves the moment
+      the drag is committed, and an offset still measured from the old one
+      would draw the block a second drag further on.

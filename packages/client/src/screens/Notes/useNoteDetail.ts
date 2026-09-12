@@ -1076,8 +1076,13 @@ export function useNoteDetail(id: string) {
      */
     makePickup: useCallback(
       (taps: readonly number[], beats: number) =>
-        interpretation.updatePickup(pickupFrom(taps, beats)),
-      [interpretation]
+        // Ending where the singing starts, not where the recording does:
+        // the silence between pressing record and coming in is not part
+        // of the count (INV-NOTES-252).
+        interpretation.updatePickup(
+          pickupFrom(taps, beats, transcription.notes[0]?.startMs ?? 0)
+        ),
+      [interpretation, transcription]
     ),
     /** Say how long the count runs, keeping the pulse it was tapped at. */
     setPickupBeats: useCallback(

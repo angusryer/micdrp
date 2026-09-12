@@ -28,6 +28,8 @@ import { MelodyView } from '../../components/MelodyView';
 import { ZoomableMelody } from '../../components/ZoomableMelody';
 import { chosenMomentMs } from './chosenMoment';
 import { PlayRangeOverlay } from '../../components/PlayRangeOverlay';
+import { msForX } from '../../components/melodyScale';
+import { PickupBlock } from './PickupBlock';
 import { useListenBack } from './useListenBack';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
@@ -423,6 +425,19 @@ export function NoteShapeSection({
                   onSelect={onSelect}
                   flashing={flashing}
                 />
+                {/* Under the range overlay and over the notes: the count
+                    is a thing to place, and what it is placed against is
+                    the singing beneath it (INV-NOTES-268). */}
+                {detail.pickup != null ? (
+                  <PickupBlock
+                    fromMs={detail.pickupStartMs}
+                    endMs={detail.pickup.endMs}
+                    timeAxis={timeAxis}
+                    height={graphHeight}
+                    onGrab={() => transport?.stop?.()}
+                    onSettled={(x) => detail.movePickupTo(msForX(timeAxis, x))}
+                  />
+                ) : null}
                 <PlayRangeOverlay
                   range={listenBack.range}
                   timeAxis={timeAxis}

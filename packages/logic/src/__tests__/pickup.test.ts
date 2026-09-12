@@ -110,3 +110,27 @@ describe('a pickup', () => {
     expect(withPickupBeats(made, 0)).toBeNull();
   });
 });
+
+describe('where a new count ends (INV-NOTES-252)', () => {
+  const steady = walk([500, 500, 500]);
+
+  it('ends where the singing starts, not where the recording does', () => {
+    // A person presses record, waits, then comes in: a count ending at
+    // zero counts in nothing but silence.
+    const made = pickupFrom(steady, 4, 3200)!;
+    expect(made.endMs).toBe(3200);
+    expect(pickupStartMs(made)).toBe(1200);
+  });
+
+  it('still ends at zero for a take whose singing starts at once', () => {
+    expect(pickupFrom(steady, 4, 0)!.endMs).toBe(0);
+  });
+
+  it('keeps its beats evenly spaced wherever it ends', () => {
+    const made = pickupFrom(steady, 4, 3200)!;
+    const beats = pickupBeats(made);
+    expect(beats).toEqual([1200, 1700, 2200, 2700]);
+    // Four clicks, and the singer comes in on the next: that is a count-in.
+    expect(beats[beats.length - 1] + made.beatMs).toBe(made.endMs);
+  });
+});

@@ -132,12 +132,24 @@ const median = (values: readonly number[]): number => {
  * pulse cannot size a count, and guessing one would put beats in front of
  * the take at a speed nobody played.
  */
-export function pickupFrom(taps: readonly number[], beats: number): Pickup | null {
+export function pickupFrom(
+  taps: readonly number[],
+  beats: number,
+  /**
+   * Where the count ends, which is where the coming in happens.
+   *
+   * The first sung note, not the recording's first moment: a person
+   * presses record, waits, and then comes in, so a count ending at zero
+   * counts in nothing but silence (INV-NOTES-252). Draggable after
+   * (INV-NOTES-268).
+   */
+  endsAtMs = 0
+): Pickup | null {
   const beatMs = steadiestPulseMs(taps);
   if (beatMs == null || !(beats > 0)) {
     return null;
   }
-  return { beats: Math.round(beats), beatMs, endMs: 0 };
+  return { beats: Math.round(beats), beatMs, endMs: endsAtMs };
 }
 
 /**
