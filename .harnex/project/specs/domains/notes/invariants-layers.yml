@@ -1,0 +1,111 @@
+# The four layers of a take, and the one function between them. Its own
+# file: this is the model every other invariant in the domain sits inside.
+#
+#   performance ─► transcription ─► rhythm ─► harmony
+#
+# Each derived layer is an inference from the layers beneath it, overlaid by
+# the statements a person made about that layer. Nothing writes downward.
+invariants:
+  - id: INV-NOTES-255
+    description: A take is four layers, each derived only from the ones beneath it
+    severity: critical
+    check: >
+      The performance is the audio and never changes. The transcription is
+      what was sung, read from the performance. The rhythm — beats, bars,
+      tempo, count-in — is read from the transcription. The harmony is
+      read from the transcription grouped by the rhythm. Each layer is a
+      function of the layers beneath it and nothing above it; verified by
+      asserting that changing any rhythm element leaves the transcription
+      byte-identical, and changing any harmony leaves the rhythm so.
+
+      The transcription exists to reflect the performance and converges on
+      it as the reader improves; it needs no rhythm to do that. The rhythm
+      exists so notes can be grouped into bars for the harmony, and so an
+      overdub comes in on time; it is not a fact about the performance.
+      Keeping them apart is what lets either be recomputed without
+      touching the other.
+
+  - id: INV-NOTES-256
+    description: A statement outranks the inference of its own layer, and survives re-inference
+    severity: critical
+    check: >
+      Within a layer, what a person stated replaces what the app inferred
+      for the same thing, and every statement is anchored by a moment in
+      the layer beneath rather than by an index into the inference — so a
+      re-inference finds it again. Verified by deriving a take from one
+      reading, then from a later reading of the same performance with the
+      same statements, and asserting every statement is still in force.
+
+      Statements are corrections to an inference, not a separate layer:
+      a moved note corrects the transcription, a tapped beat corrects the
+      rhythm, an edited chord corrects the harmony. They belong to the
+      layer they correct, and they are the only thing in that layer a
+      re-inference is not allowed to change (INV-NOTES-096,
+      INV-NOTES-198).
+
+  - id: INV-NOTES-257
+    description: The transcription carries no rhythm
+    severity: critical
+    check: >
+      No note in the transcription depends on a tempo, a bar, a beat or a
+      count-in. Adding, moving, removing or re-tapping any of those
+      changes no note's pitch, start or length. Verified by asserting the
+      derived transcription is identical with and without every rhythm
+      statement and with every rhythm option at its extremes.
+
+      The corrections a person makes to notes exist only to make the
+      transcription an accurate reflection of the take — and should one
+      day be unnecessary. A transcription that moved with the bars would
+      be one whose accuracy depended on a decision about grouping, which
+      is a claim nobody made about what was sung.
+
+  - id: INV-NOTES-258
+    description: Rhythm is read by harmony, by views of the transcription, and by nothing else
+    severity: major
+    check: >
+      The things that read the rhythm are: the harmony, to group notes
+      into bars; the quantised and notated views, the click and the
+      export, which present the transcription against a grid; and the
+      count-in, which times an overdub. Nothing that produces or stores a
+      note reads it. Verified by asserting the transcription's derivation
+      takes no rhythm input.
+
+      This is what makes every rhythm element an overlay. A quantised
+      view is the transcription drawn against the rhythm; turn the view
+      off and the transcription is what it always was (INV-NOTES-202).
+
+  - id: INV-NOTES-259
+    description: Derivation is one pure function, and re-analysis is calling it again
+    severity: critical
+    check: >
+      One function takes a reading and the statements kept with the note
+      and returns every derived layer — transcription, rhythm, harmony —
+      with no screen, no store and no device. Re-analysing a take is
+      calling it with a newer reading and the same statements. Verified
+      by the corpus tool deriving every sample this way and by asserting
+      the screen's derived view is the same function's output.
+
+      Everything between the reading and the screen used to live in one
+      hook of the screen, so the only way to re-derive a take was to open
+      it. A reader that gets better is worth nothing if the takes it could
+      improve have to be visited one at a time.
+
+  - id: INV-NOTES-260
+    description: One document on the wire, three layers in the model
+    severity: major
+    check: >
+      The statements kept with a note travel and are stored as one flat
+      document, and each layer's derivation accepts only that document's
+      slice for its own layer: the transcription's derivation cannot see
+      a beat, the rhythm's cannot see a chord edit. Verified by the types
+      of the derivation functions, and by asserting a document with every
+      field set derives the same transcription as one with only the
+      transcription's fields.
+
+      One document because the wire is the wire: the backend keeps what
+      it is sent and drops what it does not know (a lesson recorded with
+      the crash reporter), and a bundle that nests the document would lose
+      every statement until the backend caught up. Three slices because
+      the boundary has to be a type the compiler enforces rather than a
+      convention that holds until the next field is added to the wrong
+      function.

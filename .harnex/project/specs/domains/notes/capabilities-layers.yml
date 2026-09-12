@@ -1,0 +1,46 @@
+# Deriving a take, and re-analysing it (INV-NOTES-259).
+capabilities:
+  - name: notes.derive
+    description: >
+      Turn a reading and the statements kept with a note into every derived
+      layer — transcription, rhythm, harmony — with no screen, store or
+      device involved. The screen calls it to draw; the corpus tool calls
+      it to re-analyse every take with a newer reader.
+    actor: system
+    implemented_by: packages/logic/src/derive/index.ts
+    parameters:
+      required: [reading, interpretation]
+    preconditions:
+      - the reading carries its analysis version
+    postconditions:
+      - the transcription depends on the reading and the transcription
+        slice only (INV-NOTES-257, INV-NOTES-260)
+      - the rhythm depends on the transcription and the rhythm slice only
+      - the harmony depends on the transcription, the rhythm and the
+        harmony slice only
+      - every statement is in force after a re-derivation from a newer
+        reading of the same performance (INV-NOTES-256)
+      - the same inputs produce the same output, so the screen and the
+        corpus tool cannot disagree
+    permissions:
+      - role: system
+        notes: Pure. Anyone holding the inputs may derive.
+
+  - name: notes.reanalyse
+    description: >
+      Derive every sample in the corpus from its kept reading and
+      statements, and report what changed. How a better reader is measured
+      against every take at once rather than by opening each.
+    actor: singer
+    implemented_by: scripts/corpus/reanalyse.ts
+    parameters:
+      required: []
+    preconditions:
+      - samples have been pulled with 'yarn dogfood samples'
+    postconditions:
+      - every sample is derived by notes.derive and nothing else
+      - a sample whose statements no longer anchor is reported, not
+        silently dropped
+    permissions:
+      - role: singer
+        notes: Their own takes, on their own machine.

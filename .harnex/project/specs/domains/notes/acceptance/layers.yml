@@ -1,0 +1,88 @@
+# The four layers and the one function between them — notes.derive.
+acceptance:
+  - id: ACC-NOTES-281
+    interface: ui
+    title: Changing the rhythm changes no note
+    given:
+      - a signed-in singer S
+      - singer S has a note N with a tempo, taps and a count-in
+    when:
+      - singer S calls notes.derive on note N
+    then:
+      - the note field transcriptionUnchangedByRhythm is true
+    maps_to:
+      capability: notes.derive
+      invariants: [INV-NOTES-257, INV-NOTES-255]
+
+  - id: ACC-NOTES-282
+    interface: ui
+    title: Every statement survives a newer reading
+    given:
+      - a signed-in singer S
+      - singer S has a note N with a moved note, a tapped beat and an edited chord
+    when:
+      - singer S calls notes.reread_take on note N
+    then:
+      - the note field movedNoteStillMoved is true
+      - the note field tappedBeatStillThere is true
+      - the note field editedChordStillEdited is true
+    maps_to:
+      capability: notes.derive
+      invariants: [INV-NOTES-256]
+
+  - id: ACC-NOTES-283
+    interface: ui
+    title: The transcription's derivation cannot see a beat
+    given:
+      - a signed-in singer S
+      - singer S has a note N with every statement kind set
+    when:
+      - singer S calls notes.derive on note N
+    then:
+      - the note field transcriptionSameAsSliceOnly is true
+    maps_to:
+      capability: notes.derive
+      invariants: [INV-NOTES-260]
+
+  - id: ACC-NOTES-284
+    interface: ui
+    title: The screen draws what the pure function returns
+    given:
+      - a signed-in singer S
+      - singer S has a note N
+    when:
+      - singer S opens the note
+    then:
+      - the note field screenViewEqualsDerived is true
+    maps_to:
+      capability: notes.derive
+      invariants: [INV-NOTES-259]
+
+  - id: ACC-NOTES-285
+    interface: cli
+    title: The corpus derives every sample without a screen
+    given:
+      - a signed-in singer S
+      - singer S has samples pulled to this machine
+    when:
+      - singer S calls notes.reanalyse
+    then:
+      - the note field samplesDerived is the sample count
+      - the note field samplesFailed is 0
+    maps_to:
+      capability: notes.reanalyse
+      invariants: [INV-NOTES-259]
+
+  - id: ACC-NOTES-286
+    interface: ui
+    title: Harmony reads rhythm, and rhythm does not read harmony
+    given:
+      - a signed-in singer S
+      - singer S has a note N with an edited chord
+    when:
+      - singer S calls notes.derive on note N
+    then:
+      - the note field rhythmUnchangedByHarmony is true
+    maps_to:
+      capability: notes.derive
+      invariants: [INV-NOTES-255, INV-NOTES-258]

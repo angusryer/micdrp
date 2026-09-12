@@ -135,3 +135,94 @@ entities:
         type: string
         required: false
         description: Resolved playback URL, or null when not yet available.
+
+  # The layers a take is derived into (INV-NOTES-255). None is stored: each
+  # is the output of one pure function over the layer beneath it and the
+  # statements a person made about it. Listed so the boundary between them
+  # is a named thing rather than a convention.
+
+  - name: Transcription
+    description: >
+      What was sung, as read from the performance and corrected by hand.
+      Carries no rhythm (INV-NOTES-257): no note here depends on a tempo,
+      a bar or a beat. Converges on the performance as the reader improves.
+    properties:
+      - name: notes
+        type: array
+        items: NoteEvent
+        required: true
+        description: >
+          The melody with corrections replayed, written notes merged in and
+          deleted notes left out. Each says whether it was written rather
+          than sung (INV-NOTES-246).
+      - name: counted
+        type: array
+        items: NoteEvent
+        required: true
+        description: >
+          Notes that were a sung count rather than the tune (INV-PITCH-022).
+          Split off here because they are part of what was sung and not
+          part of the music.
+
+  - name: Rhythm
+    description: >
+      The beat, bars, tempo and count-in, read from the transcription and
+      corrected by hand. Exists to group notes into bars for the harmony
+      and to time an overdub; read by nothing that produces a note
+      (INV-NOTES-258).
+    properties:
+      - name: timeline
+        type: BeatTimeline
+        required: false
+        description: >
+          Every beat, tapped, voiced or worked out, or null where nothing
+          anchors one (INV-NOTES-236).
+      - name: grid
+        type: MusicalGrid
+        required: true
+        description: The constant grid the quantised and notated views use.
+      - name: bars
+        type: BarLayout
+        required: true
+        description: Where the bars fall, proposed or arranged.
+      - name: pickup
+        type: Pickup
+        required: false
+        description: The count-in, or null where nobody made one.
+
+  - name: Harmony
+    description: >
+      The chords, read from the transcription grouped by the rhythm and
+      corrected by hand. The layer most often edited, and the only one
+      whose inference reads the rhythm.
+    properties:
+      - name: slots
+        type: array
+        items: ChordSlot
+        required: true
+        description: One slot per bar or half bar.
+      - name: key
+        type: string
+        required: false
+        description: The key the transcription implies, or null.
+
+  - name: Interpretation
+    description: >
+      The statements a person made about a take, kept with the note. One
+      flat document on the wire (INV-NOTES-260), read in three slices —
+      one per derived layer — so a derivation can only see the statements
+      that correct its own layer.
+    properties:
+      - name: transcriptionSlice
+        type: object
+        required: true
+        description: notes, writtenNotes, deletedNotes.
+      - name: rhythmSlice
+        type: object
+        required: true
+        description: >
+          beats, dismissedBeats, barLines, bpm, tapPattern, pickup.
+      - name: harmonySlice
+        type: object
+        required: true
+        description: chords, harmony.
