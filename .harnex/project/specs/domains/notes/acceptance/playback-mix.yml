@@ -307,8 +307,10 @@ acceptance:
     given: The analysis sheet open over the graph
     when: It is read from the top
     then: >
-      Tempo, pickup and tap pattern come first, and the measured summary
-      follows them (INV-NOTES-222).
+      Tempo and tap pattern come first, and the measured summary follows
+      them (INV-NOTES-222). The count-in is not among them: it is reached
+      by tapping the block it is (INV-NOTES-269), and made from the step
+      sheet (INV-NOTES-270).
 
   - id: ACC-NOTES-237
     title: A dragged pitch is still sounding after the drag has moved it

@@ -8,6 +8,10 @@
  * take already has is skipped rather than shown; with everything present
  * there is nothing to show at all.
  *
+ * Its own content rather than its own place: it lives in a sheet fetched
+ * from beside the take's name (INV-NOTES-270), because guidance is wanted
+ * on the way in and in the way after that.
+ *
  * Correcting notes and beats is not a step. Nothing in the data can say
  * corrections are finished, so it is a standing offer beside every step
  * from the count-in on, and gates none of them.
@@ -20,7 +24,7 @@ import { LED_STEPS, stepNumber, type WorkflowStep } from 'logic';
 import { useTheme } from '../../theme';
 import { PickupMaker, type PickupMakerProps } from './PickupMaker';
 
-export interface WorkflowStripProps {
+export interface WorkflowGuideProps {
   step: WorkflowStep;
   /** The count-in step's own control, when that is the step. */
   countIn: Omit<PickupMakerProps, 'onCancel'>;
@@ -46,13 +50,13 @@ const HINTS: Record<Exclude<WorkflowStep, 'done'>, string> = {
   chords: 'Read the chords from the take and the bassline. You can change any of them after.'
 };
 
-export function WorkflowStrip({
+export function WorkflowGuide({
   step,
   countIn,
   isRecording,
   onRecord,
   onChords
-}: WorkflowStripProps): React.JSX.Element | null {
+}: WorkflowGuideProps): React.JSX.Element | null {
   const { colors } = useTheme();
   if (step === 'done') {
     return null;
@@ -60,11 +64,8 @@ export function WorkflowStrip({
 
   return (
     <View
-      testID="workflow-strip"
-      style={[
-        styles.strip,
-        { backgroundColor: colors.neutral100, borderColor: colors.neutral500 }
-      ]}
+      testID="workflow-guide"
+      style={styles.body}
     >
       <Text style={[styles.where, { color: colors.gray300 }]}>
         Step {stepNumber(step)} of {LED_STEPS}
@@ -103,17 +104,10 @@ export function WorkflowStrip({
   );
 }
 
-export default WorkflowStrip;
+export default WorkflowGuide;
 
 const styles = StyleSheet.create({
-  strip: {
-    marginHorizontal: 16,
-    marginTop: 10,
-    padding: 14,
-    borderWidth: 1,
-    borderRadius: 14,
-    gap: 6
-  },
+  body: { padding: 20, gap: 6 },
   where: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase' },
   title: { fontSize: 18, fontWeight: '700' },
   hint: { fontSize: 13, lineHeight: 18 },

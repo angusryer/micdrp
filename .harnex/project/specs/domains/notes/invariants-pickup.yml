@@ -118,3 +118,24 @@ invariants:
       an offset for that reason (INV-NOTES-235): the base moves the moment
       the drag is committed, and an offset still measured from the old one
       would draw the block a second drag further on.
+
+  - id: INV-NOTES-269
+    description: A tap on the count-in opens what it is made of; a drag moves it
+    severity: major
+    check: >
+      A quick tap on the count-in block opens a sheet holding what the
+      count is made of — how many beats it runs for, the pulse it was
+      tapped at, where it ends — and marks the block as the thing being
+      worked on. A tap that travels is a drag and moves it instead
+      (INV-NOTES-268); neither gesture can trigger the other. Verified by
+      asserting a tap opens the sheet and moves nothing, and a drag moves
+      it and opens nothing.
+
+      One thing under the finger answering two questions: where it goes,
+      and what it is. A handle that only moved left the count's own
+      numbers reachable from nowhere near it, and a control for something
+      already under the finger is one nobody looks for.
+
+      The block claims the touch only once the finger has travelled far
+      enough to be going somewhere. Everything else on this graph claims
+      it at once, because a handle is only ever dragged; this one is not.

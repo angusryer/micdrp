@@ -6,16 +6,16 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import { I18nProvider } from '../../../i18n';
 import { ThemeProvider } from '../../../theme';
-import { WorkflowStrip } from '../WorkflowStrip';
+import { WorkflowGuide } from '../WorkflowGuide';
 import type { WorkflowStep } from 'logic';
 
-const show = async (step: WorkflowStep, over: Partial<React.ComponentProps<typeof WorkflowStrip>> = {}) => {
+const show = async (step: WorkflowStep, over: Partial<React.ComponentProps<typeof WorkflowGuide>> = {}) => {
   const onRecord = jest.fn();
   const onChords = jest.fn();
   await render(
     <I18nProvider>
       <ThemeProvider>
-        <WorkflowStrip
+        <WorkflowGuide
           step={step}
           countIn={{ onPlay: jest.fn(), onStop: jest.fn(), atMs: () => 0, onMake: jest.fn() }}
           isRecording={false}
@@ -29,7 +29,7 @@ const show = async (step: WorkflowStep, over: Partial<React.ComponentProps<typeo
   return { onRecord, onChords };
 };
 
-describe('the workflow strip', () => {
+describe('the workflow guide', () => {
   it('names the count-in first and carries its control', async () => {
     await show('count-in');
     expect(screen.getByText('Step 1 of 3')).toBeTruthy();
@@ -61,7 +61,7 @@ describe('the workflow strip', () => {
 
   it('shows nothing when the take has everything', async () => {
     await show('done');
-    expect(screen.queryByTestId('workflow-strip')).toBeNull();
+    expect(screen.queryByTestId('workflow-guide')).toBeNull();
   });
 
   it('offers correcting beside every step, and gates none', async () => {

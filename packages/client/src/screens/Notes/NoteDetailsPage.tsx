@@ -35,7 +35,6 @@ import { TuningPanel } from './TuningPanel';
 import { DeletedNotesRow } from './DeletedNotesRow';
 import { TempoRow } from './TempoRow';
 import { TapPatternRow } from './TapPatternRow';
-import { PickupRow } from './PickupRow';
 import type { useNoteDetail } from './useNoteDetail';
 
 /**
@@ -54,18 +53,6 @@ export interface NoteDetailsPageProps {
   detail: ReturnType<typeof useNoteDetail>;
   isOpen: boolean;
   onClose: () => void;
-  /**
-   * Enough of the transport to count a take in against (INV-NOTES-251).
-   *
-   * A count-in can only be tapped while the take is sounding — that is the
-   * whole point of it — so the sheet that makes one needs to start and stop
-   * the take and ask where it has reached.
-   */
-  transport?: {
-    play: () => void;
-    stop: () => void;
-    atMs: () => number;
-  } | null;
   /** Told what it is covering, so the page beneath can scroll clear of it. */
   onCover?: (name: string, px: number) => void;
 }
@@ -74,7 +61,6 @@ export function NoteDetailsPage({
   detail,
   isOpen,
   onClose,
-  transport,
   onCover
 }: NoteDetailsPageProps): React.JSX.Element | null {
   const { colors } = useTheme();
@@ -154,19 +140,7 @@ export function NoteDetailsPage({
             onRestore={detail.restoreDeletedNotes}
           />
 
-          {/* How far into a bar the singing started. Beside the tap pattern
-              because they are the same kind of sentence: both say where the
-              bar sits, and neither is a reading of the take
-              (INV-NOTES-211). */}
-          <PickupRow
-            pickup={detail.pickup}
-            onPlay={() => transport?.play()}
-            onStop={() => transport?.stop()}
-            atMs={() => transport?.atMs() ?? 0}
-            onMake={detail.makePickup}
-            onClear={detail.clearPickup}
-          />
-
+          
           {/* Beside the tempo because it is one: this is how the taps become
               a tempo at all (INV-NOTES-209). */}
           <TapPatternRow

@@ -10,6 +10,13 @@
  * The whole block moves: a count is a pulse with a length, and its beats
  * keep their spacing. Nothing of the take moves with it (INV-NOTES-253).
  *
+ * A quick tap opens what the count is made of instead (INV-NOTES-269).
+ * One thing under the finger answering two questions — where it goes and
+ * what it is — so the block claims the touch only once the finger has
+ * travelled far enough to be going somewhere. Everything else on this
+ * graph claims it at once, because a handle is only ever dragged; this
+ * one is not.
+ *
  * Placed as a base plus an offset owned by the UI thread (INV-NOTES-235).
  * Moving the count moves the drawn window too — it opens to the earliest
  * thing there is — so the base shifts the instant the drag is committed,
@@ -40,6 +47,10 @@ export interface PickupBlockProps {
   onSettled: (endMs: number) => void;
   /** The first touch, so anything sounding can stop before the drag. */
   onGrab?: () => void;
+  /** A quick tap: open what the count is made of (INV-NOTES-269). */
+  onOpen?: () => void;
+  /** True while its sheet is open, so the block says it is the subject. */
+  isChosen?: boolean;
 }
 
 export function PickupBlock({
@@ -48,7 +59,9 @@ export function PickupBlock({
   timeAxis,
   height,
   onSettled,
-  onGrab
+  onGrab,
+  onOpen,
+  isChosen = false
 }: PickupBlockProps): React.JSX.Element | null {
   const { colors } = useTheme();
   const drag = useDragOffset();
@@ -63,7 +76,10 @@ export function PickupBlock({
         // Named, so a test can drive the whole drag rather than assert the
         // shape of one: what matters is where it ends up (INV-NOTES-235).
         .withTestId('pickup-block-pan')
-        .minDistance(0)
+        // Far enough to be going somewhere. At zero the pan claims the
+        // touch the instant it lands and the tap can never win, so the
+        // count could be moved and never opened (INV-NOTES-269).
+        .minDistance(TRAVELLED_PX)
         .onBegin(() => {
           wasAt.value = offsetFrom(drag, left);
           if (onGrab) {
@@ -79,6 +95,23 @@ export function PickupBlock({
     [drag, wasAt, left, width, onGrab, onSettled]
   );
 
+  const tap = useMemo(
+    () =>
+      Gesture.Tap()
+        .withTestId('pickup-block-tap')
+        .maxDistance(TRAVELLED_PX)
+        .onEnd(() => {
+          if (onOpen) {
+            runOnJS(onOpen)();
+          }
+        }),
+    [onOpen]
+  );
+
+  // The tap first: a touch that never travels is not a drag, and the pan
+  // has already refused it by then.
+  const gesture = useMemo(() => Gesture.Exclusive(tap, pan), [tap, pan]);
+
   const place = useAnimatedStyle(() => ({
     transform: [{ translateX: left + offsetFrom(drag, left) }]
   }));
@@ -88,7 +121,7 @@ export function PickupBlock({
   }
 
   return (
-    <GestureDetector gesture={pan}>
+    <GestureDetector gesture={gesture}>
       <Animated.View
         accessibilityRole="adjustable"
         accessibilityLabel="Drag the count-in onto where the singing starts"
@@ -98,8 +131,11 @@ export function PickupBlock({
           {
             width,
             height,
-            borderColor: colors.gray300,
-            backgroundColor: colors.neutral100
+            borderColor: isChosen ? colors.primary500 : colors.gray300,
+            backgroundColor: colors.neutral100,
+            // Brighter while its sheet is open, so the thing being talked
+            // about and the thing on the graph are plainly one thing.
+            opacity: isChosen ? 0.6 : 0.35
           },
           place
         ]}
@@ -115,6 +151,9 @@ export function endAtX(timeAxis: TimeAxis, x: number): number {
 
 export default PickupBlock;
 
+/** How far a finger travels before it is going somewhere rather than here. */
+const TRAVELLED_PX = 8;
+
 const styles = StyleSheet.create({
   // Placed by a transform rather than by `left`, so moving it is a
   // property the UI thread can write without a layout pass.
@@ -126,7 +165,6 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     borderWidth: 1,
-    borderRadius: 6,
-    opacity: 0.35
+    borderRadius: 6
   }
 });

@@ -119,10 +119,16 @@ describe('ACC-NOTES-236: the order of the sheet', () => {
   );
   const at = (name: string) => source.indexOf(`<${name}`);
 
-  it('opens on the tempo, the pickup and the tap pattern', () => {
+  it('opens on the tempo and the tap pattern', () => {
     expect(at('TempoRow')).toBeGreaterThan(0);
-    expect(at('TempoRow')).toBeLessThan(at('PickupRow'));
-    expect(at('PickupRow')).toBeLessThan(at('TapPatternRow'));
+    expect(at('TempoRow')).toBeLessThan(at('TapPatternRow'));
+  });
+
+  it('leaves the count-in out: it is reached from the block it is', () => {
+    // Tapping the count-in on the graph opens what it is made of
+    // (INV-NOTES-269), and the step sheet is where one is made
+    // (INV-NOTES-270). A third place to find it would be two too many.
+    expect(at('PickupRow')).toBe(-1);
   });
 
   it('puts the measured summary under them', () => {

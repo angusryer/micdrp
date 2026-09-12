@@ -39,7 +39,8 @@ import { TrackOptions } from './TrackOptions';
 import { BeatTap } from './BeatTap';
 import { nextStep } from 'logic';
 
-import { WorkflowStrip } from './WorkflowStrip';
+import { PickupSheet } from './PickupSheet';
+import { WorkflowSheet, WorkflowTab } from './WorkflowSheet';
 import { SelectionSheet } from './SelectionSheet';
 import { PlaybackBar } from './PlaybackBar';
 import { useNoteDetail } from './useNoteDetail';
@@ -109,6 +110,15 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
     pause: () => void;
     rewind: () => void;
   } | null>(null);
+  const [showWorkflow, setShowWorkflow] = useState(false);
+  const [showPickup, setShowPickup] = useState(false);
+  // Derived, never remembered: the first thing the take does not have
+  // (INV-NOTES-267).
+  const step = nextStep({
+    hasPickup: detail.pickup != null,
+    hasBassline: detail.bass != null,
+    hasHarmony: detail.hasHarmony
+  });
 
   if (!note) {
     return (
@@ -141,9 +151,15 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
           sheetCover > 0 ? { paddingBottom: sheetCover } : null
         ]}
       >
-        <Text style={[styles.title, { color: colors.typography }]}>
-          {note.title}
-        </Text>
+        <View style={styles.titleRow}>
+          <Text style={[styles.title, { color: colors.typography }]}>
+            {note.title}
+          </Text>
+          {/* Where the guidance is fetched from: beside the name of the
+              thing it is about (INV-NOTES-270). Gone once the take has
+              everything. */}
+          <WorkflowTab step={step} onOpen={() => setShowWorkflow(true)} />
+        </View>
 
         {hasTakeAudio(note) ? (
           <PlaybackBar
@@ -173,41 +189,6 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             {/* The word "Shape" said what the picture already says; the top
                 edge of the graph carries the scrubber instead
                 (INT-NOTES-022). */}
-            {/* Where the take is and what comes next, above everything
-                else: the take leads and the person follows (INV-NOTES-267).
-                Nothing at all once the take has everything. */}
-            <WorkflowStrip
-              step={nextStep({
-                hasPickup: detail.pickup != null,
-                hasBassline: detail.bass != null,
-                hasHarmony: detail.hasHarmony
-              })}
-              countIn={{
-                onPlay: () => transport?.play(),
-                onStop: () => transport?.stop(),
-                atMs: () => transport?.drawnPositionMs.value ?? 0,
-                onMake: detail.makePickup
-              }}
-              isRecording={detail.layerCapture.isRecording}
-              onRecord={() => {
-                if (detail.layerCapture.isRecording) {
-                  transport?.stop();
-                  void detail.layerCapture.stop();
-                  return;
-                }
-                // Recording first, then playback from the count-in's first
-                // beat, so the count is what counts the layer in
-                // (INT-NOTES-032).
-                void detail.layerCapture
-                  .start('bass')
-                  .then(() => transport?.playFrom(detail.pickupStartMs));
-              }}
-              onChords={() => {
-                if (!detail.hasHarmony) {
-                  detail.toggleHarmony();
-                }
-              }}
-            />
             <View style={styles.fullBleed} onLayout={room.onGraphLayout}>
               <NoteShapeSection
                 detail={detail}
@@ -219,6 +200,8 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
                 selection={detail.selection}
                 onSelect={detail.setSelection}
                 flashing={detail.flashing}
+                onOpenPickup={() => setShowPickup(true)}
+                isPickupChosen={showPickup}
               />
             </View>
             {/* Directly under the graph, because it is the same phrase said
@@ -271,19 +254,55 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
         ) : null}
       </ScrollView>
 
+      <WorkflowSheet
+        isOpen={showWorkflow}
+        onClose={() => setShowWorkflow(false)}
+        onCover={reportCover}
+        step={step}
+        countIn={{
+          onPlay: () => transport?.play(),
+          onStop: () => transport?.stop(),
+          atMs: () => transport?.drawnPositionMs.value ?? 0,
+          onMake: detail.makePickup
+        }}
+        isRecording={detail.layerCapture.isRecording}
+        onRecord={() => {
+          if (detail.layerCapture.isRecording) {
+            transport?.stop();
+            void detail.layerCapture.stop();
+            return;
+          }
+          // Recording first, then playback from the count-in's first beat,
+          // so the count is what counts the layer in (INT-NOTES-032).
+          void detail.layerCapture
+            .start('bass')
+            .then(() => transport?.playFrom(detail.pickupStartMs));
+        }}
+        onChords={() => {
+          if (!detail.hasHarmony) {
+            detail.toggleHarmony();
+          }
+        }}
+      />
+
+      {/* What the count is made of, opened by tapping the block itself
+          (INV-NOTES-269). */}
+      <PickupSheet
+        pickup={detail.pickup}
+        isOpen={showPickup}
+        onClose={() => setShowPickup(false)}
+        onCover={reportCover}
+        onSetBeats={detail.setPickupBeats}
+        onClear={() => {
+          detail.clearPickup();
+          setShowPickup(false);
+        }}
+      />
+
       <NoteDetailsPage
         detail={detail}
         isOpen={showDetails}
         onClose={() => setShowDetails(false)}
-        transport={
-          transport != null
-            ? {
-                play: () => transport.play(),
-                stop: () => transport.stop(),
-                atMs: () => transport.drawnPositionMs.value
-              }
-            : null
-        }
         // The same room every other sheet asks for. This one covers the page
         // too, and did not say so — which is the fault INV-NOTES-109 was
         // written for, reappearing with the next sheet (INV-NOTES-181).
@@ -299,7 +318,9 @@ const styles = StyleSheet.create({
   // Out through the page's own margins, to the edges of the screen.
   fullBleed: { marginHorizontal: -CONTENT_PADDING },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 22, fontWeight: '700' },
+  titleRow: { flexDirection: 'row', alignItems: 'center' },
+  // Takes the row's width so the mark sits at its right-hand end.
+  title: { flex: 1, fontSize: 22, fontWeight: '700' },
   sectionTitle: { fontSize: 13, fontWeight: '600', marginTop: 18 },
   details: { fontSize: 14, fontWeight: '600', marginTop: 20 }
 });

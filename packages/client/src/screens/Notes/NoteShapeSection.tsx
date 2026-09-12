@@ -73,6 +73,10 @@ export interface NoteShapeSectionProps {
   height: number;
   /** Sideways the graph is the view, so the controls under it are left off. */
   showControls?: boolean;
+  /** A tap on the count-in: open what it is made of (INV-NOTES-269). */
+  onOpenPickup?: () => void;
+  /** True while that sheet is open, so the block says it is the subject. */
+  isPickupChosen?: boolean;
   /** What is chosen on the graph, and how to choose something else. */
   selection: Chosen;
   onSelect: (selection: Chosen) => void;
@@ -119,7 +123,9 @@ export function NoteShapeSection({
   flashing,
   onOptions,
   onDetails,
-  transport
+  transport,
+  onOpenPickup,
+  isPickupChosen
 }: NoteShapeSectionProps): React.JSX.Element {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -435,6 +441,8 @@ export function NoteShapeSection({
                     timeAxis={timeAxis}
                     height={graphHeight}
                     onGrab={() => transport?.stop?.()}
+                    onOpen={onOpenPickup}
+                    isChosen={isPickupChosen}
                     onSettled={(x) => detail.movePickupTo(msForX(timeAxis, x))}
                   />
                 ) : null}

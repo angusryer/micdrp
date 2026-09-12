@@ -103,3 +103,22 @@ invariants:
       Reducing the steps means deriving whatever can be derived so the
       person is asked only for what only they know; guiding through them
       means the take, not the person, keeps track of where it is.
+
+  - id: INV-NOTES-270
+    description: The step is put away and fetched back from beside the take's name
+    severity: major
+    check: >
+      What the take's next step is lives in a sheet, opened from a mark at
+      the right-hand end of the take's title row and closed like any other
+      sheet. The mark is shown while there is a step left and gone once
+      the take has everything (INV-NOTES-267). Verified by asserting the
+      mark opens the sheet, that the sheet names the same step the take
+      reports, and that neither is present for a take with everything.
+
+      A strip that is always there costs the height of a strip on every
+      take forever, including every take whose steps are long done and
+      every visit that came to do something else entirely. Guidance is
+      wanted on the way in and in the way after that, so it is put away
+      by default and fetched from one fixed place — beside the name of
+      the thing it is about, which is where a person looks to ask what
+      this is.
