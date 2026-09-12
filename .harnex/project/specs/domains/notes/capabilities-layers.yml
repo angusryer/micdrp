@@ -48,3 +48,25 @@ capabilities:
     permissions:
       - role: singer
         notes: Their own takes, on their own machine.
+
+  - name: notes.next_step
+    description: >
+      Say where a take is in its workflow and what comes next
+      (INV-NOTES-267), derived from what the take already has rather than
+      remembered. Shown on the take with the step's own control, so the
+      take leads the person through INT-NOTES-028..033 in order.
+    actor: system
+    implemented_by: packages/logic/src/workflowStep.ts
+    parameters:
+      required: [noteId]
+    preconditions:
+      - the take exists
+    postconditions:
+      - the next step is the first of count-in, bassline, chords that the
+        take does not have
+      - a step already satisfied is skipped, not shown
+      - correcting is offered alongside every step and gates none
+      - with everything present, nothing is asked for
+    permissions:
+      - role: singer
+        notes: Their own take.

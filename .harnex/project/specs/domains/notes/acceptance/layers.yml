@@ -202,3 +202,47 @@ acceptance:
     maps_to:
       capability: notes.reanalyse
       invariants: [INV-NOTES-264]
+
+  - id: ACC-NOTES-295
+    interface: ui
+    title: A fresh take names the count-in as its next step
+    given:
+      - a signed-in singer S
+      - singer S has a freshly recorded note N
+    when:
+      - singer S opens the note
+    then:
+      - the note field nextStep is count-in
+      - the note field nextStepControlShown is true
+    maps_to:
+      capability: notes.next_step
+      invariants: [INV-NOTES-267]
+
+  - id: ACC-NOTES-296
+    interface: ui
+    title: A take with a count-in and a bassline names the chords
+    given:
+      - a signed-in singer S
+      - singer S has a note N with a count-in and a bass layer
+    when:
+      - singer S opens the note
+    then:
+      - the note field nextStep is chords
+    maps_to:
+      capability: notes.next_step
+      invariants: [INV-NOTES-267]
+
+  - id: ACC-NOTES-297
+    interface: ui
+    title: A take with everything asks for nothing
+    given:
+      - a signed-in singer S
+      - singer S has a note N with a count-in, a bass layer and chords
+    when:
+      - singer S opens the note
+    then:
+      - the note field nextStep is done
+      - the note field nextStepControlShown is false
+    maps_to:
+      capability: notes.next_step
+      invariants: [INV-NOTES-267]

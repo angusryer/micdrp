@@ -37,6 +37,9 @@ import { NoteNeckSection } from './NoteNeckSection';
 import { NoteShapeSection } from './NoteShapeSection';
 import { TrackOptions } from './TrackOptions';
 import { BeatTap } from './BeatTap';
+import { nextStep } from 'logic';
+
+import { WorkflowStrip } from './WorkflowStrip';
 import { SelectionSheet } from './SelectionSheet';
 import { PlaybackBar } from './PlaybackBar';
 import { useNoteDetail } from './useNoteDetail';
@@ -170,6 +173,41 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
             {/* The word "Shape" said what the picture already says; the top
                 edge of the graph carries the scrubber instead
                 (INT-NOTES-022). */}
+            {/* Where the take is and what comes next, above everything
+                else: the take leads and the person follows (INV-NOTES-267).
+                Nothing at all once the take has everything. */}
+            <WorkflowStrip
+              step={nextStep({
+                hasPickup: detail.pickup != null,
+                hasBassline: detail.bass != null,
+                hasHarmony: detail.hasHarmony
+              })}
+              countIn={{
+                onPlay: () => transport?.play(),
+                onStop: () => transport?.stop(),
+                atMs: () => transport?.drawnPositionMs.value ?? 0,
+                onMake: detail.makePickup
+              }}
+              isRecording={detail.layerCapture.isRecording}
+              onRecord={() => {
+                if (detail.layerCapture.isRecording) {
+                  transport?.stop();
+                  void detail.layerCapture.stop();
+                  return;
+                }
+                // Recording first, then playback from the count-in's first
+                // beat, so the count is what counts the layer in
+                // (INT-NOTES-032).
+                void detail.layerCapture
+                  .start('bass')
+                  .then(() => transport?.playFrom(detail.pickupStartMs));
+              }}
+              onChords={() => {
+                if (!detail.hasHarmony) {
+                  detail.toggleHarmony();
+                }
+              }}
+            />
             <View style={styles.fullBleed} onLayout={room.onGraphLayout}>
               <NoteShapeSection
                 detail={detail}
