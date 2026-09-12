@@ -13,6 +13,7 @@ import { join } from 'node:path';
 import { readWav } from './wav.ts';
 import { DEFAULT_FRAMES, framesOf } from './frames.ts';
 import { appReading, whatItWas } from './pipelines.ts';
+import { reanalyse } from './reanalyse.ts';
 import { score, type Score } from './score.ts';
 
 const REPO = new URL('../..', import.meta.url).pathname;
@@ -56,6 +57,16 @@ const samples = readdirSync(dir).filter((name) =>
 if (samples.length === 0) {
   console.error(`corpus: no samples in ${dir}`);
   process.exit(1);
+}
+
+// Re-derive every sample with no screen and stop (INV-NOTES-259). A
+// separate command from scoring because it asks a different question: not
+// how well the reader heard, but whether every layer above it still comes
+// out and every statement still lands.
+if (process.argv.includes('reanalyse')) {
+  const { derived, failed } = reanalyse(dir);
+  console.log(`\n${derived} derived, ${failed} failed`);
+  process.exit(failed > 0 ? 1 : 0);
 }
 
 console.log(`corpus: ${samples.length} sample(s), ceiling ${ceiling} Hz\n`);

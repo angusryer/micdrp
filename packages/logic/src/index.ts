@@ -34,6 +34,8 @@ export {
 export * from './voicedBeats';
 export * from './writtenNotes';
 export * from './pickup';
+export * from './heldGrid';
+export * from './derive';
 export { beatsPerTap, spanOf } from './beatSpans';
 export {
   beatIntervals,

@@ -6,8 +6,8 @@
 export const AUDITION_MS = 1100;
 
 /**
- * Sits below a sung line without booming under it — the right register on
- * headphones. A caller listening on the phone's own speaker passes a higher
- * floor, since a built-in speaker has almost nothing down here.
+ * The voicing floor moved into logic so the harmony can be derived with no
+ * screen (INV-NOTES-259); re-exported here so the one place that read it
+ * from the screen goes on reading it.
  */
-export const VOICING_BOTTOM_MIDI = 48;
+export { VOICING_BOTTOM_MIDI } from 'logic';

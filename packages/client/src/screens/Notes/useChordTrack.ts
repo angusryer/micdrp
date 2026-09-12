@@ -14,10 +14,6 @@ import { AUDITION_MS, VOICING_BOTTOM_MIDI } from './chordTrackDefaults';
 import {
   collectEdits,
   cycleQuality,
-  detectKey,
-  harmonizeToGrid,
-  relabelFromNotes,
-  replayEdits,
   resetChordTone,
   revertSlot,
   transposeDiatonic,
@@ -29,8 +25,7 @@ import {
   type ChordPlayback,
   type ChordSlot,
   type ChordSlotEdit,
-  type MusicalGrid,
-  type NoteEvent
+  type Harmony
 } from 'logic';
 
 export interface ChordTrack {
@@ -70,76 +65,26 @@ export interface ChordTrack {
 }
 
 export interface ChordTrackOptions {
-  /** Decisions already kept with the note, replayed onto fresh inference. */
-  savedEdits?: readonly ChordSlotEdit[];
   /** Called with the differences whenever they change, for keeping. */
   onEditsChanged?: (edits: ChordSlotEdit[]) => void;
   /**
    * Lowest MIDI note the chords may use. Raising it lifts the whole backdrop
    * towards the melody, which is what makes it audible on a phone speaker.
+   * The same floor the harmony was derived with, or the voicings here and
+   * the names on the cards would disagree.
    */
   floorMidi?: number;
-  /**
-   * Where the downbeats are, as grid steps. Each one opens a chord and the
-   * chord runs to the next, so the number of chords and their lengths are
-   * the singer's rather than the metre's (INV-NOTES-048).
-   */
-  downbeatSteps?: readonly number[];
-  /**
-   * A bass layer sung against the take, when there is one. It names the root
-   * of each chord, which a melody alone can only imply (INV-NOTES-071).
-   */
-  bassLayer?: readonly NoteEvent[];
-  /**
-   * Whether anybody has asked for the harmony (INV-NOTES-171).
-   *
-   * False produces no slots at all. Defaulted true so a caller that has no
-   * opinion — the dogfood player, a test — behaves as before.
-   */
-  isWanted?: boolean;
 }
 
 export function useChordTrack(
-  melody: readonly NoteEvent[],
-  grid: MusicalGrid,
+  harmony: Harmony,
   options: ChordTrackOptions = {}
 ): ChordTrack {
-  const {
-    savedEdits,
-    onEditsChanged,
-    floorMidi = VOICING_BOTTOM_MIDI,
-    downbeatSteps,
-    bassLayer,
-    isWanted = true
-  } = options;
-  const key = useMemo(() => detectKey(melody), [melody]);
-  // Nothing until somebody asks. The chords used to appear on their own,
-  // built on a tempo nobody had confirmed and a metre nobody had stated —
-  // the app asserting the harmony of an idea before its author had said
-  // what the beat was (INV-NOTES-171).
-  const inferred = useMemo(
-    () =>
-      isWanted
-        ? harmonizeToGrid(melody, grid, { key, downbeatSteps, bass: bassLayer })
-        : [],
-    [isWanted, melody, grid, key, downbeatSteps, bassLayer]
-  );
-
-  // Inference first, then a person's decisions on top of it — which is what
-  // makes what we store differences rather than a copy (INV-NOTES-022). A
-  // slot nobody overrode follows the analysis; a slot someone chose does not.
-  // Relabelled from the notes after replaying, not just when the edit was
-  // made. replayEdits names a slot from its root and quality — the spine —
-  // so without this a moved note kept sounding but the name reverted the
-  // instant the edit round-tripped through storage (INV-NOTES-036).
-  const restored = useMemo(
-    () =>
-      (savedEdits?.length
-        ? replayEdits(inferred, savedEdits, key)
-        : inferred
-      ).map((slot) => relabelFromNotes(slot, key, floorMidi)),
-    [inferred, savedEdits, key, floorMidi]
-  );
+  const { onEditsChanged, floorMidi = VOICING_BOTTOM_MIDI } = options;
+  // Inference and the kept decisions replayed onto it both arrive derived
+  // (INV-NOTES-259). What is left here is a person's edits between one
+  // derivation and the next, and voicing the result for playback.
+  const { key, inferred, slots: restored } = harmony;
   const [slots, setSlots] = useState<ChordSlot[]>(restored);
 
   // Re-inferring replaces the working copy, with saved decisions replayed onto

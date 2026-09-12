@@ -86,6 +86,15 @@ invariants:
       time would make the anchor and the value the same quantity: move a
       note and its own edit could no longer find it.
 
+      Anchored at the middle of the note rather than its first moment, and
+      found with slack: an anchor no note covers is matched to the nearest
+      note within a few tens of milliseconds. The reading does move — that
+      is the point of re-reading (INV-NOTES-256) — and a better reader that
+      placed an onset one millisecond later orphaned every correction on
+      that note, because every edit had been anchored at exactly the
+      millisecond that moved. Verified by re-deriving with every onset
+      shifted and asserting every edit still lands.
+
   - id: INV-NOTES-097
     description: Length is dragged in notches, and the handle comes home
     severity: minor

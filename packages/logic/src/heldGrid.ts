@@ -16,7 +16,7 @@
  * Pure, so the ordering is tested without a screen — it was written inside a
  * hook, where nothing could reach it.
  */
-import type { TapPattern } from 'logic';
+import type { TapPattern } from './tapPattern';
 
 /** As much of a grid as this rule touches. */
 export interface HeldGrid {

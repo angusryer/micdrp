@@ -39,8 +39,11 @@ describe('withoutDeleted', () => {
     expect(withoutDeleted(again, [500]).map((n) => n.midi)).toEqual([60, 64]);
   });
 
-  it('throws away nothing for an anchor inside no note', () => {
-    expect(withoutDeleted(heard, [450])).toHaveLength(3);
+  it('throws away nothing for an anchor near no note', () => {
+    // Beyond the slack an edit is found with (INV-NOTES-096). An anchor a
+    // few tens of milliseconds off a note is that note, re-read; one a
+    // second off is nothing.
+    expect(withoutDeleted(heard, [5000])).toHaveLength(3);
   });
 
   it('throws away a written note like any other', () => {

@@ -1,22 +1,21 @@
 /**
  * The arrangement of bars over a take, and changing it.
  *
- * Detection proposes an opening arrangement; everything after that is a person
- * moving lines, splitting bars or joining them. Every change goes through a
- * pure transform in `logic`; this only remembers the result and hands it on to
- * be kept.
+ * The bars in force are derived (INV-NOTES-259): proposed from the music,
+ * or arranged by hand, as `derive` decided. This only remembers a person's
+ * edits between derivations and hands each one on to be kept — every change
+ * goes through a pure transform in `logic`, and a kept arrangement comes
+ * back through the next derivation as the layout in force.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   addBarLine,
   moveBarLine,
   pickupSteps,
-  proposeBars,
   removeBarLine,
   withPickup,
-  type BarLayout,
-  type MusicalGrid
+  type BarLayout
 } from 'logic';
 
 export interface BarArrangement {
@@ -40,63 +39,27 @@ export interface BarArrangement {
   isArranged: boolean;
 }
 
+/** What the derivation decided the bars are (INV-NOTES-259). */
+export interface DerivedBars {
+  layout: BarLayout;
+  totalSteps: number;
+  isArranged: boolean;
+}
+
 export interface BarLayoutOptions {
-  /** An arrangement already kept with the note, if there is one. */
-  savedLines?: readonly number[];
   /** Called with the new arrangement whenever it changes, for keeping. */
   onArranged?: (lines: number[]) => void;
-  /**
-   * Downbeats read from the music, which open a take that nobody has
-   * arranged yet. Without them the even division is used, which is a guess
-   * about metre rather than a reading of the harmony (INV-NOTES-049).
-   */
-  proposed?: readonly number[];
 }
 
 export function useBarLayout(
-  grid: MusicalGrid,
-  durationMs: number,
+  derived: DerivedBars,
   options: BarLayoutOptions = {}
 ): BarArrangement {
-  const { savedLines, onArranged, proposed: readFromMusic } = options;
-
-  const beatMs = grid.bpm > 0 ? 60000 / grid.bpm : 0;
-  const totalSteps = useMemo(() => {
-    if (!(beatMs > 0) || !(grid.stepsPerBeat > 0)) {
-      return 0;
-    }
-    const stepMs = beatMs / grid.stepsPerBeat;
-    return Math.max(1, Math.ceil((durationMs - grid.offsetMs) / stepMs));
-  }, [beatMs, grid.stepsPerBeat, grid.offsetMs, durationMs]);
-
-  const proposed = useMemo<BarLayout>(() => {
-    const even = proposeBars(
-      grid.beatsPerBar,
-      grid.stepsPerBeat,
-      grid.isCompound,
-      totalSteps
-    );
-    // What the music says, when it says anything; the even division is the
-    // fallback rather than the default.
-    return readFromMusic?.length ? { ...even, lines: [...readFromMusic] } : even;
-  }, [
-    grid.beatsPerBar,
-    grid.stepsPerBeat,
-    grid.isCompound,
-    totalSteps,
-    readFromMusic
-  ]);
-
-  // A kept arrangement replaces the proposal outright. Unlike a chord, a bar
-  // line is not a difference from anything — it is a position, and the
-  // positions someone chose are the whole answer.
-  const restored = useMemo<BarLayout>(
-    () => (savedLines?.length ? { ...proposed, lines: [...savedLines] } : proposed),
-    [proposed, savedLines]
-  );
+  const { onArranged } = options;
+  const { layout: restored, totalSteps } = derived;
 
   const [layout, setLayout] = useState<BarLayout>(restored);
-  const [isArranged, setIsArranged] = useState(Boolean(savedLines?.length));
+  const [isArranged, setIsArranged] = useState(derived.isArranged);
 
   // A new proposal means the take itself was re-analysed, at which point the
   // old lines describe a different set of steps.

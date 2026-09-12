@@ -14,18 +14,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   collectNoteEdits,
   moveNote,
-  proposeDownbeats,
-  replayNoteEdits,
   resizeNotes,
   shiftNotes,
-  quantize,
-  splitOffCount,
   ANALYSIS_VERSION,
   isStale,
   matchedLevels,
   peakLoudnessDb,
   takeGain,
-  tempoFromPattern,
   snapNotes,
   sungLoudnessDb,
   addTap,
@@ -37,24 +32,24 @@ import {
   readMetre,
   countedBars,
   countedMetre,
-  tappedTempo,
-  anchorsFrom,
-  drawnBeats,
   anchorOf,
   insideTake,
   movePickup,
-  pickupBeats,
   pickupFrom,
-  pickupStartMs,
   withPickupBeats,
-  withWritten,
-  withoutDeleted,
   writeAt,
   unwrite,
   removeAnchor,
-  timelineFromAnchors,
+  noteAt,
+  deriveHarmony,
+  deriveRhythm,
+  deriveTranscription,
+  harmonySlice,
+  rhythmSlice,
+  transcriptionSlice,
   type NoteEdge,
-  type NoteEvent
+  type NoteEvent,
+  type Statements
 } from 'logic';
 import type { HitDto, InterpretationDto } from 'shared';
 
@@ -66,7 +61,6 @@ import { cacheReading, cachedNotes } from '../../data/notesSync';
 import { hasTakeAudio } from '../../data/takeAudio';
 import { rereadTake } from '../../analysis/reread';
 import { beatLengthAt } from './beatLengthAt';
-import { heldGrid } from './heldGrid';
 import {
   restoreReadWith,
   seedReadWith,
@@ -171,27 +165,69 @@ export function useNoteDetail(id: string) {
     note?.interpretations ?? EMPTY_READINGS
   );
 
-  const heard = useMemo(
-    () =>
-      withoutDeleted(
-        withWritten(sung, interpretation.savedWrittenNotes),
-        interpretation.savedDeletedNotes
-      ),
+  /**
+   * Everything a person has said about the take, in the shape the
+   * derivation reads (INV-NOTES-260). One object, so each layer's
+   * derivation can take the slice it is allowed to see and no more.
+   */
+  const statements = useMemo<Statements>(
+    () => ({
+      notes: interpretation.savedNoteEdits,
+      writtenNotes: interpretation.savedWrittenNotes,
+      deletedNotes: interpretation.savedDeletedNotes,
+      beats: interpretation.savedBeats,
+      dismissedBeats: interpretation.savedDismissedBeats,
+      barLines: interpretation.savedBarLines,
+      bpm: interpretation.savedBpm,
+      tapPattern: interpretation.savedTapPattern,
+      pickup: interpretation.savedPickup,
+      chords: interpretation.savedEdits,
+      harmony: interpretation.hasHarmony ? { askedAtMs: 0, analysisVersion: 0 } : null
+    }),
     [
-      sung,
+      interpretation.savedNoteEdits,
       interpretation.savedWrittenNotes,
-      interpretation.savedDeletedNotes
+      interpretation.savedDeletedNotes,
+      interpretation.savedBeats,
+      interpretation.savedDismissedBeats,
+      interpretation.savedBarLines,
+      interpretation.savedBpm,
+      interpretation.savedTapPattern,
+      interpretation.savedPickup,
+      interpretation.savedEdits,
+      interpretation.hasHarmony
     ]
   );
+
+  // A second take sung against this one, when there is one. The bass layer
+  // is the one that carries harmony: it names the root and states where the
+  // chord changes, which are the two things a melody alone only implies
+  // (INV-NOTES-071, INV-NOTES-072). Read before anything is derived,
+  // because the rhythm and the harmony both take it as an input.
+  const { layers, bass, layerCapture, setLayerMuted } = useNoteLayers(
+    note?.id ?? null,
+    note?.layers
+  );
+  const hits = useMemo(() => note?.hits ?? EMPTY_HITS, [note]);
+
+  /**
+   * The layers of the take, derived by the same pure functions the corpus
+   * tool runs with no screen (INV-NOTES-259). Three calls rather than one,
+   * because the chord floor the harmony is voiced at depends on how the
+   * take is being listened to, and that is only known once the levels have
+   * been read from the transcription.
+   */
+  const transcription = useMemo(
+    () => deriveTranscription(sung, transcriptionSlice(statements)),
+    [sung, statements]
+  );
+  const { heard } = transcription;
 
 
   // What the detector heard, with the corrections a person made on top
   // (INV-NOTES-054). Everything downstream reads this rather than the raw
   // hearing, so putting a note right also puts right the harmony read from it.
-  const melody = useMemo(
-    () => replayNoteEdits(heard, interpretation.savedNoteEdits),
-    [heard, interpretation.savedNoteEdits]
-  );
+  const melody = transcription.notes;
 
   const correctNote = useCallback(
     (index: number, semitones: number) => {
@@ -208,9 +244,12 @@ export function useNoteDetail(id: string) {
       if (!original) {
         return;
       }
+      // The edit whose anchor this note owns, found with the same slack
+      // replay uses — an edit anchored before a re-read moved the note is
+      // still this note's edit (INV-NOTES-096).
       interpretation.updateNotes(
         interpretation.savedNoteEdits.filter(
-          (edit) => edit.atMs !== original.startMs
+          (edit) => noteAt(heard, edit.atMs) !== index
         )
       );
     },
@@ -277,7 +316,18 @@ export function useNoteDetail(id: string) {
   // step indices — landed at different moments than the beats they were
   // arranged against. The recording is what the reading is fitted to, and the
   // recording does not change when the reading is corrected.
-  const quantized = useMemo(() => quantize(heard), [heard]);
+  const rhythm = useMemo(
+    () =>
+      deriveRhythm(transcription, rhythmSlice(statements), {
+        durationMs: note?.durationMs ?? 0,
+        hits,
+        bass
+      }),
+    [transcription, statements, note?.durationMs, hits, bass]
+  );
+  // The reading's own fit, kept under the name the rest of this hook has
+  // always read it by.
+  const quantized = rhythm.quantizeResult;
   // A tempo set by hand stands in front of the one read from the take. The
   // reading is left as it was — this is a decision about the take rather than
   // a correction to what was heard, and it has to survive a re-read
@@ -313,28 +363,8 @@ export function useNoteDetail(id: string) {
    * a pattern because it says the one thing directly rather than by
    * implication.
    */
-  const patterned = useMemo(() => {
-    const pattern = interpretation.savedTapPattern;
-    return pattern == null
-      ? null
-      : tempoFromPattern(interpretation.savedBeats, pattern);
-  }, [interpretation.savedTapPattern, interpretation.savedBeats]);
-
-  const grid = useMemo(
-    () =>
-      heldGrid(
-        quantized.grid,
-        interpretation.savedBpm,
-        interpretation.savedTapPattern,
-        patterned
-      ),
-    [
-      quantized.grid,
-      interpretation.savedBpm,
-      interpretation.savedTapPattern,
-      patterned
-    ]
-  );
+  const patterned = rhythm.patterned;
+  const grid = rhythm.grid;
   const hasGrid = grid.bpm > 0 && melody.length > 1;
 
   /**
@@ -349,7 +379,6 @@ export function useNoteDetail(id: string) {
    * Still not inference acting on its own: the tempo is offered by the
    * tempo row and applied only when pressed (INV-NOTES-161).
    */
-  const hits = useMemo(() => note?.hits ?? EMPTY_HITS, [note]);
 
   /**
    * Every beat a person put there, by finger or by mouth (INV-NOTES-242).
@@ -358,26 +387,15 @@ export function useNoteDetail(id: string) {
    * the timeline — and one thrown away stays thrown away, which is what the
    * dismissals are for (INV-NOTES-243).
    */
-  const anchors = useMemo(
-    () => anchorsFrom(beats, hits, interpretation.savedDismissedBeats),
-    [beats, hits, interpretation.savedDismissedBeats]
-  );
-
-  const timeline = useMemo(
-    () =>
-      timelineFromAnchors(anchors, quantized.grid.bpm, note?.durationMs ?? 0),
-    [anchors, quantized.grid.bpm, note?.durationMs]
-  );
-  const tapped = useMemo(
-    () => (timeline == null ? null : tappedTempo(timeline)),
-    [timeline]
-  );
+  const { anchors, timeline, tapped } = rhythm;
 
   // What was counted, and what was played. The count is a performance and
   // stays on the graph, but it is not music: it states a tempo and implies no
   // harmony, so everything that reads harmony reads the played half
   // (INV-NOTES-113).
-  const { counted, played } = useMemo(() => splitOffCount(melody), [melody]);
+  // The tune itself is read by the harmony's derivation; only the count is
+  // still wanted here, to draw it as the ground the tune sits on.
+  const { counted } = transcription;
 
   // Stable when there are none, so a take with no drums does not look like a
   // different take on every render.
@@ -385,32 +403,16 @@ export function useNoteDetail(id: string) {
   // is the one that carries harmony: it names the root and states where the
   // chord changes, which are the two things a melody alone only implies
   // (INV-NOTES-071, INV-NOTES-072).
-  const { layers, bass, layerCapture, setLayerMuted } = useNoteLayers(
-    note?.id ?? null,
-    note?.layers
-  );
 
   // Where the harmony turns over, which is what a downbeat marks. The take
   // opens on these rather than on an even division counted out from the
   // tempo (INV-NOTES-049) — unless a layer states it outright.
-  const readDownbeats = useMemo(() => {
-    // Read from the music, never from the taps. A mark somebody made on
-    // their own recording must not redraw the thing it was made on
-    // (INV-NOTES-161).
-    //
-    // From the take as heard, for the same reason the grid is: correcting a
-    // note must not move the bar lines out from under the person correcting
-    // it (INV-NOTES-174).
-    return proposeDownbeats(heard, grid, bass ? { bass } : {});
-  }, [heard, grid, bass]);
-
   // Where the downbeats fall. Detection proposes; a person arranges
   // (INT-NOTES-012).
-  const bars = useBarLayout(grid, note?.durationMs ?? 0, {
-    savedLines: interpretation.savedBarLines,
-    onArranged: interpretation.updateBarLines,
-    proposed: readDownbeats
-  });
+  const bars = useBarLayout(
+    { layout: rhythm.bars, totalSteps: rhythm.totalSteps, isArranged: rhythm.isArranged },
+    { onArranged: interpretation.updateBarLines }
+  );
 
   const gridForView = useMemo(
     () =>
@@ -502,13 +504,17 @@ export function useNoteDetail(id: string) {
   // that runs to the next (INV-NOTES-048). Handing the arrangement in is what
   // makes dragging a line move the harmony with it, rather than leaving two
   // structures drawn on one timeline to drift apart.
-  const chords = useChordTrack(played, grid, {
-    savedEdits: interpretation.savedEdits,
+  const harmony = useMemo(
+    () =>
+      deriveHarmony(transcription, rhythm, harmonySlice(statements), {
+        bass,
+        floorMidi
+      }),
+    [transcription, rhythm, statements, bass, floorMidi]
+  );
+  const chords = useChordTrack(harmony, {
     onEditsChanged: interpretation.update,
-    floorMidi,
-    downbeatSteps: bars.layout.lines,
-    bassLayer: bass,
-    isWanted: interpretation.hasHarmony
+    floorMidi
   });
   // Every pitch the chords occupy, so the graph's vertical window takes them
   // in rather than letting them fall off the bottom of it.
@@ -1086,9 +1092,9 @@ export function useNoteDetail(id: string) {
      */
     pickup: interpretation.savedPickup,
     /** Where the drawing has to begin to show it (INV-NOTES-252). */
-    pickupStartMs: pickupStartMs(interpretation.savedPickup),
+    pickupStartMs: rhythm.pickupStartMs,
     /** The moments the count's beats fall on, all before the take. */
-    pickupBeats: pickupBeats(interpretation.savedPickup),
+    pickupBeats: rhythm.pickupBeats,
     /**
      * Make a count-in from a pass of taps (INV-NOTES-251).
      *
@@ -1173,7 +1179,7 @@ export function useNoteDetail(id: string) {
      * beat is not something to drag, it is something to replace by
      * tapping one (INV-NOTES-238).
      */
-    beatLine: timeline == null ? [] : drawnBeats(timeline),
+    beatLine: rhythm.beatLine,
     /**
      * The beats a finger can reach: what a person put there, not the fills.
      *

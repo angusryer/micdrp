@@ -175,6 +175,48 @@ function covers(note: NoteEvent, atMs: number): boolean {
 }
 
 /**
+ * How far an anchor may sit outside every note and still be matched to the
+ * nearest one, in ms.
+ *
+ * A re-read moves an onset by a few tens of milliseconds; two sung notes are
+ * almost never closer than that. Wide enough to survive the first, narrower
+ * than the second.
+ */
+export const ANCHOR_SLACK_MS = 60;
+
+/**
+ * Which note an anchor belongs to: the one covering it, else the nearest
+ * within slack, else none (INV-NOTES-096).
+ *
+ * The reading does move — that is the point of re-reading — and a lookup
+ * that demanded the anchor sit strictly inside the note orphaned every
+ * correction the moment a better reader placed an onset one millisecond
+ * later, because every edit had been anchored at exactly the millisecond
+ * that moved.
+ */
+export function noteAt(heard: readonly NoteEvent[], atMs: number): number {
+  const inside = heard.findIndex((n) => covers(n, atMs));
+  if (inside !== -1) {
+    return inside;
+  }
+  let best = -1;
+  let gap = ANCHOR_SLACK_MS;
+  heard.forEach((n, i) => {
+    const away = atMs < n.startMs ? n.startMs - atMs : atMs - n.endMs;
+    if (away <= gap) {
+      gap = away;
+      best = i;
+    }
+  });
+  return best;
+}
+
+/** The moment an edit to this note is anchored at: its middle. */
+export function anchorOf(note: NoteEvent): number {
+  return (note.startMs + note.endMs) / 2;
+}
+
+/**
  * Reduce a corrected melody to just the corrections.
  *
  * Anchored to each note's own start. Any moment inside would do, but the
@@ -197,7 +239,7 @@ export function collectNoteEdits(
     // One edit per note, whatever changed about it: two would mean deciding
     // which wins on replay.
     edits.push({
-      atMs: was.startMs,
+      atMs: anchorOf(was),
       ...(movedPitch ? { midi: now.midi } : {}),
       ...(movedTime ? { startMs: now.startMs, endMs: now.endMs } : {})
     });
@@ -230,7 +272,7 @@ export function replayNoteEdits(
     // hunting the mutated array would then find the *lengthened* note for the
     // next edit's anchor — every later edit landing one note early
     // (INV-NOTES-096).
-    const index = heard.findIndex((n) => covers(n, edit.atMs));
+    const index = noteAt(heard, edit.atMs);
     if (index === -1) {
       continue;
     }

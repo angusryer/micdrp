@@ -2,7 +2,7 @@
  * Corrections to what the detector heard, kept as differences
  * (INV-NOTES-053, INV-NOTES-054).
  */
-import { collectNoteEdits, moveNote, replayNoteEdits } from '../noteEdits';
+import { collectNoteEdits, moveNote, replayNoteEdits, anchorOf } from '../noteEdits';
 import type { NoteEvent } from '../segmentation';
 
 function n(midi: number, startMs: number, endMs: number): NoteEvent {
@@ -34,7 +34,9 @@ describe('keeping corrections as differences', () => {
   it('stores only what changed', () => {
     const corrected = moveNote(HEARD, 1, 1);
     const edits = collectNoteEdits(HEARD, corrected);
-    expect(edits).toEqual([{ atMs: 500, midi: 65 }]);
+    // Anchored at the middle of the note it corrects, so a re-read that
+    // moves the onset a little still finds it (INV-NOTES-096).
+    expect(edits).toEqual([{ atMs: anchorOf(HEARD[1]), midi: 65 }]);
   });
 
   it('round-trips', () => {

@@ -39,6 +39,17 @@ export interface ChordTone {
 export const MAX_TONE_OFFSET = 12;
 
 /**
+ * The floor a voicing sits on when nobody says otherwise.
+ *
+ * Below a sung line without booming under it — the right register on
+ * headphones. A caller listening on the phone's own speaker passes a higher
+ * floor, since a built-in speaker has almost nothing down here. Lives here
+ * rather than with the screen so the harmony can be derived with no screen
+ * at all (INV-NOTES-259).
+ */
+export const VOICING_BOTTOM_MIDI = 48;
+
+/**
  * The lowest MIDI note of a chord's root at or above `bottomMidi`.
  *
  * Shared with the voicer so the graph draws a chord where it will sound.

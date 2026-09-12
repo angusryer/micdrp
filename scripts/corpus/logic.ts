@@ -12,12 +12,16 @@
 import { createRequire } from 'node:module';
 
 import type {
+  Derived,
+  DeriveInputs,
   MpmOptions,
   NoteEvent,
   PitchFrame,
   PitchResult,
   ReadOptions,
   Reading,
+  ReadingForDerive,
+  Statements,
   TakeRole,
   TuningCentre
 } from '../../packages/logic/src/index.ts';
@@ -44,6 +48,12 @@ interface Logic {
     role: TakeRole,
     options?: ReadOptions
   ): Reading;
+  /** Every layer above a reading, with no screen (INV-NOTES-259). */
+  derive(
+    reading: ReadingForDerive,
+    statements: Statements,
+    inputs: DeriveInputs
+  ): Derived;
 }
 
 const built = new URL('../../packages/logic/dist/index.js', import.meta.url).pathname;

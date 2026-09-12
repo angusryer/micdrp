@@ -12,7 +12,8 @@ import {
   MIN_NOTE_MS,
   replayNoteEdits,
   resizeNotes,
-  shiftNotes
+  shiftNotes,
+  anchorOf
 } from '../noteEdits';
 import type { NoteEvent } from '../segmentation';
 
@@ -113,8 +114,11 @@ describe('INV-NOTES-096: a timing edit finds its note again', () => {
   it('anchors where the detector heard it, not where the edit puts it', () => {
     const edited = resizeNotes(PHRASE, [0], 50);
     const edits = collectNoteEdits(PHRASE, edited);
-    // Anchored to the original start, which is what replay searches.
-    expect(edits[0].atMs).toBe(PHRASE[0].startMs);
+    // Anchored inside the note as it was heard — its middle — not inside
+    // the note as the edit leaves it, which is what replay searches
+    // (INV-NOTES-096).
+    expect(edits[0].atMs).toBe(anchorOf(PHRASE[0]));
+    expect(edits[0].atMs).not.toBe((edited[0].startMs + edited[0].endMs) / 2);
     expect(replayNoteEdits(PHRASE, edits)).toEqual(edited);
   });
 

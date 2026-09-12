@@ -13,6 +13,7 @@
  * sitting in that list can be corrected, moved and resized like any other
  * with nothing else changed at all (INV-NOTES-247).
  */
+import { noteAt } from './noteEdits';
 import type { NoteEvent } from './segmentation';
 
 /** What is kept of a written note: the least that can rebuild one. */
@@ -119,13 +120,12 @@ export function withoutDeleted(
   if (deleted.length === 0) {
     return [...notes];
   }
-  return notes.filter(
-    (note) =>
-      !deleted.some((atMs) => atMs >= note.startMs && atMs < note.endMs)
-  );
+  // Found the way an edit is found, slack and all (INV-NOTES-096): a
+  // deletion anchored at a moment a re-read moved off the note would let
+  // the note back in otherwise.
+  const gone = new Set(deleted.map((atMs) => noteAt(notes, atMs)));
+  gone.delete(-1);
+  return notes.filter((_, i) => !gone.has(i));
 }
 
-/** A moment inside this note, which is what a deletion is anchored to. */
-export function anchorOf(note: NoteEvent): number {
-  return note.startMs;
-}
+export { anchorOf } from './noteEdits';
