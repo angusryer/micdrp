@@ -12,6 +12,7 @@
  * levels as every synthesized voice (INV-NOTES-133). There is no second
  * graph to line up with.
  */
+import { runTiming } from './runTiming';
 import { useCallback, useEffect, useRef } from 'react';
 
 import { audioExtensionOf, isPlayableAudioPath } from 'shared';
@@ -128,30 +129,32 @@ export function useTakeEngine(
       loadedFor.current = take;
       durationRef.current = takeMs;
 
-      const offsetMs = Math.min(Math.max(fromMs, 0), Math.max(0, takeMs - 1));
+      // A run may begin before the material — inside the count-in — and
+      // then the head moves while the sound waits (INV-TPORT-039). The
+      // run's offset is where the head starts, negative or not; the voice
+      // begins that much later on the clock everything else chooses on.
+      const timing = runTiming(fromMs, takeMs, audioNowMs() + SCHEDULE_LEAD_MS);
       setBusLevel(trackBus('take'), levelRef.current);
-      // A moment we choose, on the clock everything else is choosing on.
-      const beginsAtMs = audioNowMs() + SCHEDULE_LEAD_MS;
       scheduleSamples([
         {
           bus: trackBus('take'),
           slot: TAKE_SLOT,
-          fromMs: offsetMs,
-          startMs: beginsAtMs,
-          endMs: beginsAtMs + (takeMs - offsetMs)
+          fromMs: timing.offsetMs,
+          startMs: timing.voiceStartMs,
+          endMs: timing.endMs
         }
       ]);
-      // The run and the sound begin together but are not the same thing:
-      // one is time passing, the other is a voice. Muting the take must
-      // not stop the clock (INV-TPORT-013).
+      // The run and the sound are not the same thing: one is time passing,
+      // the other is a voice. Muting the take must not stop the clock
+      // (INV-TPORT-013), and a run in the count-in has no voice yet.
       // Which run the engine was on before it was told about this one. Kept
       // so "not started yet" is not read as "over" (INV-TPORT-038).
       startedAfter.current = beginEngineRun(
-        offsetMs,
-        beginsAtMs,
-        beginsAtMs + (takeMs - offsetMs)
+        timing.offsetMs - timing.waitMs,
+        timing.voiceStartMs - timing.waitMs,
+        timing.endMs
       );
-      anchor.mark(beginsAtMs - offsetMs);
+      anchor.mark(timing.anchorMs);
       return takeMs;
     },
     [anchor]

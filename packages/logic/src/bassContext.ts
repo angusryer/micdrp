@@ -227,3 +227,25 @@ export function countIn(
   });
   return { clicks, leadInMs };
 }
+
+/**
+ * The click for a take with a count-in: the count's beats, and nothing else
+ * (INV-NOTES-265).
+ *
+ * The count-in is what the singer made to be counted in by, so the clicks
+ * fall on its beats at its pulse and stop where the take begins. A click
+ * that then kept time through the take at a tempo read from the notes would
+ * be the app's guess sounding over the person's statement. The first beat
+ * of the count is its downbeat, and sounds as one.
+ *
+ * leadInMs is zero: the count is transport time (INV-TPORT-039), so there
+ * is nothing to wait for before the run begins.
+ */
+export function pickupClicks(beatsMs: readonly number[]): CountIn {
+  const clicks: CountBeat[] = beatsMs.map((startMs, i) => ({
+    midi: i === 0 ? DOWNBEAT_MIDI : CLICK_MIDI,
+    startMs,
+    endMs: startMs + CLICK_MS
+  }));
+  return { clicks, leadInMs: 0 };
+}

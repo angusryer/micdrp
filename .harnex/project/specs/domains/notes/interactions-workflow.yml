@@ -1,0 +1,116 @@
+# The workflow of a take, end to end. Each step is a thing the person does;
+# what the app does between them is derived (INV-NOTES-255). Stated here so
+# that every screen and control is built against one order of events rather
+# than each knowing only its own step.
+interactions:
+  - id: INT-NOTES-028
+    name: Record a take
+    view: VIEW-NOTES-010
+    steps:
+      - Press record
+      - Sing
+      - Press stop
+    outcome: >
+      The raw audio is kept, the transcription is read from it, and the
+      rhythm is inferred from the transcription so there is something to
+      display and something to work with. Nothing here is a statement;
+      all of it is the app's first guess (INV-NOTES-250).
+    error_handling: >
+      A capture that cannot be read is kept as audio with an empty reading,
+      never discarded.
+    maps_to:
+      capability: notes.capture
+
+  - id: INT-NOTES-029
+    name: Establish the count-in
+    view: VIEW-NOTES-002
+    precondition: A take exists.
+    steps:
+      - Press "Add a count-in"; the take plays
+      - Tap the count along with it
+      - Press stop
+      - Say how many beats the count runs for
+    outcome: >
+      The steadiest run of the taps sets the pulse (INV-NOTES-251) and the
+      count is placed before the recording (INV-NOTES-252). From now on the
+      click sounds the count-in's beats and nothing else (INV-NOTES-265),
+      so the take is heard as it would be counted in.
+    error_handling: >
+      Fewer than three steady taps make no count, and say so.
+    maps_to:
+      capability: notes.make_pickup
+
+  - id: INT-NOTES-030
+    name: Correct the transcription
+    view: VIEW-NOTES-002
+    precondition: A take exists; a count-in may or may not.
+    steps:
+      - Move a note up or down, left or right
+      - Lengthen or shorten a note
+      - Write a note in where one is missing
+      - Delete a note that is not there
+    outcome: >
+      The transcription reflects the take. Each correction is a statement
+      on the transcription layer and survives re-reading (INV-NOTES-256).
+      Every move replays the stretch around it (INV-NOTES-266).
+    error_handling: >
+      Nothing of the take may be put into the count-in (INV-NOTES-253).
+    maps_to:
+      capability: notes.add_note
+
+  - id: INT-NOTES-031
+    name: Correct the rhythm
+    view: VIEW-NOTES-002
+    precondition: A take exists.
+    steps:
+      - Move a beat, a bar line or a downbeat
+      - Tap a new beat in where one is missing
+      - Say which beats start bars
+    outcome: >
+      The rhythm groups the notes into bars as intended. Each change is a
+      statement on the rhythm layer and changes no note (INV-NOTES-257).
+      The stretch around every move replays as it lands, so the ear can
+      say where the beat actually is (INV-NOTES-266).
+    error_handling: >
+      A beat dragged into the count-in stops at the take's first moment.
+    maps_to:
+      capability: notes.set_beat
+
+  - id: INT-NOTES-032
+    name: Record a bassline against the take
+    view: VIEW-NOTES-002
+    precondition: A take exists; a count-in exists.
+    steps:
+      - Press record on the bass layer
+      - Hear the count-in
+      - Sing the bassline as the take plays
+    outcome: >
+      The bass layer is read like the take and names the roots the melody
+      only implied (INV-NOTES-071). The count-in is what makes coming in on
+      time possible, so playing for a layer begins at the count's first
+      beat (INV-TPORT-039).
+    error_handling: >
+      Without a count-in the layer is still recordable; it begins at the
+      take's first moment and the singer is on their own for the entry.
+    maps_to:
+      capability: notes.capture
+
+  - id: INT-NOTES-033
+    name: Read the chords
+    view: VIEW-NOTES-002
+    precondition: The transcription and rhythm are as intended; a bassline may exist.
+    steps:
+      - Ask for the harmony
+    outcome: >
+      Chords are read from the transcription grouped by the rhythm, with
+      the bassline naming roots where there is one (INV-NOTES-255). They
+      are the layer most often edited afterwards, and every edit is a
+      statement on the harmony layer alone.
+    error_handling: >
+      A take with no rhythm yet reads no chords and says why.
+    maps_to:
+      capability: notes.derive
+
+  # The order above is the whole workflow. How it is presented is its own
+  # rule, because a workflow that exists only as a set of controls is one
+  # the person has to already know.

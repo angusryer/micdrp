@@ -21,6 +21,15 @@ describe('placing the scrub handle', () => {
     expect(handleX).toBeCloseTo(trailX - HANDLE / 2, 6);
   });
 
+  it('travels into the count-in when the floor is set there', () => {
+    // The floor is the earliest drawn moment, not the first note: a
+    // count-in is a moment the take has, and the head can be put anywhere
+    // in it (INV-TPORT-041). The axis begins before zero to show it.
+    const before = { ...axis, t0: -2000, span: axis.span + 2000 };
+    const { trailX } = scrubPlacement(before, -1500, -2000, HANDLE);
+    expect(trailX).toBeCloseTo(before.pad + 500 * before.pxPerMs);
+  });
+
   it('does not travel into the pickup', () => {
     // A handle before the singing would claim a moment the recording
     // does not have.

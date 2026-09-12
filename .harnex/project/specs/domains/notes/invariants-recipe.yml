@@ -56,3 +56,50 @@ invariants:
       62/62/43 notes, 83/83/90%, 75/75/78%. Cost over a 23-second take on
       the bench: 0.20s, 0.47s, 1.26s. The larger windows lose notes and
       accuracy faster than they gain anything, so the default stays 2048.
+
+  - id: INV-NOTES-265
+    description: With a count-in, the click sounds the count's beats and nothing else
+    severity: major
+    check: >
+      Where a take has a count-in, the metronome's clicks fall on the
+      count's beats, at the count's pulse, and stop where the take begins.
+      Where it has none, the click counts in from the take's own tempo as
+      before (INV-NOTES-088). Verified by asserting a take with a
+      four-beat count produces exactly four clicks, all before zero, at
+      the count's beat length.
+
+      The count-in is what the singer made to be counted in by. A click
+      that then kept time through the take at a tempo read from the notes
+      would be the app's guess sounding over the person's statement.
+
+  - id: INV-NOTES-266
+    description: Moving a beat, a bar line or a downbeat replays the stretch around it
+    severity: major
+    check: >
+      When a beat, a bar line or a downbeat mark is moved, the stretch of
+      the take around where it landed plays back at once, the way a moved
+      note already does (INV-NOTES-235). Verified by moving a beat and
+      asserting the replay range covers the moment it landed on.
+
+      The point of moving a beat is to hear whether it is where the beat
+      is. A move followed by finding the place and pressing play is a move
+      judged by eye.
+
+  - id: INV-NOTES-267
+    description: The workflow is linear, as short as it can be, and the app says what comes next
+    severity: major
+    check: >
+      From a fresh take the app leads through the steps in order
+      (INT-NOTES-028..033): record, count in, correct, add a bassline,
+      read the chords. At every point it says which step the take is at
+      and what the next act is, and it never asks for a step that can be
+      derived instead. A step that is already satisfied is skipped, not
+      shown. Verified by asserting a fresh take names "count in" as its
+      next step, a take with a count-in names "correct" or "bassline",
+      and a take with everything names "chords".
+
+      Every step exists today as a control somewhere on the note, and
+      each is discoverable only by someone who already knows the order.
+      Reducing the steps means deriving whatever can be derived so the
+      person is asked only for what only they know; guiding through them
+      means the take, not the person, keeps track of where it is.

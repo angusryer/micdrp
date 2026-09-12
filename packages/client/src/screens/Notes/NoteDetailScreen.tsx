@@ -98,6 +98,8 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
     grabHead: () => void;
     dropHead: (ms: number) => void;
     play: () => void;
+    /** From a chosen moment, without the lead-in (INT-NOTES-032). */
+    playFrom: (ms: number) => void;
     stop: () => void;
     /** What the rail's copy of the transport draws (INV-NOTES-227). */
     state: PlaybackState;
@@ -149,6 +151,7 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
           takeMakeUp={detail.takeMakeUp}
             sungDb={detail.sungDb}
             count={detail.countMix}
+            earliestMs={detail.pickupStartMs}
             rhythm={detail.rhythmMix}
             layers={detail.layerVoices}
             bass={detail.bassMix}

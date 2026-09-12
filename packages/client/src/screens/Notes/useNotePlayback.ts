@@ -10,6 +10,7 @@ import { useMemo, useState } from 'react';
 
 import {
   metronome,
+  pickupClicks,
   playbackTargets,
   transposeTargets,
   type NoteEvent,
@@ -45,6 +46,9 @@ const HIT_PITCH: Record<string, number> = {
 /** How long a struck sound rings. Short: a hit is a moment. */
 const HIT_SOUND_MS = 40;
 
+/** Stable, so a take with no count is the same take on every render. */
+const NO_PICKUP: readonly number[] = [];
+
 export function useNotePlayback(
   melody: readonly NoteEvent[],
   quantized: ReturnType<typeof quantize>,
@@ -52,7 +56,9 @@ export function useNotePlayback(
   /** How long the recording runs, so the click keeps time to the end of it. */
   durationMs = 0,
   /** The struck sounds read out of the take (INV-NOTES-120). */
-  hits: readonly { atMs: number; kind: string }[] = []
+  hits: readonly { atMs: number; kind: string }[] = [],
+  /** The count-in's beats, in ms, all before the take (INV-NOTES-265). */
+  pickupBeatsMs: readonly number[] = NO_PICKUP
 ) {
   // Play sounds the backdrop with the take, or on its own, or not at all —
   // whichever the choice beside the play control is set to (INV-NOTES-019).
@@ -76,15 +82,21 @@ export function useNotePlayback(
   // you in from the take's own tempo (INV-NOTES-088) and then keeps going —
   // keeping time through a take is the same job as counting into it, so it is
   // one voice rather than two (INV-NOTES-119).
+  // With a count-in, the click is the count's beats and nothing else: the
+  // count is what the singer made to be counted in by, and a click that
+  // kept time through the take at a tempo read from the notes would be the
+  // app's guess sounding over their statement (INV-NOTES-265).
   const counted = useMemo(
     () =>
-      metronome(
-        melody[0]?.startMs ?? 0,
-        quantized.grid?.bpm ?? 0,
-        durationMs,
-        quantized.grid?.beatsPerBar ?? 4
-      ),
-    [melody, quantized.grid?.bpm, quantized.grid?.beatsPerBar, durationMs]
+      pickupBeatsMs.length > 0
+        ? pickupClicks(pickupBeatsMs)
+        : metronome(
+            melody[0]?.startMs ?? 0,
+            quantized.grid?.bpm ?? 0,
+            durationMs,
+            quantized.grid?.beatsPerBar ?? 4
+          ),
+    [pickupBeatsMs, melody, quantized.grid?.bpm, quantized.grid?.beatsPerBar, durationMs]
   );
   const countTones = useMemo(
     () =>

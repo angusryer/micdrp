@@ -66,6 +66,12 @@ export interface PlaybackBarProps {
   voice?: MixAccompaniment;
   /** The click counting the take in (INV-NOTES-088). */
   count?: MixAccompaniment;
+  /**
+   * The earliest moment the take has — the count-in's first beat where
+   * there is one (INV-TPORT-040). Rewind goes here and the head is never
+   * put before it.
+   */
+  earliestMs?: number;
   /** The struck sounds read out of the take (INV-NOTES-120). */
   rhythm?: MixAccompaniment;
   /** The layers, as they were sung rather than as read (INV-NOTES-134). */
@@ -118,6 +124,8 @@ export interface PlaybackBarProps {
      */
     isPlaying: boolean;
     seek: (ms: number) => void;
+    /** Play from a chosen moment, without the lead-in (INT-NOTES-032). */
+    playFrom: (ms: number) => void;
     /**
      * Taking hold of the head and putting it down again (INV-TPORT-018).
      *
@@ -145,6 +153,7 @@ export function PlaybackBar({
   accompaniment,
   voice,
   count,
+  earliestMs,
   rhythm,
   layers,
   bass,
@@ -224,7 +233,8 @@ export function PlaybackBar({
       layers,
       bass,
       voices: listening?.voices ?? own.voices,
-      takeMakeUp
+      takeMakeUp,
+      earliestMs
     });
 
   // The click, felt instead of heard, when the note was left that way. It
@@ -250,6 +260,10 @@ export function PlaybackBar({
         grabHead,
         dropHead,
         play: () => void play(),
+        // From a moment of the caller's choosing, without the lead-in: what
+        // recording a layer needs, so the count-in is what counts it in
+        // (INT-NOTES-032).
+        playFrom: (ms: number) => void play(ms, true),
         stop: () => void stop(),
         // What the rail's copy of this needs to be the same control rather
         // than a second one: the state it draws, and the two presses that

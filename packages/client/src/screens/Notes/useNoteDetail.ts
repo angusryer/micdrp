@@ -541,7 +541,7 @@ export function useNoteDetail(id: string) {
   const [selection, setSelection] = useState<Chosen>([]);
   // The span of the last edit that changed when something happens, and the
   // way to say one did (INV-NOTES-178).
-  const { retimed, markRetimed } = useRetimed();
+  const { retimed, markRetimed, markRetimedAround } = useRetimed();
 
   // Made to flash from its row in the sheet, so several things that read the
   // same in a list can be told apart on the graph (INV-NOTES-094).
@@ -737,7 +737,8 @@ export function useNoteDetail(id: string) {
     quantized,
     chords,
     note?.durationMs ?? 0,
-    hits
+    hits,
+    rhythm.pickupBeats
   );
 
   /**
@@ -803,7 +804,23 @@ export function useNoteDetail(id: string) {
     notationView: notation.view,
     setNotationView: notation.setView,
     canNotate: notation.canNotate,
-    bars,
+    /**
+     * The bar arrangement, with a moved line heard where it lands
+     * (INV-NOTES-266). Lines are steps of the grid, so the moment is read
+     * back through it.
+     */
+    bars: {
+      ...bars,
+      move: (lineIndex: number, toStep: number) => {
+        bars.move(lineIndex, toStep);
+        const stepMs = grid.bpm > 0 ? 60000 / grid.bpm / grid.stepsPerBeat : 0;
+        if (stepMs > 0) {
+          const atMs = grid.offsetMs + toStep * stepMs;
+          const around = beatLengthAt(timeline, grid.bpm, atMs);
+          markRetimedAround(atMs - around, atMs + 2 * around);
+        }
+      }
+    },
     chords,
     chordPitchesShown,
     heardPitches,
@@ -923,6 +940,10 @@ export function useNoteDetail(id: string) {
         // Held inside the take, however far the finger travelled into the
         // count-in in front of it (INV-NOTES-253).
         const to = insideTake(toMs);
+        // Heard as it lands: the point of moving a beat is to hear whether
+        // it is where the beat is (INV-NOTES-266).
+        const around = beatLengthAt(timeline, grid.bpm, to);
+        markRetimedAround(to - around, to + around);
         if (going.isVoiced !== true) {
           const at = beats.findIndex((tap) => tap.atMs === going.atMs);
           if (at >= 0) {
@@ -936,7 +957,7 @@ export function useNoteDetail(id: string) {
           going.atMs
         ]);
       },
-      [anchors, beats, interpretation]
+      [anchors, beats, interpretation, timeline, grid.bpm, markRetimedAround]
     ),
     /**
      * Mark a beat as the start of a bar, whichever kind it is.
@@ -951,6 +972,10 @@ export function useNoteDetail(id: string) {
         if (one == null) {
           return;
         }
+        // A bar start is heard from the beat before it to the beat after,
+        // which is what tells a downbeat from a beat (INV-NOTES-266).
+        const around = beatLengthAt(timeline, grid.bpm, one.atMs);
+        markRetimedAround(one.atMs - around, one.atMs + 2 * around);
         if (one.isVoiced === true) {
           const grown = addTap(beats, one.atMs);
           const at = grown.findIndex((tap) => tap.atMs === one.atMs);
@@ -966,7 +991,7 @@ export function useNoteDetail(id: string) {
           interpretation.updateBeats(markDownbeat(beats, at, isDownbeat));
         }
       },
-      [anchors, beats, interpretation]
+      [anchors, beats, interpretation, timeline, grid.bpm, markRetimedAround]
     ),
     /** Put a moved beat back where the finger landed. Taps only: a voiced
      * beat has never been anywhere but where the sound is. */

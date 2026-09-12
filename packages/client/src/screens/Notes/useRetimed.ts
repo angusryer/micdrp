@@ -51,5 +51,21 @@ export function useRetimed() {
     []
   );
 
-  return { retimed, markRetimed };
+  /**
+   * The same replay, for a thing that is a moment rather than a note
+   * (INV-NOTES-266).
+   *
+   * A moved beat, bar line or downbeat has no span of its own to play
+   * back, so the caller says how much of the take around it to hear —
+   * enough to judge whether it landed where the beat is.
+   */
+  const markRetimedAround = useCallback((fromMs: number, toMs: number) => {
+    if (!(toMs > fromMs)) {
+      return;
+    }
+    count.current += 1;
+    setRetimed({ fromMs, toMs, nth: count.current });
+  }, []);
+
+  return { retimed, markRetimed, markRetimedAround };
 }

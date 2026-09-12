@@ -88,6 +88,8 @@ export interface NoteShapeSectionProps {
      */
     drawnPositionMs: SharedValue<number>;
     seek: (ms: number) => void;
+    /** Play from a chosen moment, without the lead-in (INT-NOTES-032). */
+    playFrom?: (ms: number) => void;
     /**
      * Taking hold of the head for a drag and putting it down again
      * (INV-TPORT-018). A gesture sends these rather than a seek a frame.
@@ -266,11 +268,12 @@ export function NoteShapeSection({
               transport?.rewind != null
                 ? () => {
                     void transport.rewind?.();
-                    // The head goes to the beginning (INV-NOTES-160) and
-                    // the view goes with it, sounding or not: a control
-                    // that moves a line off screen looks like it did
-                    // nothing (INV-NOTES-254).
-                    viewport?.showAt(0);
+                    // The head goes to the earliest moment there is — the
+                    // count-in's first beat where there is one
+                    // (INV-TPORT-040) — and the view goes with it, sounding
+                    // or not: a control that moves a line off screen looks
+                    // like it did nothing (INV-NOTES-254).
+                    viewport?.showAt(detail.pickupStartMs);
                   }
                 : undefined
             }
@@ -296,9 +299,12 @@ export function NoteShapeSection({
                         // Recording first, then playback: a take started
                         // while the microphone was still opening would be
                         // sung against a moment already gone by.
+                        // From the count-in's first beat, so the count is
+                        // what counts the layer in (INT-NOTES-032). Without
+                        // one this is zero, and the entry is the singer's.
                         void detail.layerCapture
                           .start('bass')
-                          .then(() => transport.play?.());
+                          .then(() => transport.playFrom?.(detail.pickupStartMs));
                       },
                       isRereading,
                       onReread: () => {
@@ -350,7 +356,10 @@ export function NoteShapeSection({
                   // stop at the first note, so moving that note later put
                   // the moment it had started at out of reach — a pickup is
                   // take that was sung, not a margin (INV-NOTES-210).
-                  firstNoteMs={0}
+                  // The earliest drawn moment, not the first note: the
+                  // count-in is a moment the take has, and the head can be
+                  // placed anywhere in it (INV-TPORT-041).
+                  firstNoteMs={detail.pickupStartMs}
                   onSeek={transport.seek}
                   onGrab={transport.grabHead}
                   onRelease={transport.dropHead}

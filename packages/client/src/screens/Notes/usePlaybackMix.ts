@@ -97,6 +97,13 @@ export interface UsePlaybackMixOptions {
    */
   takeMakeUp?: number;
   /**
+   * The earliest moment the take has: the count-in's first beat where
+   * there is one, else zero (INV-TPORT-040). Rewind goes here, the head
+   * cannot be put before it, and with a count-in the run itself is the
+   * count, so no lead-in is waited for (INV-TPORT-039).
+   */
+  earliestMs?: number;
+  /**
    * A voice that follows the take itself rather than the chord track.
    *
    * The detected melody belongs here. Hanging it off the accompaniment made it
@@ -165,7 +172,8 @@ export function usePlaybackMix({
   bass,
   levels,
   voices,
-  takeMakeUp = 1
+  takeMakeUp = 1,
+  earliestMs = REWIND_TO_MS
 }: UsePlaybackMixOptions): MixedPlayback {
   const {
     state: takeState,
@@ -365,11 +373,19 @@ export function usePlaybackMix({
     withoutCount = false
   ): Promise<void> => {
     const mine = (run.current += 1);
-    // The count starts now; everything else waits for it to finish. Timed
-    // rather than sample-accurate on purpose — a count is a scaffold to come
-    // in on, not part of the recording.
+    // From the top means with the count: a head resting at zero with a
+    // count-in before it starts at the count's first beat, and the run
+    // carries the count (INV-TPORT-039). A head anywhere else starts
+    // where it is.
+    const from = fromMs === 0 && earliestMs < 0 ? earliestMs : fromMs;
+    // The lead-in count starts now and everything else waits for it — a
+    // scaffold to come in on rather than part of the recording. Only where
+    // there is no count-in: with one, the count is transport time, heard
+    // as the run passes through it, and pausable like the rest.
     const leadInMs =
-      wantsCount && !withoutCount ? (latestCount.current?.leadInMs ?? 0) : 0;
+      wantsCount && !withoutCount && earliestMs >= 0
+        ? (latestCount.current?.leadInMs ?? 0)
+        : 0;
     if (leadInMs > 0) {
       latestCount.current?.start(0);
       await new Promise((resolve) => setTimeout(resolve, leadInMs));
@@ -381,10 +397,10 @@ export function usePlaybackMix({
       }
     }
     // The take carries the transport whether or not it is audible.
-    await playTake(fromMs);
+    await playTake(from);
     // latestCount is a ref from useLatest — stable, and listed only because
     // the rule cannot see through a custom hook to know that.
-  }, [wantsCount, playTake, cueMs, latestCount]);
+  }, [wantsCount, playTake, cueMs, latestCount, earliestMs]);
 
   // A track turned mid-playback stops what is sounding, so the next press is
   // the whole of the mix as it now stands rather than half of two.
@@ -413,9 +429,11 @@ export function usePlaybackMix({
    * head the singer was looking at.
    */
   const rewind = useCallback(
-    async (toMs = 0): Promise<void> => {
+    async (toMs = earliestMs): Promise<void> => {
       const isPlaying = state === 'playing';
-      const to = Math.max(0, toMs);
+      // Never before the earliest moment there is, which with a count-in
+      // is the count's first beat (INV-TPORT-040).
+      const to = Math.max(earliestMs, toMs);
       if (!isPlaying) {
         await seekTake(to);
         return;
@@ -427,7 +445,7 @@ export function usePlaybackMix({
       await seekTake(to);
       await play(to, true);
     },
-    [state, seekTake, stop, play]
+    [state, seekTake, stop, play, earliestMs]
   );
 
   // Playing, it is where the take has reached; stopped, it is where a press
@@ -438,9 +456,9 @@ export function usePlaybackMix({
       // The transport decides what a seek means: it moves the head, and
       // where something was sounding it starts again from the new moment
       // rather than jumping to it (INV-TPORT-007).
-      void seekTake(Math.max(0, ms));
+      void seekTake(Math.max(earliestMs, ms));
     },
-    [seekTake]
+    [seekTake, earliestMs]
   );
 
   /**
@@ -462,7 +480,7 @@ export function usePlaybackMix({
 
   const dropHead = useCallback(
     (ms: number): void => {
-      const at = Math.max(0, ms);
+      const at = Math.max(earliestMs, ms);
       const carryOn = heldSounding.current;
       heldSounding.current = false;
       if (!carryOn) {

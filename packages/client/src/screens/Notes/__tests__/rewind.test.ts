@@ -36,7 +36,18 @@ describe('the counter after a rewind', () => {
     // seconds is where you go to hear a phrase again, and dragging the head
     // already does that. Getting to the beginning in five-second steps from
     // two minutes in is a chore rather than a control (INV-NOTES-160).
+    //
+    // The start is the earliest moment the take has: zero unless a
+    // count-in sits before it, in which case rewind goes to the count's
+    // first beat (INV-TPORT-040). This is the default with no count.
     expect(REWIND_TO_MS).toBe(0);
+  });
+
+  it('counts from before zero when the run began in the count-in', async () => {
+    // A run may begin before the material (INV-TPORT-039): the clock reads
+    // the count's first beat, and the head moves through it.
+    const { result } = await renderHook(() => usePlaybackClock(true, -2_000));
+    expect(result.current).toBe(-2_000);
   });
 
   it('names a moment inside the take, never before it', () => {

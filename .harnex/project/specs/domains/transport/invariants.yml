@@ -632,3 +632,52 @@ invariants:
 
       "It has not started" and "it is over" are the same word only to a
       reader that does not check which run it is looking at.
+
+  - id: INV-TPORT-039
+    description: A run may begin before the material, and the count-in is transport time
+    severity: critical
+    check: >
+      A run can start at a moment before the recording's first sample, and
+      while it is there the head moves, the view follows, pause holds it
+      where it is and play resumes it, exactly as anywhere else in the
+      take. The audio joins the run when the run reaches zero. Verified by
+      starting a run at the count-in's first beat, pausing inside the
+      count, and asserting the head stopped before zero and resumed from
+      there.
+
+      The count-in was a wait in JavaScript before the take began: a timer
+      the transport knew nothing about, so nothing could pause it, the head
+      did not move through it and a rewind skipped it. A count that cannot
+      be paused is not part of the take; it is a delay in front of one.
+      The engine's run already takes the material's offset and the clock's
+      start separately, which is all a run before zero needs.
+
+  - id: INV-TPORT-040
+    description: Rewind goes to the earliest moment there is, count-in included
+    severity: major
+    check: >
+      Rewind moves the head, the view and the sound to the take's earliest
+      moment: the count-in's first beat where there is one, else zero.
+      Sounding or stopped, the head is placed there; sounding, the run
+      begins again from there. Verified by rewinding a take with a
+      four-beat count and asserting the head is at the count's first beat
+      and the take's audio begins after four beats.
+
+      Rewind went to zero (INV-NOTES-160), which was the beginning until
+      there was something before it. A rewind that lands after the count
+      plays the take without the count that was made for it.
+
+  - id: INV-TPORT-041
+    description: The head can be placed anywhere from the count-in's first beat
+    severity: major
+    check: >
+      Dragging the head moves it smoothly through the count-in, and
+      dropping it there starts the run there. The scrubber's floor is the
+      earliest drawn moment, not the first note. Verified by dragging the
+      head into the count and asserting its position is before zero and the
+      handle is where the finger is.
+
+      The scrubber clamped at the first note, on the reasoning that a
+      handle before it would claim a moment the recording does not have.
+      The count-in is a moment the take has: it is drawn, it is counted,
+      and it is where somebody comes in from.
