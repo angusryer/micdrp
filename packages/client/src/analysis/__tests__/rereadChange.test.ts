@@ -49,6 +49,21 @@ describe('rereadChange', () => {
     expect(rereadChange(note({ readWith: currentReadWith('n1') }))).toBe('unchanged');
   });
 
+  it('is retuned when the engine was set differently, not only the reader', () => {
+    // The gap this closes: two takes captured at a 1200 Hz ceiling re-read
+    // at 2500 and came back with twice the notes, and nothing could have
+    // said so beforehand (INV-NOTES-263).
+    const was = { ...currentReadWith('n1'), 'engine.maxFrequencyHz': 1200 };
+    expect(rereadChange(note({ readWith: was }))).toBe('retuned');
+  });
+
+  it('is retuned for a take whose recipe predates engine settings', () => {
+    const readerOnly = Object.fromEntries(
+      Object.entries(currentReadWith('n1')).filter(([k]) => !k.startsWith('engine.'))
+    );
+    expect(rereadChange(note({ readWith: readerOnly }))).toBe('retuned');
+  });
+
   it('is retuned when any one threshold has moved since', () => {
     const was = currentReadWith('n1');
     const [first] = Object.keys(was);

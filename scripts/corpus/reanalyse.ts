@@ -69,6 +69,18 @@ function loadSamples(root: string): Sample[] {
     });
 }
 
+/** The engine settings a recipe names, so a sample is read the way it was. */
+function engineFrom(readWith: Record<string, number>) {
+  const out: Record<string, number> = {};
+  for (const [flat, value] of Object.entries(readWith)) {
+    const [group, key] = flat.split('.');
+    if (group === 'engine' && key) {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
 /** The options readTake takes, from the flat `group.key` map a take stores. */
 function optionsFrom(readWith: Record<string, number>) {
   const groups: Record<string, Record<string, number>> = {};
@@ -117,7 +129,7 @@ export function reanalyse(root = '.samples'): { derived: number; failed: number 
         throw new Error('no audio');
       }
       const { samples: pcm, sampleRateHz } = readWav(join(s.dir, audio));
-      const frames = framesOf(pcm, sampleRateHz);
+      const frames = framesOf(pcm, sampleRateHz, engineFrom(s.readWith));
       const read = logic.readTake(frames, 'mixed', optionsFrom(s.readWith));
       const reading = { notes: logic.recentreNotes(read.notes).notes, hits: read.hits };
       const out = logic.derive(reading, s.statements, { durationMs: s.durationMs });

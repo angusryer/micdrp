@@ -28,6 +28,10 @@ const dir = join(REPO, valueOf('--samples', '.samples'));
 // a second copy of a number the engine already decides (Axiom 2).
 const ceilingArg = valueOf('--max-hz', '');
 const ceiling = ceilingArg === '' ? null : Number(ceilingArg);
+// The analysis window, for measuring what a larger one buys and costs
+// (INV-NOTES-263). The engine's own default unless asked.
+const frameArg = valueOf('--frame', '');
+const frameSize = frameArg === '' ? null : Number(frameArg);
 
 /**
  * The ceiling the reference frames are detected at.
@@ -72,7 +76,7 @@ if (process.argv.includes('reanalyse')) {
   process.exit(failed > 0 ? 1 : 0);
 }
 
-console.log(`corpus: ${samples.length} sample(s), ceiling ${ceiling ?? 'engine default'} Hz\n`);
+console.log(`corpus: ${samples.length} sample(s), ceiling ${ceiling ?? 'engine default'} Hz, window ${frameSize ?? 'engine default'}\n`);
 for (const name of samples) {
   const at = join(dir, name);
   const audio = readdirSync(at).find((f) => f.startsWith('audio.'));
@@ -81,11 +85,10 @@ for (const name of samples) {
     continue;
   }
   const { samples: pcm, sampleRateHz } = readWav(join(at, audio));
-  const frames = framesOf(
-    pcm,
-    sampleRateHz,
-    ceiling == null ? {} : { maxFrequencyHz: ceiling }
-  );
+  const frames = framesOf(pcm, sampleRateHz, {
+    ...(ceiling == null ? {} : { maxFrequencyHz: ceiling }),
+    ...(frameSize == null ? {} : { frameSize })
+  });
   const reference =
     ceiling === REFERENCE_HZ
       ? frames

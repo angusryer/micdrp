@@ -12,6 +12,7 @@
  * while looking at one take reached backwards into every other, and the
  * reading it produced looked exactly like a reading that had been asked for.
  */
+import { ENGINE_RECIPE_KEYS } from '../../audio/engineSettings';
 import { READING_KNOBS } from '../knobOrder';
 import { knobScope } from '../knobScope';
 import { knobValue, setKnobValue } from '../readingValues';
@@ -89,9 +90,14 @@ describe('ACC-NOTES-230: a take read with its own settings', () => {
 });
 
 describe('stamping what a reading was made with', () => {
-  it('records every knob, not only the ones turned', () => {
+  it('records every knob, not only the ones turned — and the engine beside them', () => {
+    // The whole recipe: the reader's thresholds and the engine's settings
+    // in one flat map, so "unchanged" can mean all of it (INV-NOTES-263).
     const stamp = stampReadWith(AUGUST);
-    expect(Object.keys(stamp).length).toBe(READING_KNOBS.length);
+    expect(Object.keys(stamp).length).toBe(READING_KNOBS.length + ENGINE_RECIPE_KEYS.length);
+    for (const key of ENGINE_RECIPE_KEYS) {
+      expect(stamp[`engine.${key}`]).toEqual(expect.any(Number));
+    }
   });
 
   it('freezes the app-wide values as they were at that moment', () => {

@@ -427,6 +427,7 @@ static double NowMs() {
  * decodes.
  */
 - (void)analyzeFile:(NSString *)uri
+             config:(JS::NativeAudioEngine::EngineConfigInput &)config
             resolve:(RCTPromiseResolveBlock)resolve
              reject:(RCTPromiseRejectBlock)reject {
   NSURL *url = [NSURL URLWithString:uri];
@@ -455,6 +456,18 @@ static double NowMs() {
   }
 
   EngineConfig cfg = _config;
+  // The settings the reading names, over the engine's current ones: a take
+  // is re-read the way it was read, so that with nothing changed it comes
+  // back identical (INV-NOTES-263). Every field optional, as in configure.
+  if (auto v = config.frameSize()) cfg.frameSize = (std::size_t)*v;
+  if (auto v = config.hopSize()) cfg.hopSize = (std::size_t)*v;
+  if (auto v = config.minFrequencyHz()) cfg.minFrequencyHz = *v;
+  if (auto v = config.maxFrequencyHz()) cfg.maxFrequencyHz = *v;
+  if (auto v = config.clarityThreshold()) cfg.clarityThreshold = *v;
+  if (auto v = config.voicedClarityMin()) cfg.voicedClarityMin = *v;
+  if (auto v = config.voicedLevelDb()) cfg.voicedLevelDb = *v;
+  // The rate is the file's own, never the recipe's: it is a property of the
+  // audio, not of how it is read.
   cfg.sampleRateHz = format.sampleRate;
   auto engine = std::make_shared<PitchEngine>();
   engine->configure(cfg);

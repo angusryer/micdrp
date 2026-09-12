@@ -114,7 +114,11 @@ export interface Spec extends TurboModule {
    *
    * No real-time constraint: it runs as fast as the file can be decoded.
    */
-  analyzeFile(uri: string): Promise<PitchSampleEvent[]>;
+  /**
+   * Read a recording with the settings a reading names (INV-NOTES-263).
+   * Every field optional; an absent one takes the engine's current value.
+   */
+  analyzeFile(uri: string, config: EngineConfigInput): Promise<PitchSampleEvent[]>;
 
   /** Throttled live frames for the duration of a capture. */
   readonly onPitch: EventEmitter<PitchSampleEvent>;

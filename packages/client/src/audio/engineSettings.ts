@@ -59,3 +59,48 @@ export async function applyEngineConfig(): Promise<void> {
     console.warn('[audio] could not apply engine settings', error);
   }
 }
+
+/**
+ * The engine's part of a reading's recipe (INV-NOTES-263).
+ *
+ * Every setting that decides what the engine hears, as `engine.<key>`, so
+ * it sits in the same flat map as the reader's thresholds and a new
+ * dimension joins by adding a key. Read from the resolved config — what a
+ * reading made now would actually be made with.
+ */
+export const ENGINE_RECIPE_KEYS = [
+  'frameSize',
+  'hopSize',
+  'minFrequencyHz',
+  'maxFrequencyHz',
+  'clarityThreshold',
+  'voicedClarityMin',
+  'voicedLevelDb'
+] as const;
+
+export function engineReadWith(): Record<string, number> {
+  const resolved = resolvedEngineConfig();
+  const out: Record<string, number> = {};
+  for (const key of ENGINE_RECIPE_KEYS) {
+    out[`engine.${key}`] = resolved[key];
+  }
+  return out;
+}
+
+/**
+ * The engine settings a recipe names, for re-reading a take the way it was
+ * read. Empty where the recipe predates engine settings being recorded —
+ * the caller then reads with today's, which is all it can do.
+ */
+export function engineConfigFrom(
+  readWith: Record<string, number> | undefined
+): Partial<EngineConfig> {
+  const out: Partial<EngineConfig> = {};
+  for (const key of ENGINE_RECIPE_KEYS) {
+    const value = readWith?.[`engine.${key}`];
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      out[key] = value;
+    }
+  }
+  return out;
+}

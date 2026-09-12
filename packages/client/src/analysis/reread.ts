@@ -16,6 +16,7 @@ import { ANALYSIS_VERSION, smoothPitch, type TakeRole } from 'logic';
 import type { HitDto, NoteEventDto } from 'shared';
 
 import { audioEngine } from '../audio/AudioEngine';
+import { engineConfigFrom } from '../audio/engineSettings';
 import { localCopyOf } from './localCopy';
 import { readMelody } from './readMelody';
 import { readingOptions } from './readingValues';
@@ -78,7 +79,11 @@ export async function rereadTake(
   }
   let samples;
   try {
-    samples = await audioEngine.analyzeFile(copy.path);
+    // With the engine settings this reading was made with, where the
+    // recipe names them — so nothing changed means nothing changed
+    // (INV-NOTES-263). A recipe from before they were recorded names
+    // none, and the engine's current settings stand.
+    samples = await audioEngine.analyzeFile(copy.path, engineConfigFrom(readWith));
   } finally {
     // However the reading ended. A scratch file that outlives its reading is
     // a recording of somebody's take left in a temporary directory.

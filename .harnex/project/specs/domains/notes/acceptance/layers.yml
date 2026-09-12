@@ -144,3 +144,61 @@ acceptance:
     maps_to:
       capability: notes.reanalyse
       invariants: [INV-NOTES-261, INV-NOTES-259]
+
+  - id: ACC-NOTES-291
+    interface: ui
+    title: A reading carries the engine's settings beside the reader's
+    given:
+      - a signed-in singer S
+      - singer S has just captured a note N
+    when:
+      - singer S opens the note
+    then:
+      - the note field readWithHasEngineKeys is true
+      - the note field readWithHasReaderKeys is true
+    maps_to:
+      capability: notes.reread_take
+      invariants: [INV-NOTES-263]
+
+  - id: ACC-NOTES-292
+    interface: ui
+    title: A take read at another ceiling is reported as re-tuned
+    given:
+      - a signed-in singer S
+      - singer S has a note N whose recipe names a 1200 Hz ceiling
+    when:
+      - singer S opens the note
+    then:
+      - the note field rereadChange is retuned
+    maps_to:
+      capability: notes.reread_take
+      invariants: [INV-NOTES-263, INV-NOTES-262]
+
+  - id: ACC-NOTES-293
+    interface: ui
+    title: A re-read uses the take's own engine settings
+    given:
+      - a signed-in singer S
+      - singer S has a note N whose recipe names a 1200 Hz ceiling
+    when:
+      - singer S calls notes.reread_take on note N
+    then:
+      - the note field rereadEngineCeilingHz is 1200
+    maps_to:
+      capability: notes.reread_take
+      invariants: [INV-NOTES-263, INV-NOTES-261]
+
+  - id: ACC-NOTES-294
+    interface: cli
+    title: The window is chosen by the corpus, and the choice is recorded
+    given:
+      - a signed-in singer S
+      - singer S has samples pulled to this machine
+    when:
+      - singer S calls notes.reanalyse
+    then:
+      - the note field windowScoredAgainstReference is true
+      - the note field chosenWindowRecorded is true
+    maps_to:
+      capability: notes.reanalyse
+      invariants: [INV-NOTES-264]

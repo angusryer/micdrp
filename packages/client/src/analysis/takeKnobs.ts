@@ -17,6 +17,7 @@
  * trip cannot, while a value that never left the phone would be lost on the
  * next reinstall — which is exactly when a library gets read again.
  */
+import { engineReadWith } from '../audio/engineSettings';
 import { getJSON, remove, setJSON } from '../data/store';
 
 import { DECLARED_KNOBS, type ReadingKnob } from './readingKnobs';
@@ -90,7 +91,9 @@ export function setTakeKnobValue(
  * anything is read (INV-NOTES-262).
  */
 export function currentReadWith(noteId: string): ReadWith {
-  const stamp: ReadWith = {};
+  // The engine's settings beside the reader's thresholds: one recipe, one
+  // flat map, so "unchanged" can mean the whole of it (INV-NOTES-263).
+  const stamp: ReadWith = engineReadWith();
   for (const knob of DECLARED_KNOBS) {
     stamp[nameOf(knob)] = takeKnobValue(noteId, knob);
   }

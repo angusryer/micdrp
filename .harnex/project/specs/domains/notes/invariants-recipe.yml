@@ -1,0 +1,58 @@
+# The recipe a reading was made with, and the analysis window.
+invariants:
+  - id: INV-NOTES-263
+    description: Every reading carries its whole recipe, and "unchanged" means the whole recipe matches
+    severity: critical
+    check: >
+      A reading is made by an engine with settings, feeding a reader with
+      thresholds, at a version. All three travel with the reading as one
+      flat map of `group.key` values — the reader's thresholds as they
+      already do (INV-NOTES-216), and the engine's settings beside them
+      under `engine.*` — and a re-read uses the reading's own recipe
+      unless asked to use today's. A take is reported as unchanged only
+      when every entry of its recipe equals what a reading made now would
+      carry (INV-NOTES-262). Verified by asserting a take read at one
+      window is reported as retuned once the default window changes, and
+      as unchanged when it does not.
+
+      This is what the earlier gap was. The reader's thresholds were
+      recorded and the engine's window and ceiling were not, so two takes
+      captured at a 1200 Hz ceiling re-read at 2500 and came back with
+      twice the notes — a good change the app could not have foretold,
+      because it had no record of the ceiling they were read at.
+
+      The map is flat and open so a new dimension of analysis joins it by
+      adding a key, not a field: consistent, repeatable results have to
+      survive the analysis growing, and a recipe that has to be
+      re-shaped for every new knob is one that will be left incomplete.
+
+      Nothing about the recording itself is in the recipe. The sample
+      rate is a property of the audio, written in the file, and the engine
+      reads it from there; the recipe describes how the audio was read,
+      never what it is.
+
+  - id: INV-NOTES-264
+    description: The analysis window is the largest that keeps onsets where they were sung
+    severity: major
+    check: >
+      The engine's default window is chosen by measurement against the
+      corpus, not by preference: the largest window whose note coverage
+      and onset accuracy against the reference are no worse than the
+      smaller one's, and whose cost fits the live path with room to spare.
+      Verified by the corpus scoring every window under consideration and
+      the chosen one being recorded with its numbers.
+
+      A larger window resolves low notes and rides through noise; it also
+      smears every onset by half its own length and swallows notes shorter
+      than itself. This app places notes in time as much as in pitch, so
+      "the biggest that is safe" is bounded by the rhythm, and the bound is
+      found by running the takes, not by reasoning about them. The window
+      is part of the recipe (INV-NOTES-263), so changing it later is a
+      re-tune every take can be told about, not a silent drift.
+
+      Measured 2026-09-12 on the three samples, against the 3500 Hz
+      reference: at 2048, 70/70/52 notes, covered 88/88/91%, accurate
+      90/90/84%; at 4096, 64/64/49 notes, 86/86/93%, 85/85/79%; at 8192,
+      62/62/43 notes, 83/83/90%, 75/75/78%. Cost over a 23-second take on
+      the bench: 0.20s, 0.47s, 1.26s. The larger windows lose notes and
+      accuracy faster than they gain anything, so the default stays 2048.

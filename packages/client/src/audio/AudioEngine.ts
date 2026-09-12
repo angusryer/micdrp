@@ -186,12 +186,18 @@ class AudioEngineImpl implements AudioEngineContract {
    * something already captured, not a capture — nothing is lost by it
    * declining, which is why it is the one operation that stays quiet.
    */
-  async analyzeFile(uri: string): Promise<PitchSample[]> {
+  async analyzeFile(
+    uri: string,
+    config: Partial<EngineConfig> = {}
+  ): Promise<PitchSample[]> {
     if (!this.native) {
       return [];
     }
     try {
-      return (await this.native.analyzeFile(uri)) as PitchSample[];
+      // Always an object, never absent: the native side takes a struct of
+      // optional fields, the same shape configure takes, so a re-read with
+      // nothing to override is a re-read with today's settings.
+      return (await this.native.analyzeFile(uri, config)) as PitchSample[];
     } catch {
       return [];
     }

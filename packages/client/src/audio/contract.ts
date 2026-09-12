@@ -144,7 +144,7 @@ export interface AudioEngine {
    * what lets an improved engine reach a take recorded before it existed
    * (INV-NOTES-116). Returns an empty array where the file cannot be read.
    */
-  analyzeFile(uri: string): Promise<PitchSample[]>;
+  analyzeFile(uri: string, config?: Partial<EngineConfig>): Promise<PitchSample[]>;
   /** Subscribe to the throttled live PitchSample stream. Returns an unsubscribe fn. */
   onPitch(cb: (sample: PitchSample) => void): () => void;
   /** Subscribe to coarse engine-state transitions. Returns an unsubscribe fn. */
