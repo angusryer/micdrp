@@ -488,9 +488,26 @@ static double NowMs() {
     if (mono.frameLength == 0 || mono.floatChannelData == nullptr) {
       continue;
     }
-    engine->push(mono.floatChannelData[0], (std::size_t)mono.frameLength);
-    while (auto s = engine->tryAnalyze()) {
-      [out addObject:[self pitchSampleBody:*s]];
+    // A hop at a time, drained after each — what the microphone does. The
+    // file is read eight windows at a time for the I/O's sake, but the ring
+    // holds four, and pushing the whole chunk overflowed it: push() said so
+    // by accepting half, and this ignored the answer. Every re-read from a
+    // file dropped half of every chunk, silently, and could never match the
+    // capture it was re-reading (INV-NOTES-261).
+    const float *pcm = mono.floatChannelData[0];
+    const std::size_t total = (std::size_t)mono.frameLength;
+    for (std::size_t at = 0; at < total; at += cfg.hopSize) {
+      const std::size_t n = std::min(cfg.hopSize, total - at);
+      const std::size_t took = engine->push(pcm + at, n);
+      if (took != n) {
+        reject(@"engine_overrun",
+               [NSString stringWithFormat:@"the engine dropped %zu samples", n - took],
+               nil);
+        return;
+      }
+      while (auto s = engine->tryAnalyze()) {
+        [out addObject:[self pitchSampleBody:*s]];
+      }
     }
   }
   resolve(out);

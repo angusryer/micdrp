@@ -1,72 +1,97 @@
 /**
- * Turning a recording into pitch frames the way the engine does.
+ * A recording as frames — through the device's own engine (INV-NOTES-261).
  *
- * The device runs the C++ detector; this runs the TypeScript one in
- * packages/logic, which is the same algorithm and is what the worklet
- * fallback uses on a device without the native module. Close enough to
- * ask "would this reading change if the pipeline changed", which is the
- * question the corpus exists to answer — and not close enough to settle
- * anything about the C++ detector itself, which has to be measured on a
- * device.
+ * The C++ PitchEngine is the only thing that analyses audio, on the phone
+ * and here. It used to be the TypeScript reference on this side, which is
+ * the same algorithm within 1e-4 Hz and not the same bits — and "within" is
+ * not "exactly" when a take is compared with itself across a re-read. So
+ * the samples go out to `dsp_frames`, built from the same sources the app
+ * compiles, and the frames come back as the bridge would hand them to JS.
+ *
+ * Built on first use and rebuilt when any DSP source is newer than the
+ * binary, into a directory git ignores. Every engine option defaults to the
+ * engine's own default; only what a take carried is passed.
  */
-import { logic, type PitchFrame } from './logic.ts';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
-/** The engine's shape of a frame: window, hop, and the bounds it honours. */
+import type { PitchFrame } from './logic.ts';
+
+const REPO = new URL('../..', import.meta.url).pathname;
+const DSP = join(REPO, 'packages/client/cpp/dsp');
+const OUT = join(REPO, 'node_modules/.cache/micdrp-dsp');
+const BINARY = join(OUT, 'frames');
+
+const SOURCES = ['mpm.cpp', 'notes.cpp', 'ring_buffer.cpp', 'pitch_engine.cpp'];
+
+/** The engine options a take may carry. Anything absent is the engine's own default. */
 export interface FrameOptions {
-  frameSize: number;
-  hopSize: number;
-  minFrequencyHz: number;
-  maxFrequencyHz: number;
-  clarityThreshold: number;
-  /** Below this, a frame is called unvoiced however clear it looked. */
-  voicedClarityMin: number;
+  frameSize?: number;
+  hopSize?: number;
+  minFrequencyHz?: number;
+  maxFrequencyHz?: number;
+  clarityThreshold?: number;
 }
 
-/** Mirrors DEFAULT_ENGINE_CONFIG; the client owns the real one. */
-export const DEFAULT_FRAMES: FrameOptions = {
-  frameSize: 2048,
-  hopSize: 512,
-  minFrequencyHz: 70,
-  maxFrequencyHz: 2500,
-  clarityThreshold: 0.9,
-  voicedClarityMin: 0.5
-};
+function newestSourceMs(): number {
+  const files = [
+    ...SOURCES.map((f) => join(DSP, f)),
+    join(DSP, 'tools/frames_cli.cpp'),
+    ...readdirSync(DSP)
+      .filter((f) => f.endsWith('.h'))
+      .map((f) => join(DSP, f))
+  ];
+  return Math.max(...files.map((f) => statSync(f).mtimeMs));
+}
 
-const midiOf = (hz: number): number => 69 + 12 * Math.log2(hz / 440);
+/** The bench engine, compiled from the app's own DSP sources. */
+export function ensureEngine(): string {
+  const stale = !existsSync(BINARY) || statSync(BINARY).mtimeMs < newestSourceMs();
+  if (stale) {
+    mkdirSync(OUT, { recursive: true });
+    execFileSync('c++', [
+      '-std=c++17',
+      '-O2',
+      `-I${DSP}`,
+      ...SOURCES.map((f) => join(DSP, f)),
+      join(DSP, 'tools/frames_cli.cpp'),
+      '-o',
+      BINARY
+    ]);
+  }
+  return BINARY;
+}
 
-/** Run the detector across a recording, one window at a time. */
+const flag = (name: string, value: number | undefined): string[] =>
+  value == null ? [] : [name, String(value)];
+
+/** Run the device's engine across a recording, one window at a time. */
 export function framesOf(
   samples: Float32Array,
   sampleRateHz: number,
-  options: FrameOptions = DEFAULT_FRAMES
+  options: FrameOptions = {}
 ): PitchFrame[] {
-  const { frameSize, hopSize } = options;
-  const out: PitchFrame[] = [];
-  for (let at = 0; at + frameSize <= samples.length; at += hopSize) {
-    const window = samples.subarray(at, at + frameSize);
-    const { frequency, clarity } = logic.detectPitch(window, sampleRateHz, {
-      clarityThreshold: options.clarityThreshold,
-      minFrequency: options.minFrequencyHz,
-      maxFrequency: options.maxFrequencyHz
-    });
-    const voiced = frequency != null && clarity >= options.voicedClarityMin;
-    const exact = voiced ? midiOf(frequency) : null;
-    const midi = exact == null ? null : Math.round(exact);
-    out.push({
-      timestampMs: (at / sampleRateHz) * 1000,
-      midi,
-      cents: exact == null || midi == null ? null : Math.round((exact - midi) * 100),
-      clarity,
-      levelDb: 20 * Math.log10(rms(window) + 1e-12)
-    });
+  const engine = ensureEngine();
+  const args = [
+    '--rate',
+    String(sampleRateHz),
+    ...flag('--frame', options.frameSize),
+    ...flag('--hop', options.hopSize),
+    ...flag('--min-hz', options.minFrequencyHz),
+    ...flag('--max-hz', options.maxFrequencyHz),
+    ...flag('--clarity', options.clarityThreshold)
+  ];
+  // Little-endian float32, which is what the engine's buffers hold and what
+  // every machine this runs on writes.
+  const input = Buffer.from(samples.buffer, samples.byteOffset, samples.byteLength);
+  const run = spawnSync(engine, args, { input, maxBuffer: 1 << 30 });
+  if (run.status !== 0) {
+    throw new Error(`dsp_frames failed: ${run.stderr?.toString() ?? run.status}`);
   }
-  return out;
-}
-
-function rms(window: Float32Array): number {
-  let sum = 0;
-  for (const s of window) {
-    sum += s * s;
-  }
-  return Math.sqrt(sum / window.length);
+  return run.stdout
+    .toString('utf8')
+    .split('\n')
+    .filter((line) => line.length > 0)
+    .map((line) => JSON.parse(line) as PitchFrame);
 }

@@ -57,19 +57,15 @@ import {
   chordPitches,
   HEADPHONE_FLOOR_MIDI
 } from '../../components/chordLayout';
-import { cacheReading, cachedNotes } from '../../data/notesSync';
-import { hasTakeAudio } from '../../data/takeAudio';
-import { rereadTake } from '../../analysis/reread';
+import { cachedNotes } from '../../data/notesSync';
+import { rereadChange, rereadNote } from '../../analysis/rereadNote';
 import { beatLengthAt } from './beatLengthAt';
 import {
   restoreReadWith,
-  seedReadWith,
-  stampReadWith,
-  takeReadWith
+  seedReadWith
 } from '../../analysis/takeKnobs';
 import {
   forgetKeptReading,
-  keepReading,
   keptReading
 } from '../../analysis/keptReading';
 import { notesRepo } from '../../data/notesRepo';
@@ -713,69 +709,20 @@ export function useNoteDetail(id: string) {
   }, [note?.id, note?.readWith]);
 
   const reread = useCallback(async () => {
-    // Whichever copy exists, by the same rule everything else that reads or
-    // sounds the take already uses (INV-NOTES-183). This used to ask for the
-    // uploaded path alone, while resolveAudio immediately above prefers the
-    // one on the device — so every take not yet uploaded refused to be read
-    // again, and said nothing about it.
-    const uri = hasTakeAudio(note) ? await resolveAudio() : null;
-    // This take's own thresholds, not whatever the app is set to now
-    // (INV-NOTES-216). Empty on one read before it carried any, which falls
-    // through to the app-wide values — there is nothing better to fall back
-    // to — and is stamped below so it is loose exactly once.
-    const readWith = note == null ? {} : takeReadWith(note.id);
-    let outcome = await rereadTake(uri, 'mixed', readWith);
-    // A local copy that is no longer there — which is every take after a
-    // reinstall — falls back to the uploaded one rather than failing
-    // (INV-NOTES-185).
-    if (!outcome.ok && note?.audioPath != null && note.localAudioUri != null) {
-      outcome = await rereadTake(
-        await notesRepo.audioUrlFor(id, note.audioPath),
-        'mixed',
-        readWith
-      );
+    if (note == null) {
+      return null;
     }
-    if (!outcome.ok || note == null) {
-      return outcome.ok ? null : outcome.because;
+    // One path with the list of notes (INV-NOTES-262): the audio, the
+    // thresholds, the kept reading and what is written back are all the
+    // same act wherever it is asked for.
+    const why = await rereadNote(note);
+    if (why != null) {
+      return why;
     }
-    // The cache keeps an absent value as undefined and the reading keeps
-    // it as null. Both mean "nothing measured it"; only one of them fits
-    // in a NoteMeta, so they are translated here rather than blurred.
-    // Kept before anything is overwritten (INV-NOTES-215). Every threshold
-    // the reader uses is set once for the app rather than per take, so a
-    // tuning arrived at against a recent take is what an old one gets read
-    // with — and whether that is better is a judgement only the person who
-    // sang it can make.
-    keepReading(note.id, {
-      melody: note.melody ?? [],
-      hits: note.hits ?? [],
-      analysisVersion: note.analysisVersion ?? 0,
-      readWith
-    });
     setCanUndoReread(true);
-    const measured = outcome.reading.summary;
-    cacheReading(note.id, {
-      ...outcome.reading,
-      summary:
-        measured == null
-          ? undefined
-          : {
-              ...measured,
-              key: measured.key ?? undefined,
-              tempoBpm: measured.tempoBpm ?? undefined,
-              inTuneRatio: measured.inTuneRatio ?? undefined,
-              meanCentsError: measured.meanCentsError ?? undefined,
-              rangeLowMidi: measured.rangeLowMidi ?? undefined,
-              rangeHighMidi: measured.rangeHighMidi ?? undefined
-            }
-    });
-    await notesRepo.saveReading(note.id, {
-      ...outcome.reading,
-      readWith: stampReadWith(note.id)
-    });
     setReadingAt((was) => was + 1);
     return null;
-  }, [id, note, resolveAudio]);
+  }, [note]);
 
   // The layers as performances rather than as readings of them
   // (INV-NOTES-134). Loaded when the note opens, so a press is a schedule.
@@ -1196,6 +1143,8 @@ export function useNoteDetail(id: string) {
     setBpm: interpretation.updateBpm,
     readBpm: quantized.grid.bpm,
     isStale: isStale(note?.analysisVersion),
+    /** Which of three things a re-read would do (INV-NOTES-262). */
+    rereadChange: note == null ? ('unchanged' as const) : rereadChange(note),
     reread,
     resizeChosen,
     shiftChosen,

@@ -82,11 +82,23 @@ export function setTakeKnobValue(
  * next reading matches this one, and a knob left to the app-wide value is
  * as much a part of how it was read as one that was moved.
  */
-export function stampReadWith(noteId: string): ReadWith {
+/**
+ * What a reading made now would be stamped with, without stamping it.
+ *
+ * The same values `stampReadWith` writes, read rather than written — so a
+ * take can be asked whether reading it again would change anything before
+ * anything is read (INV-NOTES-262).
+ */
+export function currentReadWith(noteId: string): ReadWith {
   const stamp: ReadWith = {};
   for (const knob of DECLARED_KNOBS) {
     stamp[nameOf(knob)] = takeKnobValue(noteId, knob);
   }
+  return stamp;
+}
+
+export function stampReadWith(noteId: string): ReadWith {
+  const stamp = currentReadWith(noteId);
   setJSON(keyFor(noteId), stamp);
   return stamp;
 }

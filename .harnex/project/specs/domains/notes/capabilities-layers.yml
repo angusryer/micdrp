@@ -38,6 +38,10 @@ capabilities:
     preconditions:
       - samples have been pulled with 'yarn dogfood samples'
     postconditions:
+      - every sample's audio is read into frames by the device's own C++
+        engine, compiled for this machine from the same sources, never by
+        a port of it (INV-NOTES-261)
+      - the frames are read with the thresholds the sample was read with
       - every sample is derived by notes.derive and nothing else
       - a sample whose statements no longer anchor is reported, not
         silently dropped

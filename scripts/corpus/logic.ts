@@ -48,6 +48,8 @@ interface Logic {
     role: TakeRole,
     options?: ReadOptions
   ): Reading;
+  /** Which note an anchor belongs to, slack and all (INV-NOTES-096). */
+  noteAt(heard: readonly NoteEvent[], atMs: number): number;
   /** Every layer above a reading, with no screen (INV-NOTES-259). */
   derive(
     reading: ReadingForDerive,

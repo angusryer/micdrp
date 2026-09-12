@@ -86,3 +86,61 @@ acceptance:
     maps_to:
       capability: notes.derive
       invariants: [INV-NOTES-255, INV-NOTES-258]
+
+  - id: ACC-NOTES-287
+    interface: ui
+    title: Reading a take again with nothing changed gives exactly what it has
+    given:
+      - a signed-in singer S
+      - singer S has a note N read at the current version with unchanged thresholds
+    when:
+      - singer S calls notes.reread_take on note N
+    then:
+      - the note field melodyIdenticalToBefore is true
+      - the note field hitsIdenticalToBefore is true
+    maps_to:
+      capability: notes.reread_take
+      invariants: [INV-NOTES-261]
+
+  - id: ACC-NOTES-288
+    interface: ui
+    title: The take says beforehand that a re-read would change nothing
+    given:
+      - a signed-in singer S
+      - singer S has a note N read at the current version with unchanged thresholds
+    when:
+      - singer S opens the note
+    then:
+      - the note field rereadChange is unchanged
+    maps_to:
+      capability: notes.reread_take
+      invariants: [INV-NOTES-262]
+
+  - id: ACC-NOTES-289
+    interface: ui
+    title: The list offers to read every take that would change, and no other
+    given:
+      - a signed-in singer S
+      - singer S has three notes, one stale, one re-tuned, one unchanged
+    when:
+      - singer S calls notes.list
+    then:
+      - the note field worthRereadingCount is 2
+    maps_to:
+      capability: notes.list
+      invariants: [INV-NOTES-262]
+
+  - id: ACC-NOTES-290
+    interface: cli
+    title: The bench reads audio through the device's own engine
+    given:
+      - a signed-in singer S
+      - singer S has samples pulled to this machine
+    when:
+      - singer S calls notes.reanalyse
+    then:
+      - the note field framesFromNativeEngine is true
+      - the note field samplesFailed is 0
+    maps_to:
+      capability: notes.reanalyse
+      invariants: [INV-NOTES-261, INV-NOTES-259]

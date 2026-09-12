@@ -1,0 +1,59 @@
+# Reading a take again: that it comes out the same, and where it is offered.
+invariants:
+  - id: INV-NOTES-261
+    description: Re-analysis with nothing changed gives exactly the first analysis
+    severity: critical
+    check: >
+      Reading a take again with the same frames and the same thresholds
+      produces a melody, hits and summary identical to the first reading,
+      bit for bit. Every path that detects pitch — the capture, the
+      device's re-read, and the corpus tool — runs the one C++ engine with
+      the same configuration; every path that reads frames into notes runs
+      the one reader with the take's own thresholds (INV-PITCH-028,
+      INV-NOTES-216). Verified by reading the same frames twice and
+      asserting equality, and by the C++ host test asserting the engine
+      gives the same frames whether the audio arrives a hop at a time or
+      in large chunks.
+
+      A re-analysis that changed nothing yet came back different is a
+      measurement with no units: nobody can tell a better reader from a
+      wobble. The stored thresholds are what make "nothing changed" a
+      fact rather than a hope, and the one engine is what makes the frames
+      the same on the phone and on the bench.
+
+      The engine's ring holds four windows, and a push larger than what it
+      holds between drains is accepted short — push reports how many it
+      took, and a feeder that ignores the report loses audio without
+      knowing. The device's file re-read did exactly that: it pushed eight
+      windows into a ring of four and dropped half of every chunk, so no
+      re-read could match the capture it was re-reading. Every offline
+      feeder now pushes a hop at a time and treats a short write as a
+      fault, and the host test holds both halves: every feed that fits is
+      byte-identical to the microphone's, and a feed that does not fit is
+      reported short.
+
+      The one exception is stated, not hidden: a capture whose live
+      analyser fell behind and dropped a hop carries fewer frames than the
+      file holds, and its re-read from the file fills them. That is the
+      first reading being incomplete, not the reader being unstable, and a
+      take can say it happened by comparing its frame count to its length.
+
+  - id: INV-NOTES-262
+    description: Re-analysis is offered where the take is and where the takes are, and says whether it would change anything
+    severity: major
+    check: >
+      A take can be read again from its own screen and from the list of
+      takes, and both say beforehand which of three things is true: the
+      take was read by an older listener, its thresholds have changed
+      since it was read, or nothing has changed and reading it again would
+      give back exactly what it has (INV-NOTES-261). The list offers to
+      read every take that would change, in one act. Verified by asserting
+      a take at the current version with unchanged thresholds is offered
+      as unchanged, and that the list's count of takes worth reading again
+      equals the number that are stale or re-tuned.
+
+      A better reader is worth nothing if the takes it could improve have
+      to be found one at a time. And a control that reads a take again
+      when nothing would change teaches the person that re-reading is
+      noise — so the app has to know the difference before it is pressed,
+      not after.

@@ -22,8 +22,12 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { useTheme } from '../../theme';
 
 export interface RereadCardProps {
-  /** False where this take was already read by the current engine. */
-  isStale: boolean;
+  /**
+   * What reading it again would do (INV-NOTES-262): find the notes the
+   * way a newer listener hears, read with thresholds since changed, or
+   * give back exactly what the take already has (INV-NOTES-261).
+   */
+  change: 'stale' | 'retuned' | 'unchanged';
   /**
    * Re-read it. Resolves with why it failed, or null where it worked
    * (INV-NOTES-184).
@@ -43,7 +47,7 @@ export interface RereadCardProps {
 }
 
 export function RereadCard({
-  isStale,
+  change,
   onReread,
   canUndo = false,
   onUndo
@@ -72,9 +76,11 @@ export function RereadCard({
         Read this take again
       </Text>
       <Text style={[styles.body, { color: colors.gray300 }]}>
-        {isStale
+        {change === 'stale'
           ? 'This take was read by an older version of the listener. Reading it again will find the notes and drums the way the app hears now.'
-          : 'Reads the recording again with the listener settings as they are now. Worth doing after changing what counts as a note.'}
+          : change === 'retuned'
+            ? 'The listener settings have changed since this take was read. Reading it again will apply them.'
+            : 'Nothing has changed since this take was read. Reading it again would give back exactly what it has now.'}
       </Text>
       <Text style={[styles.warning, { color: colors.error }]}>
         The notes, chords and timing will all be replaced. Corrections you made
@@ -110,7 +116,7 @@ export function RereadCard({
           <ActivityIndicator color={colors.primary500} />
         ) : (
           <Text style={[styles.buttonText, { color: colors.primary500 }]}>
-            Read it again
+            {change === 'unchanged' ? 'Read it again anyway' : 'Read it again'}
           </Text>
         )}
       </Pressable>

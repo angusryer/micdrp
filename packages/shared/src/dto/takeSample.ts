@@ -56,6 +56,14 @@ export interface TakeReadingDto {
   hits: HitDto[];
   /** Absent means the oldest reading, as a take stored before numbering. */
   analysisVersion?: number;
+  /**
+   * The thresholds the reading was made with (INV-NOTES-216).
+   *
+   * Without them a sample can be re-read only with the defaults, and a
+   * re-analysis that changed nothing would be indistinguishable from one
+   * that changed the reader (INV-NOTES-261).
+   */
+  readWith?: Record<string, number>;
   key: string | null;
   tempoBpm: number | null;
   inTuneRatio: number | null;
@@ -71,6 +79,7 @@ export interface ReadableTake {
   hits?: HitDto[];
   interpretations?: InterpretationDto[];
   analysisVersion?: number;
+  readWith?: Record<string, number>;
   key?: string | null;
   tempoBpm?: number | null;
   inTuneRatio?: number | null;
@@ -102,6 +111,7 @@ export function readingOf(
     interpretations: take.interpretations ?? [],
     hits: take.hits ?? [],
     analysisVersion: take.analysisVersion,
+    ...(take.readWith ? { readWith: { ...take.readWith } } : {}),
     key: take.key ?? null,
     tempoBpm: take.tempoBpm ?? null,
     inTuneRatio: take.inTuneRatio ?? null,

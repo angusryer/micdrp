@@ -11,7 +11,7 @@ import { readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { readWav } from './wav.ts';
-import { DEFAULT_FRAMES, framesOf } from './frames.ts';
+import { framesOf } from './frames.ts';
 import { appReading, whatItWas } from './pipelines.ts';
 import { reanalyse } from './reanalyse.ts';
 import { score, type Score } from './score.ts';
@@ -24,7 +24,10 @@ const valueOf = (flag: string, fallback: string): string => {
 };
 
 const dir = join(REPO, valueOf('--samples', '.samples'));
-const ceiling = Number(valueOf('--max-hz', String(DEFAULT_FRAMES.maxFrequencyHz)));
+// The engine's own default unless asked otherwise; the corpus does not keep
+// a second copy of a number the engine already decides (Axiom 2).
+const ceilingArg = valueOf('--max-hz', '');
+const ceiling = ceilingArg === '' ? null : Number(ceilingArg);
 
 /**
  * The ceiling the reference frames are detected at.
@@ -69,7 +72,7 @@ if (process.argv.includes('reanalyse')) {
   process.exit(failed > 0 ? 1 : 0);
 }
 
-console.log(`corpus: ${samples.length} sample(s), ceiling ${ceiling} Hz\n`);
+console.log(`corpus: ${samples.length} sample(s), ceiling ${ceiling ?? 'engine default'} Hz\n`);
 for (const name of samples) {
   const at = join(dir, name);
   const audio = readdirSync(at).find((f) => f.startsWith('audio.'));
@@ -78,17 +81,15 @@ for (const name of samples) {
     continue;
   }
   const { samples: pcm, sampleRateHz } = readWav(join(at, audio));
-  const frames = framesOf(pcm, sampleRateHz, {
-    ...DEFAULT_FRAMES,
-    maxFrequencyHz: ceiling
-  });
+  const frames = framesOf(
+    pcm,
+    sampleRateHz,
+    ceiling == null ? {} : { maxFrequencyHz: ceiling }
+  );
   const reference =
     ceiling === REFERENCE_HZ
       ? frames
-      : framesOf(pcm, sampleRateHz, {
-          ...DEFAULT_FRAMES,
-          maxFrequencyHz: REFERENCE_HZ
-        });
+      : framesOf(pcm, sampleRateHz, { maxFrequencyHz: REFERENCE_HZ });
   console.log(`  ${name}`);
   console.log(row('now', score(appReading(frames), reference)));
   console.log(row('was', score(whatItWas(frames), reference)));

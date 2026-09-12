@@ -11,10 +11,11 @@
  * room for it, so reaching the last card reaches the card and not the button
  * covering it.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
+  Pressable,
   RefreshControl,
   SafeAreaView,
   StyleSheet,
@@ -34,6 +35,7 @@ import type {
 } from '../../navigation/types';
 import type { NoteMeta } from '../../data/notesCache';
 import { NoteCard } from './NoteCard';
+import { rereadChange, rereadNote } from '../../analysis/rereadNote';
 import { NoteMixPlayer } from './NoteMixPlayer';
 import { RecordButton, RECORD_BUTTON_CLEARANCE } from './RecordButton';
 import { useNotes } from './useNotes';
@@ -101,6 +103,28 @@ export function NotesScreen(): React.JSX.Element {
     []
   );
 
+  // The takes a re-read would actually change: read by an older listener
+  // or with thresholds since changed. Never the ones it would give back
+  // exactly as they are (INV-NOTES-261, INV-NOTES-262).
+  const worthRereading = useMemo(
+    () => notes.filter((n) => rereadChange(n) !== 'unchanged'),
+    [notes]
+  );
+  const [isRereadingAll, setIsRereadingAll] = useState(false);
+  const [rereadDone, setRereadDone] = useState(0);
+  const rereadAll = useCallback(async () => {
+    setIsRereadingAll(true);
+    setRereadDone(0);
+    // One at a time: each re-read opens the engine and the file, and a
+    // phone reading twenty takes at once is a phone that stops responding.
+    for (const note of worthRereading) {
+      await rereadNote(note);
+      setRereadDone((n) => n + 1);
+    }
+    setIsRereadingAll(false);
+    await refresh();
+  }, [worthRereading, refresh]);
+
   const renderItem = useCallback(
     ({ item }: { item: NoteMeta }) => (
       <NoteCard
@@ -130,7 +154,24 @@ export function NotesScreen(): React.JSX.Element {
           />
         }
         ListHeaderComponent={
-          syncFailure != null ? (
+          worthRereading.length > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Read ${worthRereading.length} takes again`}
+              testID="reread-all"
+              disabled={isRereadingAll}
+              onPress={() => void rereadAll()}
+              style={[styles.offline, { opacity: isRereadingAll ? 0.6 : 1 }]}
+            >
+              <Text style={{ color: colors.primary500, fontWeight: '600' }}>
+                {isRereadingAll
+                  ? `Reading ${rereadDone} of ${worthRereading.length}…`
+                  : worthRereading.length === 1
+                    ? 'Read 1 take again'
+                    : `Read ${worthRereading.length} takes again`}
+              </Text>
+            </Pressable>
+          ) : syncFailure != null ? (
             <Text style={[styles.offline, { color: colors.caution }]}>
               {t(`notes.${syncFailure}`)}
             </Text>

@@ -19,6 +19,7 @@ import { midiToLabel } from '../Results/NoteList';
 import { correctedSummary } from '../../data/asCorrected';
 import type { NoteMeta } from '../../data/notesCache';
 import { formatDate } from './noteCardFormat';
+import { rereadChange } from '../../analysis/rereadNote';
 
 export interface NoteCardMetaProps {
   note: NoteMeta;
@@ -36,7 +37,15 @@ export function NoteCardMeta({ note }: NoteCardMetaProps) {
       ? `${midiToLabel(said.rangeLowMidi)}–${midiToLabel(said.rangeHighMidi)}`
       : null;
 
-  const facts = [formatDate(note.createdAtMs), said.key, range].filter(
+  // Said on the card, so a take worth reading again can be found from the
+  // list rather than opened to find out (INV-NOTES-262).
+  const change = rereadChange(note);
+  const facts = [
+    formatDate(note.createdAtMs),
+    said.key,
+    range,
+    change === 'stale' ? 'older listener' : change === 'retuned' ? 're-tuned' : null
+  ].filter(
     (f): f is string => f != null
   );
 

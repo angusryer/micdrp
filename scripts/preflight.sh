@@ -64,7 +64,7 @@ yarn test
 step "dsp core (C++ host tests)"
 DSP=packages/client/cpp/dsp
 DSP_OUT=$(mktemp -d)
-for t in synth wave synth_mailbox synth_commands fft level spectral; do
+for t in synth wave synth_mailbox synth_commands fft level spectral engine_chunking; do
   c++ -std=c++17 -O2 -I "$DSP" \
     "$DSP"/synth.cpp "$DSP"/synth_mailbox.cpp "$DSP"/synth_commands.cpp \
     "$DSP"/mpm.cpp "$DSP"/notes.cpp "$DSP"/ring_buffer.cpp \
@@ -73,6 +73,12 @@ for t in synth wave synth_mailbox synth_commands fft level spectral; do
     || fail "the DSP ${t} test would not build"
   "$DSP_OUT/${t}" >/dev/null || fail "the DSP ${t} test failed"
 done
+# The bench CLI is built with the tests so it cannot rot unnoticed: the
+# corpus tool reads every take through it (INV-NOTES-261).
+c++ -std=c++17 -O2 -I "$DSP" \
+  "$DSP"/mpm.cpp "$DSP"/notes.cpp "$DSP"/ring_buffer.cpp "$DSP"/pitch_engine.cpp \
+  "$DSP"/tools/frames_cli.cpp -o "$DSP_OUT/frames" 2>/dev/null \
+  || fail "the DSP frames CLI would not build"
 rm -rf "$DSP_OUT"
 
 if [ -n "$WITH_PODS" ]; then

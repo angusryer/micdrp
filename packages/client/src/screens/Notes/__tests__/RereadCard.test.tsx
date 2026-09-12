@@ -18,8 +18,10 @@ import { I18nProvider } from '../../../i18n';
 import { ThemeProvider } from '../../../theme';
 import { RereadCard } from '../RereadCard';
 
+type Change = 'stale' | 'retuned' | 'unchanged';
+
 const show = (
-  isStale: boolean,
+  change: Change,
   onReread = jest.fn().mockResolvedValue(true),
   undo?: { canUndo: boolean; onUndo: jest.Mock }
 ) =>
@@ -27,7 +29,7 @@ const show = (
     <I18nProvider>
       <ThemeProvider>
         <RereadCard
-          isStale={isStale}
+          change={change}
           onReread={onReread}
           canUndo={undo?.canUndo}
           onUndo={undo?.onUndo}
@@ -37,39 +39,42 @@ const show = (
   );
 
 describe('reading a take again', () => {
-  it('is offered on a take this engine already read', async () => {
-    // The settings that decide what a note is can be changed, and a take read
-    // with different ones is stale in the way that matters. The version
-    // number cannot know that (INV-ACCOUNT-014).
-    await show(false);
-    expect(screen.queryByTestId('reread-card')).not.toBeNull();
+  it('is offered whatever a re-read would do', async () => {
+    // Even where nothing would change: a person may want to prove that to
+    // themselves, and the card says so rather than hiding (INV-NOTES-262).
+    for (const change of ['stale', 'retuned', 'unchanged'] as const) {
+      const shown = await show(change);
+      expect(shown.queryByTestId('reread-card')).not.toBeNull();
+      await shown.unmount();
+    }
   });
 
-  it('is offered on one read by an older engine too', async () => {
-    await show(true);
-    expect(screen.queryByTestId('reread-card')).not.toBeNull();
-  });
-
-  it('says which of the two reasons applies', async () => {
-    const older = await show(true);
+  it('says which of the three things is true, before the press', async () => {
+    const older = await show('stale');
     expect(older.queryByText(/older version of the listener/)).not.toBeNull();
     await older.unmount();
 
-    const current = await show(false);
-    expect(current.queryByText(/settings as they are now/)).not.toBeNull();
+    const retuned = await show('retuned');
+    expect(retuned.queryByText(/settings have changed/)).not.toBeNull();
+    await retuned.unmount();
+
+    const same = await show('unchanged');
+    expect(same.queryByText(/exactly what it has now/)).not.toBeNull();
+    // And the button admits it, so a press is a choice rather than a hope.
+    expect(same.queryByText('Read it again anyway')).not.toBeNull();
   });
 
   it('says what it will replace, before the button rather than after', async () => {
     // What it costs is real: the reading goes, and an edit whose note is no
     // longer there finds nothing to apply to. Worth reading before pressing.
-    await show(true);
+    await show('stale');
     expect(screen.queryByText(/will all be replaced/)).not.toBeNull();
     expect(screen.queryByText(/will be lost/)).not.toBeNull();
   });
 
   it('reads again when pressed', async () => {
     const onReread = jest.fn().mockResolvedValue(true);
-    await show(true, onReread);
+    await show('stale', onReread);
 
     await act(async () => {
       await fireEvent.press(screen.getByLabelText('Read this take again'));
@@ -81,7 +86,7 @@ describe('reading a take again', () => {
     // Silence here would read as "done", and the take would look re-read
     // when it was not.
     const onReread = jest.fn().mockResolvedValue(false);
-    await show(true, onReread);
+    await show('stale', onReread);
 
     await act(async () => {
       await fireEvent.press(screen.getByLabelText('Read this take again'));
@@ -105,25 +110,25 @@ describe('putting the previous reading back', () => {
   });
 
   it('is not offered on a take that has not been read again', async () => {
-    await show(true, jest.fn().mockResolvedValue(true), undo(false));
+    await show('stale', jest.fn().mockResolvedValue(true), undo(false));
     expect(screen.queryByTestId('undo-reread')).toBeNull();
   });
 
   it('ACC-NOTES-229: is offered once a reading has been kept', async () => {
-    await show(true, jest.fn().mockResolvedValue(true), undo(true));
+    await show('stale', jest.fn().mockResolvedValue(true), undo(true));
     expect(screen.queryByTestId('undo-reread')).not.toBeNull();
   });
 
   it('says the previous reading is kept, before the press', async () => {
     // Otherwise the warning above it reads as final, and a person who would
     // have tried reading again does not.
-    await show(true, jest.fn().mockResolvedValue(true), undo(true));
+    await show('stale', jest.fn().mockResolvedValue(true), undo(true));
     expect(screen.queryByText(/you can put it back/)).not.toBeNull();
   });
 
   it('puts it back when pressed', async () => {
     const back = undo(true);
-    await show(true, jest.fn().mockResolvedValue(true), back);
+    await show('stale', jest.fn().mockResolvedValue(true), back);
 
     await act(async () => {
       await fireEvent.press(
