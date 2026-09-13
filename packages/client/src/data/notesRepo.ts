@@ -336,6 +336,15 @@ export const notesRepo = {
    * the access rule scopes the delete to the owner, so there is no separate
    * blob sweep and no way to delete someone else's.
    */
+  /** What the singer calls this take (INV-NOTES-272). */
+  async saveTitle(noteId: string, title: string): Promise<void> {
+    try {
+      await backend.collection(COLLECTIONS.notes).update(noteId, { title });
+    } catch (error) {
+      throw appError(AppErrorCode.Network, 'Failed to rename this take', error);
+    }
+  },
+
   async remove(id: string): Promise<void> {
     try {
       await backend.collection(COLLECTIONS.notes).delete(id);

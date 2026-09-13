@@ -37,10 +37,16 @@ export type IconName =
   | 'reset'
   | 'kebab'
   | 'piano'
-  | 'help';
+  | 'help'
+  | 'star'
+  | 'starOff';
 
 /** Material-style filled glyphs, authored on a 24×24 viewbox. */
 const ICON_PATHS: Record<IconName, string> = {
+  // A take kept to hand, and one not (INV-NOTES-271).
+  star: 'M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z',
+  starOff:
+    'M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z',
   // Microphone — used for the app mark / practice tab.
   mic: 'M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z',
   practice:

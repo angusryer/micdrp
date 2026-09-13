@@ -192,7 +192,11 @@ export function createTransport(engine: TransportEngine): Transport {
     // at a moment rather than jumping to one (INV-TPORT-007). A take
     // still loading was running: it is cancelled here and started again
     // below, rather than left at loading forever (INV-TPORT-016).
-    const to = Math.max(0, atMs ?? 0);
+    // Not clamped at zero: a take with a count-in has moments before its
+    // first sample, and the head can be placed in them (INV-TPORT-041).
+    // Clamping here sent every rewind of a counted-in take to the
+    // recording's start instead of the count's.
+    const to = atMs ?? 0;
     publish({ state: wasRunning ? 'stopped' : snapshot.state, cueMs: to });
     if (wasRunning) {
       await command('play', to);

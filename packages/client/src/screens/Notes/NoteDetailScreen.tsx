@@ -39,6 +39,7 @@ import { TrackOptions } from './TrackOptions';
 import { BeatTap } from './BeatTap';
 import { nextStep } from 'logic';
 
+import { NoteTitle } from './NoteTitle';
 import { PickupSheet } from './PickupSheet';
 import { WorkflowSheet, WorkflowTab } from './WorkflowSheet';
 import { SelectionSheet } from './SelectionSheet';
@@ -152,9 +153,11 @@ export default function NoteDetailScreen({ route }: Props): React.JSX.Element {
         ]}
       >
         <View style={styles.titleRow}>
-          <Text style={[styles.title, { color: colors.typography }]}>
-            {note.title}
-          </Text>
+          <NoteTitle
+            title={note.title}
+            style={[styles.title, { color: colors.typography }]}
+            onRename={detail.rename}
+          />
           {/* Where the guidance is fetched from: beside the name of the
               thing it is about (INV-NOTES-270). Gone once the take has
               everything. */}

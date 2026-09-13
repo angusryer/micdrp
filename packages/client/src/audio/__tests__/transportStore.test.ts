@@ -325,3 +325,30 @@ describe('a load nobody is waiting on any more', () => {
     expect(engine.scheduled).toBe(0);
   });
 });
+
+describe('INV-TPORT-041: seeking into the count-in', () => {
+  it('keeps a moment before the recording rather than clamping it away', async () => {
+    // A take with a four-beat count at 120 has moments back to -2000ms.
+    // Clamping sent every rewind of a counted-in take to the recording's
+    // start instead of the count's.
+    const t = createTransport(fakeEngine());
+    await t.seek(-2000);
+    expect(t.snapshot().cueMs).toBe(-2000);
+  });
+
+  it('still takes a moment inside the take unchanged', async () => {
+    const t = createTransport(fakeEngine());
+    await t.seek(4500);
+    expect(t.snapshot().cueMs).toBe(4500);
+  });
+
+  it('starts a running take again from inside the count', async () => {
+    const engine = fakeEngine();
+    const t = createTransport(engine);
+    await t.play();
+    await t.seek(-2000);
+    // The head moves whether or not anything was sounding, and a take
+    // that was running starts again from there (INV-TPORT-007).
+    expect(engine.starts[engine.starts.length - 1]).toBe(-2000);
+  });
+});

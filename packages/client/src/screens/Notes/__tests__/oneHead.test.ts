@@ -46,9 +46,14 @@ describe('the cue everything reads', () => {
     expect(t.snapshot().cueMs).toBe(7000);
   });
 
-  it('never goes before the start of the take', async () => {
+  it('keeps a moment before the recording, because the take may have one', async () => {
+    // The store used to clamp at zero, which was right while zero was the
+    // earliest thing there was. A take with a count-in has moments before
+    // its first sample and the head belongs in them (INV-TPORT-041); the
+    // floor is the transport's above this, which knows where the count
+    // begins and this does not.
     const t = createTransport(engine());
     await t.seek(-500);
-    expect(t.snapshot().cueMs).toBe(0);
+    expect(t.snapshot().cueMs).toBe(-500);
   });
 });

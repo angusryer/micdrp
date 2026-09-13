@@ -36,6 +36,8 @@ import type {
 import type { NoteMeta } from '../../data/notesCache';
 import { NoteCard } from './NoteCard';
 import { rereadChange, rereadNote } from '../../analysis/rereadNote';
+import { isFavourite, toggleFavourite } from '../../data/favourites';
+import { orderedNotes } from 'logic';
 import { NoteMixPlayer } from './NoteMixPlayer';
 import { RecordButton, RECORD_BUTTON_CLEARANCE } from './RecordButton';
 import { useNotes } from './useNotes';
@@ -106,6 +108,18 @@ export function NotesScreen(): React.JSX.Element {
   // The takes a re-read would actually change: read by an older listener
   // or with thresholds since changed. Never the ones it would give back
   // exactly as they are (INV-NOTES-261, INV-NOTES-262).
+  // Kept to hand first, then newest (INV-NOTES-271). Re-read whenever the
+  // set changes, since favouriting is what reorders the list.
+  const [favouriteAt, setFavouriteAt] = useState(0);
+  const listed = useMemo(
+    // favouriteAt is the whole point and cannot be seen from the body:
+    // isFavourite reads the device, and this is the bump that says to read
+    // it again after a star is pressed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    () => orderedNotes(notes, isFavourite),
+    [notes, favouriteAt]
+  );
+
   const worthRereading = useMemo(
     () => notes.filter((n) => rereadChange(n) !== 'unchanged'),
     [notes]
@@ -131,18 +145,23 @@ export function NotesScreen(): React.JSX.Element {
         note={item}
         onOpen={openNote}
         onDelete={handleRemove}
+        isFavourite={isFavourite(item.id)}
+        onToggleFavourite={() => {
+          toggleFavourite(item.id);
+          setFavouriteAt((n) => n + 1);
+        }}
         isPlaying={playingId === item.id}
         onTogglePlay={togglePlay}
         positionMs={playingId === item.id ? playingAtMs : 0}
       />
     ),
-    [openNote, handleRemove, playingId, togglePlay, playingAtMs]
+    [openNote, handleRemove, playingId, togglePlay, playingAtMs, favouriteAt]
   );
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.neutral300 }]}>
       <FlatList
-        data={notes}
+        data={listed}
         keyExtractor={(n) => n.id}
         renderItem={renderItem}
         contentContainerStyle={styles.list}

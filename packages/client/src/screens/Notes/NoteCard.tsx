@@ -42,6 +42,9 @@ export interface NoteCardProps {
   onTogglePlay(id: string): void;
   /** How far the sound has got, when this is the note making it. */
   positionMs?: number;
+  /** True while this take is kept to hand (INV-NOTES-271). */
+  isFavourite?: boolean;
+  onToggleFavourite?: () => void;
 }
 
 export function NoteCard({
@@ -50,7 +53,9 @@ export function NoteCard({
   onDelete,
   isPlaying,
   onTogglePlay,
-  positionMs = 0
+  positionMs = 0,
+  isFavourite = false,
+  onToggleFavourite
 }: NoteCardProps) {
   const { colors, dimensions } = useTheme();
   const { t } = useTranslation();
@@ -126,6 +131,8 @@ export function NoteCard({
         onTogglePlay={handleTogglePlay}
         onOpen={handleOpen}
         onDelete={handleDelete}
+        isFavourite={isFavourite}
+        onToggleFavourite={onToggleFavourite}
       />
     </View>
   );

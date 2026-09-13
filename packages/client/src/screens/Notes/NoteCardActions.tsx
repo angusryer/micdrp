@@ -12,6 +12,7 @@
  * take's length, the fact a singer wants as they decide whether to play; while
  * the take runs it counts the position against that length (INV-NOTES-016).
  */
+import { Icon } from '../../components/Icon';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -29,6 +30,9 @@ export interface NoteCardActionsProps {
   onTogglePlay(): void;
   onOpen(): void;
   onDelete(): void;
+  /** True while this take is kept to hand (INV-NOTES-271). */
+  isFavourite?: boolean;
+  onToggleFavourite?(): void;
 }
 
 export function NoteCardActions({
@@ -37,7 +41,9 @@ export function NoteCardActions({
   timeLabel,
   onTogglePlay,
   onOpen,
-  onDelete
+  onDelete,
+  isFavourite = false,
+  onToggleFavourite
 }: NoteCardActionsProps) {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -54,6 +60,27 @@ export function NoteCardActions({
       </Text>
 
       <View style={styles.actions}>
+        {/* First, because keeping a take to hand is a thing said about the
+            take rather than a thing done to it (INV-NOTES-271). */}
+        {onToggleFavourite != null ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              isFavourite ? 'Stop keeping this take to hand' : 'Keep this take to hand'
+            }
+            accessibilityState={{ selected: isFavourite }}
+            testID="note-card-favourite"
+            hitSlop={8}
+            onPress={onToggleFavourite}
+            style={({ pressed }) => [styles.star, { opacity: pressed ? 0.5 : 1 }]}
+          >
+            <Icon
+              name={isFavourite ? 'star' : 'starOff'}
+              size={20}
+              color={isFavourite ? colors.gold : colors.gray300}
+            />
+          </Pressable>
+        ) : null}
         {canPlay ? (
           <Pressable
             accessibilityRole='button'
@@ -109,6 +136,7 @@ export function NoteCardActions({
 export default NoteCardActions;
 
 const styles = StyleSheet.create({
+  star: { paddingHorizontal: 6, paddingVertical: 4 },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',

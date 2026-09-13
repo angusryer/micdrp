@@ -122,3 +122,40 @@ invariants:
       by default and fetched from one fixed place — beside the name of
       the thing it is about, which is where a person looks to ask what
       this is.
+
+  - id: INV-NOTES-271
+    description: A favourite take stays at the top of the list
+    severity: major
+    check: >
+      A take can be kept to hand from the list, and every take kept to
+      hand is listed above every take that is not. Within each group the
+      order is unchanged — newest first. Verified by favouriting the
+      oldest of three takes and asserting it is listed first while the
+      other two keep their order.
+
+      Favouriting says which takes matter, never which order they matter
+      in, so it lifts a take out of the list rather than reordering what
+      is left. A list that then buried a favourite under this morning's
+      humming would be answering a different question from the one the
+      person asked.
+
+      Kept on the device: which takes matter to somebody today is a fact
+      about the person rather than about the recording, and keeping it
+      here means it works now rather than once a column exists to hold
+      it.
+
+  - id: INV-NOTES-272
+    description: A take is renamed in place, from the take itself
+    severity: major
+    check: >
+      Two taps on a take's name turn it into something to type in, and
+      leaving it keeps what was typed. An empty name is refused and the
+      old one stands, so a take is never left with nothing to call it.
+      Verified by renaming a take, leaving the field, and asserting the
+      new name is on the note and in the list.
+
+      From the take rather than from a menu somewhere: a name is the one
+      thing on this screen that is already text, and the gesture that
+      edits text in place is the one every other app has taught. Two taps
+      rather than one, because one tap on a title is how a person reads
+      it.

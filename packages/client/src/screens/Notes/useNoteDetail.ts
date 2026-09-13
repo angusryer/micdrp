@@ -57,7 +57,7 @@ import {
   chordPitches,
   HEADPHONE_FLOOR_MIDI
 } from '../../components/chordLayout';
-import { cachedNotes } from '../../data/notesSync';
+import { cacheTitle, cachedNotes } from '../../data/notesSync';
 import { rereadChange, rereadNote } from '../../analysis/rereadNote';
 import { beatLengthAt } from './beatLengthAt';
 import {
@@ -1126,6 +1126,24 @@ export function useNoteDetail(id: string) {
     /** The tempo in use, and how to set it by hand (INV-NOTES-123). */
     bpm: grid.bpm,
     isBpmByHand: interpretation.savedBpm != null,
+    /**
+     * What the singer calls this take (INV-NOTES-272).
+     *
+     * Written to the cache first, like everything else a person does to a
+     * take: what they called it is true the moment they said it, and
+     * reaching the backend is a detail that can be retried.
+     */
+    rename: useCallback(
+      (title: string) => {
+        if (note == null) {
+          return;
+        }
+        cacheTitle(note.id, title);
+        setReadingAt((was) => was + 1);
+        void notesRepo.saveTitle(note.id, title).catch(() => undefined);
+      },
+      [note]
+    ),
     /** Whether the previous reading can be put back (INV-NOTES-215). */
     canUndoReread,
     undoReread,

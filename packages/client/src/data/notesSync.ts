@@ -139,3 +139,19 @@ export function cacheReading(
   }
   setJSON(NOTES_INDEX_KEY, index);
 }
+
+/**
+ * Rename a take here, so the list and the take itself agree at once
+ * (INV-NOTES-272).
+ *
+ * Written to the cache before the server is asked, like everything else a
+ * person does to a take: what they called it is true the moment they said
+ * it, and reaching the backend is a detail that can be retried.
+ */
+export function cacheTitle(noteId: string, title: string): void {
+  const index: Record<string, NoteMeta> = {};
+  for (const meta of listNotes()) {
+    index[meta.id] = meta.id === noteId ? { ...meta, title } : meta;
+  }
+  setJSON(NOTES_INDEX_KEY, index);
+}

@@ -37,6 +37,7 @@ export * from './pickup';
 export * from './heldGrid';
 export * from './derive';
 export * from './workflowStep';
+export * from './noteOrder';
 export { beatsPerTap, spanOf } from './beatSpans';
 export {
   beatIntervals,
