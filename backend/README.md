@@ -25,6 +25,7 @@ Three collections, mirroring the domain specs:
 | `users` | Built-in auth record. Its `name` field is the singer's display name. | `account` |
 | `notes` | One sung musical-idea memo. `melody_json` is the symbolic source of truth; `audio` is an optional attached file. | `notes` |
 | `practice_progress` | One row per finished practice session. Numbers only, no audio. | `practice` |
+| `refresh_tokens` | Hashed rotating refresh tokens. No API rules: only `pb_hooks/` reaches it. | `account` |
 
 Two things the Supabase schema needed are structural here:
 
@@ -39,6 +40,18 @@ Two things the Supabase schema needed are structural here:
   and the `cascadeDelete` relation on `notes` and `practice_progress` removes
   their records — including attached audio files, which the Postgres foreign-key
   cascade could not reach.
+
+## Sessions
+
+Access tokens last an hour and cannot renew themselves. A sign-in also
+returns `meta.refreshToken`, which `pb_hooks/session.pb.js` exchanges for a
+new pair at `POST /api/micdrp/session/refresh`, retiring the old token.
+Presenting a retired token again ends its whole line, unless the token it was
+exchanged for was never used (the answer was lost in transit). Lines lapse
+after 90 days unused and all end on a password change. `adopt` gives a
+pre-rotation session its first token; `sign-out` ends a line.
+`yarn backend:verify-session` proves this against a running instance
+(`INV-ACCOUNT-016..023`).
 
 ## Access rules
 

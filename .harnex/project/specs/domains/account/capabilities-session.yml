@@ -1,0 +1,37 @@
+capabilities:
+  - name: account.renew_session
+    description: >
+      Exchange the refresh token for a new access token and a new refresh
+      token, retiring the old one. Runs on launch, on returning to the
+      foreground, and before any request whose token is about to expire.
+    actor: system
+    implemented_by: packages/client/src/auth/renewSession.ts
+    parameters:
+      required: [refreshToken]
+    preconditions:
+      - a refresh token is stored
+    postconditions:
+      - a new access token and refresh token are stored and the old one is retired
+      - a refusal clears the session
+      - an unreachable backend leaves the session in place
+      - concurrent callers share one renewal
+    permissions:
+      - role: system
+        notes: Possession of the refresh token is the credential.
+
+  - name: account.adopt_session
+    description: >
+      Give a session from before rotation its first refresh token, using
+      its still-valid access token, so nobody signs in again for the change.
+    actor: system
+    implemented_by: packages/client/src/auth/renewSession.ts
+    parameters:
+      required: []
+    preconditions:
+      - a valid access token exists and no refresh token is stored
+    postconditions:
+      - a refresh token is stored
+      - the backend refuses when the account already has a line
+    permissions:
+      - role: singer
+        notes: Authenticated by the access token, once per account.

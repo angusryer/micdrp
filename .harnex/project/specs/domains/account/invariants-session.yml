@@ -1,0 +1,100 @@
+invariants:
+  - id: INV-ACCOUNT-016
+    description: An access token is short-lived and cannot extend itself
+    severity: critical
+    check: >
+      The access token requests carry lasts one hour. The backend's
+      built-in token renewal is refused, so the only way to a new access
+      token is a sign-in or a refresh token. Verified against a running
+      backend by calling the built-in renewal with a valid token and
+      asserting it is refused.
+
+      Before this the access token lasted a week and renewed itself, and
+      only on a cold launch. A phone that kept the app resident for a week
+      found the token expired and asked for the password again — the
+      failure this exists to end — while a stolen token stayed good for as
+      long as someone kept renewing it.
+
+  - id: INV-ACCOUNT-017
+    description: A refresh token works exactly once
+    severity: critical
+    check: >
+      Presenting a refresh token returns a new access token and a new
+      refresh token, and retires the one presented. The backend stores a
+      hash of each refresh token, never the token, so reading the table
+      does not yield a usable credential. Verified by refreshing once,
+      asserting success, and asserting the table holds no plain token.
+
+  - id: INV-ACCOUNT-018
+    description: A retired refresh token presented again ends its whole line
+    severity: critical
+    check: >
+      Every refresh token descends from one sign-in, its line. Presenting a
+      retired token revokes every token in the line, because two holders of
+      one line means one of them stole it, and the server cannot tell which.
+
+      One case is not theft: the server rotated and the answer never
+      reached the phone — a dropped connection, the app suspended mid
+      request. That is recognisable because the replacement has never been
+      used. Then, and only then, the unused replacement is revoked and a
+      new one issued. A revoked token presented later ends the line as
+      before. Verified by refreshing twice with one token (the second
+      succeeds, having never used the first answer), then using the newest
+      token, then presenting the oldest again and asserting the newest is
+      refused.
+
+  - id: INV-ACCOUNT-019
+    description: A line lapses when unused, and a password change ends every line
+    severity: critical
+    check: >
+      A refresh token stops working 90 days after it was issued; each
+      rotation issues a fresh one, so a singer who opens the app at least
+      once in 90 days is never asked to sign in. Changing or resetting the
+      password retires every line the account has. Verified by expiring a
+      token and by changing a password, asserting a refusal each time.
+
+  - id: INV-ACCOUNT-020
+    description: Unreachable is not refused
+    severity: critical
+    check: >
+      Only a refusal from the backend ends a session. No network, a
+      suspended backend that times out, or a backend that does not yet know
+      the refresh route all leave the session and its refresh token in
+      place, to be tried again. A launch with an expired access token and a
+      stored refresh token opens signed in, because notes are local-first
+      and a singer with no signal should not meet a sign-in screen.
+      Verified by failing the refresh each way and asserting the session
+      survives every one except the refusal.
+
+  - id: INV-ACCOUNT-021
+    description: A request never leaves with a token about to expire
+    severity: major
+    check: >
+      A request whose access token is expired or within a minute of
+      expiring waits for a renewal and goes out with the new token. Returning
+      to the foreground renews a token within ten minutes of expiry.
+      Concurrent callers share one renewal: two renewals racing with one
+      refresh token would read to the backend as theft. Verified by firing
+      several requests at once against an expiring token and asserting one
+      refresh call.
+
+  - id: INV-ACCOUNT-022
+    description: Signing out ends the line on the server too
+    severity: major
+    check: >
+      Sign-out asks the backend to revoke the refresh token's line and
+      clears the local session whether or not that request arrives. A
+      failed revoke never keeps anyone signed in. Verified by signing out
+      and asserting the old refresh token is refused.
+
+  - id: INV-ACCOUNT-023
+    description: A session from before rotation is adopted without a sign-in
+    severity: major
+    check: >
+      A singer signed in before refresh tokens existed holds an access
+      token and no refresh token. While that token is still valid the app
+      exchanges it once for a line. The backend grants this only to an
+      account with no line at all, so a stolen access token cannot mint a
+      long-lived credential for a singer who has signed in since. Verified
+      by adopting once, asserting success, and asserting a second adoption
+      is refused.

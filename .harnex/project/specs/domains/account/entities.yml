@@ -1,8 +1,10 @@
 entities:
   - name: Session
     description: >
-      Proof that the singer is signed in. Held by the auth SDK and
-      persisted through the platform secret store, never in app files.
+      Proof that the singer is signed in: a one-hour access token the
+      backend client holds, and a rotating refresh token issued by the
+      backend's session hooks. Both persist through the platform secret
+      store, never in app files.
     properties:
       - name: userId
         type: string
@@ -16,8 +18,10 @@ entities:
         type: string
         required: true
         description: >
-          The long-lived token. Stored only in the platform secret store,
-          because it is the credential worth stealing.
+          The long-lived token, usable once (INV-ACCOUNT-017). Stored only
+          in the platform secret store, because it is the credential worth
+          stealing. Absent on a session from before rotation until it is
+          adopted (INV-ACCOUNT-023).
       - name: expiresAtMs
         type: number
         required: true

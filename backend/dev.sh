@@ -40,4 +40,5 @@ fi
 exec "$BIN" serve \
   --http="${PB_HTTP:-127.0.0.1:8090}" \
   --dir="$DATA" \
-  --migrationsDir="${HERE}/migrations" "$@"
+  --migrationsDir="${HERE}/migrations" \
+  --hooksDir="${HERE}/pb_hooks" "$@"

@@ -174,11 +174,13 @@ invariants:
     severity: critical
     check: >
       A session restored from storage is only a session while its token is
-      still valid. On launch the app refreshes a restored token; where the
-      refresh fails for any reason the session is cleared and the singer is
-      asked to sign in. A request refused for want of a session is reported as
-      that and never as a failure to reach the server. Verified by asserting
-      an expired token leaves no session, that a refresh which succeeds keeps
+      still valid or a stored refresh token can renew it. Where the backend
+      refuses the renewal the session is cleared and the singer is asked to
+      sign in; where the backend cannot be reached the session stands
+      (INV-ACCOUNT-020). A request refused for want of a session is reported
+      as that and never as a failure to reach the server. Verified by
+      asserting an expired token with no refresh token leaves no session,
+      that a refused renewal clears one, that a renewal which succeeds keeps
       one, and that an unauthorized read says so rather than blaming the
       network.
 

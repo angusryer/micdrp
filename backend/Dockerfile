@@ -17,6 +17,8 @@ RUN wget -q -O /tmp/pb.zip \
 
 # The schema. Applied on every boot; already-applied migrations are no-ops.
 COPY migrations /pb/migrations
+# Server-side session rules (refresh token rotation).
+COPY pb_hooks /pb/pb_hooks
 
 # /pb/data is a mounted volume — the SQLite database and uploaded audio live
 # there and must survive a redeploy.
@@ -24,4 +26,5 @@ EXPOSE 8080
 CMD ["pocketbase", "serve", \
      "--http=0.0.0.0:8080", \
      "--dir=/pb/data", \
-     "--migrationsDir=/pb/migrations"]
+     "--migrationsDir=/pb/migrations", \
+     "--hooksDir=/pb/pb_hooks"]

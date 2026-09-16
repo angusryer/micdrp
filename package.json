@@ -12,6 +12,7 @@
     "backend:deploy": "cd backend && fly deploy --app micdrp-backend --ha=false",
     "backend:logs": "fly logs --app micdrp-backend",
     "backend:verify": "node backend/verify-rules.mjs",
+    "backend:verify-session": "node backend/verify-session.mjs",
     "build": "./scripts/build.sh",
     "client": "./scripts/run.sh",
     "env": "npx dotenv-vault@latest pull",

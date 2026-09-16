@@ -42,7 +42,8 @@ capabilities:
     preconditions:
       - a session exists
     postconditions:
-      - the stored session is cleared
+      - the stored session and refresh token are cleared
+      - the backend is asked to revoke the refresh token's line, best effort
       - the app returns to the sign-in gate
       - no singer-owned row is deleted
     permissions:
@@ -60,6 +61,7 @@ capabilities:
     preconditions: []
     postconditions:
       - a valid stored session signs the singer straight in
+      - an expired access token with a stored refresh token signs the singer in and renews
       - a missing entry resolves to no session
       - a secret-store read that fails resolves to no session
       - no path throws, so a launch is never blocked by the secret store

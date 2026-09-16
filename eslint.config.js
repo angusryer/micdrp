@@ -31,6 +31,8 @@ module.exports = [
       // and written against globals (migrate, Collection, app) the linter
       // has no way to know about.
       'backend/migrations/**',
+      // Run inside PocketBase's own JS runtime, against its globals.
+      'backend/pb_hooks/**',
       '.harnex/**'
     ]
   },
