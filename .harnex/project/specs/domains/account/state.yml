@@ -11,9 +11,13 @@ phase_detail: >
   AuthContext and requireUserId. Verified: backend/verify-session.mjs 15/15
   on local PocketBase; 11 client tests in auth/__tests__/renewSession.test.tsx.
 next: >
-  Sign in with Apple (chosen: Apple only). Native sheet, identity token
-  verified by a hook against Apple JWKS, answered with the same token pair.
-  Needs the Sign in with Apple capability on the app id and a native build.
+  Sign in with Apple built (INV-ACCOUNT-024..027): pb_hooks/lib/apple.js +
+  rs256.js, migration 1787910000 (users.apple_sub), native
+  ios/AppleSignInModule.mm (TurboModule, AuthenticationServices linked,
+  micdrp.entitlements), screens/Login/AppleSignInButton. verify-apple.mjs
+  13/13 locally; preflight:build green. Not yet deployed: backend needs
+  'fly auth login' then yarn backend:deploy; the App ID needs the Sign in with
+  Apple capability before a release can sign.
 blockers: []
 known_conflicts:
   - >

@@ -48,3 +48,19 @@ routerAdd("POST", "/api/micdrp/session/sign-out", (e) => {
 cronAdd("refresh_tokens_prune", "17 4 * * *", () => {
   require(`${__hooks}/lib/session.js`).prune();
 });
+
+// Sign in with Apple (INV-ACCOUNT-024..026). Answered as an oauth2 sign-in so
+// the hook above starts a refresh token line for it.
+routerAdd("POST", "/api/micdrp/session/apple", (e) => {
+  const apple = require(`${__hooks}/lib/apple.js`);
+  const body = e.requestInfo().body;
+  const claims = apple.verifiedClaims(String(body.identityToken || ""), body.nonce);
+  if (!claims) {
+    throw new UnauthorizedError("Apple did not vouch for this sign-in.");
+  }
+  const user = apple.accountFor(claims, String(body.name || "").trim());
+  if (!user) {
+    throw new BadRequestError("Apple did not share a verified email for a new account.");
+  }
+  return $apis.recordAuthResponse(e, user, "oauth2", {});
+});

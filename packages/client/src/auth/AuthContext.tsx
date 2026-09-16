@@ -24,6 +24,10 @@ import React, {
 import { AppErrorCode, appError, type SessionMetaDto } from 'shared';
 
 import { backend, COLLECTIONS, type UserRecord } from '../lib/backend';
+import {
+  type AppleOutcome,
+  signInWithApple as appleSignIn
+} from './appleSignIn';
 import { loadRefreshToken, storeRefreshToken } from './refreshToken';
 import { endLine } from './renewSession';
 import { hasSession } from './sessionState';
@@ -44,6 +48,8 @@ export interface AuthContextValue {
   loading: boolean;
   signIn(email: string, password: string): Promise<void>;
   signUp(email: string, password: string): Promise<void>;
+  /** Show the Apple sheet and sign in; resolves `cancelled` when dismissed. */
+  signInWithApple(): Promise<AppleOutcome>;
   signOut(): Promise<void>;
   /** Email the user a password-reset link. */
   resetPassword(email: string): Promise<void>;
@@ -142,6 +148,14 @@ export function AuthProvider({
     []
   );
 
+  const signInWithApple = useCallback(async (): Promise<AppleOutcome> => {
+    try {
+      return await appleSignIn();
+    } catch (error) {
+      throw toAppError(error, 'Sign in with Apple failed.');
+    }
+  }, []);
+
   const signOut = useCallback(async (): Promise<void> => {
     // The line ends on the backend best effort (INV-ACCOUNT-022). Clearing the
     // store is synchronous and cannot fail; it also wipes the Keychain entry
@@ -166,10 +180,11 @@ export function AuthProvider({
       loading,
       signIn,
       signUp,
+      signInWithApple,
       signOut,
       resetPassword
     }),
-    [session, loading, signIn, signUp, signOut, resetPassword]
+    [session, loading, signIn, signUp, signInWithApple, signOut, resetPassword]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -35,3 +35,24 @@ capabilities:
     permissions:
       - role: singer
         notes: Authenticated by the access token, once per account.
+
+  - name: account.sign_in_with_apple
+    description: >
+      Sign in with the native Apple sheet. The backend verifies Apple's
+      identity token and answers with the same token pair a password
+      sign-in returns, creating or linking the account as needed.
+    actor: visitor
+    implemented_by: packages/client/src/auth/appleSignIn.ts
+    parameters:
+      required: [identityToken, nonce]
+      optional: [fullName]
+    preconditions:
+      - the binary carries the Apple authentication module
+    postconditions:
+      - a session is established with a refresh token
+      - an Apple ID maps to exactly one account
+      - an account with the same verified email is linked, not duplicated
+      - cancelling leaves no session and reports no error
+    permissions:
+      - role: visitor
+        notes: Offered beside email and password.

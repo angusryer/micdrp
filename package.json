@@ -13,6 +13,7 @@
     "backend:logs": "fly logs --app micdrp-backend",
     "backend:verify": "node backend/verify-rules.mjs",
     "backend:verify-session": "node backend/verify-session.mjs",
+    "backend:verify-apple": "node backend/verify-apple.mjs",
     "build": "./scripts/build.sh",
     "client": "./scripts/run.sh",
     "env": "npx dotenv-vault@latest pull",

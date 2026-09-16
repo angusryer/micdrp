@@ -37,6 +37,8 @@ if [ "${1:-}" = "--superuser" ]; then
   shift
 fi
 
+export APPLE_AUDIENCE="${APPLE_AUDIENCE:-io.greenlyre.micdrp}"
+
 exec "$BIN" serve \
   --http="${PB_HTTP:-127.0.0.1:8090}" \
   --dir="$DATA" \

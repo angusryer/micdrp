@@ -1,5 +1,5 @@
 /**
- * LoginScreen — real email/password auth over `useAuth` (Supabase).
+ * LoginScreen — Sign in with Apple, and email/password, over `useAuth`.
  *
  * One screen, two modes (sign in / sign up) toggled in place. Submits through
  * the auth context; on success the navigator swaps to the main stack reactively
@@ -23,6 +23,7 @@ import {
 import { useAuth } from '../../auth';
 import { useTheme } from '../../theme';
 import { errorMessage } from '../../utilities/errorMessage';
+import AppleSignInButton from './AppleSignInButton';
 
 type Mode = 'signIn' | 'signUp';
 
@@ -105,8 +106,7 @@ export default function LoginScreen(): React.JSX.Element {
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.neutral300 }]}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.container}>
           <Text style={[styles.title, { color: colors.typography }]}>
             micdrp
@@ -115,39 +115,40 @@ export default function LoginScreen(): React.JSX.Element {
             {isSignUp ? 'Create your account' : 'Sign in to continue'}
           </Text>
 
+          <AppleSignInButton isDisabled={submitting} onError={setError} />
+
           <TextInput
             style={inputStyle}
             value={email}
             onChangeText={setEmail}
-            placeholder="Email"
+            placeholder='Email'
             placeholderTextColor={colors.gray300}
-            autoCapitalize="none"
+            autoCapitalize='none'
             autoCorrect={false}
-            keyboardType="email-address"
-            textContentType="emailAddress"
+            keyboardType='email-address'
+            textContentType='emailAddress'
             editable={!submitting}
-            accessibilityLabel="Email"
+            accessibilityLabel='Email'
           />
 
           <TextInput
             style={inputStyle}
             value={password}
             onChangeText={setPassword}
-            placeholder="Password"
+            placeholder='Password'
             placeholderTextColor={colors.gray300}
-            autoCapitalize="none"
+            autoCapitalize='none'
             autoCorrect={false}
             secureTextEntry
-            textContentType="password"
+            textContentType='password'
             editable={!submitting}
-            accessibilityLabel="Password"
+            accessibilityLabel='Password'
           />
 
           {error ? (
             <Text
               style={[styles.error, { color: colors.error }]}
-              accessibilityLiveRegion="polite"
-            >
+              accessibilityLiveRegion='polite'>
               {error}
             </Text>
           ) : null}
@@ -155,8 +156,7 @@ export default function LoginScreen(): React.JSX.Element {
           {notice ? (
             <Text
               style={[styles.notice, { color: colors.primary500 }]}
-              accessibilityLiveRegion="polite"
-            >
+              accessibilityLiveRegion='polite'>
               {notice}
             </Text>
           ) : null}
@@ -171,10 +171,9 @@ export default function LoginScreen(): React.JSX.Element {
             ]}
             onPress={onSubmit}
             disabled={!canSubmit}
-            accessibilityRole="button"
+            accessibilityRole='button'
             accessibilityLabel={isSignUp ? 'Sign up' : 'Sign in'}
-            accessibilityState={{ disabled: !canSubmit, busy: submitting }}
-          >
+            accessibilityState={{ disabled: !canSubmit, busy: submitting }}>
             {submitting ? (
               <ActivityIndicator color={colors.white} />
             ) : (
@@ -188,13 +187,10 @@ export default function LoginScreen(): React.JSX.Element {
             style={styles.toggle}
             onPress={toggleMode}
             disabled={submitting}
-            accessibilityRole="button"
+            accessibilityRole='button'
             accessibilityLabel={
-              isSignUp
-                ? 'Switch to sign in'
-                : 'Switch to create an account'
-            }
-          >
+              isSignUp ? 'Switch to sign in' : 'Switch to create an account'
+            }>
             <Text style={[styles.toggleText, { color: colors.primary500 }]}>
               {isSignUp
                 ? 'Already have an account? Sign in'
@@ -207,9 +203,8 @@ export default function LoginScreen(): React.JSX.Element {
               style={styles.forgot}
               onPress={() => void onForgotPassword()}
               disabled={submitting}
-              accessibilityRole="button"
-              accessibilityLabel="Reset your password"
-            >
+              accessibilityRole='button'
+              accessibilityLabel='Reset your password'>
               <Text style={[styles.forgotText, { color: colors.gray300 }]}>
                 Forgot password?
               </Text>

@@ -9,7 +9,8 @@
 export const SESSION_ROUTES = {
   refresh: '/api/micdrp/session/refresh',
   adopt: '/api/micdrp/session/adopt',
-  signOut: '/api/micdrp/session/sign-out'
+  signOut: '/api/micdrp/session/sign-out',
+  apple: '/api/micdrp/session/apple'
 } as const;
 
 /** What a sign-in or a refresh carries beside the access token. */

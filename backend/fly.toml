@@ -13,6 +13,8 @@ primary_region = "yyz"
 
 [env]
   PB_ENCRYPTION_KEY_FILE = ""
+  # Sign in with Apple identity tokens must be issued to this bundle id.
+  APPLE_AUDIENCE = "io.greenlyre.micdrp"
 
 [[mounts]]
   source = "micdrp_pb_data"

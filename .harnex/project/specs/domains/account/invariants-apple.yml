@@ -1,0 +1,49 @@
+invariants:
+  - id: INV-ACCOUNT-024
+    description: An Apple sign-in is believed only when Apple's signature says so
+    severity: critical
+    check: >
+      The backend accepts an Apple identity token only when its RS256
+      signature verifies against Apple's published keys, its issuer is
+      Apple, its audience is this app's bundle id, it has not expired, and
+      its nonce is the SHA-256 of the nonce the app sent beside it. The
+      comparison of the decoded signature is against the whole expected
+      encoding, never a parse of it. Verified against a running backend with
+      a key server standing in for Apple: a good token signs in, and a wrong
+      key, audience, issuer, nonce, and an expired token are each refused.
+
+      Nothing else is trusted. The app's claim of who someone is, and any
+      email or name it sends, count for nothing until the token vouches for
+      the account.
+
+  - id: INV-ACCOUNT-025
+    description: One Apple ID is one account, and an existing account is kept
+    severity: critical
+    check: >
+      An Apple sign-in finds the account already linked to that Apple ID.
+      Failing that, when Apple vouches for the email and an account with that
+      email exists, the Apple ID is linked to it, so a singer who signed up
+      with a password keeps their notes. Failing both, an account is created,
+      verified, with no password anyone knows. Verified by signing in twice
+      with one Apple ID and asserting one account, and by signing in with an
+      Apple ID whose email matches a password account and asserting that
+      account is the one returned.
+
+  - id: INV-ACCOUNT-026
+    description: An Apple sign-in is a sign-in like any other
+    severity: major
+    check: >
+      It returns an access token and a refresh token, and everything
+      INV-ACCOUNT-016..023 says about them holds. Verified by refreshing the
+      token an Apple sign-in returned.
+
+  - id: INV-ACCOUNT-027
+    description: The Apple button appears only where it can work
+    severity: major
+    check: >
+      The sign-in screen offers Sign in with Apple only on a binary that
+      carries the native module. A bundle delivered over the air to an older
+      binary shows the email form alone rather than a button that crashes.
+      Cancelling the Apple sheet is not an error and shows none. Verified by
+      rendering the screen with the module absent and present, and by
+      cancelling.

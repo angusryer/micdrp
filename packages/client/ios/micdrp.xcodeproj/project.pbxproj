@@ -34,6 +34,8 @@
 		A1B2C3D400000000000000B0 /* SampleDecode.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D400000000000000B1 /* SampleDecode.mm */; };
 		A1B2C3D400000000000000C0 /* ScreenWakeModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D400000000000000C1 /* ScreenWakeModule.mm */; };
 		AA11BB22CC33DD44EE55FF66 /* InstallInfoModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF77 /* InstallInfoModule.mm */; };
+		AB11BB22CC33DD44EE55FF66 /* AppleSignInModule.mm in Sources */ = {isa = PBXBuildFile; fileRef = AB11BB22CC33DD44EE55FF77 /* AppleSignInModule.mm */; };
+		AB11BB22CC33DD44EE55FFAA /* AuthenticationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB11BB22CC33DD44EE55FFBB /* AuthenticationServices.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -92,6 +94,10 @@
 		A1B2C3D400000000000000C2 /* ScreenWakeModule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = ScreenWakeModule.h; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF77 /* InstallInfoModule.mm */ = {isa = PBXFileReference; includeInIndex = 1; path = InstallInfoModule.mm; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF88 /* InstallInfoModule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = InstallInfoModule.h; sourceTree = "<group>"; };
+		AB11BB22CC33DD44EE55FF77 /* AppleSignInModule.mm */ = {isa = PBXFileReference; includeInIndex = 1; path = AppleSignInModule.mm; sourceTree = "<group>"; };
+		AB11BB22CC33DD44EE55FF88 /* AppleSignInModule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = AppleSignInModule.h; sourceTree = "<group>"; };
+		AB11BB22CC33DD44EE55FF99 /* micdrp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = micdrp.entitlements; path = micdrp/micdrp.entitlements; sourceTree = "<group>"; };
+		AB11BB22CC33DD44EE55FFBB /* AuthenticationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AuthenticationServices.framework; path = System/Library/Frameworks/AuthenticationServices.framework; sourceTree = SDKROOT; };
 		ACE2C527E1C9B83EBBBB7DA4 /* ring_buffer.cpp */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.cpp; name = ring_buffer.cpp; path = ../cpp/dsp/ring_buffer.cpp; sourceTree = "<group>"; };
 		B06DFC5A1521D1B52F8C216B /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = micdrp/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C68CB312D3A22CF16FFF453D /* AudioEngineModule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = AudioEngineModule.h; sourceTree = "<group>"; };
@@ -114,6 +120,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0C80B921A6F3F58F76C31292 /* libPods-micdrp.a in Frameworks */,
+				AB11BB22CC33DD44EE55FFAA /* AuthenticationServices.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -148,6 +155,7 @@
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB71A68108700A75B9A /* main.m */,
 				B06DFC5A1521D1B52F8C216B /* PrivacyInfo.xcprivacy */,
+				AB11BB22CC33DD44EE55FF99 /* micdrp.entitlements */,
 			);
 			name = micdrp;
 			sourceTree = "<group>";
@@ -159,6 +167,8 @@
 				8AA58FD71262417B94E79C03 /* AudioEngineModule.mm */,
 				AA11BB22CC33DD44EE55FF88 /* InstallInfoModule.h */,
 				AA11BB22CC33DD44EE55FF77 /* InstallInfoModule.mm */,
+				AB11BB22CC33DD44EE55FF88 /* AppleSignInModule.h */,
+				AB11BB22CC33DD44EE55FF77 /* AppleSignInModule.mm */,
 				DF912EB0FAD01209D28881AA /* mpm.cpp */,
 				ACE2C527E1C9B83EBBBB7DA4 /* ring_buffer.cpp */,
 				879036582854690EBECA5046 /* pitch_engine.cpp */,
@@ -195,6 +205,7 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
+				AB11BB22CC33DD44EE55FFBB /* AuthenticationServices.framework */,
 				5DCACB8F33CDC322A6C60F78 /* libPods-micdrp.a */,
 				19F6CBCC0A4E27FBF8BF4A61 /* libPods-micdrp-micdrpTests.a */,
 			);
@@ -516,6 +527,7 @@
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 				64FE505DA0AB8147C0E9A420 /* AudioEngineModule.mm in Sources */,
 				AA11BB22CC33DD44EE55FF66 /* InstallInfoModule.mm in Sources */,
+				AB11BB22CC33DD44EE55FF66 /* AppleSignInModule.mm in Sources */,
 				1933D748D5F3E4026E5387AA /* mpm.cpp in Sources */,
 				27B44E0411942958E76CBDED /* ring_buffer.cpp in Sources */,
 				8EA8AA89BF7B9D7F006716EB /* pitch_engine.cpp in Sources */,
@@ -617,6 +629,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = micdrp/micdrp.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -653,6 +666,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = micdrp/micdrp.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				CODE_SIGN_STYLE = Manual;

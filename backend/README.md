@@ -53,6 +53,15 @@ pre-rotation session its first token; `sign-out` ends a line.
 `yarn backend:verify-session` proves this against a running instance
 (`INV-ACCOUNT-016..023`).
 
+Sign in with Apple posts Apple's identity token to `/api/micdrp/session/apple`.
+`pb_hooks/lib/rs256.js` verifies its signature against Apple's published keys
+(PocketBase's JS runtime verifies only HMAC tokens), and the account is found
+by `users.apple_sub`, linked by verified email, or created. `APPLE_AUDIENCE`
+(the bundle id, set in `fly.toml`) must be present or every Apple sign-in is
+refused. `yarn backend:verify-apple` proves `INV-ACCOUNT-024..026` with a local
+key server standing in for Apple; start the backend with
+`APPLE_KEYS_URL=http://127.0.0.1:8199/keys` for it.
+
 ## Access rules
 
 Every rule on `notes` and `practice_progress` is `user = @request.auth.id`

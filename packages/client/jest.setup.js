@@ -328,6 +328,13 @@ jest.mock('./src/specs/NativeInstallInfo', () => ({
   default: { getReceiptName: jest.fn(() => '') }
 }));
 
+// No binary in a test carries the Apple module unless the test says so
+// (INV-ACCOUNT-027); tests that need it mock this with a native stand-in.
+jest.mock('./src/specs/NativeAppleSignIn', () => ({
+  __esModule: true,
+  default: null
+}));
+
 jest.mock('react-native-url-polyfill/auto', () => ({}), { virtual: true });
 
 // pocketbase ships ESM from every entry point its CJS build exports only the
