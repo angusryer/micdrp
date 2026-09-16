@@ -1,14 +1,14 @@
 /**
  * AuthContext — the app's single source of truth for the authenticated session.
  *
- * Thin, deep integration over `supabase.auth`:
- *   - On mount we subscribe to `onAuthStateChange`; that subscription fires
- *     immediately with the restored session (from the hardware-backed Keychain
- *     adapter configured in `lib/supabase`), which clears `loading`.
- *   - `signIn` / `signUp` / `signOut` delegate straight to the SDK. We do not
- *     hand-roll tokens, refresh, or persistence — the SDK + Keychain adapter own
- *     that. Errors surface as `AppError` (the shared contract) so screens render
- *     a stable shape.
+ * Thin integration over the backend client's auth store:
+ *   - On mount we subscribe to the store's changes; the first one carries the
+ *     restored session (from the Keychain-backed store in `lib/backend`), and
+ *     once the refresh token has been read too, `loading` clears.
+ *   - `signIn` / `signUp` delegate to the SDK and keep the refresh token the
+ *     backend returns. Renewal lives in `renewSession` and runs from
+ *     `useSessionRenewal` (INV-ACCOUNT-016..023). Errors surface as `AppError`
+ *     (the shared contract) so screens render a stable shape.
  *
  * There is no mock user and no local auth store; this is the only auth context
  * in the app.
@@ -21,9 +21,13 @@ import React, {
   useMemo,
   useState
 } from 'react';
-import { AppErrorCode, appError } from 'shared';
+import { AppErrorCode, appError, type SessionMetaDto } from 'shared';
 
 import { backend, COLLECTIONS, type UserRecord } from '../lib/backend';
+import { loadRefreshToken, storeRefreshToken } from './refreshToken';
+import { endLine } from './renewSession';
+import { hasSession } from './sessionState';
+import { useSessionRenewal } from './useSessionRenewal';
 
 /** What the app needs from a session: who is signed in, and are they valid. */
 export interface Session {
@@ -32,7 +36,7 @@ export interface Session {
 }
 
 export interface AuthContextValue {
-  /** The current Supabase session, or `null` when signed out. */
+  /** The current session, or `null` when signed out. */
   session: Session | null;
   /** Convenience accessor for `session.user`, or `null` when signed out. */
   user: UserRecord | null;
@@ -51,7 +55,10 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
  * Map a thrown backend error onto the shared `AppError` contract so callers
  * always catch the same shape. appError already returns a real Error.
  */
-function toAppError(error: unknown, fallback: string): Error & {
+function toAppError(
+  error: unknown,
+  fallback: string
+): Error & {
   code: AppErrorCode;
 } {
   const message =
@@ -59,19 +66,21 @@ function toAppError(error: unknown, fallback: string): Error & {
   return appError(AppErrorCode.Auth, message, error);
 }
 
-/**
- * Read the current session off the auth store, or null when signed out.
- *
- * `isValid` as well as present. "A token and a record exist" is a different
- * question from "is this token still good", and asking only the first left
- * the app looking signed in while every request was refused — reported as a
- * failure to reach a server that was up and answering (INV-NOTES-140).
- */
+/** Read the current session off the auth store, or null when signed out. */
 function currentSession(): Session | null {
-  const { token, record, isValid } = backend.authStore;
-  return isValid && token && record
+  const { token, record } = backend.authStore;
+  return hasSession() && record
     ? { token, user: record as unknown as UserRecord }
     : null;
+}
+
+/** Sign in with a password and keep the refresh token that comes back. */
+async function passwordSignIn(email: string, password: string): Promise<void> {
+  const auth = await backend
+    .collection(COLLECTIONS.users)
+    .authWithPassword(email, password);
+  const meta = (auth as { meta?: SessionMetaDto }).meta;
+  await storeRefreshToken(meta?.refreshToken ?? null);
 }
 
 export function AuthProvider({
@@ -83,49 +92,31 @@ export function AuthProvider({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // onChange fires immediately with the restored session (or nothing), which
-    // is what flips `loading` off — no separate "read the session" race.
-    const unsubscribe = backend.authStore.onChange(() => {
-      setSession(currentSession());
-      setLoading(false);
-    }, true);
-
-    return unsubscribe;
-  }, []);
-
-  /**
-   * Renew a restored token, or give it up.
-   *
-   * Refreshed rather than merely checked: a token that is still good should
-   * not cost anybody a sign-in, and one near its end is best renewed while
-   * there is still a working token to renew with. A refusal clears the
-   * session, so what the app shows and what the server will accept are the
-   * same thing (INV-NOTES-140).
-   */
-  useEffect(() => {
-    if (!backend.authStore.token) {
-      return;
-    }
+    // onChange fires immediately with the restored session (or nothing). The
+    // refresh token is read before deciding, because an expired access token
+    // with one is still a session (INV-ACCOUNT-020).
     let live = true;
-    void backend
-      .collection(COLLECTIONS.users)
-      .authRefresh()
-      .catch(() => {
+    const unsubscribe = backend.authStore.onChange(() => {
+      void loadRefreshToken().then(() => {
         if (live) {
-          backend.authStore.clear();
+          setSession(currentSession());
+          setLoading(false);
         }
       });
+    }, true);
+
     return () => {
       live = false;
+      unsubscribe();
     };
   }, []);
+
+  useSessionRenewal(!loading);
 
   const signIn = useCallback(
     async (email: string, password: string): Promise<void> => {
       try {
-        await backend
-          .collection(COLLECTIONS.users)
-          .authWithPassword(email, password);
+        await passwordSignIn(email, password);
       } catch (error) {
         throw toAppError(error, 'Sign in failed.');
       }
@@ -143,9 +134,7 @@ export function AuthProvider({
         });
         // Creating an account does not sign it in; the app expects to land
         // signed in, as it did before.
-        await backend
-          .collection(COLLECTIONS.users)
-          .authWithPassword(email, password);
+        await passwordSignIn(email, password);
       } catch (error) {
         throw toAppError(error, 'Sign up failed.');
       }
@@ -154,8 +143,10 @@ export function AuthProvider({
   );
 
   const signOut = useCallback(async (): Promise<void> => {
-    // Clearing the store is synchronous and cannot fail; it also wipes the
-    // Keychain entry through the async store's clear hook.
+    // The line ends on the backend best effort (INV-ACCOUNT-022). Clearing the
+    // store is synchronous and cannot fail; it also wipes the Keychain entry
+    // through the async store's clear hook.
+    endLine();
     backend.authStore.clear();
     return Promise.resolve();
   }, []);

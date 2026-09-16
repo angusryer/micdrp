@@ -7,6 +7,8 @@
  * proves the real instance behaves this way; this mirrors it for unit tests.
  */
 
+import { expiresWithin } from '../auth/tokenExpiry';
+
 export interface FakeRecord {
   id: string;
   created: string;
@@ -26,7 +28,11 @@ const nowIso = (): string => new Date(1750000000000 + seq).toISOString();
 const nextId = (): string => `rec${(seq += 1)}`;
 
 /** A record is reachable only by its owner. `users` records own themselves. */
-function ownedBy(collection: string, record: FakeRecord, userId: string): boolean {
+function ownedBy(
+  collection: string,
+  record: FakeRecord,
+  userId: string
+): boolean {
   return collection === 'users' ? record.id === userId : record.user === userId;
 }
 
@@ -35,7 +41,9 @@ function visible(collection: string): FakeRecord[] {
     return [];
   }
   const userId = authed.id;
-  return (store[collection] ?? []).filter((r) => ownedBy(collection, r, userId));
+  return (store[collection] ?? []).filter((r) =>
+    ownedBy(collection, r, userId)
+  );
 }
 
 /**
@@ -81,20 +89,22 @@ class FakeCollection {
       payload instanceof FormData
         ? coerceForm(
             Object.fromEntries(
-              (payload as unknown as {
-                entries(): Iterable<[string, unknown]>;
-              }).entries()
+              (
+                payload as unknown as {
+                  entries(): Iterable<[string, unknown]>;
+                }
+              ).entries()
             )
           )
         : payload;
     const record: FakeRecord = {
-      ...(data),
+      ...data,
       id: nextId(),
       created: nowIso(),
       updated: nowIso()
     };
     if (this.name === 'users') {
-      record.name = (record.name) ?? '';
+      record.name = record.name ?? '';
     }
     // An uploaded file is stored and the record keeps its filename.
     const audio = record.audio as { name?: string } | string | undefined;
@@ -118,8 +128,8 @@ class FakeCollection {
     if (opts?.sort) {
       const desc = opts.sort.startsWith('-');
       const key = desc ? opts.sort.slice(1) : opts.sort;
-      rows.sort((a, b) =>
-        String(a[key]).localeCompare(String(b[key])) * (desc ? -1 : 1)
+      rows.sort(
+        (a, b) => String(a[key]).localeCompare(String(b[key])) * (desc ? -1 : 1)
       );
     }
     return Promise.resolve(rows as T[]);
@@ -149,40 +159,30 @@ class FakeCollection {
     return Promise.resolve(true);
   }
 
-  /**
-   * Renew the session the app restored (INV-NOTES-140).
-   *
-   * Succeeds while somebody is authed and refuses otherwise, which is what
-   * the real one does: a token the server will not accept cannot be renewed
-   * into one it will.
-   */
-  authRefresh<T>(): Promise<T> {
-    if (nextAuthError) {
-      const err = nextAuthError;
-      nextAuthError = null;
-      return Promise.reject(err);
-    }
-    return authed == null
-      ? Promise.reject(new Error('not authenticated'))
-      : Promise.resolve(authed as unknown as T);
-  }
-
   authWithPassword<T>(email: string, _password: string): Promise<T> {
     if (nextAuthError) {
       const err = nextAuthError;
       nextAuthError = null;
       return Promise.reject(err);
     }
-    const user =
-      (store.users ?? []).find((r) => r.email === email) ??
-      ({ id: nextId(), email, name: '', created: nowIso(), updated: nowIso() });
+    const user = (store.users ?? []).find((r) => r.email === email) ?? {
+      id: nextId(),
+      email,
+      name: '',
+      created: nowIso(),
+      updated: nowIso()
+    };
     if (!(store.users ?? []).includes(user)) {
       (store.users ??= []).push(user);
     }
     const session = { id: user.id, token: `token-${user.id}` };
     authed = session;
     listeners.forEach((fn) => fn());
-    return Promise.resolve({ token: session.token, record: user } as T);
+    return Promise.resolve({
+      token: session.token,
+      record: user,
+      meta: { refreshToken: `refresh-${user.id}` }
+    } as T);
   }
 
   requestPasswordReset(_email: string): Promise<boolean> {
@@ -196,11 +196,49 @@ const listeners = new Set<Listener>();
 /** Set by failNextAuth() so a test can exercise the failure path. */
 let nextAuthError: Error | null = null;
 
+type SendOptions = {
+  method?: string;
+  body?: unknown;
+  headers?: Record<string, string>;
+};
+type SendHandler = (url: string, options: SendOptions) => Promise<unknown>;
+type BeforeSend = (
+  url: string,
+  options: SendOptions
+) => Promise<{ url: string; options: SendOptions }>;
+
+/** Custom routes answer 404 until a test says otherwise, as an older backend would. */
+const routeMissing: SendHandler = () =>
+  Promise.reject(Object.assign(new Error('Not found.'), { status: 404 }));
+let sendHandler: SendHandler = routeMissing;
+
+/** Every custom-route request, as it left after beforeSend. */
+export const fakeSent: { url: string; options: SendOptions }[] = [];
+
 export const fakeBackend = {
   collection: (name: string) => new FakeCollection(name),
+  beforeSend: undefined as BeforeSend | undefined,
+  async send<T>(path: string, options: SendOptions = {}): Promise<T> {
+    const headers: Record<string, string> = authed
+      ? { Authorization: authed.token }
+      : {};
+    let request: { url: string; options: SendOptions } = {
+      url: path,
+      options: { ...options, headers }
+    };
+    if (fakeBackend.beforeSend) {
+      request = await fakeBackend.beforeSend(request.url, request.options);
+    }
+    fakeSent.push(request);
+    return sendHandler(request.url, request.options) as Promise<T>;
+  },
   files: {
     getToken: () => Promise.resolve('file-token'),
-    getURL: (record: { id: string }, filename: string, q?: { token?: string }) =>
+    getURL: (
+      record: { id: string },
+      filename: string,
+      q?: { token?: string }
+    ) =>
       `http://fake/api/files/notes/${record.id}/${filename}?token=${q?.token ?? ''}`
   },
   authStore: {
@@ -215,7 +253,14 @@ export const fakeBackend = {
       return (store.users ?? []).find((r) => r.id === id) ?? null;
     },
     get isValid(): boolean {
-      return authed != null;
+      return authed != null && !expiresWithin(authed.token, 0);
+    },
+    save(token: string, record: FakeRecord): void {
+      if (!(store.users ?? []).some((r) => r.id === record.id)) {
+        (store.users ??= []).push(record);
+      }
+      authed = { id: record.id, token };
+      listeners.forEach((fn) => fn());
     },
     clear(): void {
       authed = null;
@@ -237,17 +282,27 @@ export function failNextAuth(message: string): void {
   nextAuthError = new Error(message);
 }
 
+/** Answer custom routes (the session hooks) with `handler`. */
+export function onFakeSend(handler: SendHandler): void {
+  sendHandler = handler;
+}
+
 /** Reset every collection and sign out. Call from beforeEach. */
 export function resetFakeBackend(): void {
   store = {};
   authed = null;
+  sendHandler = routeMissing;
+  fakeSent.length = 0;
+  fakeBackend.beforeSend = undefined;
   seq = 0;
   nextAuthError = null;
   listeners.clear();
 }
 
 /** Sign a singer in, creating them if needed. Returns their id. */
-export async function signInFake(email = 'singer@micdrp.test'): Promise<string> {
+export async function signInFake(
+  email = 'singer@micdrp.test'
+): Promise<string> {
   const auth = await fakeBackend
     .collection('users')
     .authWithPassword<{ record: FakeRecord }>(email, 'password');

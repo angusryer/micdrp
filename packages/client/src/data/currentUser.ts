@@ -7,12 +7,13 @@
  */
 import { AppErrorCode, appError } from 'shared';
 
+import { hasSession } from '../auth/sessionState';
 import { backend } from '../lib/backend';
 
 /** The current authenticated user's id, or throw an Unauthorized AppError. */
 export async function requireUserId(): Promise<string> {
-  const { isValid, record } = backend.authStore;
-  if (!isValid || !record) {
+  const { record } = backend.authStore;
+  if (!hasSession() || !record) {
     throw appError(AppErrorCode.Unauthorized, 'No authenticated user');
   }
   return Promise.resolve(record.id);

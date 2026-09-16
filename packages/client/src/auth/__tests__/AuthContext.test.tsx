@@ -29,17 +29,19 @@ jest.mock('../../lib/backend', () => {
 
 import {
   fakeBackend,
-  failNextAuth,
   resetFakeBackend,
   signInFake
 } from '../../testing/fakeBackend';
+
+import { resetFakeSession } from '../../testing/fakeSession';
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <AuthProvider>{children}</AuthProvider>
 );
 
-beforeEach(() => {
+beforeEach(async () => {
   resetFakeBackend();
+  await resetFakeSession();
 });
 
 describe('AuthProvider / useAuth', () => {
@@ -115,45 +117,22 @@ describe('AuthProvider / useAuth', () => {
     const { result } = await renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    jest
-      .spyOn(fakeBackend, 'collection')
-      .mockImplementationOnce(
-        () =>
-          ({
-            authWithPassword: () => Promise.reject(new Error('bad credentials'))
-          }) as never
-      );
+    jest.spyOn(fakeBackend, 'collection').mockImplementationOnce(
+      () =>
+        ({
+          authWithPassword: () => Promise.reject(new Error('bad credentials'))
+        }) as never
+    );
 
     await expect(
       result.current.signIn('ada@micdrp.test', 'wrong')
     ).rejects.toMatchObject({ code: AppErrorCode.Auth });
   });
 
-  it('gives up a restored session the server will not renew', async () => {
-    // The session was read back as "a token and a record exist", which is a
-    // different question from "is this token still good". An expired one left
-    // the app looking signed in while every request was refused, and the
-    // failure surfaced as a network problem (INV-NOTES-140).
-    await signInFake('ada@micdrp.test');
-    failNextAuth('token expired');
-
-    const { result } = await renderHook(() => useAuth(), { wrapper });
-
-    await waitFor(() => expect(result.current.session).toBeNull());
-    expect(result.current.user).toBeNull();
-  });
-
-  it('keeps a restored session the server does renew', async () => {
-    // A token that is still good must not cost anybody a sign-in.
-    const id = await signInFake('ada@micdrp.test');
-    const { result } = await renderHook(() => useAuth(), { wrapper });
-
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    await waitFor(() => expect(result.current.user?.id).toBe(id));
-  });
-
   it('throws when useAuth is used outside an AuthProvider', async () => {
-    const spy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const spy = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
     // renderHook is async in RNTL 14, so the guard surfaces as a rejection
     // rather than a synchronous throw.
     await expect(renderHook(() => useAuth())).rejects.toThrow(
